@@ -311,7 +311,7 @@ class SongBrowser final : public ScreenBackable {
     std::vector<SongButton *> parentButtons;
     std::vector<CarouselButton *> visibleSongButtons;
 
-    UIOverlay *loadingOverlay;
+    UIOverlay *loadingOverlay{nullptr};
 
     // to avoid transitive includes
     struct MD5HashMap;

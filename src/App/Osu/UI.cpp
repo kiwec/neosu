@@ -104,7 +104,10 @@ bool UI::init() {
 }
 
 void UI::update() {
-    for(auto *overlay : this->extra_overlays) {
+    // iterate over each overlay in the set without blowing up if an element is removed during iteration
+    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
+        UIOverlay *overlay = *overlayit;
+        ++overlayit;  // increment before update (in case it's deleted in update)
         overlay->update();
         if(!mouse->propagate_clicks) return;
     }
@@ -129,7 +132,9 @@ void UI::draw() {
     }
 
     // draw any extra overlays (TODO: draw order, this shouldn't be hardcoded at the start)
-    for(auto *overlay : this->extra_overlays) {
+    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
+        UIOverlay *overlay = *overlayit;
+        ++overlayit;
         overlay->draw();
     }
 
@@ -260,7 +265,9 @@ void UI::draw() {
 void UI::onKeyDown(KeyboardEvent &key) {
     if(key.isConsumed()) return;
 
-    for(auto *overlay : this->extra_overlays) {
+    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
+        UIOverlay *overlay = *overlayit;
+        ++overlayit;
         overlay->onKeyDown(key);
         if(key.isConsumed()) return;
     }
@@ -274,7 +281,9 @@ void UI::onKeyDown(KeyboardEvent &key) {
 void UI::onKeyUp(KeyboardEvent &key) {
     if(key.isConsumed()) return;
 
-    for(auto *overlay : this->extra_overlays) {
+    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
+        UIOverlay *overlay = *overlayit;
+        ++overlayit;
         overlay->onKeyUp(key);
         if(key.isConsumed()) return;
     }
@@ -288,7 +297,9 @@ void UI::onKeyUp(KeyboardEvent &key) {
 void UI::onChar(KeyboardEvent &e) {
     if(e.isConsumed()) return;
 
-    for(auto *overlay : this->extra_overlays) {
+    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
+        UIOverlay *overlay = *overlayit;
+        ++overlayit;
         overlay->onChar(e);
         if(e.isConsumed()) return;
     }
@@ -300,7 +311,9 @@ void UI::onChar(KeyboardEvent &e) {
 }
 
 void UI::onResolutionChange(vec2 newResolution) {
-    for(auto *overlay : this->extra_overlays) {
+    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
+        UIOverlay *overlay = *overlayit;
+        ++overlayit;
         overlay->onResolutionChange(newResolution);
     }
 
@@ -310,7 +323,9 @@ void UI::onResolutionChange(vec2 newResolution) {
 }
 
 void UI::stealFocus() {
-    for(auto *overlay : this->extra_overlays) {
+    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
+        UIOverlay *overlay = *overlayit;
+        ++overlayit;
         overlay->stealFocus();
     }
 

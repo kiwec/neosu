@@ -1451,9 +1451,6 @@ void SongBrowser::refreshBeatmaps(UIScreen *next_screen) {
         this->groupByNothingBtn->setTextBrightColor(highlightColor);
     }
 
-    // start loading
-    db->load();
-
     auto loading_screen = std::make_unique<LoadingScreen>(
         next_screen,
         (LoadingProgressFn)[](LoadingScreen * /*ldscr*/) {
@@ -1475,6 +1472,7 @@ void SongBrowser::refreshBeatmaps(UIScreen *next_screen) {
 
             sb->loadingOverlay = nullptr;
 
+            // finish loading
             sb->onDatabaseLoadingFinished();
 
             // kill ourselves
@@ -1482,6 +1480,9 @@ void SongBrowser::refreshBeatmaps(UIScreen *next_screen) {
         });
 
     this->loadingOverlay = ui->pushOverlay(std::move(loading_screen));
+
+    // start loading
+    db->load();
 
     // make sure whatever was visible is hidden until loading finishes
     ui->hide();
