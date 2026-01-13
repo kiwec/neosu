@@ -9,6 +9,7 @@
 
 #include <string_view>
 #include <memory>
+#include <functional>
 
 class Sound;
 
