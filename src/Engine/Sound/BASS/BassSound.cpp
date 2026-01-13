@@ -118,6 +118,7 @@ void BassSound::initAsync() {
     // Only compute the length once
     i64 length = BASS_ChannelGetLength(this->srchandle, BASS_POS_BYTE);
     f64 lengthInSeconds = BASS_ChannelBytes2Seconds(this->srchandle, length);
+    logIfCV(debug_snd, "got length bytes: {} seconds: {}", length, lengthInSeconds);
     this->lengthUS = static_cast<u64>(std::round(lengthInSeconds * 1000. * 1000.));
 
     this->fSpeed = 1.0f;
@@ -296,7 +297,7 @@ u64 BassSound::getPositionUS() const {
     if(this->bPaused) {
         this->interpolator.reset((f64)this->paused_position_us / (1000. * 1000.), Timing::getTimeReal(),
                                  this->getSpeed());
-        logIfCV(debug_snd, "paused pos {:.4f}s", (f64)this->paused_position_us / (1000. * 1000.));
+        logIf(cv::debug_snd.getInt() > 1, "paused pos {:.4f}s", (f64)this->paused_position_us / (1000. * 1000.));
         return this->paused_position_us;
     }
 
@@ -315,7 +316,7 @@ u64 BassSound::getPositionUS() const {
     const u64 ret = this->interpolator.update(positionInSeconds, Timing::getTimeReal(), this->getSpeed(),
                                               this->isLooped(), static_cast<u64>(this->lengthUS), this->isPlaying());
 
-    logIfCV(debug_snd, "pos {:.4f}s", (f64)ret / (1000. * 1000.));
+    logIf(cv::debug_snd.getInt() > 1, "pos {:.4f}s", (f64)ret / (1000. * 1000.));
     return ret;
 }
 
