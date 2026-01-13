@@ -21,9 +21,9 @@ macro(set_download_name dep_name version url)
     set(${_upper_dep_name}_DL_NAME "${dep_name}-${version}${_temp_ext}")
 endmacro()
 
-set(SDL3_VERSION "7931321cffa27d4168738ddbe2251966f243afc9")
+set(SDL3_VERSION "2212c4f0851bfcbf5be0336eef633e465ca009ab")
 set(SDL3_URL "https://github.com/libsdl-org/SDL/archive/${SDL3_VERSION}.tar.gz")
-set(SDL3_HASH "SHA512=e5f75bbae39e46ff6e818d0c67c39805e41089ca543f79d3aa25882ba6436b23f857eff868c391ec6c19f32283422f567fe501ab44a4ff7ee1ff63457c558550")
+set(SDL3_HASH "SHA512=898bd80a4d23c9fead10184d227ed29fa2ccad240cbf1831a829cc3778bea89d4bd7aaaba338fdcccdc2cf658a4cd1951c912ee5ecafca4b77bc79260b7c44ca")
 set_download_name("sdl3" "${SDL3_VERSION}" "${SDL3_URL}")
 
 set(FREETYPE_VERSION "2.13.3")
@@ -78,9 +78,9 @@ set(LIBARCHIVE_URL "https://github.com/libarchive/libarchive/releases/download/v
 set(LIBARCHIVE_HASH "SHA512=f399ea4525744a2727d99899478e6f52abfdc60e607d93673ba7f0602d4817be4e384071bd8f9420ae398e3f2b6b80ffaffb4f9bbfdcd46ac03a6a8965fadafd")
 set_download_name("libarchive" "${LIBARCHIVE_VERSION}" "${LIBARCHIVE_URL}")
 
-set(MPG123_VERSION "fe143d4e9c885ec34596c561481dff96357fd797")
+set(MPG123_VERSION "a06133928e6518bd65314c9cea12ccb5588703e9")
 set(MPG123_URL "https://github.com/madebr/mpg123/archive/${MPG123_VERSION}.tar.gz")
-set(MPG123_HASH "SHA512=00490f7d73ca08143b911b3308380a0c44989f52752ce1cc16460b49060138d6d9c039181c0602fbdd84c1effecb16e78a8952e60e3e1df5d6697917ce0dd4e0")
+set(MPG123_HASH "SHA512=a1c2767c628432c4adcdbc04e2e6441ff6af3033dc5fae927b845f90eb1fb9f407e0a7e196702a51aa768d5348432abc6604746ff7a5dffb1f1d72241b7da30a")
 set_download_name("mpg123" "${MPG123_VERSION}" "${MPG123_URL}")
 
 set(SOUNDTOUCH_VERSION "2.4.0")
