@@ -158,6 +158,7 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
     std::vector<SongButton *> songButtons;
 };
 
+namespace {
 class ScoresStillLoadingElement final : public CBaseUILabel {
    public:
     ScoresStillLoadingElement(const UString &text) : CBaseUILabel(0, 0, 0, 0, "", text) {
@@ -253,6 +254,7 @@ class NoRecordsSetElement final : public CBaseUILabel {
    private:
     UString sIconString;
 };
+}  // namespace
 
 // used also by SongButton
 bool SongBrowser::sort_by_difficulty(SongButton const *a, SongButton const *b) {

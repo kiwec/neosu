@@ -87,7 +87,7 @@ VERSION current() {
 #ifdef MC_ARCH64
 #define ARCHSTR "(x64)"
 #elif defined(MC_ARCH32)
-#define ARCHSTR "(x86)"
+#define ARCHSTR "(x32)"
 #elif defined(MC_AARCH64)
 #define ARCHSTR "(arm64)"
 #else
@@ -99,7 +99,7 @@ VERSION current() {
 #elif defined(MC_ARCH32)
 #define ARCHSTR "(i686)"
 #elif defined(MC_AARCH64)
-#define ARCHSTR "(arm64)"
+#define ARCHSTR "(aarch64)"
 #else
 #define ARCHSTR "(?)"
 #endif
