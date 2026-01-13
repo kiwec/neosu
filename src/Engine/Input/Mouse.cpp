@@ -176,8 +176,11 @@ out:
 }
 
 void Mouse::resetWheelDelta() {
-    this->iWheelDeltaVertical = this->iWheelDeltaVerticalActual =  //
-        this->iWheelDeltaHorizontal = this->iWheelDeltaHorizontalActual = 0;
+    this->iWheelDeltaVertical = this->iWheelDeltaVerticalActual;
+    this->iWheelDeltaVerticalActual = 0;
+
+    this->iWheelDeltaHorizontal = this->iWheelDeltaHorizontalActual;
+    this->iWheelDeltaHorizontalActual = 0;
 }
 
 void Mouse::onPosChange(vec2 pos) {
