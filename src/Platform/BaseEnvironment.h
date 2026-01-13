@@ -257,16 +257,20 @@ typedef void* HWND;
 #if defined(_MSC_VER)
 #pragma execution_character_set("utf-8")  // msvc wrangling
 
-#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_) && defined(_M_IX86)
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
+    !defined(_ARM_) && !defined(_ARM64_) && defined(_M_IX86)
 #define _X86_
 #endif
-#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_) && defined(_M_AMD64)
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
+    !defined(_ARM_) && !defined(_ARM64_) && defined(_M_AMD64)
 #define _AMD64_
 #endif
-#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_) && defined(_M_ARM)
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
+    !defined(_ARM_) && !defined(_ARM64_) && defined(_M_ARM)
 #define _ARM_
 #endif
-#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_) && defined(_M_ARM64)
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
+    !defined(_ARM_) && !defined(_ARM64_) && defined(_M_ARM64)
 #define _ARM64_
 #endif
 
@@ -322,6 +326,8 @@ typedef SSIZE_T ssize_t;
 #define MC_ARCH32
 #elif defined(_AMD64_) || defined(__x86_64__) || (defined(_WIN64))
 #define MC_ARCH64
+#elif define(_ARM64_)
+#define MC_AARCH64
 #else
 MC_MESSAGE("WARNING: unknown compilation arch??")
 #endif
