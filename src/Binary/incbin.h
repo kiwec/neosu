@@ -5,6 +5,25 @@
 
 #define INCBIN_PLAT(sym, file)
 
+#elif defined(__APPLE__) && defined(__MACH__)  // mach-o (darwin)
+
+#define INCBIN_PLAT(sym, file)      \
+    __asm__(                        \
+        ".section __DATA,__const\n" \
+        ".balign 1\n"               \
+        ".globl _" #sym             \
+        "\n"                        \
+        "_" #sym                    \
+        ":\n"                       \
+        ".incbin \"" file           \
+        "\"\n"                      \
+        ".globl _" #sym             \
+        "_end\n"                    \
+        "_" #sym                    \
+        "_end:\n"                   \
+        ".balign 1\n"               \
+        ".section __TEXT,__text\n");
+
 #elif defined(_WIN32)  // MinGW PE/COFF
 
 #ifdef _WIN64
