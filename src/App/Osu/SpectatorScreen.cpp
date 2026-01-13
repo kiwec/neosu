@@ -149,7 +149,7 @@ SpectatorScreen::SpectatorScreen() {
 }
 
 // NOTE: We use this to control client state, even when the spectator screen isn't visible.
-void SpectatorScreen::update() {
+void SpectatorScreen::update(CBaseUIEventCtx &c) {
     // HACK: "spectator screen" is just an overlay with higher priority than most screens
     this->bVisible = BanchoState::spectating && !osu->isInPlayMode() && !ui->getRankingScreen()->isVisible();
 
@@ -252,7 +252,7 @@ void SpectatorScreen::update() {
 
     // Handle spectator screen UI input
     if(this->isVisible()) {
-        UIScreen::update();
+        UIScreen::update(c);
     }
 }
 

@@ -108,12 +108,12 @@ void VolumeOverlay::draw() {
     if(this->fVolumeChangeFade != 1.0f) g->pop3DScene();
 }
 
-void VolumeOverlay::update() {
+void VolumeOverlay::update(CBaseUIEventCtx &c) {
     this->volumeMaster->setEnabled(this->fVolumeChangeTime > engine->getTime());
     this->volumeEffects->setEnabled(this->volumeMaster->isEnabled());
     this->volumeMusic->setEnabled(this->volumeMaster->isEnabled());
     this->volumeSliderOverlayContainer->setSize(osu->getVirtScreenSize());
-    this->volumeSliderOverlayContainer->update();
+    this->volumeSliderOverlayContainer->update(c);
 
     if(!this->volumeMaster->isBusy())
         this->volumeMaster->setValue(cv::volume_master.getFloat(), false);

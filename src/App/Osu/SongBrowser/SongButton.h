@@ -25,7 +25,7 @@ class SongButton : public CarouselButton {
     ~SongButton() override;
 
     void draw() override;
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
 
     void triggerContextMenu(vec2 pos);
 

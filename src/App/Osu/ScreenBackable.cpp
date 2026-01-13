@@ -25,11 +25,11 @@ void ScreenBackable::draw() {
     this->backButton->draw();
 }
 
-void ScreenBackable::update() {
+void ScreenBackable::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
-    this->backButton->update();
-    if(!mouse->propagate_clicks) return;
-    UIScreen::update();
+    this->backButton->update(c);
+    if(c.mouse_consumed()) return;
+    UIScreen::update(c);
 }
 
 void ScreenBackable::onKeyDown(KeyboardEvent &e) {

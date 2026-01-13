@@ -14,7 +14,7 @@ class SpectatorScreen final : public UIScreen {
    public:
     SpectatorScreen();
 
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
     void draw() override;
     void onKeyDown(KeyboardEvent& e) override;
     void onStopSpectatingClicked();

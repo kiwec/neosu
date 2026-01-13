@@ -44,9 +44,9 @@ class ModSelectorOverrideSliderDescButton final : public CBaseUIButton {
     ModSelectorOverrideSliderDescButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {}
 
-    void update() override {
+    void update(CBaseUIEventCtx &c) override {
         if(!this->bVisible) return;
-        CBaseUIButton::update();
+        CBaseUIButton::update(c);
 
         if(this->isMouseInside() && this->sTooltipText.length() > 0) {
             ui->getTooltipOverlay()->begin();
@@ -554,12 +554,12 @@ void ModSelector::draw() {
     }
 }
 
-void ModSelector::update() {
+void ModSelector::update(CBaseUIEventCtx &c) {
     // HACKHACK: updating while invisible is stupid, but the only quick solution for still animating otherwise stuck
     // sliders while closed
     if(!this->bVisible) {
         for(auto &overrideSlider : this->overrideSliders) {
-            if(overrideSlider.slider->hasChanged()) overrideSlider.slider->update();
+            if(overrideSlider.slider->hasChanged()) overrideSlider.slider->update(c);
         }
         if(this->bScheduledHide) {
             if(this->fAnimation == 0.0f) {
@@ -571,11 +571,11 @@ void ModSelector::update() {
 
     // update experimental mods, they take focus precedence over everything else
     if(this->bExperimentalVisible) {
-        this->experimentalContainer->update();
+        this->experimentalContainer->update(c);
     }
 
     // update
-    UIScreen::update();
+    UIScreen::update(c);
 
     this->nonSubmittableWarning->setVisible(BanchoState::can_submit_scores() && !cvars().areAllCvarsSubmittable());
     if(this->nonSubmittableWarning->isVisible() && this->nonSubmittableWarning->isMouseInside()) {
@@ -590,7 +590,7 @@ void ModSelector::update() {
     }
 
     if(!BanchoState::is_in_a_multi_room()) {
-        this->overrideSliderContainer->update();
+        this->overrideSliderContainer->update(c);
 
         // override slider tooltips (ALT)
         if(this->bShowOverrideSliderALTHint) {

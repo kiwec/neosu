@@ -15,7 +15,7 @@ class CBaseUISlider : public CBaseUIElement {
     ~CBaseUISlider() override = default;
 
     void draw() override;
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
 
     void onKeyDown(KeyboardEvent &e) override;
 

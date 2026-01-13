@@ -207,7 +207,7 @@ void UserCard::draw() {
     }
 }
 
-void UserCard::update() {
+void UserCard::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
     const bool is_online = (this->user_id > 0) || (this->user_id < -10000);
@@ -229,7 +229,7 @@ void UserCard::update() {
     // to recalculate local user stats
     this->updateUserStats();
 
-    CBaseUIButton::update();
+    CBaseUIButton::update(c);
 }
 
 void UserCard::updateUserStats() {

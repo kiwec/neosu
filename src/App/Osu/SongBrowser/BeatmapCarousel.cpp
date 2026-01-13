@@ -24,8 +24,8 @@ BeatmapCarousel::~BeatmapCarousel() {
 
 void BeatmapCarousel::draw() { CBaseUIScrollView::draw(); }
 
-void BeatmapCarousel::update() {
-    CBaseUIScrollView::update();
+void BeatmapCarousel::update(CBaseUIEventCtx &c) {
+    CBaseUIScrollView::update(c);
     if(!this->isVisible()) {
         // just reset this as a precaution
         this->bIsScrollingFast = false;

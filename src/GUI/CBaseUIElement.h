@@ -22,6 +22,17 @@ enum class TEXT_JUSTIFICATION : uint8_t { LEFT, CENTERED, RIGHT };
 
 class CBaseUIContainer;
 
+struct CBaseUIEventCtx {
+    bool propagate_clicks{true};
+    bool propagate_hover{true};  // TODO: does not work quite right yet
+
+    void consume_mouse() { this->propagate_clicks = this->propagate_hover = false; }
+
+    [[nodiscard]] bool mouse_consumed() const {
+        return this->propagate_clicks == this->propagate_hover && (this->propagate_hover == false);
+    }
+};
+
 class CBaseUIElement : public KeyboardListener {
     NOCOPY_NOMOVE(CBaseUIElement)
    public:
@@ -33,11 +44,11 @@ class CBaseUIElement : public KeyboardListener {
           vSize(const_cast<vec2 &>(this->rect.getSize())),
           vmPos(const_cast<vec2 &>(this->relRect.getPos())),
           vmSize(const_cast<vec2 &>(this->relRect.getSize())) {}
-    ~CBaseUIElement() override { ; }
+    ~CBaseUIElement() override = default;
 
     // main
     virtual void draw() = 0;
-    virtual void update();
+    virtual void update(CBaseUIEventCtx &c);
 
     // keyboard input
     void onKeyUp(KeyboardEvent &e) override { (void)e; }

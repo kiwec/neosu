@@ -60,7 +60,7 @@ f32 get_height() {
     return std::max(get_min_height(), max);
 }
 
-void update() {
+void update(CBaseUIEventCtx& c) {
     static bool mouse_was_down = false;
 
     auto mousePos = mouse->getPos();
@@ -88,7 +88,7 @@ void update() {
     osu->getUserButton()->setSize(SongBrowser::getUIScale(320.f), SongBrowser::getUIScale(75.f));
     osu->getUserButton()->setPos(btns[OPTIONS].getX() + SongBrowser::getUIScale(160.f),
                                  osu->getVirtScreenHeight() - osu->getUserButton()->getSize().y);
-    osu->getUserButton()->update();
+    osu->getUserButton()->update(c);
 
     // Yes, the order looks whack. That's the correct order.
     Button new_hover = NONE;
@@ -115,8 +115,8 @@ void update() {
         hovered_btn = new_hover;
     }
 
-    if(clicked && mouse->propagate_clicks) {
-        mouse->propagate_clicks = false;
+    if(clicked && c.propagate_clicks) {
+        c.propagate_clicks = false;
         press_button(hovered_btn);
     }
 
@@ -197,7 +197,7 @@ void draw() {
     i32 calcy = osu->getUserButton()->getPos().y + 30;
     if(DBRecalculator::get_maps_total() > 0) {
         UString msg = fmt::format("Calculating stars ({}/{}) ...", DBRecalculator::get_maps_processed(),
-                                      DBRecalculator::get_maps_total());
+                                  DBRecalculator::get_maps_total());
         g->setColor(0xff333333);
         g->pushTransform();
         g->translate(calcx, calcy);
@@ -208,7 +208,7 @@ void draw() {
     if(cv::normalize_loudness.getBool() && VolNormalization::get_total() > 0 &&
        VolNormalization::get_computed() < VolNormalization::get_total()) {
         UString msg = fmt::format("Computing loudness ({}/{}) ...", VolNormalization::get_computed(),
-                                      VolNormalization::get_total());
+                                  VolNormalization::get_total());
         g->setColor(0xff333333);
         g->pushTransform();
         g->translate(calcx, calcy);

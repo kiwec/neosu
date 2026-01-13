@@ -350,8 +350,8 @@ void Engine::onUpdate() {
 
         {
             VPROF_BUDGET("GUI::update", VPROF_BUDGETGROUP_UPDATE);
-            mouse->propagate_clicks = true;
-            if(this->guiContainer) this->guiContainer->update();
+            CBaseUIEventCtx c;
+            if(this->guiContainer) this->guiContainer->update(c);
         }
 
         {

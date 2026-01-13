@@ -4,6 +4,7 @@
 #include "types.h"
 
 class Graphics;
+struct CBaseUIEventCtx;
 
 // Bottom bar has some hacky logic to handle osu!stable skins properly.
 // Standard input handling logic won't work, as buttons can overlap.
@@ -11,7 +12,7 @@ class Graphics;
 namespace BottomBar {
 enum Button : i8 { NONE = -1, MODE = 0, MODS = 1, RANDOM = 2, OPTIONS = 3 };
 
-void update();
+void update(CBaseUIEventCtx &c);
 void draw();
 void press_button(Button btn);
 [[nodiscard]] f32 get_height();

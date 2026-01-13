@@ -21,7 +21,7 @@ class UIContextMenu final : public CBaseUIScrollView {
                   CBaseUIScrollView *parent = nullptr);
 
     void draw() override;
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
 
     void onKeyUp(KeyboardEvent &e) override;
     void onKeyDown(KeyboardEvent &e) override;
@@ -96,7 +96,7 @@ class UIContextMenuButton final : public CBaseUIButton {
     UIContextMenuButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text, int id);
     ~UIContextMenuButton() override { ; }
 
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
 
     void onMouseInside() override;
     void onMouseDownInside(bool left = true, bool right = false) override;

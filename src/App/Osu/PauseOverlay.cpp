@@ -115,14 +115,14 @@ void PauseOverlay::draw() {
     }
 }
 
-void PauseOverlay::update() {
+void PauseOverlay::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
     // hide retry button in multiplayer
     this->buttons[1]->setVisible(!BanchoState::is_playing_a_multi_map());
 
     // update and focus handling
-    UIScreen::update();
+    UIScreen::update(c);
 
     if(this->bScheduledVisibilityChange) {
         this->bScheduledVisibilityChange = false;

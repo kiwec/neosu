@@ -402,7 +402,7 @@ void Chat::drawTicker() {
     g->pop3DScene();
 }
 
-void Chat::update() {
+void Chat::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
     if(this->user_list->isVisible()) {
@@ -431,12 +431,12 @@ void Chat::update() {
         }
     }
 
-    UIScreen::update();
+    UIScreen::update(c);
 
     // XXX: don't let mouse click through the buttons area
-    this->button_container->update();
+    this->button_container->update(c);
     if(this->selected_channel) {
-        this->selected_channel->ui->update();
+        this->selected_channel->ui->update(c);
     }
 
     // HACKHACK: MOUSE3 handling

@@ -82,7 +82,7 @@ void ToastElement::updateLayout() {
     this->setSize(TOAST_WIDTH, (this->font->getHeight() * 1.5 * this->lines.size()) + (TOAST_INNER_Y_MARGIN * 2.0));
 }
 
-void NotificationOverlay::update() {
+void NotificationOverlay::update(CBaseUIEventCtx &c) {
     bool chat_toasts_visible = cv::notify_during_gameplay.getBool();
     chat_toasts_visible |= !osu->isInPlayMode();
     chat_toasts_visible |= ui->getPauseOverlay()->isVisible();
@@ -95,7 +95,7 @@ void NotificationOverlay::update() {
 
         bottom_y -= TOAST_OUTER_Y_MARGIN + t->getSize().y;
         t->setPos(screen.x - (TOAST_SCREEN_RIGHT_MARGIN + TOAST_WIDTH), bottom_y);
-        t->update();
+        t->update(c);
         a_toast_is_hovered |= t->isMouseInside();
     }
 

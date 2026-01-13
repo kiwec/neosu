@@ -102,7 +102,7 @@ struct OptionsOverlayImpl final {
     ~OptionsOverlayImpl();
 
     void draw();
-    void update();
+    void update(CBaseUIEventCtx &c);
     void onKeyDown(KeyboardEvent &e);
     void onChar(KeyboardEvent &e);
     void onResolutionChange(vec2 newResolution);
@@ -338,7 +338,7 @@ OptionsOverlay::OptionsOverlay() : ScreenBackable(), NotificationOverlayKeyListe
 OptionsOverlay::~OptionsOverlay() = default;
 
 void OptionsOverlay::draw() { return pImpl->draw(); }
-void OptionsOverlay::update() { return pImpl->update(); }
+void OptionsOverlay::update(CBaseUIEventCtx &c) { return pImpl->update(c); }
 void OptionsOverlay::onKeyDown(KeyboardEvent &e) { return pImpl->onKeyDown(e); }
 void OptionsOverlay::onChar(KeyboardEvent &e) { return pImpl->onChar(e); }
 void OptionsOverlay::onResolutionChange(vec2 newResolution) { return pImpl->onResolutionChange(newResolution); }
@@ -411,9 +411,9 @@ class ResetButton final : public CBaseUIButton {
         g->fillGradient(this->vPos.x, this->vPos.y, fullColorBlockSize, this->vSize.y, left, middle, left, middle);
     }
 
-    void update() override {
+    void update(CBaseUIEventCtx &c) override {
         if(!this->bVisible || !this->bEnabled) return;
-        CBaseUIButton::update();
+        CBaseUIButton::update(c);
 
         if(this->isMouseInside()) {
             ui->getTooltipOverlay()->begin();
@@ -665,9 +665,9 @@ class OptionsMenuKeyBindLabel final : public CBaseUILabel {
         this->textColorUnbound = 0xffbb0000;
     }
 
-    void update() override {
+    void update(CBaseUIEventCtx &c) override {
         if(!this->bVisible) return;
-        CBaseUILabel::update();
+        CBaseUILabel::update(c);
 
         const auto newKeyCode = (SCANCODE)this->key->getInt();
         if(this->keyCode == newKeyCode) return;
@@ -1849,7 +1849,7 @@ void OptionsOverlayImpl::update_login_button(bool loggedIn) {
     this->logInButton->is_loading = BanchoState::is_logging_in();
 }
 
-void OptionsOverlayImpl::update() {
+void OptionsOverlayImpl::update(CBaseUIEventCtx &c) {
     if(this->bLayoutUpdateScheduled.load(std::memory_order_relaxed)) {
         this->updateLayout();
     }
@@ -1861,8 +1861,8 @@ void OptionsOverlayImpl::update() {
     const bool onlyContextMenuVisible = contextMenuVisible && !optionsMenuVisible;
 
     // force context menu click handling focus
-    this->contextMenu->update();
-    if(!mouse->propagate_clicks) return;
+    this->contextMenu->update(c);
+    if(c.mouse_consumed()) return;
     if(onlyContextMenuVisible) return;  // HACK: not returning early if options menu is hidden, for skins menu dropdown
 
     // force context menu mouse-inside focus
@@ -1873,8 +1873,8 @@ void OptionsOverlayImpl::update() {
         parent->backButton->stealFocus();
     }
 
-    parent->ScreenBackable::update();
-    if(!mouse->propagate_clicks) return;
+    parent->ScreenBackable::update(c);
+    if(c.mouse_consumed()) return;
 
     if(contextMenuVisible) {
         // eyes are bleeding...

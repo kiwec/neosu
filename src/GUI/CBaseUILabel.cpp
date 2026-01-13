@@ -63,7 +63,7 @@ void CBaseUILabel::drawText() {
     }
 }
 
-void CBaseUILabel::update() { CBaseUIElement::update(); }
+void CBaseUILabel::update(CBaseUIEventCtx &c) { CBaseUIElement::update(c); }
 
 void CBaseUILabel::updateStringMetrics() {
     if(this->font != nullptr) {

@@ -861,17 +861,17 @@ namespace DiffCalc {
 extern const u32 PP_ALGORITHM_VERSION;
 }
 
-void SongBrowser::update() {
+void SongBrowser::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
-    this->localBestContainer->update();
-    ScreenBackable::update();
+    this->localBestContainer->update(c);
+    ScreenBackable::update(c);
 
     // NOTE: This is placed before BottomBar::update(), otherwise the context menu would close
     //       on a bottombar selector click (yeah, a bit hacky)
-    this->contextMenu->update();
+    this->contextMenu->update(c);
 
-    BottomBar::update();
+    BottomBar::update(c);
 
     // map star/bpm/other calc
     if(DBRecalculator::running()) {
@@ -968,12 +968,12 @@ void SongBrowser::update() {
     }
 
     // update and focus handling
-    this->topbarRight->update();
-    if(this->localBestButton) this->localBestButton->update();
-    this->scoreBrowser->update();
-    this->topbarLeft->update();
+    this->topbarRight->update(c);
+    if(this->localBestButton) this->localBestButton->update(c);
+    this->scoreBrowser->update(c);
+    this->topbarLeft->update(c);
 
-    this->carousel->update();
+    this->carousel->update(c);
 
     // handle async random beatmap selection
     if(this->bRandomBeatmapScheduled) {

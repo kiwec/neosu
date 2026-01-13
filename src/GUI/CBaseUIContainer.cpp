@@ -167,8 +167,8 @@ void CBaseUIContainer::draw_debug() {
     }
 }
 
-void CBaseUIContainer::update() {
-    CBaseUIElement::update();
+void CBaseUIContainer::update(CBaseUIEventCtx &c) {
+    CBaseUIElement::update(c);
     if(!this->bVisible) return;
 
     // NOTE 1: do NOT use a range-based for loop here, update() might invalidate iterators by changing the container contents...
@@ -176,7 +176,7 @@ void CBaseUIContainer::update() {
     MC_UNROLL
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *e = this->vElements[i];
-        if(e->isVisible()) e->update();
+        if(e->isVisible()) e->update(c);
     }
 }
 

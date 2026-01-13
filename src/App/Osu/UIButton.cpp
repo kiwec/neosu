@@ -11,6 +11,7 @@
 #include "SoundEngine.h"
 #include "TooltipOverlay.h"
 #include "UI.h"
+#include "Font.h"
 
 void UIButton::draw() {
     if(!this->bVisible || !this->bVisible2) return;
@@ -69,9 +70,9 @@ void UIButton::draw() {
     }
 }
 
-void UIButton::update() {
+void UIButton::update(CBaseUIEventCtx &c) {
     if(!this->bVisible || !this->bVisible2) return;
-    CBaseUIButton::update();
+    CBaseUIButton::update(c);
 
     if(this->isMouseInside() && this->tooltipTextLines.size() > 0 && !this->bFocusStolenDelay) {
         ui->getTooltipOverlay()->begin();
@@ -125,8 +126,6 @@ void UIButton::animateClickColor() {
 }
 
 void UIButton::setTooltipText(const UString &text) { this->tooltipTextLines = text.split(US_("\n")); }
-
-#include "Font.h"
 
 CBaseUIButton *UIButtonVertical::setSizeToContent(int horizontalBorderSize, int verticalBorderSize) {
     this->setSize(this->fStringHeight + 2 * horizontalBorderSize, this->fStringWidth + 2 * verticalBorderSize);

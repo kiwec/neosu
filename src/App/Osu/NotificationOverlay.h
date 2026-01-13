@@ -48,7 +48,7 @@ class NotificationOverlay final : public UIScreen {
     NotificationOverlay();
     ~NotificationOverlay() override;
 
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
     void draw() override;
     void onResolutionChange(vec2 newResolution) override;
 

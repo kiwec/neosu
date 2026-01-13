@@ -220,8 +220,8 @@ void ConsoleBox::processPendingLogAnimations() {
     }
 }
 
-void ConsoleBox::update() {
-    CBaseUIElement::update();
+void ConsoleBox::update(CBaseUIEventCtx &c) {
+    CBaseUIElement::update(c);
 
     // handle pending animation operations from logging threads
     processPendingLogAnimations();
@@ -231,7 +231,7 @@ void ConsoleBox::update() {
     if(mleft && this->textbox->isMouseInside() && this->textbox->isVisible()) this->textbox->setActive(true);
 
     // handle consolebox
-    this->textbox->update();
+    this->textbox->update(c);
 
     if(this->textbox->hitEnter()) {
         this->processCommand(this->textbox->getText().toUtf8());
@@ -275,7 +275,7 @@ void ConsoleBox::update() {
     }
 
     // handle suggestions
-    if(this->suggestion->isVisible()) this->suggestion->update();
+    if(this->suggestion->isVisible()) this->suggestion->update(c);
 
     if(this->bSuggestionAnimateOut) {
         if(this->fSuggestionAnimation <= this->fSuggestionY) {

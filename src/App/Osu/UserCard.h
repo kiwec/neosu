@@ -15,7 +15,7 @@ class UserCard final : public CBaseUIButton {
     ~UserCard() override;
 
     void draw() override;
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
 
     void updateUserStats();
     void setID(i32 new_id);

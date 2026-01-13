@@ -11,6 +11,8 @@
 
 CBaseUIButton::CBaseUIButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
+    // this->grabs_clicks = true; // shouldn't this be set?
+
     this->font = engine->getDefaultFont();
 
     // settings

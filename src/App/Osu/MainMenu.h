@@ -40,7 +40,7 @@ class MainMenu final : public UIScreen, public MouseListener {
     ~MainMenu() override;
 
     void draw() override;
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
 
     void clearPreloadedMaps();
     void selectRandomBeatmap();

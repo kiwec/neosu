@@ -17,7 +17,7 @@ class LoadingScreen final : public UIOverlay {
 
     ~LoadingScreen() final { this->finish(); }
 
-    void update() final;
+    void update(CBaseUIEventCtx &c) final;
     void draw() final;
 
     void onKeyDown(KeyboardEvent &e) final;

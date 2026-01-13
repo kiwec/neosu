@@ -48,13 +48,13 @@ void CWindowManager::draw() {
     */
 }
 
-void CWindowManager::update() {
+void CWindowManager::update(CBaseUIEventCtx &c) {
     if(!this->bVisible || this->windows.size() == 0) return;
 
     // update all windows, detect depth changes
     for(auto &window : this->windows) {
-        window->update();
-        if(!mouse->propagate_clicks) break;
+        window->update(c);
+        if(c.mouse_consumed()) break;
     }
     int topMouseWindowIndex = this->getTopMouseWindowIndex();
 

@@ -148,12 +148,12 @@ void SongDifficultyButton::draw() {
     }
 }
 
-void SongDifficultyButton::update() {
+void SongDifficultyButton::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) {
         this->fVisibleFor = 0.f;
         return;
     }
-    CarouselButton::update();
+    CarouselButton::update(c);
 
     // don't try to load images while scrolling fast to avoid lag
     if(!g_carousel->isScrollingFast())

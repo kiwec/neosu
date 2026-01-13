@@ -280,7 +280,7 @@ void RoomScreen::draw() {
     }
 }
 
-void RoomScreen::update() {
+void RoomScreen::update(CBaseUIEventCtx &c) {
     if(!BanchoState::is_in_a_multi_room() || osu->isInPlayMode()) return;
 
     const bool room_name_changed = this->room_name_ipt->getText() != BanchoState::room.name;
@@ -299,14 +299,14 @@ void RoomScreen::update() {
 
     this->pauseButton->setPaused(!osu->getMapInterface()->isPreviewMusicPlaying());
 
-    this->contextMenu->update();
-    if(!mouse->propagate_clicks) return;
+    this->contextMenu->update(c);
+    if(c.mouse_consumed()) return;
 
     // HACK: disable "slotlist" scrollview when options menu is open, because it somehow takes priority
     if(ui->getOptionsOverlay()->isVisible()) {
-        this->settings->update();
+        this->settings->update(c);
     } else {
-        UIScreen::update();
+        UIScreen::update(c);
     }
 }
 
@@ -580,12 +580,12 @@ void RoomScreen::on_map_change() {
             ui->getSongBrowser()->onDifficultySelected(beatmap, false);
             this->map_title->setText(BanchoState::room.map_name);
             this->map_title->setSizeToContent(0, 0);
-            auto attributes = fmt::format("AR: {:.1f}, CS: {:.1f}, HP: {:.1f}, OD: {:.1f}", beatmap->getAR(), beatmap->getCS(),
-                                           beatmap->getHP(), beatmap->getOD());
+            auto attributes = fmt::format("AR: {:.1f}, CS: {:.1f}, HP: {:.1f}, OD: {:.1f}", beatmap->getAR(),
+                                          beatmap->getCS(), beatmap->getHP(), beatmap->getOD());
             this->map_attributes->setText(attributes);
             this->map_attributes->setSizeToContent(0, 0);
             auto attributes2 = fmt::format("Length: {} seconds, BPM: {} ({} - {})", beatmap->getLengthMS() / 1000,
-                                            beatmap->getMostCommonBPM(), beatmap->getMinBPM(), beatmap->getMaxBPM());
+                                           beatmap->getMostCommonBPM(), beatmap->getMinBPM(), beatmap->getMaxBPM());
             this->map_attributes2->setText(attributes2);
             this->map_attributes2->setSizeToContent(0, 0);
 

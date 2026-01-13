@@ -22,7 +22,7 @@ class BeatmapCarousel final : public CBaseUIScrollView {
     void onChar(KeyboardEvent &e) override;
 
     void draw() override;
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
 
     // checks for context menu visibility
     bool isMouseInside() override;

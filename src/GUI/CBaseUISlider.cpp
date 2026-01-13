@@ -83,8 +83,8 @@ void CBaseUISlider::drawBlock() {
                 argb(255, 255, 255, 255), argb(255, 255, 255, 255));
 }
 
-void CBaseUISlider::update() {
-    CBaseUIElement::update();
+void CBaseUISlider::update(CBaseUIEventCtx &c) {
+    CBaseUIElement::update(c);
     if(!this->bVisible) return;
 
     vec2 mousepos{mouse->getPos()};

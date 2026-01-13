@@ -104,23 +104,24 @@ bool UI::init() {
 }
 
 void UI::update() {
+    CBaseUIEventCtx c;
+
     // iterate over each overlay in the set without blowing up if an element is removed during iteration
     for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
         UIOverlay *overlay = *overlayit;
         ++overlayit;  // increment before update (in case it's deleted in update)
-        overlay->update();
-        if(!mouse->propagate_clicks) return;
+        overlay->update(c);
     }
 
     bool updated_active_screen = false;
     for(auto *screen : this->screens) {
-        screen->update();
+        screen->update(c);
         if(screen == this->active_screen) updated_active_screen = true;
-        if(!mouse->propagate_clicks) break;
+        if(c.mouse_consumed()) break;  // TODO: update() does more than only mouse event handling, should be decoupled
     }
 
-    if(!updated_active_screen && mouse->propagate_clicks) {
-        this->active_screen->update();
+    if(!updated_active_screen && !c.mouse_consumed()) {
+        this->active_screen->update(c);
     }
 }
 

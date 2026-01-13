@@ -75,9 +75,6 @@ class Mouse final : public InputDevice {
         return this->bIsRawInputDesired;
     }  // "desired" rawinput state, NOT actual OS raw input state!
 
-    // HACK
-    bool propagate_clicks;
-
    private:
     // same as keyboard input,
     // mouse input events are only queued on onWheel/onButton, then dispatched during Engine::onUpdate

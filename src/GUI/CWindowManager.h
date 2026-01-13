@@ -8,6 +8,7 @@
 #include <vector>
 
 class CBaseUIWindow;
+struct CBaseUIEventCtx;
 
 class CWindowManager : public KeyboardListener {
    public:
@@ -15,7 +16,7 @@ class CWindowManager : public KeyboardListener {
     ~CWindowManager() override;
 
     void draw();
-    virtual void update();
+    virtual void update(CBaseUIEventCtx &c);
 
     void onKeyDown(KeyboardEvent &e) override;
     void onKeyUp(KeyboardEvent &e) override;

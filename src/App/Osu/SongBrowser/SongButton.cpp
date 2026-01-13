@@ -76,7 +76,7 @@ void SongButton::draw() {
     this->drawSubTitle();
 }
 
-void SongButton::update() {
+void SongButton::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) {
         this->fVisibleFor = 0.f;
         return;
@@ -88,7 +88,7 @@ void SongButton::update() {
     else
         this->fVisibleFor = 0.f;
 
-    CarouselButton::update();
+    CarouselButton::update(c);
 
     if(this->children.empty()) return;
 

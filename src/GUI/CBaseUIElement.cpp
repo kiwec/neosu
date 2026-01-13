@@ -21,10 +21,11 @@ void CBaseUIElement::stealFocus() {
     this->onFocusStolen();
 }
 
-void CBaseUIElement::update() {
+void CBaseUIElement::update(CBaseUIEventCtx &c) {
     if(unlikely(CBaseUIDebug::dumpElems)) this->dumpElem();
     if(!this->bVisible || !this->bEnabled) return;
 
+    // TODO: hover "consumption"
     {
         const bool oldMouseInsideState = this->bMouseInside;
         const bool mousePosInside = this->getRect().contains(mouse->getPos());
@@ -32,9 +33,11 @@ void CBaseUIElement::update() {
         // check if mouse is inside element
         this->bMouseInside = mousePosInside;
         // re-check to account for possible isMouseInside override
-        this->bMouseInside = this->isMouseInside();
+        if((this->bMouseInside = this->isMouseInside())) {
+            c.propagate_hover = false;  // doesn't really do anything much atm
+        }
 
-        if(oldMouseInsideState != this->bMouseInside && this->bVisible && this->bEnabled) {
+        if(oldMouseInsideState != this->bMouseInside) {
             if(this->bMouseInside) {
                 this->onMouseInside();
             } else {
@@ -46,10 +49,10 @@ void CBaseUIElement::update() {
     const u8 buttonMask = (u8)((this->bHandleLeftMouse && mouse->isLeftDown()) << 1) |
                           (u8)(this->bHandleRightMouse && mouse->isRightDown());
 
-    if(buttonMask && mouse->propagate_clicks) {
+    if(buttonMask && c.propagate_clicks) {
         this->mouseUpCheck |= buttonMask;
         if(this->bMouseInside) {
-            mouse->propagate_clicks = !this->grabs_clicks;
+            c.propagate_clicks = !this->grabs_clicks;
         }
 
         // onMouseDownOutside

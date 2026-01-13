@@ -12,7 +12,7 @@
 
 #include <utility>
 
-void LoadingScreen::update() {
+void LoadingScreen::update(CBaseUIEventCtx& /*c*/) {
     if(!this->isVisible()) {
         return;
     }

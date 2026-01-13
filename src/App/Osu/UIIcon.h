@@ -6,7 +6,7 @@ class UIIcon final : public CBaseUILabel {
    public:
     UIIcon(char16_t icon);
 
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
     void setTooltipText(const UString& text);
 
     // debugging

@@ -39,7 +39,7 @@ class RoomScreen final : public UIScreen {
     ~RoomScreen() override;
 
     void draw() override;
-    void update() override;
+    void update(CBaseUIEventCtx &c) override;
     void onKeyDown(KeyboardEvent& e) override;
     void onKeyUp(KeyboardEvent& e) override;
     void onChar(KeyboardEvent& e) override;

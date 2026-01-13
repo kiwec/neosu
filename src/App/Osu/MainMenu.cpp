@@ -942,7 +942,7 @@ void MainMenu::draw() {
     this->drawMainButton();
 }
 
-void MainMenu::update() {
+void MainMenu::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
     if(cv::is_bleedingedge.getBool()) {
@@ -968,10 +968,10 @@ void MainMenu::update() {
     this->updateLayout();
 
     // update and focus handling
-    UIScreen::update();
+    UIScreen::update(c);
 
     if(this->updateAvailableButton != nullptr) {
-        this->updateAvailableButton->update();
+        this->updateAvailableButton->update(c);
     }
 
     // handle automatic menu closing

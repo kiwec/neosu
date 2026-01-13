@@ -57,11 +57,11 @@ void PromptOverlay::draw() {
     UIScreen::draw();
 }
 
-void PromptOverlay::update() {
+void PromptOverlay::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
-    UIScreen::update();
-    mouse->propagate_clicks = false;
+    UIScreen::update(c);
+    c.consume_mouse();
 }
 
 void PromptOverlay::onKeyDown(KeyboardEvent &e) {
