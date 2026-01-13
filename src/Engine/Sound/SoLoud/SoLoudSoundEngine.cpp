@@ -58,13 +58,15 @@ SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
 #if SOLOUD_VERSION >= 202512
     {
         static SoLoud::logFunctionType SoLoudLogCB = +[](const char *message, void * /*userdata*/) -> void {
-            // avoid stray newlines
-            size_t end_pos = message ? strlen(message) : 0;
-            while(end_pos > 0 && (message[end_pos - 1] == '\r' || message[end_pos - 1] == '\n')) {
-                --end_pos;
-            }
+            if(cv::debug_snd.getBool()) {  // otherwise just throw the message away
+                // avoid stray newlines
+                size_t end_pos = message ? strlen(message) : 0;
+                while(end_pos > 0 && (message[end_pos - 1] == '\r' || message[end_pos - 1] == '\n')) {
+                    --end_pos;
+                }
 
-            Logger::logRaw(std::string_view{message, end_pos});
+                Logger::logRaw(std::string_view{message, end_pos});
+            }
         };
 
         // both the same for now
