@@ -208,10 +208,12 @@ void AsyncResourceLoader::update(bool lowLatency) {
     while(numProcessed < amountToProcess) {
         auto work = getNextAsyncCompleteWork();
         if(!work) {
-            // decay back to default
-            this->iLoadsPerUpdate =
-                static_cast<size_t>(std::max(std::floor(static_cast<double>(this->iLoadsPerUpdate) * (15. / 16.)),
-                                             std::ceil(static_cast<double>(this->iMaxThreads) * (1. / 4.))));
+            if(!lowLatency) {
+                // decay back to default
+                this->iLoadsPerUpdate =
+                    static_cast<size_t>(std::max(std::floor(static_cast<double>(this->iLoadsPerUpdate) * (15. / 16.)),
+                                                 std::ceil(static_cast<double>(this->iMaxThreads) * (1. / 4.))));
+            }
             break;
         }
 

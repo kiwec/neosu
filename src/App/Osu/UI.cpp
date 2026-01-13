@@ -59,7 +59,11 @@ UI::UI() {
 }
 
 UI::~UI() {
+    for(auto *overlay : this->extra_overlays) {
+        SAFE_DELETE(overlay);
+    }
     this->extra_overlays.clear();
+
     // destroy screens in reverse order
     for(auto &screen : this->screens | std::views::reverse) {
         SAFE_DELETE(screen);

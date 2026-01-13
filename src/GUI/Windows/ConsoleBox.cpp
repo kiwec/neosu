@@ -300,11 +300,13 @@ void ConsoleBox::update() {
         }
     }
 
-    if(mleft && !this->suggestion->isMouseInside() && !this->textbox->isActive() && !this->suggestion->isBusy())
-        this->suggestion->setVisible(false);
+    if(mleft) {
+        if(!this->suggestion->isMouseInside() && !this->textbox->isActive() && !this->suggestion->isBusy())
+            this->suggestion->setVisible(false);
 
-    if(this->textbox->isActive() && mleft && this->textbox->isMouseInside() && this->iSuggestionCount > 0)
-        this->suggestion->setVisible(true);
+        if(this->textbox->isActive() && this->textbox->isMouseInside() && this->iSuggestionCount > 0)
+            this->suggestion->setVisible(true);
+    }
 
     // handle overlay animation and timeout
     // theres probably a better way to do it than yet another atomic boolean, but eh
