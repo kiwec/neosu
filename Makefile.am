@@ -847,7 +847,8 @@ $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built: $(DEPS_PREFIX)/libpng-$(LIBP
 		./configure lt_cv_prog_gnu_ld=yes --host=$(host) --prefix="$(DEPS_PREFIX)" \
 		--with-zlib=yes --with-bzip2=yes --with-png=yes --with-harfbuzz=no --with-brotli=no --with-librsvg=no \
 		$(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
-		RANLIB="$(RANLIB)" AR="$(AR)" CC="$(CC)" CXX="$(CXX)" LD="$(LD)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)" && \
+		RANLIB="$(RANLIB)" AR="$(AR)" CC="$(CC)" CXX="$(CXX)" LD="$(LD)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" \
+		LDFLAGS="$(LDFLAGS)" && \
 	$(MAKE) $(MAKEFLAGS) && \
 	$(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors freetype2
@@ -859,6 +860,19 @@ endif # BUILD_FREETYPE2
 
 SIMDUTF_CFLAGS += $(if $(ENABLE_DEBUG),,-DNDEBUG)
 if BUILD_SIMDUTF
+
+SIMDUTF_EXTRA_BUILDFLAGS :=
+if !CLANG_BUILD
+if WIN_PLATFORM
+# idk
+SIMDUTF_EXTRA_BUILDFLAGS += $(if $(ENABLE_DEBUG),-DSIMDUTF_IMPLEMENTATION_ICELAKE=0 -DSIMDUTF_IMPLEMENTATION_HASWELL=0,)
+if WIN32_PLATFORM
+# idk
+SIMDUTF_EXTRA_BUILDFLAGS += -fno-lto
+endif # WIN32_PLATFORM
+endif # WIN_PLATFORM
+endif # !CLANG_BUILD
+
 SIMDUTF_CFLAGS += $(shell $(PKG_CONFIG) --cflags simdutf)
 SIMDUTF_LIBS += $(shell $(PKG_CONFIG) --libs simdutf)
 $(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built: $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz
@@ -866,7 +880,7 @@ $(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built: $(DEPS_CACHE)/simdutf-$(SIMDUTF
 	$(MKDIR_P) $(DEPS_PREFIX)/simdutf/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz -C $(DEPS_PREFIX)/simdutf --strip-components=1 && \
 	cd $(DEPS_PREFIX)/simdutf && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" \
+	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) $(SIMDUTF_EXTRA_BUILDFLAGS)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
@@ -875,7 +889,7 @@ $(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built: $(DEPS_CACHE)/simdutf-$(SIMDUTF
 		-D CMAKE_C_COMPILER="$(CC)" \
 		-D CMAKE_C_FLAGS="$(CFLAGS)" \
 		-D CMAKE_CXX_COMPILER="$(CXX)" \
-		-D CMAKE_CXX_FLAGS="$(CXXFLAGS) $(if $(ENABLE_DEBUG),$(if $(findstring yes,$(CLANG)),,$(if $(findstring mingw,$(host_os)),-DSIMDUTF_IMPLEMENTATION_ICELAKE=0 -DSIMDUTF_IMPLEMENTATION_HASWELL=0,)),)" \
+		-D CMAKE_CXX_FLAGS="$(CXXFLAGS) $(SIMDUTF_EXTRA_BUILDFLAGS)" \
 		$(CMAKERCOPT) $(CMAKEIDOPT) \
 		-D CMAKE_C_COMPILER_AR=$(AR) \
 		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \

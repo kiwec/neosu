@@ -103,32 +103,32 @@ const char* current_string() {
 
     // windows section
     if(cv & WIN_UNKNOWN) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows (version unknown) (" MC_ARCHSTR
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows (version unknown) (" MC_ARCHSTR ")"
                                   : "Windows (version unknown) (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_XP) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows XP (" MC_ARCHSTR : "Windows XP (" MC_ARCHSTR ")";
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows XP (" MC_ARCHSTR ")" : "Windows XP (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_VISTA) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows Vista (" MC_ARCHSTR : "Windows Vista (" MC_ARCHSTR ")";
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows Vista (" MC_ARCHSTR ")" : "Windows Vista (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_7) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 7 (" MC_ARCHSTR : "Windows 7 (" MC_ARCHSTR ")";
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 7 (" MC_ARCHSTR ")" : "Windows 7 (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_8) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 8 (" MC_ARCHSTR : "Windows 8 (" MC_ARCHSTR ")";
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 8 (" MC_ARCHSTR ")" : "Windows 8 (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_10) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 10 (" MC_ARCHSTR : "Windows 10 (" MC_ARCHSTR ")";
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 10 (" MC_ARCHSTR ")" : "Windows 10 (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_11) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 11 (" MC_ARCHSTR : "Windows 11 (" MC_ARCHSTR ")";
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 11 (" MC_ARCHSTR ")" : "Windows 11 (" MC_ARCHSTR ")";
         return ver_str;
     }
     std::unreachable();

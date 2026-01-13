@@ -889,6 +889,12 @@ AS_IF([test "x$enable_harden" != "xno"], [
     AX_CHECK_LINK_FLAG([-Wl,--as-needed -Wl,--no-copy-dt-needed-entries], [
         LDFLAGS="$LDFLAGS -Wl,--as-needed -Wl,--no-copy-dt-needed-entries"
     ])
+    AS_IF([test "$host_os" = "mingw32" && test -z "$LLVMMINGW"], [
+        # otherwise libssp-0.dll is needed
+        AX_CHECK_LINK_FLAG([-Wl,--whole-archive,-Bstatic -l:libssp.a -Wl,--no-whole-archive,-Bdynamic], [
+            LDFLAGS="$LDFLAGS -Wl,--whole-archive,-Bstatic -l:libssp.a -Wl,--no-whole-archive,-Bdynamic"
+        ])
+    ])
 ])
 
 # common flags
@@ -1050,7 +1056,7 @@ SPDLOG_BUILD_VERSION=3f03542d2eb4952e3b279d9cad9098d370b7be57
 NSYNC_MIN_VERSION=1.29.2
 NSYNC_BUILD_VERSION=1.30.0
 SIMDUTF_MIN_VERSION=7.0.0
-SIMDUTF_BUILD_VERSION=7.7.1 # fast and correct utf conversion utilities
+SIMDUTF_BUILD_VERSION=8.0.0 # fast and correct utf conversion utilities
 
 # always build these from source if we want to use them
 AC_SUBST([SOLOUD_VERSION], [55fd9565ff7dc9dd9aa33b2ace6058c4ee21bad2]) # neoloud fork
