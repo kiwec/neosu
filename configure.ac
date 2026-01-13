@@ -908,6 +908,9 @@ AS_IF([test "x$enable_werror" != "xno"], [
     AX_CHECK_COMPILE_FLAG([-Wno-error=alloc-size-larger-than=], [
         werror_flags_temp="$werror_flags_temp -Wno-error=alloc-size-larger-than="
     ])
+    AX_CHECK_COMPILE_FLAG([-Wno-error=format-y2k], [
+        werror_flags_temp="$werror_flags_temp -Wno-error=format-y2k"
+    ])
     NEOSU_CXXFLAGS="$werror_flags_temp $NEOSU_CXXFLAGS"
 ])
 
