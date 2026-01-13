@@ -331,3 +331,25 @@ typedef SSIZE_T ssize_t;
 #else
 MC_MESSAGE("WARNING: unknown compilation arch??")
 #endif
+
+#ifdef MCENGINE_PLATFORM_WINDOWS
+#ifdef MC_ARCH64
+#define MC_ARCHSTR "x64"
+#elif defined(MC_ARCH32)
+#define MC_ARCHSTR "x32"
+#elif defined(MC_AARCH64)
+#define MC_ARCHSTR "arm64"
+#else
+#define MC_ARCHSTR "?"
+#endif
+#else
+#ifdef MC_ARCH64
+#define MC_ARCHSTR "x86-64"
+#elif defined(MC_ARCH32)
+#define MC_ARCHSTR "i686"
+#elif defined(MC_AARCH64)
+#define MC_ARCHSTR "aarch64"
+#else
+#define MC_ARCHSTR "?"
+#endif
+#endif

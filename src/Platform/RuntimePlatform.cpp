@@ -83,73 +83,52 @@ VERSION current() {
 }
 #endif
 
-#ifdef MCENGINE_PLATFORM_WINDOWS
-#ifdef MC_ARCH64
-#define ARCHSTR "(x64)"
-#elif defined(MC_ARCH32)
-#define ARCHSTR "(x32)"
-#elif defined(MC_AARCH64)
-#define ARCHSTR "(arm64)"
-#else
-#define ARCHSTR "(?)"
-#endif
-#else
-#ifdef MC_ARCH64
-#define ARCHSTR "(x86-64)"
-#elif defined(MC_ARCH32)
-#define ARCHSTR "(i686)"
-#elif defined(MC_AARCH64)
-#define ARCHSTR "(aarch64)"
-#else
-#define ARCHSTR "(?)"
-#endif
-#endif
-
 const char* current_string() {
     static const char* ver_str{nullptr};
     if(ver_str) return ver_str;
 
     const auto cv = current();
     if(cv & LINUX) {
-        ver_str = "Linux " ARCHSTR;
+        ver_str = "Linux (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WASM) {
-        ver_str = "WASM " ARCHSTR;
+        ver_str = "WASM (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & MACOS) {
-        ver_str = "macOS " ARCHSTR;
+        ver_str = "macOS (" MC_ARCHSTR ")";
         return ver_str;
     }
 
     // windows section
     if(cv & WIN_UNKNOWN) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows (version unknown) " ARCHSTR : "Windows (version unknown) " ARCHSTR;
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows (version unknown) (" MC_ARCHSTR
+                                  : "Windows (version unknown) (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_XP) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows XP " ARCHSTR : "Windows XP " ARCHSTR;
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows XP (" MC_ARCHSTR : "Windows XP (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_VISTA) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows Vista " ARCHSTR : "Windows Vista " ARCHSTR;
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows Vista (" MC_ARCHSTR : "Windows Vista (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_7) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 7 " ARCHSTR : "Windows 7 " ARCHSTR;
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 7 (" MC_ARCHSTR : "Windows 7 (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_8) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 8 " ARCHSTR : "Windows 8 " ARCHSTR;
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 8 (" MC_ARCHSTR : "Windows 8 (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_10) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 10 " ARCHSTR : "Windows 10 " ARCHSTR;
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 10 (" MC_ARCHSTR : "Windows 10 (" MC_ARCHSTR ")";
         return ver_str;
     }
     if(cv & WIN_11) {
-        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 11 " ARCHSTR : "Windows 11 " ARCHSTR;
+        ver_str = (cv & WIN_WINE) ? "(WINE) Windows 11 (" MC_ARCHSTR : "Windows 11 (" MC_ARCHSTR ")";
         return ver_str;
     }
     std::unreachable();

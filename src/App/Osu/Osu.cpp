@@ -1959,11 +1959,11 @@ void Osu::drawRuntimeInfo() {
                 break;
         }
 
-        return fmt::format("{}.{}{}.{}.{}",                    //
-                           cv::build_timestamp.getString(),    //
-                           osstr,                              //
-                           sizeof(void *) == 8 ? "64" : "32",  //
-                           env->usingDX11() ? "dx" : "gl",     //
+        return fmt::format("{}.{}-{}.{}.{}",                 //
+                           cv::build_timestamp.getString(),  //
+                           osstr,                            //
+                           MC_ARCHSTR, /* e.g. x32/x64/arm64 for windows or x86/x86-64/aarch64 for non-windows */
+                           env->usingDX11() ? "dx" : "gl",  //
                            soundEngine->getTypeId() == SoundEngine::BASS ? "bss" : "sld");
     }();
 
