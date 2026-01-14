@@ -73,8 +73,7 @@ Collection& get_or_create_collection(std::string_view name) {
     if(name.length() < 1) name = "Untitled collection";
 
     // get
-    const auto& it =
-        std::ranges::find(s_collections, name, [](const auto& col) -> std::string_view { return col.name; });
+    const auto& it = std::ranges::find_if(s_collections, [name](const auto& col) -> bool { return col.name == name; });
     if(it != s_collections.end()) {
         return *it;
     }

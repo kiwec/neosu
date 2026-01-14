@@ -335,7 +335,12 @@ void UI::stealFocus() {
     }
 }
 
-void UI::hide() { this->active_screen->setVisible(false); }
+void UI::hide() {
+    this->active_screen->setVisible(false);
+    // Close any "temporary" overlays
+    this->promptOverlay->setVisible(false);
+    this->optionsOverlay->setVisible(false);
+}
 
 void UI::show() { this->active_screen->setVisible(true); }
 
@@ -343,10 +348,7 @@ void UI::setScreen(UIScreen *screen) {
     assert(screen);
 
     if(screen != this->active_screen && this->active_screen->isVisible()) {
-        this->active_screen->setVisible(false);
-
-        // Close any "temporary" overlays
-        this->promptOverlay->setVisible(false);
+        this->hide();
     }
 
     this->active_screen = screen;
