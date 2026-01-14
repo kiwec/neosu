@@ -239,14 +239,6 @@ using Env::REND;
 #if !(defined(MCENGINE_PLATFORM_WINDOWS) || defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || \
       defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__))
 
-#ifdef __linux__
-#ifdef __x86_64__
-#define OS_NAME "linux-x64"
-#else
-#define OS_NAME "linux-i686"
-#endif
-#endif
-
 #define fubar_abort_ abort
 #define fubar_abort() fubar_abort_()
 
@@ -282,12 +274,6 @@ typedef void* HWND;
 #include <windef.h>
 #include <intrin.h>
 
-#ifdef _WIN64
-#define OS_NAME "win64"
-#else
-#define OS_NAME "win32"
-#endif
-
 #ifndef fileno
 #define fileno _fileno
 #endif
@@ -318,10 +304,6 @@ typedef SSIZE_T ssize_t;
 
 #endif
 
-#ifndef OS_NAME
-#error "OS not currently supported"
-#endif
-
 #if defined(_X86_) || defined(__i386__) || (defined(_WIN32) && !defined(_WIN64))
 #define MC_ARCH32
 #elif defined(_AMD64_) || defined(__x86_64__) || (defined(_WIN64))
@@ -333,6 +315,7 @@ MC_MESSAGE("WARNING: unknown compilation arch??")
 #endif
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
+
 #ifdef MC_ARCH64
 #define MC_ARCHSTR "x64"
 #elif defined(MC_ARCH32)
@@ -341,8 +324,12 @@ MC_MESSAGE("WARNING: unknown compilation arch??")
 #define MC_ARCHSTR "arm64"
 #else
 #define MC_ARCHSTR "?"
-#endif
+#endif  // MC_ARCH64
+
+#define OS_NAME "win-" MC_ARCHSTR
+
 #else
+
 #ifdef MC_ARCH64
 #define MC_ARCHSTR "x86-64"
 #elif defined(MC_ARCH32)
@@ -351,5 +338,16 @@ MC_MESSAGE("WARNING: unknown compilation arch??")
 #define MC_ARCHSTR "aarch64"
 #else
 #define MC_ARCHSTR "?"
+#endif  // MC_ARCH64
+
+#ifdef __linux__
+#define OS_NAME "linux-" MC_ARCHSTR
+#elif defined(__APPLE__)
+#define OS_NAME "macos-" MC_ARCHSTR
 #endif
+
+#endif  // MCENGINE_PLATFORM_WINDOWS
+
+#ifndef OS_NAME
+#error "OS not currently supported"
 #endif
