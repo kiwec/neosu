@@ -681,7 +681,7 @@ AS_IF([test "x$enable_native" != "xno"], [
     CXXFLAGS="$CXXFLAGS -march=native -mtune=native"
     CFLAGS="$CFLAGS -march=native -mtune=native"
 ],[
-    AS_IF([test -n "$host_cpu" = "i686"], [
+    AS_IF([test "$host_cpu" = "i686"], [
         CXXFLAGS="$CXXFLAGS -march=pentium4 -mtune=generic"
         CFLAGS="$CFLAGS -march=pentium4 -mtune=generic"
     ], [
