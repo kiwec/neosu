@@ -681,13 +681,18 @@ AS_IF([test "x$enable_native" != "xno"], [
     CXXFLAGS="$CXXFLAGS -march=native -mtune=native"
     CFLAGS="$CFLAGS -march=native -mtune=native"
 ],[
-    AS_IF([test -n "$ubercompat"], [
+    AS_IF([test -n "$host_cpu" = "i686"], [
         CXXFLAGS="$CXXFLAGS -march=pentium4 -mtune=generic"
         CFLAGS="$CFLAGS -march=pentium4 -mtune=generic"
     ], [
-        AS_IF([test "$host_cpu" = "x86_64" || test "$host_cpu" = "i686"], [
+        AS_IF([test "$host_cpu" = "x86_64"], [
             CXXFLAGS="$CXXFLAGS -march=nocona -mtune=core-avx2"
             CFLAGS="$CFLAGS -march=nocona -mtune=core-avx2"
+        ], [
+            AS_IF([test "$host_cpu" = "aarch64"], [
+                CXXFLAGS="$CXXFLAGS -march=armv8.2-a+fp16+simd -mtune=cortex-a76"
+                CFLAGS="$CFLAGS -march=armv8.2-a+fp16+simd -mtune=cortex-a76"
+            ])
         ])
     ])
 ])
@@ -1069,7 +1074,7 @@ SIMDUTF_MIN_VERSION=7.0.0
 SIMDUTF_BUILD_VERSION=8.0.0 # fast and correct utf conversion utilities
 
 # always build these from source if we want to use them
-AC_SUBST([SOLOUD_VERSION], [55fd9565ff7dc9dd9aa33b2ace6058c4ee21bad2]) # neoloud fork
+AC_SUBST([SOLOUD_VERSION], [d795409b948ded2356b7c535a239c90f1ef88a82]) # neoloud fork
 #AC_SUBST([SOLOUD_VERSION], [cb174f53804d8ba3fc81a2dfa49879103fbbcb2e])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [2.4.0])
