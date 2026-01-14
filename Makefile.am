@@ -146,27 +146,42 @@ $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
 	$(CURLCOMMAND) "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-win64-lgpl-shared-$(FFMPEG_VERSION).zip" || { rm -f $@; exit 1; }
 
-$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz $\
-											$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxaarch64.tar.xz $\
-											$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip $\
-											$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip
+# architecture-specific extraction targets
+$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)-linuxx86_64.source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz
 	cd $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
 	rm -rf linuxx86_64 && \
-	$(MKDIR_P) linuxx86_64 && $(TAR) xf ffmpeg-linuxx86_64.tar.xz -C linuxx86_64 --strip-components=1 --wildcards --no-anchored include/'*'.h lib/'*'.so'*' && \
+	$(MKDIR_P) linuxx86_64 && $(TAR) xf ffmpeg-linuxx86_64.tar.xz -C linuxx86_64 --strip-components=1 --wildcards --no-anchored include/'*'.h lib/'*'.so'*'
+	touch $@
+
+$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)-linuxaarch64.source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxaarch64.tar.xz
+	cd $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
 	rm -rf linuxaarch64 && \
-	$(MKDIR_P) linuxaarch64 && $(TAR) xf ffmpeg-linuxaarch64.tar.xz -C linuxaarch64 --strip-components=1 --wildcards --no-anchored include/'*'.h lib/'*'.so'*' && \
+	$(MKDIR_P) linuxaarch64 && $(TAR) xf ffmpeg-linuxaarch64.tar.xz -C linuxaarch64 --strip-components=1 --wildcards --no-anchored include/'*'.h lib/'*'.so'*'
+	touch $@
+
+# linux i686 reuses x86_64 headers (no prebuilt libs available)
+$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)-linuxi686.source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)-linuxx86_64.source
+	cd $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
 	rm -rf linuxi686 && \
-	$(MKDIR_P) linuxi686 && cp -r linuxx86_64/include linuxi686/ && \
+	$(MKDIR_P) linuxi686 && cp -r linuxx86_64/include linuxi686/
+	touch $@
+
+$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)-windowsi686.source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip
+	cd $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
 	rm -rf windowsi686 && \
 	$(MKDIR_P) windowsi686/lib && $(UNZIP) -qjo ffmpeg-windowsi686.zip "*/bin/*.dll" -d windowsi686/lib && \
-	$(MKDIR_P) windowsi686/include && $(UNZIP) -qo ffmpeg-windowsi686.zip "*/include/**" -d windowsi686/include && mv windowsi686/include/*/*/* windowsi686/include/ && \
+	$(MKDIR_P) windowsi686/include && $(UNZIP) -qo ffmpeg-windowsi686.zip "*/include/**" -d windowsi686/include && mv windowsi686/include/*/*/* windowsi686/include/
+	touch $@
+
+$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)-windowsx86_64.source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip
+	cd $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
 	rm -rf windowsx86_64 && \
 	$(MKDIR_P) windowsx86_64/lib && $(UNZIP) -qjo ffmpeg-windowsx86_64.zip "*/bin/*.dll" -d windowsx86_64/lib && \
 	$(MKDIR_P) windowsx86_64/include && $(UNZIP) -qo ffmpeg-windowsx86_64.zip "*/include/**" -d windowsx86_64/include && mv windowsx86_64/include/*/*/* windowsx86_64/include/
 	touch $@
 
 # --with-audio=bass
-# just download the windows versions as well even on linux, because we need them for headers, no point in adding a bunch of complexity to avoid that
+# windows zips contain headers needed for all platforms
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
 	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass.zip" || { rm -f $@; exit 1; }
@@ -207,44 +222,58 @@ $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassasio.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
 	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassasio.zip" || { rm -f $@; exit 1; }
 
-$(DEPS_CACHE)/bass-$(BASS_VERSION).source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass-linux.zip $\
-										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24-linux.zip $\
-										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx-linux.zip $\
-										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix-linux.zip $\
-										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud-linux.zip $\
+# windows builds: only need windows zips
+$(DEPS_CACHE)/bass-$(BASS_VERSION)-windows.source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip $\
+										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip $\
+										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx.zip $\
+										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix.zip $\
+										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi24-header.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassasio.zip
 	cd $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
 	$(MKDIR_P) bass/lib/windows/i686 && $(UNZIP) -qjo bass.zip bass.dll -d bass/lib/windows/i686 && \
 	$(MKDIR_P) bass/lib/windows/x86_64 && $(UNZIP) -qjo bass.zip x64/bass.dll -d bass/lib/windows/x86_64 && \
 	$(MKDIR_P) bass/include/ && $(UNZIP) -qjo bass.zip bass.h -d bass/include/ && \
-	$(MKDIR_P) bass/lib/linux/i686 && $(UNZIP) -qjo bass-linux.zip x86/libbass.so -d bass/lib/linux/i686 && \
-	$(MKDIR_P) bass/lib/linux/x86_64 && $(UNZIP) -qjo bass-linux.zip x86_64/libbass.so -d bass/lib/linux/x86_64 && \
 	$(MKDIR_P) bassfx/lib/windows/i686 && $(UNZIP) -qjo bass_fx.zip bass_fx.dll -d bassfx/lib/windows/i686 && \
 	$(MKDIR_P) bassfx/lib/windows/x86_64 && $(UNZIP) -qjo bass_fx.zip x64/bass_fx.dll -d bassfx/lib/windows/x86_64 && \
 	$(MKDIR_P) bassfx/include/ && $(UNZIP) -qjo bass_fx.zip bass_fx.h -d bassfx/include/ && \
-	$(MKDIR_P) bassfx/lib/linux/i686 && $(UNZIP) -qjo bass_fx-linux.zip x86/libbass_fx.so -d bassfx/lib/linux/i686 && \
-	$(MKDIR_P) bassfx/lib/linux/x86_64 && $(UNZIP) -qjo bass_fx-linux.zip x86_64/libbass_fx.so -d bassfx/lib/linux/x86_64 && \
 	$(MKDIR_P) bassflac/lib/windows/i686 && $(UNZIP) -qjo bassflac24.zip bassflac.dll -d bassflac/lib/windows/i686 && \
 	$(MKDIR_P) bassflac/lib/windows/x86_64 && $(UNZIP) -qjo bassflac24.zip x64/bassflac.dll -d bassflac/lib/windows/x86_64 && \
-	$(MKDIR_P) bassflac/lib/linux/i686 && $(UNZIP) -qjo bassflac24-linux.zip libs/x86/libbassflac.so -d bassflac/lib/linux/i686 && \
-	$(MKDIR_P) bassflac/lib/linux/x86_64 && $(UNZIP) -qjo bassflac24-linux.zip libs/x86_64/libbassflac.so -d bassflac/lib/linux/x86_64 && \
 	$(MKDIR_P) bassmix/lib/windows/i686 && $(UNZIP) -qjo bassmix.zip bassmix.dll -d bassmix/lib/windows/i686 && \
 	$(MKDIR_P) bassmix/lib/windows/x86_64 && $(UNZIP) -qjo bassmix.zip x64/bassmix.dll -d bassmix/lib/windows/x86_64 && \
 	$(MKDIR_P) bassmix/include/ && $(UNZIP) -qjo bassmix.zip bassmix.h -d bassmix/include/ && \
-	$(MKDIR_P) bassmix/lib/linux/i686 && $(UNZIP) -qjo bassmix-linux.zip x86/libbassmix.so -d bassmix/lib/linux/i686 && \
-	$(MKDIR_P) bassmix/lib/linux/x86_64 && $(UNZIP) -qjo bassmix-linux.zip x86_64/libbassmix.so -d bassmix/lib/linux/x86_64 && \
 	$(MKDIR_P) bassloud/lib/windows/i686 && $(UNZIP) -qjo bassloud.zip bassloud.dll -d bassloud/lib/windows/i686 && \
 	$(MKDIR_P) bassloud/lib/windows/x86_64 && $(UNZIP) -qjo bassloud.zip x64/bassloud.dll -d bassloud/lib/windows/x86_64 && \
 	$(MKDIR_P) bassloud/include/ && $(UNZIP) -qjo bassloud.zip c/bassloud.h -d bassloud/include/ && \
-	$(MKDIR_P) bassloud/lib/linux/i686 && $(UNZIP) -qjo bassloud-linux.zip libs/x86/libbassloud.so -d bassloud/lib/linux/i686 && \
-	$(MKDIR_P) bassloud/lib/linux/x86_64 && $(UNZIP) -qjo bassloud-linux.zip libs/x86_64/libbassloud.so -d bassloud/lib/linux/x86_64 && \
 	$(MKDIR_P) basswasapi/lib/windows/i686 && $(UNZIP) -qjo basswasapi.zip basswasapi.dll -d basswasapi/lib/windows/i686 && \
 	$(MKDIR_P) basswasapi/lib/windows/x86_64 && $(UNZIP) -qjo basswasapi.zip x64/basswasapi.dll -d basswasapi/lib/windows/x86_64 && \
 	$(MKDIR_P) basswasapi/include/ && $(UNZIP) -qjo basswasapi24-header.zip c/basswasapi.h -d basswasapi/include/ && \
 	$(MKDIR_P) bassasio/lib/windows/i686 && $(UNZIP) -qjo bassasio.zip bassasio.dll -d bassasio/lib/windows/i686 && \
 	$(MKDIR_P) bassasio/lib/windows/x86_64 && $(UNZIP) -qjo bassasio.zip x64/bassasio.dll -d bassasio/lib/windows/x86_64 && \
-	$(MKDIR_P) bassasio/include/ && $(UNZIP) -qjo bassasio.zip bassasio.h -d bassasio/include/ && \
+	$(MKDIR_P) bassasio/include/ && $(UNZIP) -qjo bassasio.zip bassasio.h -d bassasio/include/
+	touch $@
+
+# linux builds: need linux zips + windows zips for headers (BASS has no aarch64 builds)
+$(DEPS_CACHE)/bass-$(BASS_VERSION)-linux.source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass-linux.zip $\
+										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24-linux.zip $\
+										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx-linux.zip $\
+										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix-linux.zip $\
+										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud-linux.zip
+	cd $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
+	$(MKDIR_P) bass/include/ && $(UNZIP) -qjo bass.zip bass.h -d bass/include/ && \
+	$(MKDIR_P) bass/lib/linux/i686 && $(UNZIP) -qjo bass-linux.zip x86/libbass.so -d bass/lib/linux/i686 && \
+	$(MKDIR_P) bass/lib/linux/x86_64 && $(UNZIP) -qjo bass-linux.zip x86_64/libbass.so -d bass/lib/linux/x86_64 && \
+	$(MKDIR_P) bassfx/include/ && $(UNZIP) -qjo bass_fx.zip bass_fx.h -d bassfx/include/ && \
+	$(MKDIR_P) bassfx/lib/linux/i686 && $(UNZIP) -qjo bass_fx-linux.zip x86/libbass_fx.so -d bassfx/lib/linux/i686 && \
+	$(MKDIR_P) bassfx/lib/linux/x86_64 && $(UNZIP) -qjo bass_fx-linux.zip x86_64/libbass_fx.so -d bassfx/lib/linux/x86_64 && \
+	$(MKDIR_P) bassflac/lib/linux/i686 && $(UNZIP) -qjo bassflac24-linux.zip libs/x86/libbassflac.so -d bassflac/lib/linux/i686 && \
+	$(MKDIR_P) bassflac/lib/linux/x86_64 && $(UNZIP) -qjo bassflac24-linux.zip libs/x86_64/libbassflac.so -d bassflac/lib/linux/x86_64 && \
+	$(MKDIR_P) bassmix/include/ && $(UNZIP) -qjo bassmix.zip bassmix.h -d bassmix/include/ && \
+	$(MKDIR_P) bassmix/lib/linux/i686 && $(UNZIP) -qjo bassmix-linux.zip x86/libbassmix.so -d bassmix/lib/linux/i686 && \
+	$(MKDIR_P) bassmix/lib/linux/x86_64 && $(UNZIP) -qjo bassmix-linux.zip x86_64/libbassmix.so -d bassmix/lib/linux/x86_64 && \
+	$(MKDIR_P) bassloud/include/ && $(UNZIP) -qjo bassloud.zip c/bassloud.h -d bassloud/include/ && \
+	$(MKDIR_P) bassloud/lib/linux/i686 && $(UNZIP) -qjo bassloud-linux.zip libs/x86/libbassloud.so -d bassloud/lib/linux/i686 && \
+	$(MKDIR_P) bassloud/lib/linux/x86_64 && $(UNZIP) -qjo bassloud-linux.zip libs/x86_64/libbassloud.so -d bassloud/lib/linux/x86_64
 	touch $@
 
 $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip:
@@ -252,21 +281,33 @@ $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip:
 	$(CURLCOMMAND) "https://web.archive.org/web/20250505113314/https://dl-game-sdk.discordapp.net/$(DISCORDSDK_VERSION)/discord_game_sdk.zip" || \
 			$(CURLCOMMAND) "https://dl-game-sdk.discordapp.net/$(DISCORDSDK_VERSION)/discord_game_sdk.zip" || { rm -f $@; exit 1; }
 
-$(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION).source: $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip
+# architecture-specific extraction targets (discord SDK only supports win32, win64, linux64)
+$(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)-windowsi686.source: $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip
 	cd $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION) && \
 	$(MKDIR_P) include/ && $(UNZIP) -qjo discordsdk.zip c/discord_game_sdk.h -d include/ && \
 	$(MKDIR_P) lib/windows/i686 && $(UNZIP) -qjo discordsdk.zip lib/x86/discord_game_sdk.dll -d lib/windows/i686/ && \
-	$(MKDIR_P) lib/windows/i686 && $(UNZIP) -qjo discordsdk.zip lib/x86/discord_game_sdk.dll.lib -d lib/windows/i686/ && \
+	$(UNZIP) -qjo discordsdk.zip lib/x86/discord_game_sdk.dll.lib -d lib/windows/i686/
+	touch $@
+
+$(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)-windowsx86_64.source: $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip
+	cd $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION) && \
+	$(MKDIR_P) include/ && $(UNZIP) -qjo discordsdk.zip c/discord_game_sdk.h -d include/ && \
 	$(MKDIR_P) lib/windows/x86_64 && $(UNZIP) -qjo discordsdk.zip lib/x86_64/discord_game_sdk.dll -d lib/windows/x86_64/ && \
-	$(MKDIR_P) lib/windows/x86_64 && $(UNZIP) -qjo discordsdk.zip lib/x86_64/discord_game_sdk.dll.lib -d lib/windows/x86_64/ && \
+	$(UNZIP) -qjo discordsdk.zip lib/x86_64/discord_game_sdk.dll.lib -d lib/windows/x86_64/
+	touch $@
+
+$(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)-linuxx86_64.source: $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip
+	cd $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION) && \
+	$(MKDIR_P) include/ && $(UNZIP) -qjo discordsdk.zip c/discord_game_sdk.h -d include/ && \
 	$(MKDIR_P) lib/linux/x86_64 && $(UNZIP) -qjo discordsdk.zip lib/x86_64/discord_game_sdk.so -d lib/linux/x86_64/ && \
-	mv lib/linux/x86_64/discord_game_sdk.so lib/linux/x86_64/libdiscord_game_sdk.so && \
+	mv lib/linux/x86_64/discord_game_sdk.so lib/linux/x86_64/libdiscord_game_sdk.so
 	touch $@
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle && \
 	$(CURLCOMMAND) "https://curl.se/ca/cacert.pem" || { rm -f $@; exit 1; }
 
+# architecture-specific download targets
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	$(CURLCOMMAND) "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-i686-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
@@ -274,19 +315,6 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz:
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	$(CURLCOMMAND) "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-x86_64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
-
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz $\
-											$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz
-	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	rm -rf windowsi686 && \
-	$(MKDIR_P) windowsi686 && $(TAR) xf curl-windowsi686.tar.xz -C windowsi686 --strip-components=1 --wildcards --no-anchored \
-		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
-	rm -rf windowsx86_64 && \
-	$(MKDIR_P) windowsx86_64 && $(TAR) xf curl-windowsx86_64.tar.xz -C windowsx86_64 --strip-components=1 --wildcards --no-anchored \
-		include lib/'*'.a lib64/'*'.a lib64/pkgconfig/'*' && \
-	mv windowsx86_64/lib64/* windowsx86_64/lib/ && \
-	rm -rf windows*/lib/*zlib*.a && \
-	touch $@
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
@@ -300,21 +328,47 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxaarch64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	$(CURLCOMMAND) "https://github.com/stunnel/static-curl/releases/download/$(CURL_VERSION)/curl-linux-aarch64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz $\
-														$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz $\
-														$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxaarch64.tar.xz
+# architecture-specific extraction targets
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-windowsi686.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz
+	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	rm -rf windowsi686 && \
+	$(MKDIR_P) windowsi686 && $(TAR) xf curl-windowsi686.tar.xz -C windowsi686 --strip-components=1 --wildcards --no-anchored \
+		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
+	rm -rf windowsi686/lib/*zlib*.a
+	touch $@
+
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-windowsx86_64.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz
+	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	rm -rf windowsx86_64 && \
+	$(MKDIR_P) windowsx86_64 && $(TAR) xf curl-windowsx86_64.tar.xz -C windowsx86_64 --strip-components=1 --wildcards --no-anchored \
+		include lib/'*'.a lib64/'*'.a lib64/pkgconfig/'*' && \
+	mv windowsx86_64/lib64/* windowsx86_64/lib/ && \
+	rm -rf windowsx86_64/lib/*zlib*.a
+	touch $@
+
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-linuxi686.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz
+	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	rm -rf linuxi686 && \
+	$(MKDIR_P) linuxi686 && $(TAR) xf curl-linuxi686.tar.xz -C linuxi686 --strip-components=1 --wildcards --no-anchored \
+		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
+	rm -rf linuxi686/lib/libz.a
+	touch $@
+
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-linuxx86_64.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz
 	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	rm -rf linuxx86_64 && \
 	$(MKDIR_P) linuxx86_64 && $(TAR) xf curl-linuxx86_64.tar.xz -C linuxx86_64 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib64/'*'.a lib64/pkgconfig/'*' && \
 	mv linuxx86_64/lib64/* linuxx86_64/lib/ && \
-	rm -rf linuxi686 && \
-	$(MKDIR_P) linuxi686 && $(TAR) xf curl-linuxi686.tar.xz -C linuxi686 --strip-components=1 --wildcards --no-anchored \
-		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
+	rm -rf linuxx86_64/lib/libz.a
+	touch $@
+
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-linuxaarch64.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxaarch64.tar.xz
+	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	rm -rf linuxaarch64 && \
 	$(MKDIR_P) linuxaarch64 && $(TAR) xf curl-linuxaarch64.tar.xz -C linuxaarch64 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
-	rm -rf linux*/lib/libz.a && \
+	rm -rf linuxaarch64/lib/libz.a
 	touch $@
 
 #####################################################################################################################################################
@@ -351,16 +405,12 @@ CURL_LIBS += -lws2_32 -lwldap32 -lcrypt32 -lsecur32 -liphlpapi
 if !WIN32_PLATFORM
 CURL_LIBS += -lbcrypt
 endif
-$(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source
-	$(MKDIR_P) $(DEPS_PREFIX)
-	touch $@
 else
-
 CURL_LIBS += -ldl -pthread
-$(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source
+endif
+$(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-$(SYSNAME)$(host_cpu).source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
-endif
 else # from host
 CURL_CFLAGS += $(OPENSSL_CFLAGS)
 CURL_LIBS += $(OPENSSL_LIBS)
@@ -511,7 +561,7 @@ AUDIO_LIBS += $(shell $(PKG_CONFIG) --libs soloud) $(shell $(PKG_CONFIG) --libs 
 FFMPEG_INSTALL_LIBS := `find $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/$(SYSNAME)$(host_cpu)/lib '(' -name '*avutil*' -o -name '*avcodec*' -o -name '*avformat*' -o -name '*swresample*' ')' -printf '%p '`
 FFMPEG_INCDIR := $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/$(SYSNAME)$(host_cpu)/include
 
-$(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built: $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built
+$(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built: $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)-$(SYSNAME)$(host_cpu).source $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built
 	rm -rf $(DEPS_PREFIX)/SoLoud
 	$(MKDIR_P) $(DEPS_PREFIX) $(DEPS_PREFIX)/include $(DEPS_PREFIX)/lib/pkgconfig $(DEPS_PREFIX)/SoLoud/build
 	$(TAR) xf $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz -C $(DEPS_PREFIX)/SoLoud --strip-components=1 && \
@@ -578,7 +628,7 @@ if USE_DISCORDSDK
 DISCORDSDK_CFLAGS := -I$(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/include
 DISCORDSDK_INSTALL_LIBS := $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/lib/$(SYSNAME)/$(host_cpu)/$(LIBPREFIX)discord_game_sdk$(DLLEXT)
 
-$(DEPS_PREFIX)/discordsdk-$(DISCORDSDK_VERSION).built: $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION).source
+$(DEPS_PREFIX)/discordsdk-$(DISCORDSDK_VERSION).built: $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)-$(SYSNAME)$(host_cpu).source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 else
@@ -600,7 +650,7 @@ AUDIO_CFLAGS += -I$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassasio/include -I$(DEPS_C
 BASS_INSTALL_LIBS += $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassasio/lib/$(SYSNAME)/$(host_cpu)/$(LIBPREFIX)bassasio$(DLLEXT) \
 					$(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi/lib/$(SYSNAME)/$(host_cpu)/$(LIBPREFIX)basswasapi$(DLLEXT)
 endif # WIN_PLATFORM
-$(DEPS_PREFIX)/bass-$(BASS_VERSION).built: $(DEPS_CACHE)/bass-$(BASS_VERSION).source
+$(DEPS_PREFIX)/bass-$(BASS_VERSION).built: $(DEPS_CACHE)/bass-$(BASS_VERSION)-$(SYSNAME).source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 else
