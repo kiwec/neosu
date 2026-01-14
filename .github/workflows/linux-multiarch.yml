@@ -9,7 +9,7 @@ env:
   CCACHE_DIR: /tmp/.ccache
 
 jobs:
-  build:
+  build-x86:
     runs-on: ubuntu-latest
     container: whrvt/neosu-linux:latest
     strategy:
@@ -85,4 +85,81 @@ jobs:
       - uses: actions/upload-artifact@v6.0.0
         with:
           name: neosu-linux-${{ matrix.arch }}
+          path: build-out/dist
+
+  build-aarch64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Cache dependency tarballs
+        uses: actions/cache@v5.0.1
+        with:
+          path: |
+            build-aux/cache
+          key: tarballs-linux-aarch64-${{ hashFiles('configure.ac', 'Makefile.am') }}
+          restore-keys: |
+            tarballs-linux-aarch64-
+            tarballs-linux-
+
+      - name: Cache built dependencies
+        uses: actions/cache@v5.0.1
+        with:
+          path: |
+            build-out/build/deps
+          key: deps-linux-aarch64-${{ hashFiles('configure.ac', 'Makefile.am') }}
+          restore-keys: |
+            deps-linux-aarch64-
+
+      - name: ccache
+        uses: actions/cache@v5.0.1
+        with:
+          path: |
+            ${{ env.CCACHE_DIR }}
+            build-out/.ltocache-gcc
+            build-out/.ltocache-clang
+          key: ccache-linux-aarch64-${{ github.sha }}
+          restore-keys: |
+            ccache-linux-aarch64-
+
+      - name: Set up build directory
+        run: |
+          mkdir -p "$(pwd)"/build-out/build
+          mkdir -p "$(pwd)"/build-out/.ltocache-gcc
+          mkdir -p "$(pwd)"/build-out/.ltocache-clang
+          mkdir -p ${{ env.CCACHE_DIR }}
+
+      - name: Building neosu
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v "${{ github.workspace }}:/src" \
+            -v "${{ env.CCACHE_DIR }}:${{ env.CCACHE_DIR }}" \
+            -e CCACHE_DIR="${{ env.CCACHE_DIR }}" \
+            -w /src \
+            whrvt/neosu-linux-aarch64:latest \
+            bash -c '
+              ./autogen.sh
+              export MAKEFLAGS="-j$(nproc)"
+              cd build-out && \
+              ../configure \
+                ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
+                --host=aarch64-pc-linux-gnu && \
+              make install
+            '
+
+      - name: Package artifacts (fix symlinks)
+        run: |
+          cd build-out
+          zip -r -y -8 bin.zip ./dist/bin-*/
+          rm -rf dist/*
+          mv bin.zip dist/
+
+      - uses: actions/upload-artifact@v6.0.0
+        with:
+          name: neosu-linux-aarch64
           path: build-out/dist
