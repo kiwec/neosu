@@ -326,7 +326,7 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz:
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxaarch64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(CURLCOMMAND) "https://github.com/stunnel/static-curl/releases/download/$(CURL_VERSION)/curl-linux-aarch64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-aarch64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
 # architecture-specific extraction targets
 $(DEPS_CACHE)/curl-$(CURL_VERSION)-windowsi686.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz
