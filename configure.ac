@@ -680,8 +680,10 @@ AS_IF([test "x$enable_native" != "xno"], [
         CXXFLAGS="$CXXFLAGS -march=pentium4 -mtune=generic"
         CFLAGS="$CFLAGS -march=pentium4 -mtune=generic"
     ], [
-        CXXFLAGS="$CXXFLAGS -march=nocona -mtune=core-avx2"
-        CFLAGS="$CFLAGS -march=nocona -mtune=core-avx2"
+        AS_IF([test "$host_cpu" = "x86_64" || test "$host_cpu" = "i686"], [
+            CXXFLAGS="$CXXFLAGS -march=nocona -mtune=core-avx2"
+            CFLAGS="$CFLAGS -march=nocona -mtune=core-avx2"
+        ])
     ])
 ])
 # use c/c++23 because we can
