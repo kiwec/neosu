@@ -338,7 +338,7 @@ AS_VAR_SET_IF([with_audio],
             esac
         done])
 
-AS_IF([! { test "$host_cpu" = "x86_64" || test "$host_cpu" = "i686" ; }], [
+AS_IF([test "$with_bass" = "yes" && ! { test "$host_cpu" = "x86_64" || test "$host_cpu" = "i686" ; }], [
     AC_MSG_NOTICE([BASS is currently unsupported on $host_cpu. Using SoLoud.])
     with_bass=no
 ])

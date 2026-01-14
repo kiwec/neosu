@@ -1,4 +1,4 @@
-name: linux-multiarch
+name: linux-aarch64
 on:
   push:
     branches:
@@ -10,16 +10,8 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container: whrvt/neosu-linux:latest
-    strategy:
-      matrix:
-        arch: [x64, x32]
-        include:
-          - arch: x64
-            host: x86_64-pc-linux-gnu
-          - arch: x32
-            host: i686-pc-linux-gnu
+    runs-on: ubuntu-24.04-arm
+    container: whrvt/neosu-linux-aarch64:latest
     defaults:
       run:
         working-directory: .
@@ -39,9 +31,9 @@ jobs:
         with:
           path: |
             build-aux/cache
-          key: tarballs-linux-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
+          key: tarballs-linux-aarch64-${{ hashFiles('configure.ac', 'Makefile.am') }}
           restore-keys: |
-            tarballs-linux-${{ matrix.arch }}-
+            tarballs-linux-aarch64-
             tarballs-linux-
 
       - name: Cache built dependencies
@@ -49,9 +41,9 @@ jobs:
         with:
           path: |
             build-out/build/deps
-          key: deps-linux-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
+          key: deps-linux-aarch64-${{ hashFiles('configure.ac', 'Makefile.am') }}
           restore-keys: |
-            deps-linux-${{ matrix.arch }}-
+            deps-linux-aarch64-
 
       - name: ccache
         uses: actions/cache@v5.0.1
@@ -60,9 +52,9 @@ jobs:
             ${{ env.CCACHE_DIR }}
             build-out/.ltocache-gcc
             build-out/.ltocache-clang
-          key: ccache-linux-${{ matrix.arch }}-${{ github.sha }}
+          key: ccache-linux-aarch64-${{ github.sha }}
           restore-keys: |
-            ccache-linux-${{ matrix.arch }}-
+            ccache-linux-aarch64-
 
       - name: Building neosu
         run: |
@@ -72,7 +64,7 @@ jobs:
           cd build-out && \
           ../configure \
             ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
-            --with-audio="bass,soloud" --host=${{ matrix.host }} && \
+            --host=aarch64-pc-linux-gnu && \
           make install
 
       - name: Package artifacts (fix symlinks)
@@ -84,5 +76,5 @@ jobs:
 
       - uses: actions/upload-artifact@v6.0.0
         with:
-          name: neosu-linux-${{ matrix.arch }}
+          name: neosu-linux-aarch64
           path: build-out/dist
