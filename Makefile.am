@@ -394,7 +394,7 @@ rbq := ')'
 CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/include
 CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib
 CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP -DCURL_STATICLIB
-CURL_LIBS += -L$(CURL_LIBDIR) -Wl,--start-group $(shell find $(CURL_LIBDIR) -mindepth 1 -maxdepth 1 -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g') -Wl,--end-group
+CURL_LIBS += -L$(CURL_LIBDIR) $(shell find $(CURL_LIBDIR) -mindepth 1 -maxdepth 1 -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g')
 
 PKG_CONFIG_PLUS_BUNDLED_OSSL += --with-path=$(CURL_LIBDIR)/pkgconfig
 OPENSSL_CFLAGS += -I$(CURL_INCLUDEDIR) $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --cflags openssl)
@@ -406,7 +406,7 @@ if !WIN32_PLATFORM
 CURL_LIBS += -lbcrypt
 endif
 else
-CURL_LIBS += -ldl -lc -pthread
+CURL_LIBS += -ldl -pthread -lc
 endif
 $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-$(SYSNAME)$(host_cpu).source
 	$(MKDIR_P) $(DEPS_PREFIX)
@@ -1223,8 +1223,8 @@ neosu_LDFLAGS := \
 	$(MIMALLOC_OBJ) \
 	$(MIMALLOC_DYNAMIC_LIBS) \
 	-Wl,-rpath='$$ORIGIN/lib',-rpath='$$ORIGIN' \
-	$(CURL_LIBS) \
 	-Wl,--start-group \
+	$(CURL_LIBS) \
 	$(SDL3_LIBS) \
 	$(AUDIO_LIBS) \
 	$(FREETYPE2_LIBS) \
