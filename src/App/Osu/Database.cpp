@@ -116,6 +116,7 @@ std::string Database::getDBPath(DatabaseType db_type) {
         case STABLE_COLLECTIONS:
         case STABLE_MAPS: {
             std::string osu_folder = cv::osu_folder.getString();
+            assert(!osu_folder.empty() && "Database::getDBPath: cv::osu_folder was empty");
             if(osu_folder.back() != '/' && osu_folder.back() != '\\') osu_folder.push_back('/');
             switch(db_type) {
                 case STABLE_SCORES:

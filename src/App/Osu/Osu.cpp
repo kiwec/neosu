@@ -208,8 +208,17 @@ Osu::Osu()
     cv::confine_cursor_windowed.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
     cv::confine_cursor_fullscreen.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
     cv::confine_cursor_never.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
-    cv::osu_folder.setCallback([](std::string_view newString) -> void {
+    cv::osu_folder.setCallback([](std::string_view oldString, std::string_view newString) -> void {
         std::string normalized = Environment::normalizeDirectory(std::string{newString});
+        if(normalized.empty()) {
+            if(!oldString.empty()) {
+                // don't allow making it empty if it wasn't already empty
+                normalized = oldString;
+            } else {
+                // if it was empty, reset it to some sane default
+                normalized = env->getUserDataPath();
+            }
+        }
         cv::osu_folder.setValue(normalized, false);
         if(osu && osu->UIReady()) ui->getOptionsOverlay()->updateOsuFolderTextbox(normalized);
     });
@@ -398,6 +407,11 @@ Osu::Osu()
             const bool extracted = env->getEnvInterop().handle_osk(ev.path.c_str());
             if(extracted) env->deleteFile(ev.path);
         });
+    }
+
+    // don't allow empty osu_folder if it's still empty at this point
+    if (cv::osu_folder.getString().empty()) {
+        cv::osu_folder.setValue(env->getUserDataPath());
     }
 
     env->setCursorVisible(!this->internalRect.contains(mouse->getPos()));
