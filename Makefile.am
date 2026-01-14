@@ -132,6 +132,10 @@ $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
 	$(CURLCOMMAND) "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-linux64-lgpl-shared-$(FFMPEG_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
+$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxaarch64.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
+	$(CURLCOMMAND) "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-linuxarm64-lgpl-shared-$(FFMPEG_VERSION).tar.xz" || { rm -f $@; exit 1; }
+
 # NOTE: the yt-dlp repo is no longer building releases, so this is the closest thing
 #   (it's hard to find windows 32-bit builds of new ffmpeg releases)
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip:
@@ -143,13 +147,20 @@ $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip:
 	$(CURLCOMMAND) "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-win64-lgpl-shared-$(FFMPEG_VERSION).zip" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz $\
+											$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxaarch64.tar.xz $\
 											$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip $\
 											$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip
 	cd $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
+	rm -rf linuxx86_64 && \
 	$(MKDIR_P) linuxx86_64 && $(TAR) xf ffmpeg-linuxx86_64.tar.xz -C linuxx86_64 --strip-components=1 --wildcards --no-anchored include/'*'.h lib/'*'.so'*' && \
+	rm -rf linuxaarch64 && \
+	$(MKDIR_P) linuxaarch64 && $(TAR) xf ffmpeg-linuxaarch64.tar.xz -C linuxaarch64 --strip-components=1 --wildcards --no-anchored include/'*'.h lib/'*'.so'*' && \
+	rm -rf linuxi686 && \
 	$(MKDIR_P) linuxi686 && cp -r linuxx86_64/include linuxi686/ && \
+	rm -rf windowsi686 && \
 	$(MKDIR_P) windowsi686/lib && $(UNZIP) -qjo ffmpeg-windowsi686.zip "*/bin/*.dll" -d windowsi686/lib && \
 	$(MKDIR_P) windowsi686/include && $(UNZIP) -qo ffmpeg-windowsi686.zip "*/include/**" -d windowsi686/include && mv windowsi686/include/*/*/* windowsi686/include/ && \
+	rm -rf windowsx86_64 && \
 	$(MKDIR_P) windowsx86_64/lib && $(UNZIP) -qjo ffmpeg-windowsx86_64.zip "*/bin/*.dll" -d windowsx86_64/lib && \
 	$(MKDIR_P) windowsx86_64/include && $(UNZIP) -qo ffmpeg-windowsx86_64.zip "*/include/**" -d windowsx86_64/include && mv windowsx86_64/include/*/*/* windowsx86_64/include/
 	touch $@
@@ -285,8 +296,13 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	$(CURLCOMMAND) "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-x86_64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
+$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxaarch64.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	$(CURLCOMMAND) "https://github.com/stunnel/static-curl/releases/download/$(CURL_VERSION)/curl-linux-aarch64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
+
 $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz $\
-														$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz
+														$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz $\
+														$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxaarch64.tar.xz
 	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	rm -rf linuxx86_64 && \
 	$(MKDIR_P) linuxx86_64 && $(TAR) xf curl-linuxx86_64.tar.xz -C linuxx86_64 --strip-components=1 --wildcards --no-anchored \
@@ -294,6 +310,9 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CUR
 	mv linuxx86_64/lib64/* linuxx86_64/lib/ && \
 	rm -rf linuxi686 && \
 	$(MKDIR_P) linuxi686 && $(TAR) xf curl-linuxi686.tar.xz -C linuxi686 --strip-components=1 --wildcards --no-anchored \
+		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
+	rm -rf linuxaarch64 && \
+	$(MKDIR_P) linuxaarch64 && $(TAR) xf curl-linuxaarch64.tar.xz -C linuxaarch64 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
 	rm -rf linux*/lib/libz.a && \
 	touch $@
