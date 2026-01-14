@@ -450,6 +450,7 @@ EOF
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -latomic"
         ])
         # ld complains about libcrypto.a(libcrypto-lib-cast-586.o): warning: relocation against `CAST_S_table1' in read-only section `.text'
+        # TODO: rebuild curl/openssl with -fPIE maybe?
         NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -fno-PIE -no-pie"
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -no-pie"
         AC_SUBST([NASMOBJ],[elf32])
@@ -1041,7 +1042,7 @@ ZLIB_BUILD_VERSION=2.3.2 # zlib-ng
 BZIP2_MIN_VERSION=1.0.8
 BZIP2_BUILD_VERSION=1.0.8
 FMT_MIN_VERSION=11.0.0
-FMT_BUILD_VERSION=12.1.0
+FMT_BUILD_VERSION=0e078f6ed0624be8babc43bd145371d9f3a08aab
 LZMA_MIN_VERSION=5.4.7
 LZMA_BUILD_VERSION=5.8.2
 LIBARCHIVE_MIN_VERSION=3.6.2

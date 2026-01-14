@@ -730,6 +730,14 @@ $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_ZLIB
 
+FMT_EXTRA_BUILDFLAGS :=
+if WIN32_PLATFORM
+if !CLANG_BUILD
+# "multiple definition of std::system_error::system_error"... ?
+FMT_EXTRA_BUILDFLAGS += -fno-lto
+endif # !CLANG_BUILD
+endif # WIN32_PLATFORM
+
 if BUILD_FMT
 FMT_CFLAGS += $(shell $(PKG_CONFIG) --cflags fmt)
 FMT_LIBS += $(shell $(PKG_CONFIG) --libs fmt)
@@ -738,7 +746,7 @@ $(DEPS_PREFIX)/fmt-$(FMT_VERSION).built: $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz
 	$(MKDIR_P) $(DEPS_PREFIX)/fmt/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz -C $(DEPS_PREFIX)/fmt --strip-components=1 && \
 	cd $(DEPS_PREFIX)/fmt && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) $(if $(findstring yes,$(CLANG)),,-fno-lto)" \
+	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) $(FMT_EXTRA_BUILDFLAGS)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-DCMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-DCMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
@@ -746,7 +754,7 @@ $(DEPS_PREFIX)/fmt-$(FMT_VERSION).built: $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz
 		-DCMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
 		-DCMAKE_CXX_COMPILER="$(CXX)" \
 		-DCMAKE_CXX_STANDARD=23 \
-		-DCMAKE_CXX_FLAGS="$(CXXFLAGS) $(if $(findstring yes,$(CLANG)),,-fno-lto) -std=gnu++23" \
+		-DCMAKE_CXX_FLAGS="$(CXXFLAGS) $(FMT_EXTRA_BUILDFLAGS) -std=gnu++23" \
 		$(CMAKERCOPT) $(CMAKEIDOPT) \
 		-D CMAKE_C_COMPILER_AR=$(AR) \
 		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \

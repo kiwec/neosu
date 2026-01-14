@@ -579,7 +579,7 @@ CONVAR(
 CONVAR(beatmap_max_num_slider_scoringtimes, 32768, CLIENT | PROTECTED | GAMEPLAY,
        "maximum number of slider score increase events allowed per slider "
        "(prevent crashing on deliberate game-breaking beatmaps)");
-CONVAR(slider_curve_max_length, 65536 / 2, CLIENT | PROTECTED | GAMEPLAY,
+CONVAR(slider_curve_max_length, 65536.f / 2.f, CLIENT | PROTECTED | GAMEPLAY,
        "maximum slider length in osu!pixels (i.e. pixelLength). also used to clamp all "
        "(control-)point coordinates to sane values.");
 CONVAR(slider_curve_max_points, 9999.0f, CLIENT | PROTECTED | GAMEPLAY,
