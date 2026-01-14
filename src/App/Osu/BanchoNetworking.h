@@ -10,8 +10,8 @@ struct Packet;
 #define NEOSU_DOMAIN "neosu.net"
 
 // NOTE: Full version can be something like "b20200201.2cuttingedge"
-#define OSU_VERSION_DATEONLY 20251128
-#define OSU_VERSION "b20251128.1"
+#define OSU_VERSION_DATEONLY 20260101
+#define OSU_VERSION "b20260101.1"
 
 namespace BANCHO::Net {
 
