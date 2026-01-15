@@ -18,7 +18,6 @@
 #include "AsyncPPCalculator.h"
 #include "Mouse.h"
 #include "NotificationOverlay.h"
-#include "File.h"
 #include "OptionsOverlay.h"
 #include "Osu.h"
 #include "Font.h"
@@ -27,14 +26,15 @@
 #include "TooltipOverlay.h"
 #include "UI.h"
 
-InfoLabel::InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name, McFont *sbFont)
+InfoLabel::InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
+    // font for non-title parts (song info)
+    this->setFont(osu->getSubTitleFont());
+
     // slightly abusing songbrowser font here, but the subtitle font is just too low DPI
     // and looks bad if it's even slightly upscaled (even at 1080p, we're upscaling it by ~1.4x)
-
     // the songbrowser font is about 1.5x larger, so it looks sharper due to not needing to be upscaled
-    this->titleFont = sbFont;
-    this->font = osu->getSubTitleFont();
+    this->titleFont = osu->getSongBrowserFont();
 
     this->updateScaling();
 
@@ -344,7 +344,7 @@ UString InfoLabel::buildSongInfoString() const {
         return fmt::format("Length: {:02d}:{:02d} BPM: {} Objects: {}", minutes, seconds, maxBPM, numObjects);
     } else {
         return fmt::format("Length: {:02d}:{:02d} BPM: {}-{} ({}) Objects: {}", minutes, seconds, minBPM, maxBPM,
-                               mostCommonBPM, numObjects);
+                           mostCommonBPM, numObjects);
     }
 }
 
@@ -386,24 +386,14 @@ UString InfoLabel::buildDiffInfoString() const {
                                 : 0));
         if(starsAndModStarsAreEqual) {
             finalString = fmt::format("CS:{:.3g} AR:{:.3g} OD:{:.3g} HP:{:.3g} Stars:{:.3g} ({}pp)", CS, AR, OD, HP,
-                                          nomodStars, clampedModPp);
+                                      nomodStars, clampedModPp);
         } else {
-            finalString = fmt::format("CS:{:.3g} AR:{:.3g} OD:{:.3g} HP:{:.3g} Stars:{:.3g} -> {:.3g} ({}pp)", CS, AR, OD, HP,
-                                          nomodStars, modStars, clampedModPp);
+            finalString = fmt::format("CS:{:.3g} AR:{:.3g} OD:{:.3g} HP:{:.3g} Stars:{:.3g} -> {:.3g} ({}pp)", CS, AR,
+                                      OD, HP, nomodStars, modStars, clampedModPp);
         }
     } else {
         finalString =
             fmt::format("CS:{:.3g} AR:{:.3g} OD:{:.3g} HP:{:.3g} Stars:{:.3g} * (??? pp)", CS, AR, OD, HP, nomodStars);
-    }
-
-    // also fix up modification time for improperly stored beatmaps while we're here
-    // should be cheap
-    // TODO: don't do this here, probably inherently racy somehow
-    if(map->last_modification_time <= 0 && !map->sFilePath.empty()) {
-        struct stat64 attr;
-        if(File::stat_c(map->sFilePath.c_str(), &attr) == 0) {
-            map->last_modification_time = attr.st_mtime;
-        }
     }
 
     return finalString;

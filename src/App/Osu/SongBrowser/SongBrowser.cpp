@@ -10,6 +10,7 @@
 #include "Mouse.h"
 #include "Keyboard.h"
 #include "Font.h"
+#include "File.h"
 #include "Timing.h"
 #include "crypto.h"
 #include "SString.h"
@@ -397,7 +398,7 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
 
     // build topbar left
     this->topbarLeft = new CBaseUIContainer(0, 0, 0, 0, "");
-    this->songInfo = new InfoLabel(0, 0, 0, 0, "", osu->getSongBrowserFont());
+    this->songInfo = new InfoLabel(0, 0, 0, 0, "");
     this->topbarLeft->addBaseUIElement(this->songInfo);
 
     this->filterScoresDropdown = new CBaseUIButton(0, 0, 0, 0, "", "Local");
@@ -1217,6 +1218,16 @@ void SongBrowser::onPlayEnd(bool quit) {
 
     // update song info
     if(auto *bm = osu->getMapInterface()->getBeatmap()) {
+        // also fix up modification time for improperly stored beatmaps while we're here
+        // should be cheap
+        // TODO: don't do this here, probably inherently racy somehow
+        // NOTE: all modification times need to be accurate to support sorting/grouping by date added
+        if(bm->last_modification_time <= 0 && !bm->sFilePath.empty()) {
+            struct stat64 attr;
+            if(File::stat_c(bm->sFilePath.c_str(), &attr) == 0) {
+                bm->last_modification_time = attr.st_mtime;
+            }
+        }
         this->songInfo->setFromBeatmap(bm);
     }
 }

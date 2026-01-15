@@ -7,7 +7,7 @@ class DatabaseBeatmap;
 
 class InfoLabel final : public CBaseUIButton {
    public:
-    InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name, McFont *sbFont);
+    InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name);
 
     void draw() override;
     void update(CBaseUIEventCtx &c) override;
@@ -52,7 +52,6 @@ class InfoLabel final : public CBaseUIButton {
     [[nodiscard]] UString buildOffsetInfoString() const;
 
     McFont *titleFont;
-    McFont *font;
 
     i32 iMargin{8};
 
