@@ -219,7 +219,7 @@ struct OptionsOverlayImpl final {
 #define addButtonLabel_(UStext, USlabelText, ...) addButton(US_(UStext), USlabelText __VA_OPT__(, ) __VA_ARGS__)
 #define addButtonButton_(UStext1, UStext2) addButtonButton(US_(UStext1), US_(UStext2))
 #define addButtonButtonLabel_(UStext1, UStext2, USlabelText, ...) \
-    addButtonButton(US_(UStext1), US_(UStext2), US_(USlabelText))
+    addButtonButton(US_(UStext1), US_(UStext2), US_(USlabelText), __VA_OPT__(, ) __VA_ARGS__)
 #define addKeyBindButton_(UStext, cvar) addKeyBindButton(US_(UStext), cvar)
 #define addCheckbox_(UStext, ...) addCheckbox(US_(UStext) __VA_OPT__(, ) __VA_ARGS__)
 #define addCheckboxTooltip_(UStext, UStooltipText, ...) \
@@ -1045,7 +1045,8 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
         ->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onHighQualitySlidersCheckboxChange>(this));
 
     this->sliderQualitySlider = this->addSlider_("Slider Quality", 0.0f, 1.0f, &cv::options_slider_quality);
-    this->sliderQualitySlider->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangeSliderQuality>(this));
+    this->sliderQualitySlider->setChangeCallback(
+        SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangeSliderQuality>(this));
 
     //**************************************************************************************************************************//
 
@@ -1177,7 +1178,8 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
             this->asioBufferSizeSlider->setKeyDelta(512);
             this->asioBufferSizeSlider->setAnimated(false);
             this->asioBufferSizeSlider->setLiveUpdate(false);
-            this->asioBufferSizeSlider->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onASIOBufferChange>(this));
+            this->asioBufferSizeSlider->setChangeCallback(
+                SA::MakeDelegate<&OptionsOverlayImpl::onASIOBufferChange>(this));
             this->addLabel_("");
             UIButton *asio_settings_btn = this->addButton_("Open ASIO settings");
             asio_settings_btn->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::OpenASIOSettings>(this));
@@ -1381,7 +1383,8 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     }
     UIButton *resetAllKeyBindingsButton = this->addButton_("Reset all key bindings");
     resetAllKeyBindingsButton->setColor(0xffd90000);
-    resetAllKeyBindingsButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onKeyBindingsResetAllPressed>(this));
+    resetAllKeyBindingsButton->setClickCallback(
+        SA::MakeDelegate<&OptionsOverlayImpl::onKeyBindingsResetAllPressed>(this));
     this->addSubSection("Keys - In-Game", keyboardSectionTags);
     this->addKeyBindButton_("Left Click", &cv::LEFT_CLICK);
     this->addKeyBindButton_("Right Click", &cv::RIGHT_CLICK);
@@ -1581,7 +1584,8 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     this->hudAccuracyScaleSlider->setKeyDelta(0.01f);
     this->hudHiterrorbarScaleSlider =
         this->addSlider_("HitErrorBar Scale:", 0.01f, 3.0f, &cv::hud_hiterrorbar_scale, 165.0f);
-    this->hudHiterrorbarScaleSlider->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangePercent>(this));
+    this->hudHiterrorbarScaleSlider->setChangeCallback(
+        SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangePercent>(this));
     this->hudHiterrorbarScaleSlider->setKeyDelta(0.01f);
     this->hudHiterrorbarURScaleSlider =
         this->addSlider_("HitErrorBar UR Scale:", 0.01f, 3.0f, &cv::hud_hiterrorbar_ur_scale, 165.0f);
@@ -1590,14 +1594,16 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     this->hudHiterrorbarURScaleSlider->setKeyDelta(0.01f);
     this->hudProgressbarScaleSlider =
         this->addSlider_("ProgressBar Scale:", 0.01f, 3.0f, &cv::hud_progressbar_scale, 165.0f);
-    this->hudProgressbarScaleSlider->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangePercent>(this));
+    this->hudProgressbarScaleSlider->setChangeCallback(
+        SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangePercent>(this));
     this->hudProgressbarScaleSlider->setKeyDelta(0.01f);
     this->hudScoreBarScaleSlider = this->addSlider_("ScoreBar Scale:", 0.01f, 3.0f, &cv::hud_scorebar_scale, 165.0f);
     this->hudScoreBarScaleSlider->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangePercent>(this));
     this->hudScoreBarScaleSlider->setKeyDelta(0.01f);
     this->hudScoreBoardScaleSlider =
         this->addSlider_("ScoreBoard Scale:", 0.01f, 3.0f, &cv::hud_scoreboard_scale, 165.0f);
-    this->hudScoreBoardScaleSlider->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangePercent>(this));
+    this->hudScoreBoardScaleSlider->setChangeCallback(
+        SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangePercent>(this));
     this->hudScoreBoardScaleSlider->setKeyDelta(0.01f);
     this->hudInputoverlayScaleSlider =
         this->addSlider_("Key Overlay Scale:", 0.01f, 3.0f, &cv::hud_inputoverlay_scale, 165.0f);
@@ -2925,22 +2931,15 @@ void OptionsOverlayImpl::onResolutionSelect() {
     }
 
     // native resolution at the end
-    ivec2 nativeResolution = env->getNativeScreenSize();
-    bool containsNativeResolution = false;
-    for(auto resolution : resolutions) {
-        if(resolution == nativeResolution) {
-            containsNativeResolution = true;
-            break;
-        }
-    }
-    if(!containsNativeResolution) resolutions.push_back(nativeResolution);
+    const ivec2 nativeResolution = env->getNativeScreenSize();
+    if(!std::ranges::contains(resolutions, nativeResolution)) resolutions.push_back(nativeResolution);
 
     // build context menu
     this->contextMenu->begin();
     for(const auto &i : resolutions) {
         if(i.x > nativeResolution.x || i.y > nativeResolution.y) continue;
 
-        const auto resolution = fmt::format("{}x{}", i.x, i.y);
+        const UString resolution{fmt::format("{}x{}", i.x, i.y)};
         CBaseUIButton *button = this->contextMenu->addButton(resolution);
         if(this->resolutionLabel != nullptr && resolution == this->resolutionLabel->getText())
             button->setTextBrightColor(0xff00ff00);
@@ -3768,7 +3767,7 @@ OptionsElement *OptionsOverlayImpl::addButtonButton(const UString &text1, const 
 }
 
 OptionsElement *OptionsOverlayImpl::addButtonButtonLabel(const UString &text1, const UString &text2,
-                                                      const UString &labelText, bool withResetButton) {
+                                                         const UString &labelText, bool withResetButton) {
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, text1, text1);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
@@ -3891,7 +3890,7 @@ OptionsElement *OptionsOverlayImpl::addButtonCheckbox(const UString &buttontext,
 }
 
 UISlider *OptionsOverlayImpl::addSlider(const UString &text, float min, float max, ConVar *cvar, float label1Width,
-                                     bool allowOverscale, bool allowUnderscale) {
+                                        bool allowOverscale, bool allowUnderscale) {
     auto *slider = new UISlider(0, 0, 100, 50, text);
     slider->setAllowMouseWheel(false);
     slider->setBounds(min, max);

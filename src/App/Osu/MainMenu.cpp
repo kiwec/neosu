@@ -158,8 +158,8 @@ MainMenu::MainMenu() : UIScreen() {
     this->bDidUserUpdateFromOlderVersion = false;
     this->bDrawVersionNotificationArrow = false;
     {
-        if(env->fileExists("version.txt")) {
-            File versionFile("version.txt");
+        if(Environment::fileExists(MCENGINE_DATA_DIR "version.txt")) {
+            File versionFile(MCENGINE_DATA_DIR "version.txt");
             std::string linebuf{};
             double version = -1.;
             u64 buildstamp = 0;

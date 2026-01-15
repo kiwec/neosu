@@ -51,7 +51,8 @@ static T loadFunction(dynutils::lib_obj *lib, const char *funcName) {
 #define DECLARE_LIB(name, ...)                              \
     static dynutils::lib_obj *s_lib##name = nullptr;        \
     static constexpr std::initializer_list name##_paths = { \
-        "lib/" LNAME(name), LNAME(name)};  // check under lib/ if it's not found in the default search path
+        MCENGINE_LIB_PATH "/" LNAME(name),                  \
+        LNAME(name)};  // check under lib/ if it's not found in the default search path
 
 BASS_LIBRARIES(DECLARE_LIB)
 
@@ -112,11 +113,11 @@ HPLUGIN loadPlugin(const std::string &pluginname) {
     // handle bassflac plugin separately
     std::string tryPath{LNAMESTR(pluginname)};
 
-    if(!env->fileExists(tryPath)) tryPath = fmt::format("lib/{}", LNAMESTR(pluginname));
+    if(!Environment::fileExists(tryPath)) tryPath = fmt::format(MCENGINE_LIB_PATH "/{}", LNAMESTR(pluginname));
 
     // make it a fully qualified path
-    if(env->fileExists(tryPath))
-        tryPath = fmt::format("{}{}", env->getFolderFromFilePath(tryPath), LNAMESTR(pluginname));
+    if(Environment::fileExists(tryPath))
+        tryPath = fmt::format("{}{}", Environment::getFolderFromFilePath(tryPath), LNAMESTR(pluginname));
     else
         tryPath = LNAMESTR(pluginname);
 

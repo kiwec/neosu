@@ -104,9 +104,9 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
     }
 
     // XXX: Blocking file read
-    if(!online_update_hash.empty() && env->fileExists("update.zip")) {
+    if(!online_update_hash.empty() && Environment::fileExists(MCENGINE_DATA_DIR "update.zip")) {
         std::array<u8, 32> file_hash{};
-        crypto::hash::sha256_f("update.zip", file_hash.data());
+        crypto::hash::sha256_f(MCENGINE_DATA_DIR "update.zip", file_hash.data());
         auto downloaded_update_hash = crypto::conv::encodehex(file_hash);
         if(downloaded_update_hash == online_update_hash) {
             debugLog("UpdateHandler: Update already downloaded (hash = {})", downloaded_update_hash);
@@ -159,7 +159,7 @@ void UpdateHandler::onDownloadComplete(const std::string &data, bool success, st
 
     // write to disk
     debugLog("UpdateHandler: Downloaded file has {:d} bytes, writing ...", data.size());
-    std::ofstream file("update.zip", std::ios::out | std::ios::binary);
+    std::ofstream file(MCENGINE_DATA_DIR "update.zip", std::ios::out | std::ios::binary);
     if(!file.good()) {
         debugLog("UpdateHandler ERROR: Can't write file!");
         this->status = STATUS_ERROR;
@@ -175,7 +175,7 @@ void UpdateHandler::onDownloadComplete(const std::string &data, bool success, st
 
 void UpdateHandler::installUpdate() {
     debugLog("UpdateHandler: installing");
-    Archive archive("update.zip");
+    Archive archive(MCENGINE_DATA_DIR "update.zip");
     if(!archive.isValid()) {
         debugLog("UpdateHandler ERROR: couldn't open archive!");
         this->status = STATUS_ERROR;
@@ -213,10 +213,10 @@ void UpdateHandler::installUpdate() {
     for(const auto &dir : dirs) {
         std::string newDir = dir.getFilename().substr(mainDirectory.length());
         if(newDir.length() == 0) continue;
-        if(env->directoryExists(newDir)) continue;
+        if(Environment::directoryExists(newDir)) continue;
 
         debugLog("UpdateHandler: Creating directory {:s}", newDir.c_str());
-        env->createDirectory(newDir);
+        Environment::createDirectory(newDir);
     }
 
     // extract and overwrite almost everything
@@ -227,14 +227,14 @@ void UpdateHandler::installUpdate() {
         // Bypass Windows write protection for .exe, .dll, .ttf and possibly others
         std::string old_path{outFilePath};
         old_path.append(".old");
-        env->deleteFile(old_path);
-        env->renameFile(outFilePath, old_path);
+        Environment::deleteFile(old_path);
+        Environment::renameFile(outFilePath, old_path);
 
         debugLog("UpdateHandler: Writing {:s}", outFilePath.c_str());
         if(!file.extractToFile(outFilePath)) {
             debugLog("UpdateHandler: Failed to extract file {:s}", outFilePath.c_str());
-            env->deleteFile(outFilePath);
-            env->renameFile(old_path, outFilePath);
+            Environment::deleteFile(outFilePath);
+            Environment::renameFile(old_path, outFilePath);
             this->status = STATUS_ERROR;
             return;
         }
