@@ -81,8 +81,6 @@ class DirectoryCache final {
 
     // look up a file with case-insensitive matching
     std::pair<std::string, File::FILETYPE> lookup(const fs::path &dirPath, std::string_view filename) {
-        Sync::scoped_lock lock(this->mutex);
-
         std::string dirKey(dirPath.string());
         auto it = this->cache.find(dirKey);
 
@@ -174,15 +172,14 @@ class DirectoryCache final {
 
     // cache storage
     Hash::unstable_stringmap<DirectoryEntry> cache;
-
-    // thread safety
-    Sync::mutex mutex;
 };
 
 // init static directory cache
-// this is only actually used outside of windows, should be optimized out in other cases
+// NOTE: this is only actually used outside of windows, should be optimized out in other cases
 [[maybe_unused]] DirectoryCache &getDirectoryCache() {
-    static DirectoryCache s_directoryCache{};
+    // NOTE: thread-local to avoid off-thread resource loading indirectly blocking the main thread, waiting to lock a mutex on the cache
+    // not optimal, but does the job.
+    static thread_local DirectoryCache s_directoryCache{};
     return s_directoryCache;
 }
 
