@@ -22,7 +22,7 @@ class UIOverlay : public UIScreen {
     UIScreen *parent{nullptr};
 
    public:
-    UIOverlay();
+    UIOverlay() : UIScreen() {}
     UIOverlay(UIScreen *parent);
     ~UIOverlay() override = default;
 

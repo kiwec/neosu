@@ -71,7 +71,7 @@ $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz:
 # always needed (if not on host)
 $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLCOMMAND) "https://github.com/gabime/spdlog/archive/$(SPDLOG_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/gabime/spdlog/archive/refs/tags/v$(SPDLOG_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz:

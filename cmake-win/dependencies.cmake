@@ -38,9 +38,9 @@ set(LIBJPEG_URL "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/downloa
 set(LIBJPEG_HASH "SHA512=d3410a072044b4962c1aa08eb144b4e4b959f4f65203dfac4013b14e2fd987b9a6ee9b59f5570980fa691ddf5e9f9d3aa328a63afb487a46c2e76de722f3d693")
 set_download_name("libjpeg" "${LIBJPEG_VERSION}" "${LIBJPEG_URL}")
 
-set(LIBPNG_VERSION "1.6.53")
+set(LIBPNG_VERSION "1.6.54")
 set(LIBPNG_URL "https://github.com/pnggroup/libpng/archive/refs/tags/v${LIBPNG_VERSION}.tar.gz")
-set(LIBPNG_HASH "SHA512=e854589401043c5f24e0365a578ccda8fde47766fa5990c7355581e4f0dc67bfefd7f1272fc25c269968135826cf583b1a10d01667af97e2ec4410cfaf2a700c")
+set(LIBPNG_HASH "SHA512=f09e41c5e05714760b8dd05bd11bfe8b6b5840c277e5377a3854f5260879b69709c708f9581c07bdc2ffafda45796066ec258b67b0e96af64614b12346bedb1b")
 set_download_name("libpng" "${LIBPNG_VERSION}" "${LIBPNG_URL}")
 
 set(ZLIB_VERSION "2.3.2")
@@ -58,9 +58,9 @@ set(FMT_URL "https://github.com/fmtlib/fmt/archive/${FMT_VERSION}.tar.gz")
 set(FMT_HASH "SHA512=df87cbd340ddb6ea272fd8f7eff7f8bb7d9d0e75cb5d1fbda4cdb7f05222478c47a1e8bc72fcb58bb6810d370a71c967232f72b3db3644eba3f56f770a44abbc")
 set_download_name("fmt" "${FMT_VERSION}" "${FMT_URL}")
 
-set(SPDLOG_VERSION "3f03542d2eb4952e3b279d9cad9098d370b7be57")
-set(SPDLOG_URL "https://github.com/gabime/spdlog/archive/${SPDLOG_VERSION}.tar.gz")
-set(SPDLOG_HASH "SHA512=e3363022b91d8cf215ff6da141e93501bb0ce51bdcaf62d1b62e3543fed4c9fe638c3dfb02acddf19d9d9ec2544fab1dd7ffc3d4dfd5933ce2aec1e4d82ec63b")
+set(SPDLOG_VERSION "1.17.0")
+set(SPDLOG_URL "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VERSION}.tar.gz")
+set(SPDLOG_HASH "SHA512=8df117055d19ff21c9c9951881c7bdf27cc0866ea3a4aa0614b2c3939cedceab94ac9abaa63dc4312b51562b27d708cb2f014c68c603fd1c1051d3ed5c1c3087")
 set_download_name("spdlog" "${SPDLOG_VERSION}" "${SPDLOG_URL}")
 
 set(GLM_VERSION "1.0.2")
@@ -73,9 +73,9 @@ set(LZMA_URL "https://github.com/tukaani-project/xz/releases/download/v${LZMA_VE
 set(LZMA_HASH "SHA512=0b808fc8407e7c50da3a7b2db05be732c2fcd41850b92c7f5647181443483848ff359e176c816ce2038c115273f51575877c14f1356417cc9d53845841acb063")
 set_download_name("lzma" "${LZMA_VERSION}" "${LZMA_URL}")
 
-set(LIBARCHIVE_VERSION "3.8.4")
+set(LIBARCHIVE_VERSION "3.8.5")
 set(LIBARCHIVE_URL "https://github.com/libarchive/libarchive/releases/download/v${LIBARCHIVE_VERSION}/libarchive-${LIBARCHIVE_VERSION}.tar.gz")
-set(LIBARCHIVE_HASH "SHA512=f399ea4525744a2727d99899478e6f52abfdc60e607d93673ba7f0602d4817be4e384071bd8f9420ae398e3f2b6b80ffaffb4f9bbfdcd46ac03a6a8965fadafd")
+set(LIBARCHIVE_HASH "SHA512=81b11d433636fd19967c74e84498529d14722ed56164637380f449a1e096c20684eb9d7f3fec99ce7a7912bc5a20c06b892afd4d4167cb35476ee2c421943e4d")
 set_download_name("libarchive" "${LIBARCHIVE_VERSION}" "${LIBARCHIVE_URL}")
 
 set(MPG123_VERSION "a06133928e6518bd65314c9cea12ccb5588703e9")
