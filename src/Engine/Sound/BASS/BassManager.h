@@ -177,6 +177,7 @@ using bass_EXTERN::WASAPIPROC;
     X(BASS_ASIO_GetDeviceInfo)     \
     X(BASS_ASIO_ChannelEnableBASS) \
     X(BASS_ASIO_Start)             \
+    X(BASS_ASIO_SetRate)           \
     X(BASS_ASIO_GetLatency)        \
     X(BASS_ASIO_Free)              \
     X(BASS_ASIO_ChannelSetVolume)
