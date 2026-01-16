@@ -36,6 +36,7 @@ Changelog::Changelog() : ScreenBackable() {
     v42_00.title = "42.00 (" CHANGELOG_TIMESTAMP ")";
     v42_00.changes = {
         R"(- Added Linux ARM64 releases)",
+        R"(- Added asio_freq convar to allow custom sample rates on BASSASIO)",
         R"(- Fix crashing when trying to enter song browser with an empty osu! folder)",
     };
     changelogs.push_back(v42_00);

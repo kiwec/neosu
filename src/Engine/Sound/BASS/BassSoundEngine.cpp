@@ -305,13 +305,17 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
             return false;
         }
 
-        double sample_rate = BASS_ASIO_GetRate();
-        if(sample_rate == 0.0) {
-            sample_rate = cv::snd_freq.getFloat();
-            debugLog("ASIO: BASS_ASIO_GetRate() returned 0, using {:f} instead!", sample_rate);
-        } else {
-            cv::snd_freq.setValue(sample_rate);
+        double sample_rate = cv::asio_freq.getFloat();
+        if(sample_rate > 0.0) {
+            if(!BASS_ASIO_SetRate(sample_rate)) {
+                debugLog("ASIO: Device refused to use {}Hz sample rate!", sample_rate);
+            }
         }
+
+        sample_rate = BASS_ASIO_GetRate();
+        debugLog("ASIO: Using {}Hz sample rate.", sample_rate);
+        cv::snd_freq.setValue(sample_rate, false);
+
         if(!init_bass_mixer(device)) {
             return false;
         }
