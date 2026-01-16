@@ -7,6 +7,7 @@
 
 #ifdef MCENGINE_FEATURE_SOLOUD
 
+#include "noinclude.h"
 #include "SyncMutex.h"
 
 #include "soloud.h"
