@@ -1093,7 +1093,7 @@ AC_SUBST([DISCORDSDK_VERSION], [2.5.6]) # pre-built
 
 AC_SUBST([BASS_VERSION], [20250813]) # just mark the date so we can invalidate the cache if necessary
 
-AS_IF([test "$SYSNAME" = "linux"], [
+AS_IF([test "$SYSNAME" = "linux" || test "$SYSNAME" = "macos"], [
     AS_IF([test "x$enable_system_deps" != "xno"], [
         PKG_CHECK_AUTO([CURL], [libcurl >= $CURL_MIN_VERSION], [have_curl=yes], [have_curl=no])
         PKG_CHECK_AUTO([LIBACL], [libacl >= $LIBACL_MIN_VERSION], [have_libacl=yes], [have_libacl=no])
@@ -1283,6 +1283,8 @@ AM_CONDITIONAL([USE_SOLOUD], [test "$with_soloud" = "yes"])
 AM_CONDITIONAL([USE_DISCORDSDK], [test "$with_discord" = "yes"])
 AM_CONDITIONAL([WIN_PLATFORM], [test "$SYSNAME" = "windows"])
 AM_CONDITIONAL([WIN32_PLATFORM], [test "$SYSNAME" = "windows" && test "$host_cpu" = "i686"])
+AM_CONDITIONAL([MACOS_PLATFORM], [test "$SYSNAME" = "macos"])
+AM_CONDITIONAL([LINUX_PLATFORM], [test "$SYSNAME" = "linux"])
 AM_CONDITIONAL([CLANG_BUILD], [test "$CLANG" = "yes"])
 
 AM_CONDITIONAL([STRIPBINS], [test "x$enable_strip" != "xno" && ! { test "$SYSNAME" = "windows" && test "$host_cpu" = "i686" ; } ])

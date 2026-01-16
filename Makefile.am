@@ -328,6 +328,10 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxaarch64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	$(CURLCOMMAND) "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-aarch64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
+$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-macosaarch64.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	$(CURLCOMMAND) "https://github.com/stunnel/static-curl/releases/download/$(CURL_VERSION)/curl-macos-arm64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
+
 # architecture-specific extraction targets
 $(DEPS_CACHE)/curl-$(CURL_VERSION)-windowsi686.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz
 	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
@@ -369,6 +373,14 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-linuxaarch64.source: $(DEPS_CACHE)/curl-$(CUR
 	$(MKDIR_P) linuxaarch64 && $(TAR) xf curl-linuxaarch64.tar.xz -C linuxaarch64 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
 	rm -rf linuxaarch64/lib/libz.a
+	touch $@
+
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-macosaarch64.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-macosaarch64.tar.xz
+	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	rm -rf macosaarch64 && \
+	$(MKDIR_P) macosaarch64 && $(TAR) xf curl-macosaarch64.tar.xz -C macosaarch64 --strip-components=1 --wildcards --no-anchored \
+		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
+	rm -rf macosaarch64/lib/libz.a
 	touch $@
 
 #####################################################################################################################################################
@@ -1434,8 +1446,8 @@ if AUDIO_SHORTCUTS
 endif
 if !WIN_PLATFORM
 	@cd "$(DESTDIR)$(bindir)" && \
-	$(LN_S) -rf $(PROGRAMS) McEngine && \
-	$(LN_S) -rf $(PROGRAMS) McOsu
+	$(LN_S) -f $(PROGRAMS) McEngine && \
+	$(LN_S) -f $(PROGRAMS) McOsu
 else
 	@cp -P neosu.pdb "$(DESTDIR)$(bindir)" &>/dev/null || true # don't fail install if we had no pdb
 endif

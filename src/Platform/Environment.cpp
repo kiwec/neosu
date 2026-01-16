@@ -898,11 +898,8 @@ HWND Environment::getHwnd() const {
     hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
     if(!hwnd) debugLog("(Windows) hwnd is null! SDL: {:s}", SDL_GetError());
 #elif defined(__APPLE__)
-    NSWindow *nswindow = (__bridge NSWindow *)SDL_GetPointerProperty(SDL_GetWindowProperties(m_window),
-                                                                     SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
-    if(nswindow) {
-#warning "getHwnd() TODO"
-    }
+    hwnd = SDL_GetPointerProperty(SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
+    if(!hwnd) debugLog("(OSX) hwnd is null! SDL: {:s}", SDL_GetError());
 #elif defined(MCENGINE_PLATFORM_LINUX)
     if(SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
         auto *xdisplay = (Display *)SDL_GetPointerProperty(SDL_GetWindowProperties(m_window),
