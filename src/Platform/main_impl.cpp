@@ -850,6 +850,11 @@ void SDLMain::restart(const std::vector<std::string> &args) {
     }
 
     SDL_SetPointerProperty(restartprops, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, (void *)restartArgsChar.data());
+    SDL_SetBooleanProperty(restartprops, SDL_PROP_PROCESS_CREATE_BACKGROUND_BOOLEAN, true);
+    if(s_sdlenv) {
+        SDL_SetPointerProperty(restartprops, SDL_PROP_PROCESS_CREATE_ENVIRONMENT_POINTER, s_sdlenv);
+    }
+
 #ifdef MCENGINE_PLATFORM_WINDOWS
     const char *wincmdline = GetCommandLineA();
     if(wincmdline) {
@@ -858,7 +863,6 @@ void SDLMain::restart(const std::vector<std::string> &args) {
     // so that handle_existing_window doesn't find the currently running instance by the class name
     SDL_UnregisterApp();
 #endif
-    SDL_SetBooleanProperty(restartprops, SDL_PROP_PROCESS_CREATE_BACKGROUND_BOOLEAN, true);
 
     if(!SDL_CreateProcessWithProperties(restartprops)) {
         debugLog("[restart]: WARNING: couldn't restart!");

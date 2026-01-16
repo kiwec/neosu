@@ -1497,14 +1497,6 @@ bool BeatmapInterface::sortHitObjectByEndTimeComp(HitObject const *a, HitObject 
     return false;  // equivalent
 }
 
-i32 BeatmapInterface::getPVS() const {
-    // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
-    // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
-    // future hitobjects) to speed up loops which iterate over all hitobjects
-    return this->fCachedApproachTimeForUpdate + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() +
-           1500;  // sanity
-}
-
 bool BeatmapInterface::canDraw() {
     if(!this->bIsPlaying && !this->bIsPaused && !this->bContinueScheduled && !this->bIsWaiting) return false;
     if(unlikely(!this->beatmap) || unlikely(!this->music))  // sanity check
@@ -2146,7 +2138,6 @@ void BeatmapInterface::drawHitObjects() {
 
     if(!cv::mod_mafham.getBool()) {
         this->nonSpinnerObjectsToDraw.clear();
-
         i32 mostDistantEndTimeDrawn = 0;
 
         for(sSz i = static_cast<sSz>(this->hitobjectsSortedByEndTime.size()) - 1; i >= 0; i--) {
@@ -2197,6 +2188,8 @@ void BeatmapInterface::drawHitObjects() {
 
             obj->draw2();
         }
+
+        this->nonSpinnerObjectsToDraw.clear();
     } else {
         const int mafhamRenderLiveSize = cv::mod_mafham_render_livesize.getInt();
 
@@ -4523,6 +4516,6 @@ bool BeatmapInterface::isActuallyPausedAndNotSpectating() const {
     if(BanchoState::spectating) return false;
 
     return (this->isPaused() && ui->getPauseOverlay()->isVisible())  //
-           && (this->music && !this->music->isPlaying())          //
+           && (this->music && !this->music->isPlaying())             //
            && !(this->bIsWaiting || this->isActuallyLoading());
 }

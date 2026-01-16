@@ -365,14 +365,6 @@ void SimulatedBeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
     }
 }
 
-i32 SimulatedBeatmapInterface::getPVS() {
-    // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
-    // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
-    // future hitobjects) to speed up loops which iterate over all hitobjects
-    return this->fCachedApproachTimeForUpdate + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() +
-           1500;  // sanity
-}
-
 void SimulatedBeatmapInterface::resetScore() {
     this->current_keys = 0;
     this->last_keys = 0;

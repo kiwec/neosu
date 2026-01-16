@@ -494,8 +494,7 @@ class DatabaseBeatmap final {
         if(this->md5_init.load(std::memory_order_relaxed) || this->md5_init.load(std::memory_order_acquire))
             return this->sMD5Hash;
 
-        static MD5Hash dummy{"DEADBEEFDEADBEEFDEADBEEFDEADBEEF"};
-        return dummy;
+        return MD5Hash::sentinel; // DEADBEEFDEADBEEFDEADBEEFDEADBEEF
     }
 
    private:

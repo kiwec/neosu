@@ -44,10 +44,6 @@
 
 using namespace flags::operators;
 
-namespace {  // static
-SDL_Environment *s_sdlenv{nullptr};
-}
-
 // sanity check
 #define SDL_WF_EQ(fname__) (WinFlags::F_##fname__ == (WinFlags)SDL_WINDOW_##fname__)
 static_assert(SDL_WF_EQ(FULLSCREEN) && SDL_WF_EQ(OPENGL) && SDL_WF_EQ(OCCLUDED) && SDL_WF_EQ(HIDDEN) &&
@@ -119,6 +115,8 @@ Environment::Interop *Environment::tryCreatingAppEnvInterop() {
 }
 
 Environment *env{nullptr};
+
+SDL_Environment *Environment::s_sdlenv{nullptr};
 
 Environment::Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                          const std::vector<std::string> &cmdlineVec)

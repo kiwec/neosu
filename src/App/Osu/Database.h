@@ -53,7 +53,7 @@ struct alignas(1) DB_TIMINGPOINT {
 
 using HashToScoreMap = Hash::flat::map<MD5Hash, std::vector<FinishedScore>>;
 
-class Database {
+class Database final {
     NOCOPY_NOMOVE(Database)
    public:
     struct PlayerStats {
@@ -127,8 +127,8 @@ class Database {
     [[nodiscard]] inline bool isFinished() const { return (this->getProgress() >= 1.0f); }
     [[nodiscard]] inline bool foundChanges() const { return this->raw_found_changes; }
 
-    DatabaseBeatmap *getBeatmapDifficulty(const MD5Hash &md5hash);
-    DatabaseBeatmap *getBeatmapDifficulty(i32 map_id);
+    BeatmapDifficulty *getBeatmapDifficulty(const MD5Hash &md5hash);
+    BeatmapDifficulty *getBeatmapDifficulty(i32 map_id);
     BeatmapSet *getBeatmapSet(i32 set_id);
     [[nodiscard]] inline const std::vector<std::unique_ptr<BeatmapSet>> &getBeatmapSets() const {
         return this->beatmapsets;
@@ -147,7 +147,7 @@ class Database {
     inline void addPathToImport(const std::string &dbPath) { this->extern_db_paths_to_import.push_back(dbPath); }
 
     // locks peppy_overrides mutex and updates overrides for loaded-from-stable-db maps which will be stored in the local database
-    void update_overrides(DatabaseBeatmap *beatmap);
+    void update_overrides(BeatmapDifficulty *diff);
 
     Sync::shared_mutex peppy_overrides_mtx;
     Sync::shared_mutex scores_mtx;

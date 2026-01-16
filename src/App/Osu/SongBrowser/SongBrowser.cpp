@@ -890,31 +890,34 @@ void SongBrowser::update(CBaseUIEventCtx &c) {
         }
 
         if(!results.empty()) {
-            std::unordered_set<BeatmapSet *> uniqueSetsForDiffs;
+            static Hash::flat::set<BeatmapSet *> uniqueSetsForDiffs;
 
-            Sync::unique_lock lock(db->peppy_overrides_mtx);
-            for(const auto &res : results) {
-                auto map = res.map;
-                uniqueSetsForDiffs.insert(map->getParentSet());
-                map->iNumCircles = res.nb_circles;
-                map->iNumSliders = res.nb_sliders;
-                map->iNumSpinners = res.nb_spinners;
-                map->iNumObjects = res.nb_circles + res.nb_sliders + res.nb_spinners;
-                map->iLengthMS = std::max(map->iLengthMS, res.length_ms);
-                map->fStarsNomod = res.star_rating;
-                map->iMinBPM = res.min_bpm;
-                map->iMaxBPM = res.max_bpm;
-                map->iMostCommonBPM = res.avg_bpm;
-                map->ppv2Version = DiffCalc::PP_ALGORITHM_VERSION;
-                if(map->type == DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) {
-                    db->peppy_overrides[map->getMD5()] = map->get_overrides();
+            {
+                Sync::unique_lock lock(db->peppy_overrides_mtx);
+                for(const auto &res : results) {
+                    auto map = res.map;
+                    uniqueSetsForDiffs.insert(map->getParentSet());
+                    map->iNumCircles = res.nb_circles;
+                    map->iNumSliders = res.nb_sliders;
+                    map->iNumSpinners = res.nb_spinners;
+                    map->iNumObjects = res.nb_circles + res.nb_sliders + res.nb_spinners;
+                    map->iLengthMS = std::max(map->iLengthMS, res.length_ms);
+                    map->fStarsNomod = res.star_rating;
+                    map->iMinBPM = res.min_bpm;
+                    map->iMaxBPM = res.max_bpm;
+                    map->iMostCommonBPM = res.avg_bpm;
+                    map->ppv2Version = DiffCalc::PP_ALGORITHM_VERSION;
+                    if(map->type == DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) {
+                        db->peppy_overrides[map->getMD5()] = map->get_overrides();
+                    }
                 }
             }
+
             for(auto *set : uniqueSetsForDiffs) {
-                if(set) {
-                    set->updateRepresentativeValues();
-                }
+                assert(set);
+                set->updateRepresentativeValues();
             }
+            uniqueSetsForDiffs.clear();
         }
     } else if(DBRecalculator::running() && DBRecalculator::is_finished()) {
         // if there was never anything to do just make sure to join the thread

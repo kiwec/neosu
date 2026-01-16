@@ -37,8 +37,11 @@ class VertexArrayObject : public Resource {
         this->vertices = vertices;
         this->iNumVertices = this->vertices.size();
     }
+
     void setTexcoords(const std::vector<vec2> &texcoords);
+
     inline void setNormals(const std::vector<vec3> &normals) { this->normals = normals; }
+
     inline void setColors(const std::vector<Color> &colors) { this->colors = colors; }
     void setColor(int index, Color color);
 

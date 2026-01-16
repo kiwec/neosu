@@ -391,6 +391,9 @@ class Environment {
     bool m_bIsKMSDRM;
     bool m_bIsWayland;
 
+    // process environment (declared here for restart access)
+    static SDL_Environment *s_sdlenv;
+
    private:
     // lazy inits
     void initCursors();

@@ -63,6 +63,14 @@ f32 AbstractBeatmapInterface::getConstantOverallDifficultyForSpeedMultiplier() c
 const Replay::Mods &AbstractBeatmapInterface::getMods() const { return osu->getScore()->mods; }
 LegacyFlags AbstractBeatmapInterface::getModsLegacy() const { return osu->getScore()->getModsLegacy(); }
 
+i32 AbstractBeatmapInterface::getPVS() const {
+    // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
+    // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
+    // future hitobjects) to speed up loops which iterate over all hitobjects
+    return this->fCachedApproachTimeForUpdate + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() +
+           1500;  // sanity
+}
+
 LiveScore::HIT AbstractBeatmapInterface::getHitResult(i32 delta) const {
     // "stable-like" hit windows, see https://github.com/ppy/osu/pull/33882
     f32 window300 = std::floor(this->getHitWindow300()) - 0.5f;

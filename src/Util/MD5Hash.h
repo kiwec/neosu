@@ -25,6 +25,7 @@ class UString;
 struct ALIGNED_TO(16) MD5Hash final {
     MD5Hash() = default;
     MD5Hash(const char *str);
+    constexpr MD5Hash(std::array<char, 32> charray) { this->hash = charray; }
 
     // NOTE: not null-terminated
     [[nodiscard]] inline char *data() { return this->hash.data(); }
@@ -43,7 +44,15 @@ struct ALIGNED_TO(16) MD5Hash final {
     inline bool empty() { return this->hash == std::array<char, 32>{}; }
 
     std::array<char, 32> hash{};
+
+    static const MD5Hash sentinel;
 };
+
+constexpr inline MD5Hash MD5Hash::sentinel{std::array<char, 32>{                                         //
+                                                                'D', 'E', 'A', 'D', 'B', 'E', 'E', 'F',  //
+                                                                'D', 'E', 'A', 'D', 'B', 'E', 'E', 'F',  //
+                                                                'D', 'E', 'A', 'D', 'B', 'E', 'E', 'F',  //
+                                                                'D', 'E', 'A', 'D', 'B', 'E', 'E', 'F'}};
 
 #undef ALIGNED_TO
 
@@ -53,7 +62,6 @@ struct hash<MD5Hash> {
     size_t operator()(const MD5Hash &md5) const { return std::hash<std::string_view>()(md5.string()); }
 };
 }  // namespace std
-
 
 #ifndef BUILD_TOOLS_ONLY
 template <>

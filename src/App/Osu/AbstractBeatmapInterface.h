@@ -72,6 +72,9 @@ class AbstractBeatmapInterface {
     [[nodiscard]] bool isClickHeld() const;
     [[nodiscard]] LiveScore::HIT getHitResult(i32 delta) const;
 
+    // Potentially Visible Set gate time size, for optimizing draw() and update() when iterating over all hitobjects
+    [[nodiscard]] i32 getPVS() const;
+
     [[nodiscard]] f32 getHitWindow300() const;
     [[nodiscard]] f32 getRawHitWindow300() const;
     [[nodiscard]] f32 getHitWindow100() const;

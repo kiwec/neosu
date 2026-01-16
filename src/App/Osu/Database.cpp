@@ -804,8 +804,11 @@ int Database::getLevelForScore(u64 score, int maxLevel) {
     }
 }
 
-DatabaseBeatmap *Database::getBeatmapDifficulty(const MD5Hash &md5hash) {
-    if(this->isLoading()) return nullptr;
+BeatmapDifficulty *Database::getBeatmapDifficulty(const MD5Hash &md5hash) {
+    if(this->isLoading()) {
+        debugLog("we are loading, progress {}, not returning a BeatmapDifficulty*", this->getProgress());
+        return nullptr;
+    }
 
     Sync::shared_lock lock(this->beatmap_difficulties_mtx);
     auto it = this->beatmap_difficulties.find(md5hash);
@@ -816,8 +819,11 @@ DatabaseBeatmap *Database::getBeatmapDifficulty(const MD5Hash &md5hash) {
     }
 }
 
-DatabaseBeatmap *Database::getBeatmapDifficulty(i32 map_id) {
-    if(this->isLoading()) return nullptr;
+BeatmapDifficulty *Database::getBeatmapDifficulty(i32 map_id) {
+    if(this->isLoading()) {
+        debugLog("we are loading, progress {}, not returning a BeatmapDifficulty*", this->getProgress());
+        return nullptr;
+    }
 
     Sync::shared_lock lock(this->beatmap_difficulties_mtx);
     for(const auto &[_, diff] : this->beatmap_difficulties) {
@@ -829,9 +835,9 @@ DatabaseBeatmap *Database::getBeatmapDifficulty(i32 map_id) {
     return nullptr;
 }
 
-DatabaseBeatmap *Database::getBeatmapSet(i32 set_id) {
+BeatmapSet *Database::getBeatmapSet(i32 set_id) {
     if(this->isLoading()) {
-        debugLog("we are loading, progress {}, not returning a DatabaseBeatmap*", this->getProgress());
+        debugLog("we are loading, progress {}, not returning a BeatmapSet*", this->getProgress());
         return nullptr;
     }
 
@@ -846,6 +852,9 @@ DatabaseBeatmap *Database::getBeatmapSet(i32 set_id) {
 
 std::string Database::getOsuSongsFolder() {
     std::string songs_dir = cv::songs_folder.getString();
+    if(songs_dir.empty()) {
+        cv::songs_folder.setValue(cv::songs_folder.getDefaultString());
+    }
     if(!songs_dir.ends_with('/') && !songs_dir.ends_with('\\')) {
         songs_dir.push_back('/');
     }
@@ -2549,9 +2558,9 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
     return set;
 }
 
-void Database::update_overrides(DatabaseBeatmap *beatmap) {
-    if(!beatmap || beatmap->do_not_store || beatmap->type != DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) return;
+void Database::update_overrides(BeatmapDifficulty *diff) {
+    if(!diff || diff->do_not_store || diff->type != DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) return;
 
     Sync::unique_lock lock(this->peppy_overrides_mtx);
-    this->peppy_overrides[beatmap->getMD5()] = beatmap->get_overrides();
+    this->peppy_overrides[diff->getMD5()] = diff->get_overrides();
 }

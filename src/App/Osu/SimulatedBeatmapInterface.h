@@ -18,9 +18,6 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     bool start();
     void update(f64 frame_time);
 
-    // Potentially Visible Set gate time size, for optimizing draw() and update() when iterating over all hitobjects
-    i32 getPVS();
-
     [[nodiscard]] const Replay::Mods &getMods() const override { return this->mods; }
     [[nodiscard]] LegacyFlags getModsLegacy() const override { return this->mods.to_legacy(); }
 
