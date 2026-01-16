@@ -6,9 +6,10 @@
 
 #include "OsuConfig.h"
 #include "Vectors.h"
+#include "Hashing.h"
 
 #include <memory>
-#include <set>
+#include <array>
 
 class CWindowManager;
 class KeyboardEvent;
@@ -134,7 +135,7 @@ struct UI final {
     std::array<UIScreen*, NUM_SCREENS> screens{};
 
     // additional overlays added by pushOverlay (owned by UI)
-    std::set<UIOverlay*> extra_overlays;
+    Hash::flat::set<UIOverlay*> extra_overlays;
 
     // interfaces (debugging)
     // std::unique_ptr<CWindowManager> windowManager{nullptr};

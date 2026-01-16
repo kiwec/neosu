@@ -103,15 +103,27 @@ bool UI::init() {
     return true;
 }
 
+#define FOR_EACH_OVERLAY_SAFE                                                           \
+    do {                                                                                \
+        auto overlayit = this->extra_overlays.begin();                                  \
+        bool it_ended = (overlayit == this->extra_overlays.end());                      \
+        while(!it_ended) {                                                              \
+            UIOverlay *overlay = *overlayit;                                            \
+            ++overlayit; /* increment before update (in case it's deleted in update) */ \
+            it_ended = overlayit == this->extra_overlays.end();
+
+#define END_FOR_EACH_OVERLAY_SAFE \
+    }                             \
+    }                             \
+    while(false);
+
 void UI::update() {
     CBaseUIEventCtx c;
 
     // iterate over each overlay in the set without blowing up if an element is removed during iteration
-    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
-        UIOverlay *overlay = *overlayit;
-        ++overlayit;  // increment before update (in case it's deleted in update)
-        overlay->update(c);
-    }
+    FOR_EACH_OVERLAY_SAFE
+    overlay->update(c);
+    END_FOR_EACH_OVERLAY_SAFE
 
     bool updated_active_screen = false;
     for(auto *screen : this->screens) {
@@ -133,11 +145,9 @@ void UI::draw() {
     }
 
     // draw any extra overlays (TODO: draw order, this shouldn't be hardcoded at the start)
-    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
-        UIOverlay *overlay = *overlayit;
-        ++overlayit;
-        overlay->draw();
-    }
+    FOR_EACH_OVERLAY_SAFE
+    overlay->draw();
+    END_FOR_EACH_OVERLAY_SAFE
 
     this->active_screen->draw();
 
@@ -266,12 +276,10 @@ void UI::draw() {
 void UI::onKeyDown(KeyboardEvent &key) {
     if(key.isConsumed()) return;
 
-    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
-        UIOverlay *overlay = *overlayit;
-        ++overlayit;
-        overlay->onKeyDown(key);
-        if(key.isConsumed()) return;
-    }
+    FOR_EACH_OVERLAY_SAFE
+    overlay->onKeyDown(key);
+    if(key.isConsumed()) return;
+    END_FOR_EACH_OVERLAY_SAFE
 
     for(auto *screen : this->screens) {
         screen->onKeyDown(key);
@@ -282,12 +290,10 @@ void UI::onKeyDown(KeyboardEvent &key) {
 void UI::onKeyUp(KeyboardEvent &key) {
     if(key.isConsumed()) return;
 
-    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
-        UIOverlay *overlay = *overlayit;
-        ++overlayit;
-        overlay->onKeyUp(key);
-        if(key.isConsumed()) return;
-    }
+    FOR_EACH_OVERLAY_SAFE
+    overlay->onKeyUp(key);
+    if(key.isConsumed()) return;
+    END_FOR_EACH_OVERLAY_SAFE
 
     for(auto *screen : this->screens) {
         screen->onKeyUp(key);
@@ -298,12 +304,10 @@ void UI::onKeyUp(KeyboardEvent &key) {
 void UI::onChar(KeyboardEvent &e) {
     if(e.isConsumed()) return;
 
-    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
-        UIOverlay *overlay = *overlayit;
-        ++overlayit;
-        overlay->onChar(e);
-        if(e.isConsumed()) return;
-    }
+    FOR_EACH_OVERLAY_SAFE
+    overlay->onChar(e);
+    if(e.isConsumed()) return;
+    END_FOR_EACH_OVERLAY_SAFE
 
     for(auto *screen : this->screens) {
         screen->onChar(e);
@@ -312,11 +316,9 @@ void UI::onChar(KeyboardEvent &e) {
 }
 
 void UI::onResolutionChange(vec2 newResolution) {
-    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
-        UIOverlay *overlay = *overlayit;
-        ++overlayit;
-        overlay->onResolutionChange(newResolution);
-    }
+    FOR_EACH_OVERLAY_SAFE
+    overlay->onResolutionChange(newResolution);
+    END_FOR_EACH_OVERLAY_SAFE
 
     for(auto *screen : this->screens) {
         screen->onResolutionChange(newResolution);
@@ -324,11 +326,9 @@ void UI::onResolutionChange(vec2 newResolution) {
 }
 
 void UI::stealFocus() {
-    for(auto overlayit = this->extra_overlays.begin(); overlayit != this->extra_overlays.end();) {
-        UIOverlay *overlay = *overlayit;
-        ++overlayit;
-        overlay->stealFocus();
-    }
+    FOR_EACH_OVERLAY_SAFE
+    overlay->stealFocus();
+    END_FOR_EACH_OVERLAY_SAFE
 
     for(auto *screen : this->screens) {
         screen->stealFocus();

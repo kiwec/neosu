@@ -289,7 +289,7 @@ double SLFXStream::getLength()
 	return mSource ? mSource->getLength() : 0.0;
 }
 
-UString SLFXStream::getDecoder()
+std::string SLFXStream::getDecoder()
 {
 	if (!mSource)
 		return "<NULL>";
@@ -337,7 +337,7 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 	// create source instance
 	if (mParent && mParent->mSource)
 	{
-		mSourceInstance = mParent->mSource->createInstance();
+		mSourceInstance.reset(mParent->mSource->createInstance());
 
 		if (mSourceInstance)
 		{
@@ -354,7 +354,7 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 			ST_DEBUG_LOG("SoundTouchFilterInstance: Creating with {:d} channels at {:f} Hz, mFlags={:x}", mChannels, mBaseSamplerate, mFlags);
 
 			// initialize SoundTouch
-			mSoundTouch = new soundtouch::SoundTouch();
+			mSoundTouch = std::make_unique<soundtouch::SoundTouch>();
 			if (mSoundTouch)
 			{
 				mSoundTouch->setSampleRate((uint)mBaseSamplerate);
@@ -397,9 +397,6 @@ SoundTouchFilterInstance::~SoundTouchFilterInstance()
 		auto thisptr = this;
 		mParent->mActiveInstance.compare_exchange_strong(thisptr, nullptr);
 	}
-
-	SAFE_DELETE(mSoundTouch);
-	SAFE_DELETE(mSourceInstance);
 }
 
 // public methods below (to be called by SoLoud)

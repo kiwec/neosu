@@ -16,8 +16,6 @@
 #include <atomic>
 #include <memory>
 
-class UString;
-
 namespace soundtouch
 {
 class SoundTouch;
@@ -74,8 +72,8 @@ private:
 
 	// member variables
 	SLFXStream *mParent;                  // parent filter
-	AudioSourceInstance *mSourceInstance; // source instance to process
-	soundtouch::SoundTouch *mSoundTouch;  // soundtouch processor
+	std::unique_ptr<AudioSourceInstance> mSourceInstance; // source instance to process
+	std::unique_ptr<soundtouch::SoundTouch> mSoundTouch;  // soundtouch processor
 
 	// soundtouch setting cache for calculting offset trailing behind source stream
 	unsigned int mInitialSTLatencySamples;
@@ -135,7 +133,7 @@ public:
 
 	// utility methods
 	double getLength();
-	UString getDecoder();
+	std::string getDecoder();
 
 	// accurate position access for active instance
 	time getInternalLatency() const;
