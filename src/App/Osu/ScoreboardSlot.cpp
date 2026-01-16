@@ -83,7 +83,7 @@ void ScoreboardSlot::draw() {
     // Draw index
     g->pushTransform();
     {
-        UString indexString = fmt::format("{}", this->index + 1);
+        UString indexString = fmt::format("{:d}"_cf, this->index + 1);
         const float scale = (avatar_height / font_bold->getHeight()) * 0.5f;
 
         g->scale(scale, scale);
@@ -139,7 +139,7 @@ void ScoreboardSlot::draw() {
     // draw combo
     g->pushTransform();
     {
-        UString comboString = fmt::format("{}x", this->score.maxCombo);
+        UString comboString = fmt::format("{:d}x"_cf, this->score.maxCombo);
         const float stringWidth = font_normal->getStringWidth(comboString);
 
         g->scale(scoreScale, scoreScale);
@@ -167,17 +167,17 @@ void ScoreboardSlot::draw() {
         switch(ui->getHUD()->getScoringMetric()) {
             case WinCondition::ACCURACY: {
                 wincond_based_coltype = COMBOACC;
-                wincond_based_scoretext = fmt::format("{:.2f}%", this->score.accuracy * 100.0f);
+                wincond_based_scoretext = fmt::format("{:.2f}%"_cf, this->score.accuracy * 100.0f);
             } break;
             case WinCondition::MISSES: {
-                wincond_based_scoretext = fmt::format("{} misses", this->score.misses);
+                wincond_based_scoretext = fmt::format("{:d} misses"_cf, this->score.misses);
             } break;
             case WinCondition::PP: {
-                wincond_based_scoretext = fmt::format("{:.2f}pp", this->score.pp);
+                wincond_based_scoretext = fmt::format("{:.2f}pp"_cf, this->score.pp);
             } break;
             // other conditions fall through to scorev1
             default: {
-                wincond_based_scoretext = fmt::format("{}", this->score.score);
+                wincond_based_scoretext = fmt::format("{:d}"_cf, this->score.score);
             } break;
         }
 

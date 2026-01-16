@@ -289,10 +289,18 @@ f64 SoLoudSound::getPositionPct() const {
 }
 
 i32 SoLoudSound::getBASSStreamLatencyCompensation() const {
-    if(!this->isReady() || !this->bStream || !this->audioSource || !this->handle) return 0.0f;
+    if(!this->isReady() || !this->bStream || !this->audioSource || !this->handle) return 0;
 
-    auto *strm = static_cast<SoLoud::SLFXStream *>(this->audioSource.get());
-    return static_cast<i32>(std::round(strm->getInternalLatency())) + cv::snd_soloud_hardcoded_offset.getInt();
+    const auto *strm = static_cast<SoLoud::SLFXStream *>(this->audioSource.get());
+
+    // getInternalLatency() returns output seconds,
+    // convert to source milliseconds: output_seconds * tempo * 1000
+    const f64 latency_output_sec = strm->getInternalLatency();
+    const f64 tempo = strm->getSpeedFactor();
+
+    // negative because the source position is ahead of what we're hearing
+    const i32 latency_source_ms = -static_cast<i32>(std::round(latency_output_sec * tempo * 1000.0));
+    return latency_source_ms + cv::snd_soloud_hardcoded_offset.getInt();
 }
 
 u64 SoLoudSound::getPositionUS() const {

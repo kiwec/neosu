@@ -282,6 +282,7 @@ AS_VAR_SET_IF([with_renderer],
             opengl) use_opengl=yes ;;
             opengles*) use_opengles32=yes ;;
             dx11) use_dx11=yes ;;
+            directx*) use_dx11=yes ;;
             esac
         done])
 
