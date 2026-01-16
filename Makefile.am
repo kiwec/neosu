@@ -555,7 +555,7 @@ $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built:
 endif # BUILD_MPG123
 
 if USE_SOLOUD
-AUDIO_CFLAGS += $(shell $(PKG_CONFIG) --cflags soloud) $(shell $(PKG_CONFIG) --cflags soundtouch) $(MPG123_CFLAGS) -DST_NO_EXCEPTION_HANDLING $(if $(and $(filter i686,$(host_cpu)),$(DISABLE_NATIVE)),-DSOUNDTOUCH_DISABLE_X86_OPTIMIZATIONS,)
+AUDIO_CFLAGS += $(shell $(PKG_CONFIG) --cflags soloud) $(shell $(PKG_CONFIG) --cflags soundtouch) $(MPG123_CFLAGS) -DST_NO_EXCEPTION_HANDLING
 AUDIO_LIBS += $(shell $(PKG_CONFIG) --libs soloud) $(shell $(PKG_CONFIG) --libs soundtouch) $(MPG123_LIBS)
 
 FFMPEG_INSTALL_LIBS := `find $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/$(SYSNAME)$(host_cpu)/lib '(' -name '*avutil*' -o -name '*avcodec*' -o -name '*avformat*' -o -name '*swresample*' ')' -printf '%p '`
@@ -592,6 +592,7 @@ $(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built: $(DEPS_CACHE)/SoundTouch-
 	$(MKDIR_P) $(DEPS_PREFIX) $(DEPS_PREFIX)/include $(DEPS_PREFIX)/lib/pkgconfig $(DEPS_PREFIX)/SoundTouch/build
 	$(TAR) xf $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).tar.gz -C $(DEPS_PREFIX)/SoundTouch --strip-components=1 && \
 	cd $(DEPS_PREFIX)/SoundTouch && \
+	patch -Np1<$(BUILD_MISCDIR)/SoundTouch-AVX-patches.patch && \
 	$(SED) -i -e 's|MAX_BPM_VALID 190|MAX_BPM_VALID 1000|' -e 's|MAX_BPM_RANGE 200|MAX_BPM_RANGE 300|' include/BPMDetect.h && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
@@ -600,9 +601,9 @@ $(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built: $(DEPS_CACHE)/SoundTouch-
 		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
 		-D CMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
 		-D CMAKE_C_COMPILER="$(CC)" \
-		-D CMAKE_C_FLAGS="$(CFLAGS) -DST_NO_EXCEPTION_HANDLING $(if $(and $(filter i686,$(host_cpu)),$(DISABLE_NATIVE)),-DSOUNDTOUCH_DISABLE_X86_OPTIMIZATIONS,)" \
+		-D CMAKE_C_FLAGS="$(CFLAGS) -DST_NO_EXCEPTION_HANDLING" \
 		-D CMAKE_CXX_COMPILER="$(CXX)" \
-		-D CMAKE_CXX_FLAGS="$(CXXFLAGS) -DST_NO_EXCEPTION_HANDLING $(if $(and $(filter i686,$(host_cpu)),$(DISABLE_NATIVE)),-DSOUNDTOUCH_DISABLE_X86_OPTIMIZATIONS,)" \
+		-D CMAKE_CXX_FLAGS="$(CXXFLAGS) -DST_NO_EXCEPTION_HANDLING" \
 		$(CMAKERCOPT) $(CMAKEIDOPT) \
 		-D CMAKE_C_COMPILER_AR=$(AR) \
 		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \

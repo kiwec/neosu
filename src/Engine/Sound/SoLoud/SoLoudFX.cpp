@@ -12,11 +12,11 @@
 
 #include <algorithm>
 
-#include <SoundTouch.h>
-
 #include "soloud_error.h"
 #include "soloud_wavstream.h"
 #include "soloud_file.h"
+
+#include "SoundTouch.h"
 
 namespace cv
 {

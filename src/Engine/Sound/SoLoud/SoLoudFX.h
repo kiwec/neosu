@@ -40,6 +40,7 @@ class SoundTouchFilterInstance;
 class SoundTouchFilterInstance : public AudioSourceInstance
 {
 	friend class SLFXStream;
+	NOCOPY_NOMOVE(SoundTouchFilterInstance)
 
 public:
 	SoundTouchFilterInstance(SLFXStream *aParent);
@@ -110,6 +111,7 @@ private:
  */
 class SLFXStream : public AudioSource
 {
+	NOCOPY_NOMOVE(SLFXStream)
 public:
 	SLFXStream(bool preferFFmpeg = false);
 	~SLFXStream() override;
