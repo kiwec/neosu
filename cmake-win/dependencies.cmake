@@ -88,9 +88,9 @@ set(SOUNDTOUCH_URL "https://codeberg.org/soundtouch/soundtouch/archive/${SOUNDTO
 set(SOUNDTOUCH_HASH "SHA512=8bd199c6363104ba6c9af1abbd3c4da3567ccda5fe3a68298917817fc9312ecb0914609afba1abd864307b0a596becf450bc7073eeec17b1de5a7c5086fbc45e")
 set_download_name("soundtouch" "${SOUNDTOUCH_VERSION}" "${SOUNDTOUCH_URL}")
 
-set(SOLOUD_VERSION "8c9a4178b6de44fdb09a9fbb90446ee6e32928aa")
+set(SOLOUD_VERSION "062f66a7b80d8b416e7211c4a3469ac22e4ee3e0")
 set(SOLOUD_URL "https://github.com/whrvt/neoloud/archive/${SOLOUD_VERSION}.tar.gz")
-set(SOLOUD_HASH "SHA512=330e74118f1a6676f29af27bd54f3345a210addbdf29933e99a48a878e0a8b8e274ad07e9e62c78df77de6a27947e455e0f2d6e9fd20ebd1057f9e6182395fe2")
+set(SOLOUD_HASH "SHA512=bae0d939deb825043eae9bdf5c8b399b2d3fedd2b0076f1114b6c7d62bf506425a4a6b333d4f6ca76cc825086cf703097f638d296976cba92b1238dafecc9753")
 set_download_name("soloud" "${SOLOUD_VERSION}" "${SOLOUD_URL}")
 
 set(NSYNC_VERSION "1.30.0")

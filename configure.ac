@@ -664,7 +664,7 @@ AC_SUBST([DLLEXT])
 AC_SUBST([LIBPREFIX])
 
 # don't omit frame pointers, it's not worth it on 64-bit, and having them makes profiling/debugging better
-AS_IF([test "$host_cpu" = "x86_64"], [COMMON_FLAGS="$COMMON_FLAGS -mcmodel=small -fno-omit-frame-pointer -momit-leaf-frame-pointer"])
+AS_IF([test "$host_cpu" != "i686"], [COMMON_FLAGS="$COMMON_FLAGS -mcmodel=small -fno-omit-frame-pointer -momit-leaf-frame-pointer"])
 
 CPPFLAGS="$CPPFLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64"
 COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing -ftls-model=initial-exec -pthread"
@@ -1075,7 +1075,7 @@ SIMDUTF_MIN_VERSION=7.0.0
 SIMDUTF_BUILD_VERSION=8.0.0 # fast and correct utf conversion utilities
 
 # always build these from source if we want to use them
-AC_SUBST([SOLOUD_VERSION], [8c9a4178b6de44fdb09a9fbb90446ee6e32928aa]) # neoloud fork
+AC_SUBST([SOLOUD_VERSION], [062f66a7b80d8b416e7211c4a3469ac22e4ee3e0]) # neoloud fork
 #AC_SUBST([SOLOUD_VERSION], [cb174f53804d8ba3fc81a2dfa49879103fbbcb2e])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [b8e2a5f3f04483691962ab1a36ffa166abdcd675])

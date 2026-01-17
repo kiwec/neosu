@@ -211,8 +211,7 @@ void SDLGLInterface::dumpGLContextInfo() {
             if(!(i % 4)) info.push_back('\n');
         }
     }
-
-    info.pop_back();  // remove trailing newline
+    if(info.back() == '\n') info.pop_back();  // remove trailing newline
     Logger::logRaw(info);
 }
 
@@ -286,8 +285,8 @@ void SDLGLInterface::setGLLog(bool on) {
     }
 }
 
-void GLAPIENTRY SDLGLInterface::glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
-                          const void * /*userParam*/) {
+void GLAPIENTRY SDLGLInterface::glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                          const GLchar *message, const void * /*userParam*/) {
     Logger::logRaw("[GLDebugCB]");
     Logger::logRaw("    message: {}", std::string(message, length));
     Logger::logRaw("    time: {:.4f}", engine->getTime());
