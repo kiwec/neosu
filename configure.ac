@@ -1075,7 +1075,7 @@ SIMDUTF_MIN_VERSION=7.0.0
 SIMDUTF_BUILD_VERSION=8.0.0 # fast and correct utf conversion utilities
 
 # always build these from source if we want to use them
-AC_SUBST([SOLOUD_VERSION], [062f66a7b80d8b416e7211c4a3469ac22e4ee3e0]) # neoloud fork
+AC_SUBST([SOLOUD_VERSION], [a5a8d7c8deeb2ac800982991b75e96897a09075c]) # neoloud fork
 #AC_SUBST([SOLOUD_VERSION], [cb174f53804d8ba3fc81a2dfa49879103fbbcb2e])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [b8e2a5f3f04483691962ab1a36ffa166abdcd675])

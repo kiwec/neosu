@@ -181,18 +181,17 @@ void CBaseUIContainer::update(CBaseUIEventCtx &c) {
 }
 
 void CBaseUIContainer::update_pos() {
+    if(!this->bVisible) return;
     const vec2 thisPos = this->vPos;
 
-    float xtemp{thisPos.x}, ytemp{thisPos.y};
+    vec2 newPos{};
     MC_UNR_cnt(64) /* clang-format getting confused */
         for(auto *e : this->vElements) {
         // setPos already has this logic, but inline it manually here
         // to avoid unnecessary indirection
-        ytemp = thisPos.y + e->vmPos.y;
-        xtemp = thisPos.x + e->vmPos.x;
-        if(e->vPos.y != ytemp || e->vPos.x != xtemp) {
-            e->vPos.y = ytemp;
-            e->vPos.x = xtemp;
+        newPos = thisPos + e->vmPos;
+        if(e->vPos != newPos) {
+            e->vPos = newPos;
             e->onMoved();
         }
     }

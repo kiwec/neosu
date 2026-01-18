@@ -12,7 +12,6 @@
 
 #include "soloud.h"
 #include "soloud_audiosource.h"
-#include "soloud_intrin.h"
 
 #include <atomic>
 #include <memory>
@@ -73,7 +72,7 @@ private:
 	void requestSettingUpdate(float speed, float pitch);
 
 	// member variables
-	SLFXStream *mParent;                  // parent filter
+	SLFXStream *mParent;                                  // parent filter
 	std::unique_ptr<AudioSourceInstance> mSourceInstance; // source instance to process
 	std::unique_ptr<soundtouch::SoundTouch> mSoundTouch;  // soundtouch processor
 
@@ -92,15 +91,14 @@ private:
 	Sync::mutex mSettingUpdateMutex;
 
 	// buffers for format conversion
-	SoLoud::AlignedFloatBuffer mBuffer;            // temporary read buffer from source (non-interleaved)
-	unsigned int mBufferSize;                      // size in samples
+	SoLoud::AlignedFloatBuffer mBuffer; // temporary read buffer from source (non-interleaved)
+	unsigned int mBufferSize;           // size in samples
 
 	SoLoud::AlignedFloatBuffer mInterleavedBuffer; // interleaved audio buffer for SoundTouch
 	unsigned int mInterleavedBufferSize;           // size in samples
 
 	// debugging and tracking
 	unsigned int mProcessingCounter; // counter for logspam avoidance
-
 };
 
 /**

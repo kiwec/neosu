@@ -43,7 +43,7 @@ void SoLoudSound::initAsync() {
     if(this->bStream) {
         // use SLFXStream for streaming audio (music, etc.) includes rate/pitch processing like BASS_FX_TempoCreate
         auto *stream = new SoLoud::SLFXStream(cv::snd_soloud_prefer_ffmpeg.getInt() > 0);
-        result = stream->load(this->sFilePath.c_str());
+        result = stream->loadToMem(this->sFilePath.c_str());
 
         if(result == SoLoud::SO_NO_ERROR) {
             this->audioSource.reset(stream);
@@ -65,7 +65,7 @@ void SoLoudSound::initAsync() {
     } else {
         SoLoud::DiskFile df(File::fopen_c(this->sFilePath.c_str(), "rb"));
 
-        if(!df.mFileHandle) {  // fopen failed
+        if(!df.getFilePtr()) {  // fopen failed
             debugLog("Sound Error: SoLoud::Wav::load() error {} on file {:s}", result, this->sFilePath);
             return;
         }

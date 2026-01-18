@@ -133,7 +133,7 @@ CONVAR(snd_soloud_buffer, 0, CLIENT | NOSAVE, "SoLoud audio device buffer size (
 CONVAR(snd_soloud_backend, "MiniAudio"sv, CLIENT, R"(SoLoud backend, "MiniAudio" or "SDL3" (MiniAudio is default))");
 CONVAR(snd_sanity_simultaneous_limit, 128, CLIENT | NOSAVE,
        "The maximum number of overlayable sounds that are allowed to be active at once");
-CONVAR(snd_soloud_hardcoded_offset, 15, CLIENT);
+CONVAR(snd_soloud_hardcoded_offset, 20, CLIENT);
 CONVAR(snd_soloud_resampler, "linear", CLIENT,
        "resampler to use. \"point\", \"linear\", or \"catmull-rom\" (in order of increasing quality/cpu usage)");
 CONVAR(snd_soloud_prefer_ffmpeg, 0, CLIENT,

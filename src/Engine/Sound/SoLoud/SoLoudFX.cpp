@@ -16,12 +16,29 @@
 #include "soloud_wavstream.h"
 #include "soloud_file.h"
 
+#if SOLOUD_VERSION >= 202601
+#include "soloud_ll_mixing.h"
+namespace SoLoud {
+namespace detail = mixing;
+using namespace mixing;
+namespace {
+forceinline void interlace_samples(void *outputBuffer, const float *const rawBuffer, unsigned int aSamples, unsigned int stride, unsigned int aChannels, detail::SAMPLE_FORMAT aFormat)
+{
+	return Soloud::mMixer->interlace_samples(outputBuffer, rawBuffer, aSamples, stride, aChannels, aFormat);
+}
+}
+}
+#else
+#include "soloud_intrin.h"
+#endif
+
 #include "SoundTouch.h"
 
 namespace cv
 {
 #ifdef _DEBUG
-namespace {
+namespace
+{
 ConVar snd_st_debug("snd_st_debug", false, CLIENT | NOSAVE, "Enable detailed SoundTouch filter logging");
 }
 #define ST_DEBUG_ENABLED cv::snd_st_debug.getBool()
@@ -36,54 +53,66 @@ ConVar snd_st_debug("snd_st_debug", false, CLIENT | NOSAVE, "Enable detailed Sou
 		debugLog(__VA_ARGS__); \
 	}
 
-namespace soundtouch {
+namespace soundtouch
+{
 // need to define this because for some reason soundtouch doesn't give you the header?
 // there's no other way to change the algorithm (default cubic)
 
 // also we need to define the FULL class even though we only care about a single static member because of ODR...
 
 class FIFOSampleBuffer;
-class TransposerBase {
-   public:
-    enum ALGORITHM { LINEAR = 0, CUBIC, SHANNON };
-   protected:
-    virtual int transposeMono(SAMPLETYPE *dest, const SAMPLETYPE *src, int &srcSamples) = 0;
-    virtual int transposeStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, int &srcSamples) = 0;
-    virtual int transposeMulti(SAMPLETYPE *dest, const SAMPLETYPE *src, int &srcSamples) = 0;
-    static ALGORITHM algorithm;
-   public:
-    double rate;
-    int numChannels;
-    TransposerBase();
-    virtual ~TransposerBase();
-    virtual int transpose(FIFOSampleBuffer &dest, FIFOSampleBuffer &src);
-    virtual void setRate(double newRate);
-    virtual void setChannels(int channels);
-    virtual int getLatency() const = 0;
-    virtual void resetRegisters() = 0;
-    static TransposerBase *newInstance();
-    // static function to set interpolation algorithm
-    static void setAlgorithm(ALGORITHM a);
+class TransposerBase
+{
+public:
+	enum ALGORITHM
+	{
+		LINEAR = 0,
+		CUBIC,
+		SHANNON
+	};
+
+protected:
+	virtual int transposeMono(SAMPLETYPE *dest, const SAMPLETYPE *src, int &srcSamples) = 0;
+	virtual int transposeStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, int &srcSamples) = 0;
+	virtual int transposeMulti(SAMPLETYPE *dest, const SAMPLETYPE *src, int &srcSamples) = 0;
+	static ALGORITHM algorithm;
+
+public:
+	double rate;
+	int numChannels;
+	TransposerBase();
+	virtual ~TransposerBase();
+	virtual int transpose(FIFOSampleBuffer &dest, FIFOSampleBuffer &src);
+	virtual void setRate(double newRate);
+	virtual void setChannels(int channels);
+	virtual int getLatency() const = 0;
+	virtual void resetRegisters() = 0;
+	static TransposerBase *newInstance();
+	// static function to set interpolation algorithm
+	static void setAlgorithm(ALGORITHM a);
 };
 
-}  // namespace soundtouch
+} // namespace soundtouch
 
-namespace { // static
+namespace
+{ // static
 using ALGORITHM = soundtouch::TransposerBase::ALGORITHM;
 
 static ALGORITHM currentTransposerAlgorithm{ALGORITHM::CUBIC};
 
-static ALGORITHM getTransposerValForString(std::string str) {
+static ALGORITHM getTransposerValForString(std::string str)
+{
 	ALGORITHM ret = currentTransposerAlgorithm;
 
-	if(!str.empty()) {
+	if (!str.empty())
+	{
 		SString::lower_inplace(str);
 
-		if(str.contains("linear"))
+		if (str.contains("linear"))
 			ret = ALGORITHM::LINEAR;
-		else if(str.contains("cubic"))
+		else if (str.contains("cubic"))
 			ret = ALGORITHM::CUBIC;
-		else if(str.contains("shannon"))
+		else if (str.contains("shannon"))
 			ret = ALGORITHM::SHANNON;
 	}
 
@@ -91,8 +120,7 @@ static ALGORITHM getTransposerValForString(std::string str) {
 }
 
 static Sync::once_flag transposer_callback_set;
-}
-
+} // namespace
 
 namespace SoLoud
 {
@@ -182,7 +210,8 @@ result SLFXStream::load(const char *aFilename)
 
 	mpDiskFile = std::make_unique<DiskFile>(::File::fopen_c(aFilename, "rb"));
 
-	if (!mpDiskFile.get() || !mpDiskFile->mFileHandle) {
+	if (!mpDiskFile.get() || !mpDiskFile->getFilePtr())
+	{
 		mpDiskFile.reset();
 		return FILE_LOAD_FAILED;
 	}
@@ -225,14 +254,14 @@ result SLFXStream::loadToMem(const char *aFilename)
 	if (!mSource)
 		return INVALID_PARAMETER;
 
-	mpDiskFile = std::make_unique<DiskFile>(::File::fopen_c(aFilename, "rb"));
+	SoLoud::DiskFile df(::File::fopen_c(aFilename, "rb"));
 
-	if (!mpDiskFile.get() || !mpDiskFile->mFileHandle) {
-		mpDiskFile.reset();
+	if (!df.getFilePtr())
+	{
 		return FILE_LOAD_FAILED;
 	}
 
-	result result = mSource->loadFileToMem(mpDiskFile.get());
+	result result = mSource->loadFileToMem(&df);
 	if (result == SO_NO_ERROR)
 	{
 		// copy properties from the loaded wav stream
@@ -393,7 +422,8 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 SoundTouchFilterInstance::~SoundTouchFilterInstance()
 {
 	// clear the active instance reference in parent
-	if (mParent) {
+	if (mParent)
+	{
 		auto thisptr = this;
 		mParent->mActiveInstance.compare_exchange_strong(thisptr, nullptr);
 	}
@@ -492,9 +522,9 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 	}
 
 	if (logThisCall && mProcessingCounter % 100 == 0)
-		ST_DEBUG_LOG("Position: mStreamPosition={:.3f}s, init_latency={:}, input_seq={}, output_seq={:}, avg_latency={:.1f}ms, ratio={:.3f}",
-		             mStreamPosition, mInitialSTLatencySamples, mSoundTouch->getSetting(SETTING_NOMINAL_INPUT_SEQUENCE), mSTOutputSequenceSamples,
-		             mSTLatencySeconds * 1000.0, mSoundTouch->getInputOutputSampleRatio());
+		ST_DEBUG_LOG("Position: mStreamPosition={:.3f}s, init_latency={:}, input_seq={}, output_seq={:}, avg_latency={:.1f}ms, ratio={:.3f}", mStreamPosition,
+		             mInitialSTLatencySamples, mSoundTouch->getSetting(SETTING_NOMINAL_INPUT_SEQUENCE), mSTOutputSequenceSamples, mSTLatencySeconds * 1000.0,
+		             mSoundTouch->getInputOutputSampleRatio());
 
 	// update SoundTouch parameters if they've changed, after the last getAudio chunk has played out with the old speed
 	bool updatePitchOrSpeed = false;
@@ -522,9 +552,12 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 		mSoundTouch->setPitchSemiTones(pitchSemitones);
 
 		// SoLoud AudioStreamInstance inherited, allows the main SoLoud mixer to advance the mStreamPosition by the correct proportional amount
-		if (compensatePitch) {
+		if (compensatePitch)
+		{
 			mSetRelativePlaySpeed = mOverallRelativePlaySpeed = mSoundTouchSpeed;
-		} else if (mSoundTouchSpeed != 1.f) {
+		}
+		else if (mSoundTouchSpeed != 1.f)
+		{
 			// this should not be possible here
 			debugLog("DEBUG: we are not compensating pitch, but mSoundTouchSpeed ({}) != 1.0!", mSoundTouchSpeed);
 		}
@@ -654,8 +687,8 @@ unsigned int SoundTouchFilterInstance::feedSoundTouch(unsigned int targetBufferL
 		chunkSize = i / 2; // one power-of-two smaller, so we don't overshoot targetBufferLevel by too much
 	}
 
-	// then set it to a SIMD-aligned multiple
-	chunkSize = (chunkSize + SIMD_ALIGNMENT_MASK) & ~SIMD_ALIGNMENT_MASK;
+	// then set it to a SIMD-aligned multiple (assume AVX, 32 bytes, as a catch-all)
+	chunkSize = (chunkSize + 31) & ~31;
 
 	ensureBufferSize(chunkSize);
 	ensureInterleavedBufferSize(chunkSize);
@@ -675,8 +708,8 @@ unsigned int SoundTouchFilterInstance::feedSoundTouch(unsigned int targetBufferL
 
 		// convert from non-interleaved to interleaved format
 		// see SoLoud::Soloud::mix
-		unsigned int stride = (samplesRead + SIMD_ALIGNMENT_MASK) & ~SIMD_ALIGNMENT_MASK;
-		SoLoud::interlace_samples(mInterleavedBuffer.mData, mBuffer.mData, samplesRead, stride, mChannels, SoLoud::detail::SAMPLE_FLOAT32);
+		unsigned int stride = (samplesRead + 31) & ~31;
+		interlace_samples(mInterleavedBuffer.mData, mBuffer.mData, samplesRead, stride, mChannels, detail::SAMPLE_FLOAT32);
 
 		// feed the chunk to SoundTouch
 		mSoundTouch->putSamples(mInterleavedBuffer.mData, samplesRead);
@@ -696,7 +729,8 @@ unsigned int SoundTouchFilterInstance::feedSoundTouch(unsigned int targetBufferL
 
 void SoundTouchFilterInstance::updateSTLatency()
 {
-	if (!mSoundTouch) {
+	if (!mSoundTouch)
+	{
 		mSTLatencySeconds.store(0.0, std::memory_order_release);
 		return;
 	}
@@ -704,7 +738,8 @@ void SoundTouchFilterInstance::updateSTLatency()
 	mInitialSTLatencySamples = mSoundTouch->getSetting(SETTING_INITIAL_LATENCY);
 	mSTOutputSequenceSamples = mSoundTouch->getSetting(SETTING_NOMINAL_OUTPUT_SEQUENCE);
 	mSTLatencySeconds.store(std::max(0.0, (static_cast<double>(mInitialSTLatencySamples) - (static_cast<double>(mSTOutputSequenceSamples) / 2.0)) /
-	                                       static_cast<double>(mBaseSamplerate)), std::memory_order_release);
+	                                          static_cast<double>(mBaseSamplerate)),
+	                        std::memory_order_release);
 }
 
 void SoundTouchFilterInstance::reSynchronize()
