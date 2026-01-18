@@ -12,6 +12,7 @@
 #include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
 #include "CBaseUISlider.h"
+#include "Logging.h"
 #include "OsuConVars.h"
 #include "ConVarHandler.h"
 #include "MakeDelegateWrapper.h"
@@ -680,7 +681,7 @@ void ModSelector::onKeyDown(KeyboardEvent &key) {
 
     if(key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<SCANCODE>() || key == KEY_2 ||
        key == cv::GAME_PAUSE.getVal<SCANCODE>() || key == KEY_ESCAPE || key == KEY_ENTER || key == KEY_NUMPAD_ENTER)
-        this->close();
+        this->close(key == cv::GAME_PAUSE.getVal<SCANCODE>() || key == KEY_ESCAPE);
 
     // mod hotkeys
     if(key == cv::MOD_EASY.getVal<SCANCODE>()) this->modButtonEasy->click();
@@ -1208,11 +1209,11 @@ void ModSelector::enableModsFromFlags(LegacyFlags flags) {
     osu->updateMods();
 }
 
-void ModSelector::close() {
+void ModSelector::close(bool force) {
     this->closeButton->animateClickColor();
 
     if(osu->isInPlayMode()) {
-        // do nothing
+        if(force) this->setVisible(false);
     } else if(BanchoState::is_in_a_multi_room()) {
         ui->setScreen(ui->getRoom());
     } else {
@@ -1435,7 +1436,7 @@ UString ModSelector::getOverrideSliderLabelText(const ModSelector::OVERRIDE_SLID
                         newLabelText.append(fmt::format("{} -> {}", maxBPM, newMaxBPM));
                     else
                         newLabelText.append(fmt::format("{}-{} ({}) -> {}-{} ({})", minBPM, maxBPM, mostCommonBPM,
-                                                            newMinBPM, newMaxBPM, newMostCommonBPM));
+                                                        newMinBPM, newMaxBPM, newMostCommonBPM));
                 }
 
                 newLabelText.append(")");

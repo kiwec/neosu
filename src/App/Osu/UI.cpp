@@ -174,6 +174,7 @@ void UI::draw() {
         }
 
         this->pauseOverlay->draw();
+        this->modSelector->draw();
         this->chatOverlay->draw();
         this->userActionsOverlay->draw();
         this->optionsOverlay->draw();
