@@ -77,9 +77,9 @@ bool UI::init() {
     this->screens[screenit++] = this->volumeOverlay = new VolumeOverlay();
     this->screens[screenit++] = this->promptOverlay = new PromptOverlay();
     this->screens[screenit++] = this->modSelector = new ModSelector();
-    this->screens[screenit++] = this->userActions = new UIUserContextMenuScreen();
+    this->screens[screenit++] = this->userActionsOverlay = new UIUserContextMenuScreen();
     this->screens[screenit++] = this->room = new RoomScreen();
-    this->screens[screenit++] = this->chat = new Chat();
+    this->screens[screenit++] = this->chatOverlay = new Chat();
     this->screens[screenit++] = this->optionsOverlay = new OptionsOverlay();
     this->screens[screenit++] = this->rankingScreen = new RankingScreen();
     this->screens[screenit++] = this->userStatsScreen = new UserStatsScreen();
@@ -144,12 +144,13 @@ void UI::draw() {
         osu->backBuffer->enable();
     }
 
+    // draw active screen first, any "overlays" after
+    this->active_screen->draw();
+
     // draw any extra overlays (TODO: draw order, this shouldn't be hardcoded at the start)
     FOR_EACH_OVERLAY_SAFE
     overlay->draw();
     END_FOR_EACH_OVERLAY_SAFE
-
-    this->active_screen->draw();
 
     f32 fadingCursorAlpha = 1.f;
     const bool isFPoSu = (cv::mod_fposu.getBool());
@@ -173,9 +174,8 @@ void UI::draw() {
         }
 
         this->pauseOverlay->draw();
-        this->modSelector->draw();
-        this->chat->draw();
-        this->userActions->draw();
+        this->chatOverlay->draw();
+        this->userActionsOverlay->draw();
         this->optionsOverlay->draw();
 
         if(!isFPoSu) {
@@ -208,10 +208,9 @@ void UI::draw() {
 
     } else {  // if we are not playing
 
-        this->chat->draw();
-        this->userActions->draw();
+        this->chatOverlay->draw();
+        this->userActionsOverlay->draw();
         this->optionsOverlay->draw();
-        this->modSelector->draw();
         this->promptOverlay->draw();
 
         this->hud->drawFps();

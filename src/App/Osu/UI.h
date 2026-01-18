@@ -86,9 +86,9 @@ struct UI final {
     [[nodiscard]] inline VolumeOverlay* getVolumeOverlay() { return this->volumeOverlay; }
     [[nodiscard]] inline PromptOverlay* getPromptOverlay() { return this->promptOverlay; }
     [[nodiscard]] inline ModSelector* getModSelector() { return this->modSelector; }
-    [[nodiscard]] inline UIUserContextMenuScreen* getUserActions() { return this->userActions; }
+    [[nodiscard]] inline UIUserContextMenuScreen* getUserActions() { return this->userActionsOverlay; }
     [[nodiscard]] inline RoomScreen* getRoom() { return this->room; }
-    [[nodiscard]] inline Chat* getChat() { return this->chat; }
+    [[nodiscard]] inline Chat* getChat() { return this->chatOverlay; }
     [[nodiscard]] inline OptionsOverlay* getOptionsOverlay() { return this->optionsOverlay; }
     [[nodiscard]] inline RankingScreen* getRankingScreen() { return this->rankingScreen; }
     [[nodiscard]] inline UserStatsScreen* getUserStatsScreen() { return this->userStatsScreen; }
@@ -111,9 +111,9 @@ struct UI final {
     VolumeOverlay* volumeOverlay{nullptr};
     PromptOverlay* promptOverlay{nullptr};
     ModSelector* modSelector{nullptr};
-    UIUserContextMenuScreen* userActions{nullptr};
+    UIUserContextMenuScreen* userActionsOverlay{nullptr};
     RoomScreen* room{nullptr};
-    Chat* chat{nullptr};
+    Chat* chatOverlay{nullptr};
     OptionsOverlay* optionsOverlay{nullptr};
     RankingScreen* rankingScreen{nullptr};
     UserStatsScreen* userStatsScreen{nullptr};
