@@ -94,6 +94,8 @@ class UString {
     UString(const char *utf8, int length) noexcept;
     UString(std::string_view utf8) noexcept;
     UString(const std::string &utf8) noexcept;
+    UString(const std::wstring &wchar) noexcept;
+
     inline constexpr UString(std::string_view utf8, std::u16string_view unicode) noexcept
         : sUnicode(unicode), sUtf8(utf8) {}
 #define US_(str__) \

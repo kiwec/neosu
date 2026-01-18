@@ -79,6 +79,16 @@ UString::UString(const std::string &utf8) noexcept {
     fromSupposedUtf8(this->sUtf8.data(), this->sUtf8.size());
 }
 
+UString::UString(const std::wstring &wstring) noexcept {
+    if(wstring.empty()) return;
+#if WCHAR_MAX <= 0xFFFF
+    this->sUnicode.assign(reinterpret_cast<const char16_t *>(wstring.data()), wstring.size());
+#else
+    fromUtf32(reinterpret_cast<const char32_t *>(wstring.data()), wstring.length());
+#endif
+    updateUtf8();
+}
+
 UString::UString(std::string_view utf8) noexcept {
     if(utf8.empty()) return;
     this->sUtf8 = utf8;

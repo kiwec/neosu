@@ -741,8 +741,15 @@ void Environment::openFileBrowser(std::string_view initialpath) const noexcept {
         return;
     }
 
-    const std::string encodedPath = Env::cfg(OS::WINDOWS) ? fmt::format("file:///{}", manualDirectoryFixup(pathToOpen))
-                                                          : filesystemPathToURI(pathToOpen);
+    std::string encodedPath;
+    if constexpr(Env::cfg(OS::WINDOWS)) {
+        // Apparently, "file://" URIs don't work with UNC paths on Windows (despite conflicting information from MSDN).
+        // getFolderFromFilePath should do whatever cleanup is required anyways. Super deeply nested folders might not work, but that should be rare.
+        encodedPath = fmt::format("file://{}", pathToOpen);
+    } else {
+        // On Linux/Unix, convert to a URI (for xdg-open to work).
+        encodedPath = filesystemPathToURI(pathToOpen);
+    }
 
     if(!SDL_OpenURL(encodedPath.c_str())) {
         debugLog("Failed to open file URI {:s}: {:s}", encodedPath, SDL_GetError());
@@ -1410,20 +1417,20 @@ std::string Environment::getThingFromPathHelper(std::string_view path, bool fold
     if(folder) {
         // if path ends with separator, it's already a directory
         const bool endsWithSeparator = retPath.back() == prefSep || retPath.back() == otherSep;
+        UString ustrPath;
 
-        UString ustrPath{retPath};
         std::error_code ec;
-        auto abs_path = fs::canonical(ustrPath.plat_str(), ec);
+        auto abs_path = fs::canonical(File::getFsPath(retPath), ec);
 
         if(!ec)  // canonical path found
         {
             auto status = fs::status(abs_path, ec);
             // if it's already a directory or it doesn't have a parent path then just return it directly
             if(ec || status.type() == fs::file_type::directory || !abs_path.has_parent_path())
-                ustrPath = abs_path.c_str();
+                ustrPath = abs_path.string();
             // else return the parent directory for the file
             else if(abs_path.has_parent_path() && !abs_path.parent_path().empty())
-                ustrPath = abs_path.parent_path().c_str();
+                ustrPath = abs_path.parent_path().string();
         } else if(!endsWithSeparator)  // canonical failed, handle manually (if it's not already a directory)
         {
             if(lastSlash != std::string::npos)  // return parent
