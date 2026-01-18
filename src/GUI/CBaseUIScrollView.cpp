@@ -7,6 +7,7 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "Keyboard.h"
+#include "Logging.h"
 #include "Mouse.h"
 #include "Graphics.h"
 #include "Hashing.h"  // IWYU pragma: keep
@@ -641,6 +642,7 @@ void CBaseUIScrollView::updateClipping() {
     this->previousClippingTotalElements = elements.size();
 
     const bool useCache = this->bVerticalScrolling &&                                          //
+                          visibleElements->size() > 2 &&                                       // sanity checks
                           elements.size() > 0 &&                                               //
                           prevVisibleSize > 0 &&                                               //
                           prevVisibleSize == visibleElements->size() &&                        //

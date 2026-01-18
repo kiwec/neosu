@@ -1335,7 +1335,11 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
 
             // when in no grouping, parent buttons are expanded/unexpanded depending on their selection state and how many children they have visible
             // otherwise we need to rebuild everything (with the current implementation) to un-expand the old parent and expand the new one
-            if(oldVis == newVis && (oldVis != SetVisibility::SHOW_PARENT || !this->isInParentsCollapsedMode())) {
+
+            // EXCEPT! another edge case:when in GROUP_COLLECTIONS, there can be multiple occurrences of the same diff button
+            // across collections, and some sets may be collapsed while others aren't!
+            if(oldVis == newVis && (oldVis != SetVisibility::SHOW_PARENT ||
+                                    (!this->isInParentsCollapsedMode() && this->curGroup != GroupType::COLLECTIONS))) {
                 rebuild = false;
                 break;
             }
@@ -1724,42 +1728,61 @@ bool SongBrowser::scrollToBestButton() {
         return best->isSearchMatch();
     } else {
         if(best->isType<CollectionButton>()) {
-            if(best->isSearchMatch()) this->scrollToSongButton(best);  // nothing better to do
+            // nothing better to do
+            if(best->isSearchMatch()) {
+                this->scrollToSongButton(best);
+            }
             return best->isSearchMatch();
         }
 
-        auto *curCollBtns = getCollectionButtonsForGroup(this->curGroup);
-        if(!curCollBtns) {
+        auto *curCollBtnsUnprioritized = getCollectionButtonsForGroup(this->curGroup);
+        if(!curCollBtnsUnprioritized) {
             this->carousel->scrollToTop();
             return true;
         }
 
+        // FIXME: SHIT, the logic falls apart in GROUP_COLLECTIONS, since parents may or may not be collapsed depending on if the full beatmapset
+        // was added to a certain collection or not! need to rework this garbage again
         const bool isAlphanumeric = this->isInAlphanumericCollection();
 
         CollectionButton *selectedCollection = nullptr;
         CollectionButton *collectionContainingTarget = nullptr;
         CarouselButton *target = nullptr;
 
-        for(const auto &colBtn : *curCollBtns) {
-            if(colBtn->isSelected()) {
-                selectedCollection = colBtn.get();
+        // XXX: special cases for collection grouping (same beatmap can be under multiple collection buttons!)
+        // basically: if there is already a collection open, don't open another collection button with the same beatmap
+        // a better way would be to build "candidates" no matter what group we're in and not just scroll to the first occurrence
+        // AGHH this is so slow and ugly JUST SHOOT ME!
+        std::vector<CollectionButton *> curCollBtnsCopyPrioritized;
+        curCollBtnsCopyPrioritized.reserve(curCollBtnsUnprioritized->size());
+        if(this->curGroup == GroupType::COLLECTIONS && selCollection && selCollection->isVisible()) {
+            curCollBtnsCopyPrioritized.push_back(selCollection);
+        }
+        for(const auto &colBtn : *curCollBtnsUnprioritized) {
+            curCollBtnsCopyPrioritized.push_back(colBtn.get());
+        }
+
+        for(CollectionButton *curColBtn : curCollBtnsCopyPrioritized) {
+            if(curColBtn->isSelected()) {
+                selectedCollection = curColBtn;
             }
             // no selected parent in alphanumeric or no selected difficulty in non-alphanumeric, scroll to current collection
             if((isAlphanumeric && !selParent) || (!isAlphanumeric && !selDiff)) {
-                if(!selectedCollection)
+                if(!selectedCollection) {
                     continue;
-                else {
-                    collectionContainingTarget = colBtn.get();
+                } else {
+                    collectionContainingTarget = curColBtn;
                     target = selectedCollection;
                     break;
                 }
             }
 
-            const auto &collChildren = colBtn->getChildren();
+            const auto &collChildren = curColBtn->getChildren();
             // alphanumeric grouping contains parent song buttons instead of difficulties directly
-            if(isAlphanumeric) {
+            // XXX: more special cases for collection grouping (they can be grouped in multiple ways)
+            if(isAlphanumeric || this->curGroup == GroupType::COLLECTIONS) {
                 if(const auto &songit = std::ranges::find(collChildren, selParent); songit != collChildren.end()) {
-                    collectionContainingTarget = colBtn.get();
+                    collectionContainingTarget = curColBtn;
                     if(!selDiff) {
                         target = *songit;
                         // no selected difficulty, scroll to parent
@@ -1773,10 +1796,12 @@ bool SongBrowser::scrollToBestButton() {
                         break;
                     }
                 }
-            } else {
+            }
+
+            if(!target && (!isAlphanumeric || this->curGroup == GroupType::COLLECTIONS)) {
                 const auto &songChildren = reinterpret_cast<const std::vector<SongDifficultyButton *> &>(collChildren);
                 if(const auto &diffit = std::ranges::find(songChildren, selDiff); diffit != songChildren.end()) {
-                    collectionContainingTarget = colBtn.get();
+                    collectionContainingTarget = curColBtn;
                     // found difficulty
                     target = *diffit;
                     break;
@@ -1804,6 +1829,7 @@ bool SongBrowser::scrollToBestButton() {
             }
             return target->isSearchMatch();
         } else {
+            // TODO: only scroll to top if we literally don't see any buttons on screen
             this->carousel->scrollToTop();
             return true;
         }
@@ -3413,6 +3439,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
             this->recreateCollectionsButtons();
             this->rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
                 false, false);  // (last false = skipping rebuildSongButtons() here)
+            this->bSongButtonsNeedSorting = true;
             this->onSortChange(
                 cv::songbrowser_sortingtype.getString().c_str());  // (because this does the rebuildSongButtons())
         }
@@ -3607,7 +3634,7 @@ void SongBrowser::recreateCollectionsButtons() {
             auto it = this->hashToDiffButton->find(map);
             if(it == this->hashToDiffButton->end()) continue;
 
-            std::vector<SongButton *> matching_diffs;
+            std::vector<SongDifficultyButton *> matching_diffs;
 
             SongDifficultyButton *diff_btn = it->second;
 
