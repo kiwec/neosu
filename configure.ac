@@ -445,11 +445,11 @@ win_subsystem_ver=6.00
 AS_IF([test "$host_os" = "linux-gnu"], [
     AS_IF([test "$host_cpu" = "i686"], [
         install -Dm755 /dev/stdin $PWD/build/$target-$CC <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 $CC -m32 "\$@"
 EOF
         install -Dm755 /dev/stdin $PWD/build/$target-$CXX <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 $CXX -m32 "\$@"
 EOF
         AS_IF([test "x$enable_clang" = "xyes"], [
@@ -462,18 +462,18 @@ EOF
         AC_SUBST([NASMOBJ],[elf32])
     ],[
         install -Dm755 /dev/stdin $PWD/build/$target-$CC <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 $CC "\$@"
 EOF
         install -Dm755 /dev/stdin $PWD/build/$target-$CXX <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 $CXX "\$@"
 EOF
         AC_SUBST([NASMOBJ],[elf64])
     ])
 
     install -Dm755 /dev/stdin $PWD/build/pkg-config <<__EOF__
-#!/bin/bash
+#!/usr/bin/env bash
 PKG_CONFIG_PATH="$PKG_CONFIG_PATH" $PKGCONF --personality=$host_cpu-pc-linux-gnu $pc_addflags "\$@"
 __EOF__
 
@@ -546,13 +546,13 @@ _cc_real_hash="$($CC --version | md5sum | cut -d ' ' -f 1),$host"
 _cxx_real_hash="$($CXX --version | md5sum | cut -d ' ' -f 1),$host"
 
 install -Dm755 /dev/stdin $PWD/build/cc <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime \\
 CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=4 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cc_real_hash" \\
 $CCACHE $CC_REAL "\$@"
 EOF
 install -Dm755 /dev/stdin $PWD/build/cxx <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime \\
 CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=4 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cxx_real_hash" \\
 $CCACHE $CXX_REAL "\$@"
@@ -628,7 +628,7 @@ AS_IF([test "$host_os" = "mingw32"], [
         ])
 
         install -Dm755 /dev/stdin $PWD/build/pkg-config <<__EOF__
-#!/bin/bash
+#!/usr/bin/env bash
 PKG_CONFIG_LIBDIR="$pc_syslibdir" \\
 PKG_CONFIG_SYSTEM_INCLUDE_PATH="$pc_sysincpath" \\
 PKG_CONFIG_SYSTEM_LIBRARY_PATH="$pc_syslibpath" \\
@@ -640,7 +640,7 @@ __EOF__
     ], [
         # WIP: building in msys2
         install -Dm755 /dev/stdin $PWD/build/pkg-config <<__EOF__
-#!/bin/bash
+#!/usr/bin/env bash
 PKG_CONFIG_PATH="$PKG_CONFIG_PATH" \
 $PKGCONF --personality=$host_cpu-w64-mingw32 $pc_addflags "\$@"
 __EOF__
