@@ -30,12 +30,12 @@ BOOL get_process_memory_info(HANDLE proc, PPROCESS_MEMORY_COUNTERS counters, DWO
     static bool triedToLoad = false;
     if(!triedToLoad) {
         triedToLoad = true;
-        dynutils::lib_obj *kernel32Handle = reinterpret_cast<dynutils::lib_obj *>(GetModuleHandle(TEXT("kernel32.dll")));
+        dynutils::lib_obj* kernel32Handle = reinterpret_cast<dynutils::lib_obj*>(GetModuleHandle(TEXT("kernel32.dll")));
         if(kernel32Handle) {
             pGetProcessMemoryInfo = dynutils::load_func<GetProcessMemoryInfo_t>(kernel32Handle, "GetProcessMemoryInfo");
         }
         if(!pGetProcessMemoryInfo) {
-            dynutils::lib_obj *psapiHandle = dynutils::load_lib_system("psapi.dll");
+            dynutils::lib_obj* psapiHandle = dynutils::load_lib_system("psapi.dll");
             if(psapiHandle) {
                 pGetProcessMemoryInfo =
                     dynutils::load_func<GetProcessMemoryInfo_t>(psapiHandle, "GetProcessMemoryInfo");
@@ -170,7 +170,7 @@ class ProcStatmReader : public ProcReader {
     ~ProcStatmReader() override = default;
 
     // Returns size, resident, shared, text, lib, data, dt (all in pages)
-    [[nodiscard]] inline bool read(long& size, long& resident, long& shared, long& text, long& data) const {
+    [[nodiscard]] inline bool read(i64& size, i64& resident, i64& shared, i64& text, i64& data) const {
         if(m_fd < 0) return false;
 
         char buf[128];
@@ -178,7 +178,7 @@ class ProcStatmReader : public ProcReader {
         if(n <= 0) return false;
 
         buf[n] = '\0';
-        long lib, dt;
+        i64 lib, dt;
         using Parsing::SPC;
         if(!Parsing::parse((const char*)buf, &size, SPC, &resident, SPC, &shared, SPC, &text, SPC, &lib, SPC, &data,
                            SPC, &dt)) {
@@ -227,7 +227,7 @@ class ProcStatReader : public ProcReader {
         // state(1) ppid(2) pgrp(3) session(4) tty_nr(5) tpgid(6) flags(7)
         // minflt(8) cminflt(9) majflt(10) cmajflt(11) utime(12) stime(13)
         // cutime(14) cstime(15) priority(16) nice(17) num_threads(18)
-        long utime, stime, num_threads;
+        i64 utime, stime, num_threads;
         using Parsing::skip;
         using Parsing::SPC;
         const bool read = Parsing::parse(p,  //
@@ -251,7 +251,7 @@ class ProcStatReader : public ProcReader {
     }
 
    private:
-    long m_clkTck;
+    i64 m_clkTck;
 };
 
 // Reader for /proc/self/status (context switches)
@@ -363,7 +363,7 @@ size_t getCurrentRSS() {
 
 #elif defined(MCENGINE_PLATFORM_LINUX)
     // Single syscall via persistent fd + pread
-    long size, resident, shared, text, data;
+    i64 size, resident, shared, text, data;
     if(!getStatmReader().read(size, resident, shared, text, data)) {
         return (size_t)0L;
     }
@@ -389,7 +389,7 @@ size_t getVirtualSize() {
     return (size_t)info.virtual_size;
 
 #elif defined(MCENGINE_PLATFORM_LINUX)
-    long size, resident, shared, text, data;
+    i64 size, resident, shared, text, data;
     if(!getStatmReader().read(size, resident, shared, text, data)) {
         return (size_t)0L;
     }
@@ -418,8 +418,8 @@ size_t getTotalPhysicalMemory() {
     return (size_t)0L;
 
 #elif defined(MCENGINE_PLATFORM_LINUX)
-    long pages = sysconf(_SC_PHYS_PAGES);
-    long page_size = sysconf(_SC_PAGESIZE);
+    i64 pages = sysconf(_SC_PHYS_PAGES);
+    i64 page_size = sysconf(_SC_PAGESIZE);
     if(pages > 0 && page_size > 0) return (size_t)pages * (size_t)page_size;
     return (size_t)0L;
 
@@ -450,8 +450,8 @@ size_t getAvailablePhysicalMemory() {
     // _SC_AVPHYS_PAGES gives free pages, but doesn't include reclaimable cache.
     // For a more accurate "available" value, /proc/meminfo has MemAvailable (kernel 3.14+).
     // Fall back to free pages if that's not available.
-    long pages = sysconf(_SC_AVPHYS_PAGES);
-    long page_size = sysconf(_SC_PAGESIZE);
+    i64 pages = sysconf(_SC_AVPHYS_PAGES);
+    i64 page_size = sysconf(_SC_PAGESIZE);
     if(pages > 0 && page_size > 0) return (size_t)pages * (size_t)page_size;
     return (size_t)0L;
 
@@ -532,7 +532,7 @@ size_t getSharedMemory() {
     return (size_t)0L;
 
 #elif defined(MCENGINE_PLATFORM_LINUX)
-    long size, resident, shared, text, data;
+    i64 size, resident, shared, text, data;
     if(!getStatmReader().read(size, resident, shared, text, data)) {
         return (size_t)0L;
     }
@@ -612,7 +612,7 @@ void getMemoryInfo(MemoryInfo& info) {
 #elif defined(MCENGINE_PLATFORM_LINUX)
     size_t pageSize = (size_t)sysconf(_SC_PAGESIZE);
 
-    long size, resident, shared, text, data;
+    i64 size, resident, shared, text, data;
     if(getStatmReader().read(size, resident, shared, text, data)) {
         info.currentRSS = (size_t)resident * pageSize;
         info.virtualSize = (size_t)size * pageSize;
@@ -626,10 +626,10 @@ void getMemoryInfo(MemoryInfo& info) {
         info.pageFaults = (uint64_t)(rusage.ru_majflt + rusage.ru_minflt);
     }
 
-    long pages = sysconf(_SC_PHYS_PAGES);
+    i64 pages = sysconf(_SC_PHYS_PAGES);
     if(pages > 0) info.totalPhysical = (size_t)pages * pageSize;
 
-    long availPages = sysconf(_SC_AVPHYS_PAGES);
+    i64 availPages = sysconf(_SC_AVPHYS_PAGES);
     if(availPages > 0) info.availPhysical = (size_t)availPages * pageSize;
 
     struct rlimit rl;

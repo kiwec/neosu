@@ -44,6 +44,18 @@ const char* parse_str(const char* begin, const char* end, T* arg) {
         if(begin >= end) return nullptr;
         *arg = *begin;
         return begin + 1;
+    } else if constexpr(std::is_same_v<T, long>) {
+        long l;
+        auto [ptr, ec] = std::from_chars(begin, end, l);
+        if(ec != std::errc()) return nullptr;
+        *arg = l;
+        return ptr;
+    } else if constexpr(std::is_same_v<T, unsigned long>) {
+        unsigned long ul;
+        auto [ptr, ec] = std::from_chars(begin, end, ul);
+        if(ec != std::errc()) return nullptr;
+        *arg = ul;
+        return ptr;
     } else if constexpr(std::is_same_v<T, f32>) {
         f32 f;
         auto [ptr, ec] = std::from_chars(begin, end, f);
