@@ -124,5 +124,5 @@ class AsyncResourceLoader final {
     Sync::mutex asyncDestroyMutex;
 
     // lifecycle flags
-    std::atomic<bool> bShuttingDown{false};
+    bool bShuttingDown{false};
 };

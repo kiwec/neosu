@@ -30,7 +30,6 @@ class ConVarHandler {
     }
 
     [[nodiscard]] forceinline size_t getNumConVars() { return getConVarArray().size(); }
-    [[nodiscard]] size_t getTotalMemUsageBytes();
 
     [[nodiscard]] ConVar *getConVarByName(std::string_view name, bool warnIfNotFound = true) const;
     [[nodiscard]] std::vector<ConVar *> getConVarByLetter(std::string_view letters) const;

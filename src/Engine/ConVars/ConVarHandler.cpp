@@ -173,37 +173,6 @@ bool ConVarHandler::removeServerValue(std::string_view cvarName) {
     return true;
 }
 
-size_t ConVarHandler::getTotalMemUsageBytes() {
-    static size_t ret = 0;
-    if(ret > 0 && !engine->throttledShouldRun(60)) return ret;
-    ret = 0;
-
-    for(auto *cv : this->getConVarArray()) {
-        ret += strlen(cv->sName);
-        ret += strlen(cv->sHelpString);
-        ret += cv->sDefaultValue.size();
-        ret += sizeof(cv->dDefaultValue);
-        ret += sizeof(cv->dClientValue);
-        ret += cv->sClientValue.size();
-        ret += sizeof(cv->dSkinValue);
-        ret += cv->sSkinValue.size();
-        ret += sizeof(cv->dServerValue);
-        ret += cv->sServerValue.size();
-        ret += sizeof(cv->sCachedReturnedString);
-        ret += sizeof(cv->callback);
-        ret += sizeof(cv->changeCallback);
-        ret += sizeof(cv->serverProtectionPolicy);
-        ret += sizeof(cv->type);
-        ret += sizeof(cv->iFlags);
-        ret += sizeof(cv->bCanHaveValue);
-        ret += sizeof(cv->hasServerValue);
-        ret += sizeof(cv->hasSkinValue);
-        ret += sizeof(cv->bUseCachedDouble);
-        ret += sizeof(cv->bUseCachedString);
-    }
-    return ret;
-}
-
 //*****************************//
 //	ConVarHandler ConCommands  //
 //*****************************//

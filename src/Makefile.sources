@@ -155,6 +155,7 @@ neosu_SOURCES = \
 	src/Engine/Sound/SoLoud/SoLoudSoundEngine.cpp \
 	src/Engine/Sound/Sound.cpp \
 	src/Engine/Sound/SoundEngine.cpp \
+	src/Engine/SysMon.cpp \
 	src/Engine/TextureAtlas.cpp \
 	src/Engine/Thread.cpp \
 	src/Engine/Timing.cpp \

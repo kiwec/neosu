@@ -1,8 +1,6 @@
 // Copyright (c) 2020, PG, All rights reserved.
 #include "VisualProfiler.h"
 
-#include <cstring>
-
 #include "AnimationHandler.h"
 #include "ConVar.h"
 #include "ConVarHandler.h"
@@ -12,15 +10,81 @@
 #include "Mouse.h"
 #include "Profiler.h"
 #include "ResourceManager.h"
+#include "Resource.h"
 #include "RuntimePlatform.h"
 #include "SoundEngine.h"
 #include "Font.h"
 #include "VertexArrayObject.h"
+#include "SysMon.h"
+
+#include <cstring>
+
+namespace cv {
+static ConVar vprof_sysinfo_refresh_interval("vprof_sysinfo_refresh_interval", 0.5f, CLIENT);
+}
+
+struct VProfGatherer final {
+    VProfGatherer() : worker(this) {}
+    struct InfoBundle {
+        SysMon::MemoryInfo mem;
+        SysMon::CpuInfo cpu;
+    };
+
+    [[nodiscard]] const InfoBundle &getLatest() const { return this->lastInfo; }
+
+    void update() {
+        if(const f64 now = engine->getTime();
+           this->lastCheckTime + cv::vprof_sysinfo_refresh_interval.getFloat() < now) {
+            this->lastCheckTime = now;
+
+            if(!this->waiting) {
+                resourceManager->reloadResource(&this->worker, true);
+                this->waiting = true;
+            }
+        }
+        return;
+    }
+
+   private:
+    class Dispatchee : public Resource {
+        NOCOPY_NOMOVE(Dispatchee)
+       public:
+        Dispatchee(VProfGatherer *parent) : Resource(APPDEFINED), parent(parent) {}
+        ~Dispatchee() override = default;
+        void init() override {
+            parent->waiting = false;
+            parent->lastInfo = this->scratchInfo;
+            // So we don't spam updates unnecessarily fast if it can't keep up for some reason.
+            parent->lastCheckTime = engine->getTime();
+        }
+        void initAsync() override {
+            if(!this->isInterrupted()) {
+                SysMon::getCpuInfo(this->scratchInfo.cpu);
+                SysMon::getMemoryInfo(this->scratchInfo.mem);
+            }
+            this->setAsyncReady(true);
+            this->setReady(true);
+        }
+        void destroy() override {}
+
+       private:
+        friend VProfGatherer;
+        InfoBundle scratchInfo{};
+        VProfGatherer *parent;
+    };
+
+    Dispatchee worker;
+    InfoBundle lastInfo{};
+    f64 lastCheckTime{0.};
+    bool waiting{false};
+};
 
 VisualProfiler *vprof = nullptr;
 
 VisualProfiler::VisualProfiler() : CBaseUIElement(0, 0, 0, 0, "") {
     vprof = this;
+    this->infoGatherer = std::make_unique<VProfGatherer>();
+
     this->textLines.reserve(128);
     this->engineTextLines.reserve(128);
     this->appTextLines.reserve(128);
@@ -60,13 +124,13 @@ void VisualProfiler::draw() {
     if(!cv::vprof.getBool() || !this->bVisible) return;
 
     // draw miscellaneous debug infos
-    const int displayMode = cv::vprof_display_mode.getInt();
-    if(displayMode != INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_DEFAULT) {
+    const auto displayMode = cv::vprof_display_mode.getVal<INFO_BLADE_DISPLAY_MODE>();
+    if(displayMode != INFO_BLADE_DISPLAY_MODE::DEFAULT) {
         McFont *textFont = this->font;
         float textScale = 1.0f;
         {
             switch(displayMode) {
-                case INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_GPU_INFO: {
+                case INFO_BLADE_DISPLAY_MODE::GPU_INFO: {
                     const int vramTotalMB = g->getVRAMTotal() / 1024;
                     const int vramRemainingMB = g->getVRAMRemaining() / 1024;
 
@@ -74,15 +138,9 @@ void VisualProfiler::draw() {
                     UString model = g->getModel();
                     UString version = g->getVersion();
 
-                    UString line1 = "GPU Vendor: ";
-                    line1.append(vendor);
-                    addTextLine(line1, textFont, this->textLines);
-                    UString line2 = "Model: ";
-                    line2.append(model);
-                    addTextLine(line2, textFont, this->textLines);
-                    UString line3 = "Version: ";
-                    line3.append(version);
-                    addTextLine(line3, textFont, this->textLines);
+                    addTextLine(fmt::format("GPU Vendor: {:s}"_cf, vendor), textFont, this->textLines);
+                    addTextLine(fmt::format("Model: {:s}"_cf, model), textFont, this->textLines);
+                    addTextLine(fmt::format("Version: {:s}_cf", version), textFont, this->textLines);
                     addTextLine(
                         fmt::format("Resolution: {:d} x {:d}"_cf, (int)g->getResolution().x, (int)g->getResolution().y),
                         textFont, this->textLines);
@@ -96,7 +154,54 @@ void VisualProfiler::draw() {
                                 this->textLines);
                 } break;
 
-                case INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_ENGINE_INFO: {
+                case INFO_BLADE_DISPLAY_MODE::CPU_RAM_INFO: {
+                    textFont = this->fontConsole;
+                    textScale = std::round(env->getDPIScale() + 0.255f);
+
+                    const auto &[minfo, cinfo] = this->infoGatherer->getLatest();
+
+                    addTextLine(US_("CPU info:"), {}, textFont, this->textLines);
+
+                    addTextLine(US_("Threads:"), fmt::format("{:d}"_cf, cinfo.threadCount), textFont, this->textLines);
+
+                    addTextLine(US_("CPU Usage:"), fmt::format("{:.2f}%"_cf, cinfo.cpuUsage), textFont,
+                                this->textLines);
+                    addTextLine(US_("CPU Time (usr):"), fmt::format("{:.2f}s"_cf, cinfo.userTime), textFont,
+                                this->textLines);
+                    addTextLine(US_("CPU Time (krnl):"), fmt::format("{:.2f}s"_cf, cinfo.kernelTime), textFont,
+                                this->textLines);
+
+                    addTextLine(US_("CTXT (Vol.):"), fmt::format("{:d}"_cf, cinfo.voluntaryCtxSwitches), textFont,
+                                this->textLines);
+                    addTextLine(US_("CTXT (Invol.):"), fmt::format("{:d}"_cf, cinfo.involuntaryCtxSwitches), textFont,
+                                this->textLines);
+
+                    addTextLine({}, textFont, this->textLines);
+
+                    addTextLine(US_("RAM info:"), {}, textFont, this->textLines);
+                    addTextLine(US_("Total Physical:"), fmt::format("{:d}MB"_cf, minfo.totalPhysical / (1024UL * 1024)),
+                                textFont, this->textLines);
+                    addTextLine(US_("Avail Physical:"), fmt::format("{:d}MB"_cf, minfo.availPhysical / (1024UL * 1024)),
+                                textFont, this->textLines);
+                    addTextLine(US_("Total Virtual:"), fmt::format("{:d}MB"_cf, minfo.totalVirtual / (1024UL * 1024)),
+                                textFont, this->textLines);
+                    addTextLine(US_("Usage (RSS):"), fmt::format("{:d}MB"_cf, minfo.currentRSS / (1024UL * 1024)),
+                                textFont, this->textLines);
+                    addTextLine(US_("Peak RSS:"), fmt::format("{:d}MB"_cf, minfo.peakRSS / (1024UL * 1024)), textFont,
+                                this->textLines);
+
+                    addTextLine(US_("Virtual:"), fmt::format("{:d}MB"_cf, minfo.virtualSize / (1024UL * 1024)),
+                                textFont, this->textLines);
+                    addTextLine(US_("Private:"), fmt::format("{:d}MB"_cf, minfo.privateBytes / (1024UL * 1024)),
+                                textFont, this->textLines);
+                    addTextLine(US_("Shared:"), fmt::format("{:d}MB"_cf, minfo.sharedBytes / (1024UL * 1024)), textFont,
+                                this->textLines);
+
+                    addTextLine(US_("Page Faults:"), fmt::format("{:d}"_cf, minfo.pageFaults), textFont,
+                                this->textLines);
+                } break;
+
+                case INFO_BLADE_DISPLAY_MODE::ENGINE_INFO: {
                     textFont = this->fontConsole;
                     textScale = std::round(env->getDPIScale() + 0.255f);
 
@@ -106,7 +211,6 @@ void VisualProfiler::draw() {
                     addTextLine(fmt::format("Platform: {:s}"_cf, RuntimePlatform::current_string()), textFont,
                                 this->textLines);
                     addTextLine(fmt::format("ConVars: {:d}"_cf, cvars().getNumConVars()), textFont, this->textLines);
-                    // addTextLine(fmt::format("ConVar KB: {}"_cf, cvars().getTotalMemUsageBytes() / 1024ULL), textFont, this->textLines);
                     addTextLine(fmt::format("Monitor: [{:d}] of {:d}"_cf, env->getMonitor(), env->getMonitors().size()),
                                 textFont, this->textLines);
                     addTextLine(fmt::format("Env Mouse Pos: {:d} x {:d}"_cf, (int)envMousePos.x, (int)envMousePos.y),
@@ -139,12 +243,12 @@ void VisualProfiler::draw() {
                     addTextLine(fmt::format("Frame: {:d}"_cf, engine->getFrameCount()), textFont, this->textLines);
                     addTextLine(fmt::format("Time: {:f}"_cf, time), textFont, this->textLines);
 
-                    for(size_t i = 0; i < this->engineTextLines.size(); i++) {
-                        addTextLine(this->engineTextLines[i], textFont, this->textLines);
+                    for(const auto &engineTextLine : this->engineTextLines) {
+                        addTextLine(engineTextLine, textFont, this->textLines);
                     }
                 } break;
 
-                case INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_APP_INFO: {
+                case INFO_BLADE_DISPLAY_MODE::APP_INFO: {
                     textFont = this->fontConsole;
                     textScale = std::round(env->getDPIScale() + 0.255f);
 
@@ -154,6 +258,8 @@ void VisualProfiler::draw() {
 
                     if(this->appTextLines.size() < 1) addTextLine("(Empty)", textFont, this->textLines);
                 } break;
+                default:
+                    break;
             }
         }
 
@@ -164,7 +270,7 @@ void VisualProfiler::draw() {
 
             int largestLineWidth = 0;
             for(const TEXT_LINE &textLine : this->textLines) {
-                if(textLine.width > largestLineWidth) largestLineWidth = textLine.width;
+                if(textLine.width() > largestLineWidth) largestLineWidth = textLine.width();
             }
             largestLineWidth *= textScale;
 
@@ -188,11 +294,17 @@ void VisualProfiler::draw() {
 
                 for(size_t i = 0; i < this->textLines.size(); i++) {
                     if(i > 0) g->translate(0, (int)(textFont->getHeight() * textScale * 1.5f));
-
                     g->pushTransform();
                     {
-                        g->translate(engine->getScreenWidth() - this->textLines[i].width * textScale, 0);
-                        drawStringWithShadow(textFont, this->textLines[i].text, textColor);
+                        const int leftTrans = engine->getScreenWidth() - largestLineWidth;
+                        g->translate(leftTrans, 0);
+                        if(!this->textLines[i].textLeftAligned.isEmpty())
+                            drawStringWithShadow(textFont, this->textLines[i].textLeftAligned, textColor);
+
+                        const int rightTrans =
+                            (engine->getScreenWidth() - (this->textLines[i].widthRight * textScale)) - leftTrans;
+                        g->translate(rightTrans, 0);
+                        drawStringWithShadow(textFont, this->textLines[i].textRightAligned, textColor);
                     }
                     g->popTransform();
                 }
@@ -395,6 +507,10 @@ void VisualProfiler::update(CBaseUIEventCtx &c) {
     CBaseUIElement::update(c);
     if(!cv::vprof.getBool() || !this->bVisible) return;
 
+    if(cv::vprof_display_mode.getVal<INFO_BLADE_DISPLAY_MODE>() == INFO_BLADE_DISPLAY_MODE::CPU_RAM_INFO) {
+        this->infoGatherer->update();
+    }
+
     const bool isFrozen = (keyboard->isShiftDown() && (!this->bRequiresAltShiftKeysToFreeze || keyboard->isAltDown()));
 
     if(cv::debug_vprof.getBool() || cv::vprof_spike.getBool()) {
@@ -578,20 +694,19 @@ void VisualProfiler::update(CBaseUIEventCtx &c) {
 }
 
 void VisualProfiler::incrementInfoBladeDisplayMode() {
-    cv::vprof_display_mode.setValue((cv::vprof_display_mode.getInt() + 1) %
-                                    INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_COUNT);
+    cv::vprof_display_mode.setValue((cv::vprof_display_mode.getInt() + 1) % (int)INFO_BLADE_DISPLAY_MODE::COUNT);
 }
 
 void VisualProfiler::decrementInfoBladeDisplayMode() {
-    if(cv::vprof_display_mode.getInt() - 1 < INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_DEFAULT)
-        cv::vprof_display_mode.setValue(INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_COUNT - 1);
+    if(cv::vprof_display_mode.getInt() - 1 < (int)INFO_BLADE_DISPLAY_MODE::DEFAULT)
+        cv::vprof_display_mode.setValue((int)INFO_BLADE_DISPLAY_MODE::COUNT - 1);
     else
         cv::vprof_display_mode.setValue(cv::vprof_display_mode.getInt() - 1);
 }
 
 void VisualProfiler::addInfoBladeEngineTextLine(const UString &text) {
     if(!cv::vprof.getBool() || !this->bVisible ||
-       cv::vprof_display_mode.getInt() != INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_ENGINE_INFO)
+       cv::vprof_display_mode.getInt() != (int)INFO_BLADE_DISPLAY_MODE::ENGINE_INFO)
         return;
 
     this->engineTextLines.push_back(text);
@@ -599,7 +714,7 @@ void VisualProfiler::addInfoBladeEngineTextLine(const UString &text) {
 
 void VisualProfiler::addInfoBladeAppTextLine(const UString &text) {
     if(!cv::vprof.getBool() || !this->bVisible ||
-       cv::vprof_display_mode.getInt() != INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_APP_INFO)
+       cv::vprof_display_mode.getInt() != (int)INFO_BLADE_DISPLAY_MODE::APP_INFO)
         return;
 
     this->appTextLines.push_back(text);
@@ -670,10 +785,16 @@ int VisualProfiler::getGraphWidth() { return (cv::vprof_graph_width.getFloat() *
 int VisualProfiler::getGraphHeight() { return (cv::vprof_graph_height.getFloat() * env->getDPIScale()); }
 
 void VisualProfiler::addTextLine(const UString &text, McFont *font, std::vector<TEXT_LINE> &textLines) {
-    TEXT_LINE textLine;
-    {
-        textLine.text = text;
-        textLine.width = font->getStringWidth(text);
-    }
-    textLines.push_back(textLine);
+    textLines.push_back({.textLeftAligned = {},
+                         .textRightAligned = text,
+                         .widthLeft = 0,
+                         .widthRight = (int)font->getStringWidth(text)});
+}
+
+void VisualProfiler::addTextLine(const UString &textLeft, const UString &textRight, McFont *font,
+                                 std::vector<TEXT_LINE> &textLines) {
+    textLines.push_back({.textLeftAligned = textLeft,
+                         .textRightAligned = textRight,
+                         .widthLeft = (int)(font->getStringWidth(textLeft) * 1.1f),  // spacing
+                         .widthRight = (int)font->getStringWidth(textRight)});
 }

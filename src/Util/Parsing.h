@@ -12,12 +12,39 @@
 
 namespace Parsing {
 
+// use this instead of ' ' for space-separated elements, since Parsing::parse skips whitespace by default
+enum class sig_whitespace_t : char {};
+inline constexpr sig_whitespace_t SPC{' '};
+inline constexpr sig_whitespace_t TAB{'\t'};
+
+// use this to skip parsed values (like sscanf's %* modifier)
+template <typename T>
+struct skip_t {
+    using type = T;
+};
+
+template <typename T>
+inline constexpr skip_t<T> skip{};
+
 // NOLINTBEGIN(cppcoreguidelines-init-variables)
 namespace detail {
 
 template <typename T>
+struct is_skip : std::false_type {};
+
+template <typename T>
+struct is_skip<skip_t<T>> : std::true_type {};
+
+template <typename T>
+inline constexpr bool is_skip_v = is_skip<T>::value;
+
+template <typename T>
 const char* parse_str(const char* begin, const char* end, T* arg) {
-    if constexpr(std::is_same_v<T, f32>) {
+    if constexpr(std::is_same_v<T, char>) {
+        if(begin >= end) return nullptr;
+        *arg = *begin;
+        return begin + 1;
+    } else if constexpr(std::is_same_v<T, f32>) {
         f32 f;
         auto [ptr, ec] = std::from_chars(begin, end, f);
         if(ec != std::errc()) return nullptr;
@@ -59,6 +86,12 @@ const char* parse_str(const char* begin, const char* end, T* arg) {
         if(ec != std::errc()) return nullptr;
         *arg = (l != 0);
         return ptr;
+    } else if constexpr(std::is_same_v<T, i8>) {
+        unsigned int c;
+        auto [ptr, ec] = std::from_chars(begin, end, c);
+        if(ec != std::errc() || c > 127 || c < -128) return nullptr;
+        *arg = static_cast<i8>(c);
+        return ptr;
     } else if constexpr(std::is_same_v<T, u8>) {
         unsigned int b;
         auto [ptr, ec] = std::from_chars(begin, end, b);
@@ -96,17 +129,26 @@ inline const char* parse_impl(const char* begin, const char* /* end */) { return
 
 template <typename T, typename... Extra>
 const char* parse_impl(const char* begin, const char* end, T arg, Extra... extra) {
-    // always skip whitespace
-    while(begin < end && (*begin == ' ' || *begin == '\t')) begin++;
+    // always skip whitespace (unless we actually want to split by it)
+    if constexpr(!std::is_same_v<T, sig_whitespace_t> && !is_skip_v<T>) {
+        while(begin < end && (*begin == ' ' || *begin == '\t')) begin++;
+    }
 
     if constexpr(std::is_same_v<T, std::string*> && sizeof...(extra) > 0) {
         // you can only parse an std::string if it is the LAST parameter,
         // because it will consume the WHOLE string.
         static_assert(Env::always_false_v<T>, "cannot parse an std::string in the middle of the parsing chain");
         return nullptr;
-    } else if constexpr(std::is_same_v<T, char>) {
+    } else if constexpr(is_skip_v<T>) {
+        // parse and discard the value
+        while(begin < end && (*begin == ' ' || *begin == '\t')) begin++;
+        typename T::type tmp;
+        begin = parse_str(begin, end, &tmp);
+        if(begin == nullptr) return nullptr;
+        return parse_impl(begin, end, extra...);
+    } else if constexpr(std::is_same_v<T, char> || std::is_same_v<T, sig_whitespace_t>) {
         // assert char separator. return position after separator.
-        if(begin >= end || *begin != arg) return nullptr;
+        if(begin >= end || *begin != static_cast<char>(arg)) return nullptr;
         return parse_impl(begin + 1, end, extra...);
     } else if constexpr(std::is_same_v<T, const char*>) {
         // assert string label. return position after label.

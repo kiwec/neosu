@@ -51,7 +51,7 @@ class AsyncResourceLoader::LoaderThread final {
         McThread::set_current_thread_prio(
             McThread::Priority::NORMAL);  // reset priority (don't inherit from main thread)
 
-        while(!stoken.stop_requested() && !this->loader_ptr->bShuttingDown.load(std::memory_order_acquire)) {
+        while(!stoken.stop_requested()) {
             const bool debug = cv::debug_rm.getBool();
 
             auto work = this->loader_ptr->getNextPendingWork();
@@ -62,9 +62,8 @@ class AsyncResourceLoader::LoaderThread final {
                 Sync::unique_lock lock(this->loader_ptr->workAvailableMutex);
 
                 // wait indefinitely until work is available or stop is requested
-                this->loader_ptr->workAvailable.wait(lock, stoken, [this]() {
-                    return this->loader_ptr->bShuttingDown.load(std::memory_order_acquire) ||
-                           this->loader_ptr->iActiveWorkCount.load(std::memory_order_acquire) > 0;
+                this->loader_ptr->workAvailable.wait(lock, stoken, [loader = this->loader_ptr]() {
+                    return loader->iActiveWorkCount.load(std::memory_order_acquire) > 0;
                 });
 
                 continue;
@@ -140,15 +139,16 @@ void AsyncResourceLoader::shutdown() {
 
     this->bShuttingDown = true;
 
-    // wake up all waiting threads before requesting stop
-    this->workAvailable.notify_all();
-
-    // request all threads to stop and wake them up
+    // stop threads
     {
         Sync::scoped_lock lock(this->threadsMutex);
-        // clear threadpool vector, jthread destructors will handle join + stop request automatically
+
+        // clear threadpool vector
         this->threadpool.clear();
     }
+
+    // wake them up from their slumber if they are still sleeping, outside the lock
+    this->workAvailable.notify_all();
 
     // cleanup remaining work items
     {

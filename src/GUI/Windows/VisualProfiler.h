@@ -5,12 +5,16 @@
 #include "CBaseUIElement.h"
 #include "Color.h"
 
+#include <memory>
+
 class ConVar;
 class ProfilerNode;
 class ProfilerProfile;
 
 class McFont;
 class VertexArrayObject;
+
+struct VProfGatherer;
 
 class VisualProfiler : public CBaseUIElement {
    public:
@@ -34,19 +38,21 @@ class VisualProfiler : public CBaseUIElement {
     bool isEnabled() override;
 
    private:
-    enum INFO_BLADE_DISPLAY_MODE : uint8_t {
-        INFO_BLADE_DISPLAY_MODE_DEFAULT = 0,
+    enum class INFO_BLADE_DISPLAY_MODE : uint8_t {
+        DEFAULT = 0,
 
-        INFO_BLADE_DISPLAY_MODE_GPU_INFO = 1,
-        INFO_BLADE_DISPLAY_MODE_ENGINE_INFO = 2,
-        INFO_BLADE_DISPLAY_MODE_APP_INFO = 3,
+        GPU_INFO = 1,
+        CPU_RAM_INFO = 2,
+        ENGINE_INFO = 3,
+        APP_INFO = 4,
 
-        INFO_BLADE_DISPLAY_MODE_COUNT = 4
+        COUNT = 5
     };
 
     struct TEXT_LINE {
-        UString text;
-        int width;
+        UString textLeftAligned, textRightAligned;
+        int widthLeft, widthRight;
+        [[nodiscard]] int width() const { return widthLeft + widthRight; }
     };
 
    private:
@@ -76,6 +82,8 @@ class VisualProfiler : public CBaseUIElement {
     static int getGraphHeight();
 
     static void addTextLine(const UString &text, McFont *font, std::vector<TEXT_LINE> &textLines);
+    static void addTextLine(const UString &textLeft, const UString &textRight, McFont *font,
+                            std::vector<TEXT_LINE> &textLines);
 
     static void drawStringWithShadow(McFont *font, const UString &string, Color color);
 
@@ -109,6 +117,8 @@ class VisualProfiler : public CBaseUIElement {
     std::vector<TEXT_LINE> textLines;
     std::vector<UString> engineTextLines;
     std::vector<UString> appTextLines;
+
+    std::unique_ptr<VProfGatherer> infoGatherer;
 };
 
 extern VisualProfiler *vprof;
