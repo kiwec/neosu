@@ -10,19 +10,19 @@
 Graphics::Graphics() {
     // init matrix stacks
     this->bTransformUpToDate = false;
-    this->worldTransformStack.emplace();
-    this->projectionTransformStack.emplace();
+    this->worldTransformStack.emplace_back();
+    this->projectionTransformStack.emplace_back();
 
     // init 3d gui scene stack
     this->bIs3dScene = false;
-    this->scene3d_stack.push(false);
+    this->scene3d_stack.push_back(false);
 
     cv::vsync.setCallback([](float on) -> void { return !!g ? g->setVSync(!!static_cast<int>(on)) : (void)0; });
 }
 
 void Graphics::pushTransform() {
-    this->worldTransformStack.emplace(this->worldTransformStack.top());
-    this->projectionTransformStack.emplace(this->projectionTransformStack.top());
+    this->worldTransformStack.push_back(this->worldTransformStack.back());
+    this->projectionTransformStack.push_back(this->projectionTransformStack.back());
 }
 
 void Graphics::popTransform() {
@@ -38,23 +38,23 @@ void Graphics::popTransform() {
         return;
     }
 
-    this->worldTransformStack.pop();
-    this->projectionTransformStack.pop();
+    this->worldTransformStack.pop_back();
+    this->projectionTransformStack.pop_back();
     this->bTransformUpToDate = false;
 }
 
 void Graphics::translate(float x, float y, float z) {
-    this->worldTransformStack.top().translate(x, y, z);
+    this->worldTransformStack.back().translate(x, y, z);
     this->bTransformUpToDate = false;
 }
 
 void Graphics::rotate(float deg, float x, float y, float z) {
-    this->worldTransformStack.top().rotate(deg, x, y, z);
+    this->worldTransformStack.back().rotate(deg, x, y, z);
     this->bTransformUpToDate = false;
 }
 
 void Graphics::scale(float x, float y, float z) {
-    this->worldTransformStack.top().scale(x, y, z);
+    this->worldTransformStack.back().scale(x, y, z);
     this->bTransformUpToDate = false;
 }
 
@@ -71,32 +71,32 @@ void Graphics::rotate3D(float deg, float x, float y, float z) {
 }
 
 void Graphics::setWorldMatrix(Matrix4 &worldMatrix) {
-    this->worldTransformStack.pop();
-    this->worldTransformStack.push(worldMatrix);
+    this->worldTransformStack.pop_back();
+    this->worldTransformStack.push_back(worldMatrix);
     this->bTransformUpToDate = false;
 }
 
 void Graphics::setWorldMatrixMul(Matrix4 &worldMatrix) {
-    this->worldTransformStack.top() *= worldMatrix;
+    this->worldTransformStack.back() *= worldMatrix;
     this->bTransformUpToDate = false;
 }
 
 void Graphics::setProjectionMatrix(Matrix4 &projectionMatrix) {
-    this->projectionTransformStack.pop();
-    this->projectionTransformStack.push(projectionMatrix);
+    this->projectionTransformStack.pop_back();
+    this->projectionTransformStack.push_back(projectionMatrix);
     this->bTransformUpToDate = false;
 }
 
-Matrix4 Graphics::getWorldMatrix() { return this->worldTransformStack.top(); }
+Matrix4 Graphics::getWorldMatrix() { return this->worldTransformStack.back(); }
 
-Matrix4 Graphics::getProjectionMatrix() { return this->projectionTransformStack.top(); }
+Matrix4 Graphics::getProjectionMatrix() { return this->projectionTransformStack.back(); }
 
 void Graphics::push3DScene(McRect region) {
     if(cv::r_debug_disable_3dscene.getBool()) return;
 
     // you can't yet stack 3d scenes!
-    if(this->scene3d_stack.top()) {
-        this->scene3d_stack.push(false);
+    if(this->scene3d_stack.back()) {
+        this->scene3d_stack.push_back(false);
         return;
     }
 
@@ -106,7 +106,7 @@ void Graphics::push3DScene(McRect region) {
 
     // push true, set region
     this->bIs3dScene = true;
-    this->scene3d_stack.push(true);
+    this->scene3d_stack.push_back(true);
     this->scene3d_region = region;
 
     // backup transforms
@@ -139,9 +139,9 @@ void Graphics::push3DScene(McRect region) {
 }
 
 void Graphics::pop3DScene() {
-    if(!this->scene3d_stack.top()) return;
+    if(!this->scene3d_stack.back()) return;
 
-    this->scene3d_stack.pop();
+    this->scene3d_stack.pop_back();
 
     // restore transforms
     this->popTransform();
@@ -150,7 +150,7 @@ void Graphics::pop3DScene() {
 }
 
 void Graphics::translate3DScene(float x, float y, float z) {
-    if(!this->scene3d_stack.top()) return;  // block if we're not in a 3d scene
+    if(!this->scene3d_stack.back()) return;  // block if we're not in a 3d scene
 
     // translate directly
     this->scene3d_world_matrix.translate(x, y, z);
@@ -160,7 +160,7 @@ void Graphics::translate3DScene(float x, float y, float z) {
 }
 
 void Graphics::rotate3DScene(float rotx, float roty, float rotz) {
-    if(!this->scene3d_stack.top()) return;  // block if we're not in a 3d scene
+    if(!this->scene3d_stack.back()) return;  // block if we're not in a 3d scene
 
     // first translate to the center of the 3d region, then rotate, then translate back
     Matrix4 rot;
@@ -189,12 +189,12 @@ void Graphics::forceUpdateTransform() { this->updateTransform(); }
 
 void Graphics::updateTransform(bool force) {
     if(!this->bTransformUpToDate || force) {
-        this->worldMatrix = this->worldTransformStack.top();
-        this->projectionMatrix = this->projectionTransformStack.top();
+        this->worldMatrix = this->worldTransformStack.back();
+        this->projectionMatrix = this->projectionTransformStack.back();
 
         // HACKHACK: 3d gui scenes
         if(this->bIs3dScene) {
-            this->worldMatrix = this->scene3d_world_matrix * this->worldTransformStack.top();
+            this->worldMatrix = this->scene3d_world_matrix * this->worldTransformStack.back();
             this->projectionMatrix = this->scene3d_projection_matrix;
         }
 

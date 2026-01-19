@@ -143,6 +143,24 @@ class HUD final : public UIScreen {
         float endPercent;
     };
 
+    struct HUDStats {
+        int misses, sliderbreaks;
+        int maxPossibleCombo;
+        float liveStars, totalStars;
+        int bpm;
+
+        float ar, cs, od, hp;
+        int nps;
+        int nd;
+        int ur;
+        float pp, ppfc;
+
+        float hitWindow300;
+        int hitdeltaMin, hitdeltaMax;
+    };
+
+    struct HUDStatsCache;
+
     void drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trail, vec2 pos,
                             float alphaMultiplier = 1.0f, bool emptyTrailFrame = false);
     void drawCursorTrailRaw(float alpha, vec2 pos);
@@ -158,9 +176,7 @@ class HUD final : public UIScreen {
     void drawHitErrorBarInt(float hitWindow300, float hitWindow100, float hitWindow50, float hitWindowMiss);
     void drawHitErrorBarInt2(vec2 center, int ur);
     void drawProgressBar(float percent, bool waiting);
-    void drawStatistics(int misses, int sliderbreaks, int maxPossibleCombo, float liveStars, float totalStars, int bpm,
-                        float ar, float cs, float od, float hp, int nps, int nd, int ur, float pp, float ppfc,
-                        float hitWindow300, int hitdeltaMin, int hitdeltaMax);
+    void drawStatistics(HUDStats stats) const;
     void drawTargetHeatmap(float hitcircleDiameter);
     void drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 beatmapStartTimePlayable,
                                f32 beatmapPercentFinishedPlayable, const std::vector<BREAK> &breaks);

@@ -395,6 +395,17 @@ File::FILETYPE File::exists(std::string_view filePath, const fs::path &path) {
         return File::FILETYPE::OTHER;
 }
 
+void File::normalizeSlashes(std::string &str, unsigned char oldSlash, unsigned char newSlash) noexcept {
+    std::ranges::replace(str, oldSlash, newSlash);
+
+    bool prev = false;
+    std::erase_if(str, [&](unsigned char c) {
+        const bool remove = prev && c == newSlash;
+        prev = (c == newSlash);
+        return remove;
+    });
+}
+
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #include "dynutils.h"
 #include "RuntimePlatform.h"
@@ -415,17 +426,6 @@ using wine_get_dos_file_name_t = LPWSTR CDECL(LPCSTR);
 wine_get_dos_file_name_t *pwine_get_dos_file_name{nullptr};
 bool tried_load_wine_func{false};
 
-void normalizeSlashes(std::string &str, unsigned char oldSlash = '/', unsigned char newSlash = '\\') noexcept {
-    std::ranges::replace(str, oldSlash, newSlash);
-
-    bool prev = false;
-    std::erase_if(str, [&](unsigned char c) {
-        const bool remove = prev && c == newSlash;
-        prev = (c == newSlash);
-        return remove;
-    });
-}
-
 forceinline UString adjustPath_(std::string_view filepath) noexcept {
     static constexpr const std::string_view extPrefix{R"(\\?\)"};
     static constexpr const std::string_view devicePrefix{R"(\\.\)"};
@@ -441,7 +441,7 @@ forceinline UString adjustPath_(std::string_view filepath) noexcept {
             (pwine_get_dos_file_name = dynutils::load_func<wine_get_dos_file_name_t>(
                  reinterpret_cast<dynutils::lib_obj *>(GetModuleHandleA("kernel32.dll")), "wine_get_dos_file_name")))) {
             std::string path{filepath};
-            normalizeSlashes(path, '\\', '/');  // normalize any mixed slashes in the path portion
+            File::normalizeSlashes(path, '\\', '/');  // normalize any mixed slashes in the path portion
 
             LPWSTR dosPath = pwine_get_dos_file_name(path.c_str());  // use original with forward slashes
             if(dosPath) {
@@ -494,7 +494,7 @@ forceinline UString adjustPath_(std::string_view filepath) noexcept {
     }
 
     std::string path{filepath.substr(stripLen)};
-    normalizeSlashes(path);
+    File::normalizeSlashes(path, '/', '\\');
 
     if(resolveAbsolute) {
         UString widePath{path};

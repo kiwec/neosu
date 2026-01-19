@@ -918,18 +918,18 @@ void DirectX11Interface::setClipRect(McRect clipRect) {
 
 void DirectX11Interface::pushClipRect(McRect clipRect) {
     if(this->clipRectStack.size() > 0)
-        this->clipRectStack.push(this->clipRectStack.top().intersect(clipRect));
+        this->clipRectStack.push_back(this->clipRectStack.back().intersect(clipRect));
     else
-        this->clipRectStack.push(clipRect);
+        this->clipRectStack.push_back(clipRect);
 
-    this->setClipRect(this->clipRectStack.top());
+    this->setClipRect(this->clipRectStack.back());
 }
 
 void DirectX11Interface::popClipRect() {
-    this->clipRectStack.pop();
+    this->clipRectStack.pop_back();
 
     if(this->clipRectStack.size() > 0)
-        this->setClipRect(this->clipRectStack.top());
+        this->setClipRect(this->clipRectStack.back());
     else
         this->setClipping(false);
 }
@@ -950,8 +950,8 @@ void DirectX11Interface::pushViewport() {
     UINT numViewports = 1;
     this->deviceContext->RSGetViewports(&numViewports, &vp);
 
-    this->viewportStack.push({(int)vp.TopLeftX, (int)vp.TopLeftY, (int)vp.Width, (int)vp.Height});
-    this->resolutionStack.push(this->vResolution);
+    this->viewportStack.push_back({(int)vp.TopLeftX, (int)vp.TopLeftY, (int)vp.Width, (int)vp.Height});
+    this->resolutionStack.push_back(this->vResolution);
 }
 
 void DirectX11Interface::setViewport(int x, int y, int width, int height) {
@@ -975,10 +975,10 @@ void DirectX11Interface::popViewport() {
         return;
     }
 
-    this->vResolution = this->resolutionStack.top();
-    this->resolutionStack.pop();
+    this->vResolution = this->resolutionStack.back();
+    this->resolutionStack.pop_back();
 
-    const auto &vp = this->viewportStack.top();
+    const auto &vp = this->viewportStack.back();
     D3D11_VIEWPORT viewport{
         .TopLeftX = (float)vp[0],
         .TopLeftY = (float)vp[1],
@@ -989,7 +989,7 @@ void DirectX11Interface::popViewport() {
     };
 
     this->deviceContext->RSSetViewports(1, &viewport);
-    this->viewportStack.pop();
+    this->viewportStack.pop_back();
 }
 
 void DirectX11Interface::setAlphaTesting(bool /*enabled*/) {

@@ -122,7 +122,7 @@ class OpenGLInterface : public Graphics {
     //float fClearZ{1};
 
     // clipping
-    std::stack<McRect> clipRectStack;
+    std::vector<McRect> clipRectStack;
 };
 
 #endif

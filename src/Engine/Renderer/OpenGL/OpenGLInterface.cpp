@@ -561,25 +561,25 @@ void OpenGLInterface::setClipRect(McRect clipRect) {
 
 void OpenGLInterface::pushClipRect(McRect clipRect) {
     if(this->clipRectStack.size() > 0)
-        this->clipRectStack.push(this->clipRectStack.top().intersect(clipRect));
+        this->clipRectStack.push_back(this->clipRectStack.back().intersect(clipRect));
     else
-        this->clipRectStack.push(clipRect);
+        this->clipRectStack.push_back(clipRect);
 
-    setClipRect(this->clipRectStack.top());
+    setClipRect(this->clipRectStack.back());
 }
 
 void OpenGLInterface::popClipRect() {
-    this->clipRectStack.pop();
+    this->clipRectStack.pop_back();
 
     if(this->clipRectStack.size() > 0)
-        setClipRect(this->clipRectStack.top());
+        setClipRect(this->clipRectStack.back());
     else
         setClipping(false);
 }
 
 void OpenGLInterface::pushViewport() {
-    this->viewportStack.push(GLStateCache::getCurrentViewport());
-    this->resolutionStack.push(this->vResolution);
+    this->viewportStack.push_back(GLStateCache::getCurrentViewport());
+    this->resolutionStack.push_back(this->vResolution);
 }
 
 void OpenGLInterface::setViewport(int x, int y, int width, int height) {
@@ -593,11 +593,11 @@ void OpenGLInterface::popViewport() {
         return;
     }
 
-    this->vResolution = this->resolutionStack.top();
-    this->resolutionStack.pop();
+    this->vResolution = this->resolutionStack.back();
+    this->resolutionStack.pop_back();
 
-    GLStateCache::setViewport(this->viewportStack.top());
-    this->viewportStack.pop();
+    GLStateCache::setViewport(this->viewportStack.back());
+    this->viewportStack.pop_back();
 }
 
 void OpenGLInterface::pushStencil() {
@@ -754,7 +754,7 @@ void OpenGLInterface::onResolutionChange(vec2 newResolution) {
 
     // special case: custom rendertarget resolution rendering, update active projection matrix immediately
     if(this->bInScene) {
-        this->projectionTransformStack.top() =
+        this->projectionTransformStack.back() =
             Camera::buildMatrixOrtho2D(0, this->vResolution.x, this->vResolution.y, 0, -1.0f, 1.0f);
         this->bTransformUpToDate = false;
     }

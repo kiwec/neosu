@@ -72,6 +72,11 @@ class File {
     // unix timestamp in seconds (64-bit time_t)
     [[nodiscard]] forceinline i64 getModificationTime() const { return this->fsstat.st_mtime; }
 
+    // static utils below
+    // should be self-explanatory, doesn't actually touch anything on the filesystem, but it's done often enough that it can come in handy
+    static void normalizeSlashes(std::string &str, unsigned char removeSlash = '\\',
+                                 unsigned char replacementSlash = '/') noexcept;
+
     // public path resolution methods
     // modifies the input path with the actual found path
     [[nodiscard]] static File::FILETYPE existsCaseInsensitive(std::string &filePath);

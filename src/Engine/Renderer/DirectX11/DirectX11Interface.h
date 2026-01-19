@@ -282,7 +282,7 @@ class DirectX11Interface final : public Graphics {
     size_t iVertexBufferNumVertexOffsetCounter{0};
 
     // clipping
-    std::stack<McRect> clipRectStack;
+    std::vector<McRect> clipRectStack;
 
     // clipping for drawImage
     std::unique_ptr<Shader> smoothClipShader{nullptr};

@@ -1584,14 +1584,9 @@ void Osu::onSkinChange(std::string_view newSkinName) {
     if(env->directoryExists(neosuSkinFolder)) {
         this->skinScheduledToLoad = new Skin(newSkinName, neosuSkinFolder, false);
     } else {
-        std::string ppySkinFolder{cv::osu_folder.getString()};
-        if(!ppySkinFolder.ends_with('/')) ppySkinFolder.push_back('/');
-        ppySkinFolder.append(cv::osu_folder_sub_skins.getString());
-        if(!ppySkinFolder.ends_with('/')) ppySkinFolder.push_back('/');
-        ppySkinFolder.append(newSkinName);
-        if(!ppySkinFolder.ends_with('/')) ppySkinFolder.push_back('/');
-        std::string sf = ppySkinFolder;
-        this->skinScheduledToLoad = new Skin(newSkinName, sf, false);
+        std::string ppySkinFolder{fmt::format("{}/{}/{}/",cv::osu_folder.getString(), cv::osu_folder_sub_skins.getString(), newSkinName)};
+        File::normalizeSlashes(ppySkinFolder, '\\', '/');
+        this->skinScheduledToLoad = new Skin(newSkinName, ppySkinFolder, false);
     }
 
     // initial load

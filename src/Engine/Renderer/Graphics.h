@@ -9,7 +9,6 @@
 #include "Vectors.h"
 
 #include <memory>
-#include <stack>
 #include <vector>
 #include <array>
 
@@ -279,14 +278,14 @@ class Graphics {
     void checkStackLeaks();
 
     // transforms
-    std::stack<Matrix4> worldTransformStack;
-    std::stack<Matrix4> projectionTransformStack;
+    std::vector<Matrix4> worldTransformStack;
+    std::vector<Matrix4> projectionTransformStack;
 
-    std::stack<std::array<int, 4>> viewportStack;
-    std::stack<vec2> resolutionStack;
+    std::vector<std::array<int, 4>> viewportStack;
+    std::vector<vec2> resolutionStack;
 
     // 3d gui scenes
-    std::stack<bool> scene3d_stack;
+    std::vector<bool> scene3d_stack;
     Matrix4 scene3d_world_matrix;
     Matrix4 scene3d_projection_matrix;
 

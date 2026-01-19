@@ -289,12 +289,10 @@ const std::string &Environment::getUserDataPath() const noexcept {
     char *path = SDL_GetPrefPath("", "");
     if(path != nullptr) {
         m_sAppDataPath = path;
-        // since this is kind of an abuse of SDL_GetPrefPath, we remove the extra slashes at the end
-        while(!m_sAppDataPath.empty() && (m_sAppDataPath.ends_with('\\') || m_sAppDataPath.ends_with('/'))) {
-            m_sAppDataPath.pop_back();
-        }
-        m_sAppDataPath.push_back('/');
         SDL_free(path);
+
+        // since this is kind of an abuse of SDL_GetPrefPath, we remove the extra slashes at the end
+        File::normalizeSlashes(m_sAppDataPath, '\\', '/');
     }
 
     return m_sAppDataPath;

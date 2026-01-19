@@ -82,7 +82,7 @@ struct ResourceManagerImpl final {
     void resetFlags() {
         {
             Sync::unique_lock lock(this->managedLoadMutex);
-            if(this->nextLoadUnmanagedStack.size() > 0) this->nextLoadUnmanagedStack.pop();
+            if(this->nextLoadUnmanagedStack.size() > 0) this->nextLoadUnmanagedStack.pop_back();
         }
 
         this->bNextLoadAsync.store(false, std::memory_order_release);
@@ -193,7 +193,7 @@ struct ResourceManagerImpl final {
 
     // flags
     Sync::shared_mutex managedLoadMutex;
-    std::stack<bool> nextLoadUnmanagedStack;
+    std::vector<bool> nextLoadUnmanagedStack;
     std::atomic<bool> bNextLoadAsync;
 };
 
@@ -314,7 +314,7 @@ void ResourceManager::loadResource(Resource *res, bool load) {
     bool isManaged;
     {
         Sync::shared_lock lock(pImpl->managedLoadMutex);
-        isManaged = (pImpl->nextLoadUnmanagedStack.size() < 1 || !pImpl->nextLoadUnmanagedStack.top());
+        isManaged = (pImpl->nextLoadUnmanagedStack.size() < 1 || !pImpl->nextLoadUnmanagedStack.back());
     }
 
     if(isManaged) pImpl->addManagedResource(res);
@@ -352,7 +352,7 @@ void ResourceManager::requestNextLoadAsync() { pImpl->bNextLoadAsync.store(true,
 
 void ResourceManager::requestNextLoadUnmanaged() {
     Sync::unique_lock lock(pImpl->managedLoadMutex);
-    pImpl->nextLoadUnmanagedStack.push(true);
+    pImpl->nextLoadUnmanagedStack.push_back(true);
 }
 
 size_t ResourceManager::getSyncLoadMaxBatchSize() const { return pImpl->asyncLoader.getMaxPerUpdate(); }
@@ -425,7 +425,7 @@ void ResourceManager::setResourceName(Resource *res, std::string name) {
     res->setName(name);
 
     // add the new name to the resource map (if it's a managed resource)
-    if(pImpl->nextLoadUnmanagedStack.size() < 1 || !pImpl->nextLoadUnmanagedStack.top())
+    if(pImpl->nextLoadUnmanagedStack.size() < 1 || !pImpl->nextLoadUnmanagedStack.back())
         pImpl->mNameToResourceMap.try_emplace(name, res);
     return;
 }

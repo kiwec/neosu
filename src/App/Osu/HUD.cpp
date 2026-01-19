@@ -34,6 +34,7 @@
 
 #include "shaders.h"
 
+
 HUD::HUD() : UIScreen() {
     // resources
     this->tempFont = engine->getDefaultFont();
@@ -77,14 +78,14 @@ HUD::~HUD() {}
 
 void HUD::draw() {
     const auto &pf = osu->getMapInterface();
+    const auto &score = osu->getScore();
 
     if(cv::draw_hud.getBool()) {
         if(cv::draw_inputoverlay.getBool()) {
             const bool isAutoClicking = (osu->getModAuto() || osu->getModRelax());
             if(!isAutoClicking)
-                this->drawInputOverlay(
-                    osu->getScore()->getKeyCount(GameplayKeys::K1), osu->getScore()->getKeyCount(GameplayKeys::K2),
-                    osu->getScore()->getKeyCount(GameplayKeys::M1), osu->getScore()->getKeyCount(GameplayKeys::M2));
+                this->drawInputOverlay(score->getKeyCount(GameplayKeys::K1), score->getKeyCount(GameplayKeys::K2),
+                                       score->getKeyCount(GameplayKeys::M1), score->getKeyCount(GameplayKeys::M2));
         }
 
         if(this->shouldDrawScoreboard()) {
@@ -99,13 +100,25 @@ void HUD::draw() {
             }
 
             const auto &whole_pp = pf->getWholeMapPPInfo();
-            this->drawStatistics(
-                osu->getScore()->getNumMisses(), osu->getScore()->getNumSliderBreaks(), pf->iMaxPossibleCombo,
-                pf->live_stars(), whole_pp.total_stars, pf->getMostCommonBPM(), pf->getApproachRateForSpeedMultiplier(),
-                pf->getCS(), pf->getOverallDifficultyForSpeedMultiplier(), pf->getHP(), pf->getNPS(), pf->getND(),
-                osu->getScore()->getUnstableRate(), pf->live_pp(), whole_pp.pp,
-                ((int)pf->getHitWindow300() - 0.5f) * (1.0f / pf->getSpeedMultiplier()),  // see InfoLabel::update()
-                osu->getScore()->getHitErrorAvgCustomMin(), osu->getScore()->getHitErrorAvgCustomMax());
+            this->drawStatistics({.misses = score->getNumMisses(),
+                                  .sliderbreaks = score->getNumSliderBreaks(),
+                                  .maxPossibleCombo = pf->iMaxPossibleCombo,
+                                  .liveStars = pf->live_stars(),
+                                  .totalStars = (float)whole_pp.total_stars,
+                                  .bpm = pf->getMostCommonBPM(),
+                                  .ar = pf->getApproachRateForSpeedMultiplier(),
+                                  .cs = pf->getCS(),
+                                  .od = pf->getOverallDifficultyForSpeedMultiplier(),
+                                  .hp = pf->getHP(),
+                                  .nps = pf->getNPS(),
+                                  .nd = pf->getND(),
+                                  .ur = (int)score->getUnstableRate(),
+                                  .pp = pf->live_pp(),
+                                  .ppfc = (float)whole_pp.pp,
+                                  .hitWindow300 = ((int)pf->getHitWindow300() - 0.5f) *
+                                                  (1.0f / pf->getSpeedMultiplier()),  // see InfoLabel::update()
+                                  .hitdeltaMin = (int)score->getHitErrorAvgCustomMin(),
+                                  .hitdeltaMax = (int)score->getHitErrorAvgCustomMax()});
         }
         g->popTransform();
 
@@ -152,29 +165,28 @@ void HUD::draw() {
                (pf == nullptr || (!pf->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool())) &&
                !pf->isLoading()) {
                 this->drawHitErrorBar(pf->getHitWindow300(), pf->getHitWindow100(), pf->getHitWindow50(),
-                                      GameRules::getHitWindowMiss(), osu->getScore()->getUnstableRate());
+                                      GameRules::getHitWindowMiss(), score->getUnstableRate());
             }
         }
 
-        if(cv::draw_score.getBool()) this->drawScore(osu->getScore()->getScore());
+        if(cv::draw_score.getBool()) this->drawScore(score->getScore());
 
-        if(cv::draw_combo.getBool()) this->drawCombo(osu->getScore()->getCombo());
+        if(cv::draw_combo.getBool()) this->drawCombo(score->getCombo());
 
         // dynamic hud scaling updates
         this->fScoreHeight = osu->getSkin()->i_scores[0]->getHeight() * this->getScoreScale();
 
         if(cv::draw_progressbar.getBool()) this->drawProgressBar(pf->getPercentFinishedPlayable(), pf->isWaiting());
 
-        if(cv::draw_accuracy.getBool()) this->drawAccuracy(osu->getScore()->getAccuracy() * 100.0f);
+        if(cv::draw_accuracy.getBool()) this->drawAccuracy(score->getAccuracy() * 100.0f);
 
         if(osu->getModTarget() && cv::draw_target_heatmap.getBool()) this->drawTargetHeatmap(pf->fHitcircleDiameter);
     } else if(!cv::hud_shift_tab_toggles_everything.getBool()) {
         if(cv::draw_inputoverlay.getBool()) {
             const bool isAutoClicking = (osu->getModAuto() || osu->getModRelax());
             if(!isAutoClicking)
-                this->drawInputOverlay(
-                    osu->getScore()->getKeyCount(GameplayKeys::K1), osu->getScore()->getKeyCount(GameplayKeys::K2),
-                    osu->getScore()->getKeyCount(GameplayKeys::M1), osu->getScore()->getKeyCount(GameplayKeys::M2));
+                this->drawInputOverlay(score->getKeyCount(GameplayKeys::K1), score->getKeyCount(GameplayKeys::K2),
+                                       score->getKeyCount(GameplayKeys::M1), score->getKeyCount(GameplayKeys::M2));
         }
 
         // NOTE: moved to draw behind hitobjects in Beatmap::draw()
@@ -183,7 +195,7 @@ void HUD::draw() {
                (pf == nullptr || (!pf->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool())) &&
                !pf->isLoading()) {
                 this->drawHitErrorBar(pf->getHitWindow300(), pf->getHitWindow100(), pf->getHitWindow50(),
-                                      GameRules::getHitWindowMiss(), osu->getScore()->getUnstableRate());
+                                      GameRules::getHitWindowMiss(), score->getUnstableRate());
             }
         }
     }
@@ -304,7 +316,25 @@ void HUD::drawDummy() {
 
     this->drawSkip();
 
-    this->drawStatistics(0, 0, 727, 2.3f, 5.5f, 180, 9.0f, 4.0f, 8.0f, 6.0f, 4, 6, 90.0f, 123, 1234, 25, -5, 15);
+    this->drawStatistics({.misses = 0,
+                          .sliderbreaks = 0,
+                          .maxPossibleCombo = 727,
+                          .liveStars = 2.3f,
+                          .totalStars = 5.5f,
+                          .bpm = 180,
+                          .ar = 9.0f,
+                          .cs = 4.0f,
+                          .od = 8.0f,
+                          .hp = 6.0f,
+                          .nps = 4,
+                          .nd = 6,
+                          .ur = 90,
+                          .pp = 123.f,
+                          .ppfc = 1234.f,
+                          .hitWindow300 = 25.f,
+                          .hitdeltaMin = -5,
+                          .hitdeltaMax = 15}
+    );
 
     this->drawWarningArrows();
 
@@ -1702,9 +1732,7 @@ void HUD::drawProgressBar(float percent, bool waiting) {
     g->popTransform();
 }
 
-void HUD::drawStatistics(int misses, int sliderbreaks, int maxPossibleCombo, float liveStars, float totalStars, int bpm,
-                         float ar, float cs, float od, float hp, int nps, int nd, int ur, float pp, float ppfc,
-                         float hitWindow300, int hitdeltaMin, int hitdeltaMax) {
+void HUD::drawStatistics(HUDStats s) const {
     McFont *font = osu->getTitleFont();
 
     float scale = cv::hud_statistics_scale.getFloat() * cv::hud_scale.getFloat();
@@ -1748,83 +1776,83 @@ void HUD::drawStatistics(int misses, int sliderbreaks, int maxPossibleCombo, flo
 
         if(cv::draw_statistics_pp.getBool())
             addStatistic(
-                fmt::format("{:.{}f}pp", pp, std::clamp<int>(cv::hud_statistics_pp_decimal_places.getInt(), 0, 2)),
+                fmt::format("{:.{}f}pp", s.pp, std::clamp<int>(cv::hud_statistics_pp_decimal_places.getInt(), 0, 2)),
                 cv::hud_statistics_pp_offset_x.getInt(), cv::hud_statistics_pp_offset_y.getInt());
 
         if(cv::draw_statistics_perfectpp.getBool())
-            addStatistic(fmt::format("SS: {:.{}f}pp", ppfc,
+            addStatistic(fmt::format("SS: {:.{}f}pp", s.ppfc,
                                      std::clamp<int>(cv::hud_statistics_pp_decimal_places.getInt(), 0, 2)),
                          cv::hud_statistics_perfectpp_offset_x.getInt(),
                          cv::hud_statistics_perfectpp_offset_y.getInt());
 
         if(cv::draw_statistics_misses.getBool())
-            addStatistic(fmt::format("Miss: {:d}"_cf, misses), cv::hud_statistics_misses_offset_x.getInt(),
+            addStatistic(fmt::format("Miss: {:d}"_cf, s.misses), cv::hud_statistics_misses_offset_x.getInt(),
                          cv::hud_statistics_misses_offset_y.getInt());
 
         if(cv::draw_statistics_sliderbreaks.getBool())
-            addStatistic(fmt::format("SBrk: {:d}"_cf, sliderbreaks), cv::hud_statistics_sliderbreaks_offset_x.getInt(),
+            addStatistic(fmt::format("SBrk: {:d}"_cf, s.sliderbreaks), cv::hud_statistics_sliderbreaks_offset_x.getInt(),
                          cv::hud_statistics_sliderbreaks_offset_y.getInt());
 
         if(cv::draw_statistics_maxpossiblecombo.getBool())
-            addStatistic(fmt::format("FC: {:d}x"_cf, maxPossibleCombo),
+            addStatistic(fmt::format("FC: {:d}x"_cf, s.maxPossibleCombo),
                          cv::hud_statistics_maxpossiblecombo_offset_x.getInt(),
                          cv::hud_statistics_maxpossiblecombo_offset_y.getInt());
 
         if(cv::draw_statistics_livestars.getBool())
-            addStatistic(fmt::format("{:.3g}***"_cf, liveStars), cv::hud_statistics_livestars_offset_x.getInt(),
+            addStatistic(fmt::format("{:.3g}***"_cf, s.liveStars), cv::hud_statistics_livestars_offset_x.getInt(),
                          cv::hud_statistics_livestars_offset_y.getInt());
 
         if(cv::draw_statistics_totalstars.getBool())
-            addStatistic(fmt::format("{:.3g}*"_cf, totalStars), cv::hud_statistics_totalstars_offset_x.getInt(),
+            addStatistic(fmt::format("{:.3g}*"_cf, s.totalStars), cv::hud_statistics_totalstars_offset_x.getInt(),
                          cv::hud_statistics_totalstars_offset_y.getInt());
 
         if(cv::draw_statistics_bpm.getBool())
-            addStatistic(fmt::format("BPM: {:d}"_cf, bpm), cv::hud_statistics_bpm_offset_x.getInt(),
+            addStatistic(fmt::format("BPM: {:d}"_cf, s.bpm), cv::hud_statistics_bpm_offset_x.getInt(),
                          cv::hud_statistics_bpm_offset_y.getInt());
 
         if(cv::draw_statistics_ar.getBool()) {
-            ar = std::round(ar * 100.0f) / 100.0f;
-            addStatistic(fmt::format("AR: {:g}"_cf, ar), cv::hud_statistics_ar_offset_x.getInt(),
+            s.ar = std::round(s.ar * 100.0f) / 100.0f;
+            addStatistic(fmt::format("AR: {:g}"_cf, s.ar), cv::hud_statistics_ar_offset_x.getInt(),
                          cv::hud_statistics_ar_offset_y.getInt());
         }
 
         if(cv::draw_statistics_cs.getBool()) {
-            cs = std::round(cs * 100.0f) / 100.0f;
-            addStatistic(fmt::format("CS: {:g}"_cf, cs), cv::hud_statistics_cs_offset_x.getInt(),
+            s.cs = std::round(s.cs * 100.0f) / 100.0f;
+            addStatistic(fmt::format("CS: {:g}"_cf, s.cs), cv::hud_statistics_cs_offset_x.getInt(),
                          cv::hud_statistics_cs_offset_y.getInt());
         }
 
         if(cv::draw_statistics_od.getBool()) {
-            od = std::round(od * 100.0f) / 100.0f;
-            addStatistic(fmt::format("OD: {:g}"_cf, od), cv::hud_statistics_od_offset_x.getInt(),
+            s.od = std::round(s.od * 100.0f) / 100.0f;
+            addStatistic(fmt::format("OD: {:g}"_cf, s.od), cv::hud_statistics_od_offset_x.getInt(),
                          cv::hud_statistics_od_offset_y.getInt());
         }
 
         if(cv::draw_statistics_hp.getBool()) {
-            hp = std::round(hp * 100.0f) / 100.0f;
-            addStatistic(fmt::format("HP: {:g}"_cf, hp), cv::hud_statistics_hp_offset_x.getInt(),
+            s.hp = std::round(s.hp * 100.0f) / 100.0f;
+            addStatistic(fmt::format("HP: {:g}"_cf, s.hp), cv::hud_statistics_hp_offset_x.getInt(),
                          cv::hud_statistics_hp_offset_y.getInt());
         }
 
         if(cv::draw_statistics_hitwindow300.getBool())
-            addStatistic(fmt::format("300: +-{:d}ms"_cf, (int)hitWindow300),
+            addStatistic(fmt::format("300: +-{:d}ms"_cf, (int)s.hitWindow300),
                          cv::hud_statistics_hitwindow300_offset_x.getInt(),
                          cv::hud_statistics_hitwindow300_offset_y.getInt());
 
         if(cv::draw_statistics_nps.getBool())
-            addStatistic(fmt::format("NPS: {:d}"_cf, nps), cv::hud_statistics_nps_offset_x.getInt(),
+            addStatistic(fmt::format("NPS: {:d}"_cf, s.nps), cv::hud_statistics_nps_offset_x.getInt(),
                          cv::hud_statistics_nps_offset_y.getInt());
 
         if(cv::draw_statistics_nd.getBool())
-            addStatistic(fmt::format("ND: {:d}"_cf, nd), cv::hud_statistics_nd_offset_x.getInt(),
+            addStatistic(fmt::format("ND: {:d}"_cf, s.nd), cv::hud_statistics_nd_offset_x.getInt(),
                          cv::hud_statistics_nd_offset_y.getInt());
 
         if(cv::draw_statistics_ur.getBool())
-            addStatistic(fmt::format("UR: {:d}"_cf, ur), cv::hud_statistics_ur_offset_x.getInt(),
+            addStatistic(fmt::format("UR: {:d}"_cf, s.ur), cv::hud_statistics_ur_offset_x.getInt(),
                          cv::hud_statistics_ur_offset_y.getInt());
 
         if(cv::draw_statistics_hitdelta.getBool())
-            addStatistic(fmt::format("-{:d}ms +{:d}ms"_cf, std::abs(hitdeltaMin), hitdeltaMax),
+            addStatistic(fmt::format("-{:d}ms +{:d}ms"_cf, std::abs(s.hitdeltaMin), s.hitdeltaMax),
                          cv::hud_statistics_hitdelta_offset_x.getInt(), cv::hud_statistics_hitdelta_offset_y.getInt());
     }
     font->flushBatch();

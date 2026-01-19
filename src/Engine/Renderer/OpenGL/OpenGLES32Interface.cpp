@@ -699,25 +699,25 @@ void OpenGLES32Interface::setClipRect(McRect clipRect) {
 
 void OpenGLES32Interface::pushClipRect(McRect clipRect) {
     if(m_clipRectStack.size() > 0)
-        m_clipRectStack.push(m_clipRectStack.top().intersect(clipRect));
+        m_clipRectStack.push_back(m_clipRectStack.back().intersect(clipRect));
     else
-        m_clipRectStack.push(clipRect);
+        m_clipRectStack.push_back(clipRect);
 
-    setClipRect(m_clipRectStack.top());
+    setClipRect(m_clipRectStack.back());
 }
 
 void OpenGLES32Interface::popClipRect() {
-    m_clipRectStack.pop();
+    m_clipRectStack.pop_back();
 
     if(m_clipRectStack.size() > 0)
-        setClipRect(m_clipRectStack.top());
+        setClipRect(m_clipRectStack.back());
     else
         setClipping(false);
 }
 
 void OpenGLES32Interface::pushViewport() {
-    this->viewportStack.push(GLStateCache::getCurrentViewport());
-    this->resolutionStack.push(m_vResolution);
+    this->viewportStack.push_back(GLStateCache::getCurrentViewport());
+    this->resolutionStack.push_back(m_vResolution);
 }
 
 void OpenGLES32Interface::setViewport(int x, int y, int width, int height) {
@@ -731,11 +731,11 @@ void OpenGLES32Interface::popViewport() {
         return;
     }
 
-    m_vResolution = this->resolutionStack.top();
-    this->resolutionStack.pop();
+    m_vResolution = this->resolutionStack.back();
+    this->resolutionStack.pop_back();
 
-    GLStateCache::setViewport(this->viewportStack.top());
-    this->viewportStack.pop();
+    GLStateCache::setViewport(this->viewportStack.back());
+    this->viewportStack.pop_back();
 }
 
 void OpenGLES32Interface::pushStencil() {
@@ -923,7 +923,7 @@ void OpenGLES32Interface::onResolutionChange(vec2 newResolution) {
 
     // special case: custom rendertarget resolution rendering, update active projection matrix immediately
     if(m_bInScene) {
-        this->projectionTransformStack.top() =
+        this->projectionTransformStack.back() =
             Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0, -1.0f, 1.0f);
         this->bTransformUpToDate = false;
     }

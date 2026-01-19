@@ -959,14 +959,6 @@ void Database::loadMaps() {
     u32 nb_peppy_maps = 0;
     u32 nb_overrides = 0;
 
-    // read beatmapInfos, and also build two hashmaps (diff hash -> BeatmapDifficulty, diff hash -> Beatmap)
-    struct Beatmap_Set {
-        int setID{0};
-        std::unique_ptr<DiffContainer> diffs;
-    };
-    std::vector<Beatmap_Set> beatmapSets;
-    Hash::flat::map<int, size_t> setIDToIndex;
-
     // Load neosu map database
     {
         ByteBufferedFile::Reader neosu_maps(neosu_maps_path);
@@ -1289,6 +1281,16 @@ void Database::loadMaps() {
         this->bytes_processed += neosu_maps.total_size;
         this->neosu_maps_loaded = true;
     }
+
+    // load peppy maps
+
+    // read beatmapInfos, and also build two hashmaps (diff hash -> BeatmapDifficulty, diff hash -> Beatmap)
+    struct Beatmap_Set {
+        int setID{0};
+        std::unique_ptr<DiffContainer> diffs;
+    };
+    std::vector<Beatmap_Set> beatmapSets;
+    Hash::flat::map<int, size_t> setIDToIndex;
 
     if(!this->needs_raw_load) {
         ByteBufferedFile::Reader dbr(peppy_db_path);

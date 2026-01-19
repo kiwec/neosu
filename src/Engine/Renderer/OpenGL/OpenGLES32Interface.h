@@ -157,7 +157,7 @@ class OpenGLES32Interface : public Graphics {
     bool m_bColorInversion{false};
 
     // clipping
-    std::stack<McRect> m_clipRectStack;
+    std::vector<McRect> m_clipRectStack;
 };
 
 #else
