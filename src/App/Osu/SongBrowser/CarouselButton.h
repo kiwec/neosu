@@ -84,8 +84,8 @@ class CarouselButton : public CBaseUIButton {
     }
 
     [[nodiscard]] vec2 getActualOffset() const;
-    [[nodiscard]] inline vec2 getActualSize() const { return this->vSize - 2.f * this->getActualOffset(); }
-    [[nodiscard]] inline vec2 getActualPos() const { return this->vPos + this->getActualOffset(); }
+    [[nodiscard]] inline vec2 getActualSize() const { return this->getSize() - 2.f * this->getActualOffset(); }
+    [[nodiscard]] inline vec2 getActualPos() const { return this->getPos() + this->getActualOffset(); }
     [[nodiscard]] inline std::vector<SongButton *> &getChildren() { return this->children; }
     [[nodiscard]] inline const std::vector<SongButton *> &getChildren() const { return this->children; }
 

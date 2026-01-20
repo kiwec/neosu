@@ -29,7 +29,7 @@ void UIBackButton::draw() {
         const SkinImage *backimg =
             this->bUseDefaultBack ? osu->getSkin()->i_menu_back2_DEFAULTSKIN : osu->getSkin()->i_menu_back2;
 
-        backimg->draw(this->vPos + (backimg->getSize() / 2.f), 1.f,
+        backimg->draw(this->getPos() + (backimg->getSize() / 2.f), 1.f,
                       this->fAnimation * 0.25f /* hover animation brightness */);
     }
     g->popTransform();

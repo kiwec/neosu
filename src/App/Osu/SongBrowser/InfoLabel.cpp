@@ -65,12 +65,12 @@ void InfoLabel::draw() {
     // debug bounding box
     if(cv::debug_osu.getBool()) {
         g->setColor(0xffff0000);
-        g->drawLine(this->vPos.x, this->vPos.y, this->vPos.x + this->vSize.x, this->vPos.y);
-        g->drawLine(this->vPos.x, this->vPos.y, this->vPos.x, this->vPos.y + this->vSize.y);
-        g->drawLine(this->vPos.x, this->vPos.y + this->vSize.y, this->vPos.x + this->vSize.x,
-                    this->vPos.y + this->vSize.y);
-        g->drawLine(this->vPos.x + this->vSize.x, this->vPos.y, this->vPos.x + this->vSize.x,
-                    this->vPos.y + this->vSize.y);
+        g->drawLine(this->getPos().x, this->getPos().y, this->getPos().x + this->getSize().x, this->getPos().y);
+        g->drawLine(this->getPos().x, this->getPos().y, this->getPos().x, this->getPos().y + this->getSize().y);
+        g->drawLine(this->getPos().x, this->getPos().y + this->getSize().y, this->getPos().x + this->getSize().x,
+                    this->getPos().y + this->getSize().y);
+        g->drawLine(this->getPos().x + this->getSize().x, this->getPos().y, this->getPos().x + this->getSize().x,
+                    this->getPos().y + this->getSize().y);
     }
 
     // build strings
@@ -81,11 +81,11 @@ void InfoLabel::draw() {
     const UString diffInfoText{this->buildDiffInfoString()};
     const UString offsetInfoText{this->buildOffsetInfoString()};
 
-    const f32 globalScale = std::max((this->vSize.y / this->getMinimumHeight()) * 0.91f, 1.0f);
+    const f32 globalScale = std::max((this->getSize().y / this->getMinimumHeight()) * 0.91f, 1.0f);
 
     const i32 shadowOffset = std::round(1.0f * ((f32)this->font->getDPI() / 96.0f));  // NOTE: abusing font dpi
 
-    i32 yCounter = this->vPos.y;
+    i32 yCounter = this->getPos().y;
 
     // draw title
     g->pushTransform();
@@ -98,7 +98,7 @@ void InfoLabel::draw() {
         yCounter += this->titleFont->getHeight() * scale;
 
         g->scale(scale, scale);
-        g->translate((i32)(this->vPos.x), yCounter);
+        g->translate((i32)(this->getPos().x), yCounter);
 
         g->translate(titleShadowOffset, titleShadowOffset);
         g->setColor(0xff000000);
@@ -119,7 +119,7 @@ void InfoLabel::draw() {
         yCounter += this->font->getHeight() * scale + extraTitleFontMargin * globalScale * 1.0f;
 
         g->scale(scale, scale);
-        g->translate((i32)(this->vPos.x), yCounter);
+        g->translate((i32)(this->getPos().x), yCounter);
 
         g->translate(shadowOffset, shadowOffset);
         g->setColor(0xff000000);
@@ -141,7 +141,7 @@ void InfoLabel::draw() {
         yCounter += this->font->getHeight() * scale + (this->iMargin / 2) * globalScale * 1.0f;
 
         g->scale(scale, scale);
-        g->translate((i32)(this->vPos.x), yCounter);
+        g->translate((i32)(this->getPos().x), yCounter);
 
         g->translate(shadowOffset, shadowOffset);
         g->setColor(0xff000000);
@@ -161,7 +161,7 @@ void InfoLabel::draw() {
         yCounter += this->font->getHeight() * scale + this->iMargin * globalScale * 0.85f;
 
         g->scale(scale, scale);
-        g->translate((i32)(this->vPos.x), yCounter);
+        g->translate((i32)(this->getPos().x), yCounter);
 
         g->translate(shadowOffset, shadowOffset);
         g->setColor(0xff000000);
@@ -181,7 +181,7 @@ void InfoLabel::draw() {
             yCounter += this->font->getHeight() * scale + this->iMargin * globalScale * 0.85f;
 
             g->scale(scale, scale);
-            g->translate((i32)(this->vPos.x), yCounter);
+            g->translate((i32)(this->getPos().x), yCounter);
 
             g->translate(shadowOffset, shadowOffset);
             g->setColor(0xff000000);

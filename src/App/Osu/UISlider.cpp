@@ -24,22 +24,22 @@ void UISlider::draw() {
 
     int lineAdd = 1;
 
-    float line1Start = this->vPos.x + (this->vBlockSize.x - 1) / 2 + 1;
-    float line1End = this->vPos.x + this->vBlockPos.x + lineAdd;
-    float line2Start = this->vPos.x + this->vBlockPos.x + this->vBlockSize.x - lineAdd;
-    float line2End = this->vPos.x + this->vSize.x - (this->vBlockSize.x - 1) / 2;
+    float line1Start = this->getPos().x + (this->vBlockSize.x - 1) / 2 + 1;
+    float line1End = this->getPos().x + this->vBlockPos.x + lineAdd;
+    float line2Start = this->getPos().x + this->vBlockPos.x + this->vBlockSize.x - lineAdd;
+    float line2End = this->getPos().x + this->getSize().x - (this->vBlockSize.x - 1) / 2;
 
     // draw sliding line
     g->setColor(this->frameColor);
     if(line1End > line1Start)
-        g->drawLine((int)(line1Start), (int)(this->vPos.y + this->vSize.y / 2.0f + 1), (int)(line1End),
-                    (int)(this->vPos.y + this->vSize.y / 2.0f + 1));
+        g->drawLine((int)(line1Start), (int)(this->getPos().y + this->getSize().y / 2.0f + 1), (int)(line1End),
+                    (int)(this->getPos().y + this->getSize().y / 2.0f + 1));
     if(line2End > line2Start)
-        g->drawLine((int)(line2Start), (int)(this->vPos.y + this->vSize.y / 2.0f + 1), (int)(line2End),
-                    (int)(this->vPos.y + this->vSize.y / 2.0f + 1));
+        g->drawLine((int)(line2Start), (int)(this->getPos().y + this->getSize().y / 2.0f + 1), (int)(line2End),
+                    (int)(this->getPos().y + this->getSize().y / 2.0f + 1));
 
     // draw sliding block
-    vec2 blockCenter = this->vPos + this->vBlockPos + this->vBlockSize / 2.f;
+    vec2 blockCenter = this->getPos() + this->vBlockPos + this->vBlockSize / 2.f;
     vec2 scale = vec2(this->vBlockSize.x / img->getWidth(), this->vBlockSize.y / img->getHeight());
 
     g->setColor(this->frameColor);

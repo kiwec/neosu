@@ -36,8 +36,8 @@ void UIAvatar::draw_avatar(float alpha) {
         g->pushTransform();
         g->setColor(Color(0xffffffff).setA(alpha));
 
-        g->scale(this->vSize.x / avatar_image->getWidth(), this->vSize.y / avatar_image->getHeight());
-        g->translate(this->vPos.x + this->vSize.x / 2.0f, this->vPos.y + this->vSize.y / 2.0f);
+        g->scale(this->getSize().x / avatar_image->getWidth(), this->getSize().y / avatar_image->getHeight());
+        g->translate(this->getPos().x + this->getSize().x / 2.0f, this->getPos().y + this->getSize().y / 2.0f);
         g->drawImage(avatar_image);
         g->popTransform();
     }
@@ -46,12 +46,12 @@ void UIAvatar::draw_avatar(float alpha) {
     // if(on_screen) {
     //     g->pushTransform();
     //     g->setColor(0xff00ff00);
-    //     g->drawQuad((int)this->vPos.x, (int)this->vPos.y, (int)this->vSize.x, (int)this->vSize.y);
+    //     g->drawQuad((int)this->getPos().x, (int)this->getPos().y, (int)this->getSize().x, (int)this->getSize().y);
     //     g->popTransform();
     // } else {
     //     g->pushTransform();
     //     g->setColor(0xffff0000);
-    //     g->drawQuad((int)this->vPos.x, (int)this->vPos.y, (int)this->vSize.x, (int)this->vSize.y);
+    //     g->drawQuad((int)this->getPos().x, (int)this->getPos().y, (int)this->getSize().x, (int)this->getSize().y);
     //     g->popTransform();
     // }
 }

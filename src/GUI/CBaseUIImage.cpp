@@ -24,8 +24,7 @@ CBaseUIImage::CBaseUIImage(const std::string& imageResourceName, float xPos, flo
 
     // if our image is null, autosize to the element size
     if(this->image == nullptr) {
-        this->vSize.x = xSize;
-        this->vSize.y = ySize;
+        this->rect.setSize(vec2{xSize, ySize});
     }
 
     this->frameColor = argb(255, 255, 255, 255);
@@ -42,7 +41,7 @@ void CBaseUIImage::draw() {
     // draw background
     if(this->bDrawBackground) {
         g->setColor(this->backgroundColor);
-        g->fillRect(this->vPos.x + 1, this->vPos.y + 1, this->vSize.x - 1, this->vSize.y - 1);
+        g->fillRect(this->getPos().x + 1, this->getPos().y + 1, this->getSize().x - 1, this->getSize().y - 1);
     }
 
     // draw image
@@ -57,8 +56,8 @@ void CBaseUIImage::draw() {
         if(this->fRot != 0.0f) g->rotate(this->fRot);
 
         // center and draw
-        g->translate(this->vPos.x + (this->vSize.x / 2) + (!this->bScaleToFit ? 1 : 0),
-                     this->vPos.y + (this->vSize.y / 2) + (!this->bScaleToFit ? 1 : 0));
+        g->translate(this->getPos().x + (this->getSize().x / 2) + (!this->bScaleToFit ? 1 : 0),
+                     this->getPos().y + (this->getSize().y / 2) + (!this->bScaleToFit ? 1 : 0));
         g->drawImage(this->image);
 
         g->popTransform();
@@ -67,7 +66,7 @@ void CBaseUIImage::draw() {
     // draw frame
     if(this->bDrawFrame) {
         g->setColor(this->frameColor);
-        g->drawRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
+        g->drawRect(this->getPos(), this->getSize());
     }
 }
 
@@ -76,12 +75,11 @@ void CBaseUIImage::setImage(const Image* img) {
 
     if(this->image != nullptr && this->image->isReady()) {
         if(this->bScaleToFit) {
-            this->vSize.x = this->image->getWidth();
-            this->vSize.y = this->image->getHeight();
+            this->rect.setSize(vec2{this->image->getWidth(), this->image->getHeight()});
         }
 
-        this->vScale.x = this->vSize.x / (float)this->image->getWidth();
-        this->vScale.y = this->vSize.y / (float)this->image->getHeight();
+        this->vScale.x = this->getSize().x / (float)this->image->getWidth();
+        this->vScale.y = this->getSize().y / (float)this->image->getHeight();
     } else {
         this->vScale.x = 1;
         this->vScale.y = 1;

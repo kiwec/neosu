@@ -37,13 +37,7 @@ class CBaseUIElement : public KeyboardListener {
     NOCOPY_NOMOVE(CBaseUIElement)
    public:
     CBaseUIElement(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "")
-        : sName(std::move(name)),
-          rect(xPos, yPos, xSize, ySize),
-          relRect(this->rect),
-          vPos(const_cast<vec2 &>(this->rect.getPos())),
-          vSize(const_cast<vec2 &>(this->rect.getSize())),
-          vmPos(const_cast<vec2 &>(this->relRect.getPos())),
-          vmSize(const_cast<vec2 &>(this->relRect.getSize())) {}
+        : sName(std::move(name)), rect(xPos, yPos, xSize, ySize), relRect(this->rect) {}
     ~CBaseUIElement() override = default;
 
     // main
@@ -60,13 +54,13 @@ class CBaseUIElement : public KeyboardListener {
 
     [[nodiscard]] constexpr const McRect &getRect() const { return this->rect; }
 
-    [[nodiscard]] constexpr const vec2 &getPos() const { return this->vPos; }
-    [[nodiscard]] constexpr const vec2 &getSize() const { return this->vSize; }
+    [[nodiscard]] constexpr const vec2 &getPos() const { return this->rect.getPos(); }
+    [[nodiscard]] constexpr const vec2 &getSize() const { return this->rect.getSize(); }
 
     [[nodiscard]] constexpr const McRect &getRelRect() const { return this->relRect; }
 
-    [[nodiscard]] constexpr const vec2 &getRelPos() const { return this->vmPos; }
-    [[nodiscard]] constexpr const vec2 &getRelSize() const { return this->vmSize; }
+    [[nodiscard]] constexpr const vec2 &getRelPos() const { return this->relRect.getPos(); }
+    [[nodiscard]] constexpr const vec2 &getRelSize() const { return this->relRect.getSize(); }
 
     virtual bool isActive() { return this->bActive || this->isBusy(); }
     virtual bool isVisible() { return this->bVisible; }
@@ -86,40 +80,40 @@ class CBaseUIElement : public KeyboardListener {
     virtual bool isMouseInside() { return this->bMouseInside && this->isVisible(); }
 
     inline CBaseUIElement *setPos(vec2 newPos) {
-        if(newPos != this->vPos) {
-            this->vPos = newPos;
+        if(newPos != this->rect.getPos()) {
+            this->rect.setPos(newPos);
             this->onMoved();
         }
         return this;
     }
     inline CBaseUIElement *setPos(float xPos, float yPos) { return this->setPos({xPos, yPos}); }
-    inline CBaseUIElement *setPosX(float xPos) { return this->setPos({xPos, this->vPos.y}); }
-    inline CBaseUIElement *setPosY(float yPos) { return this->setPos({this->vPos.x, yPos}); }
+    inline CBaseUIElement *setPosX(float xPos) { return this->setPos({xPos, this->rect.getPos().y}); }
+    inline CBaseUIElement *setPosY(float yPos) { return this->setPos({this->rect.getPos().x, yPos}); }
     inline CBaseUIElement *setRelPos(vec2 newRelPos) {
-        this->vmPos = newRelPos;
+        this->relRect.setPos(newRelPos);
         return this;
     }
     inline CBaseUIElement *setRelPos(float xPos, float yPos) { return this->setRelPos({xPos, yPos}); }
     inline CBaseUIElement *setRelPosX(float xPos) {
-        this->vmPos.x = xPos;
+        this->relRect.setPosX(xPos);
         return this;
     }
     inline CBaseUIElement *setRelPosY(float yPos) {
-        this->vmPos.y = yPos;
+        this->relRect.setPosY(yPos);
         return this;
     }
 
     inline CBaseUIElement *setSize(vec2 newSize) {
-        if(newSize != this->vSize) {
-            this->vSize = newSize;
+        if(newSize != this->rect.getSize()) {
+            this->rect.setSize(newSize);
             this->onResized();
             this->onMoved();
         }
         return this;
     }
     inline CBaseUIElement *setSize(float xSize, float ySize) { return this->setSize({xSize, ySize}); }
-    inline CBaseUIElement *setSizeX(float xSize) { return this->setSize({xSize, this->vSize.y}); }
-    inline CBaseUIElement *setSizeY(float ySize) { return this->setSize({this->vSize.x, ySize}); }
+    inline CBaseUIElement *setSizeX(float xSize) { return this->setSize({xSize, this->rect.getSize().y}); }
+    inline CBaseUIElement *setSizeY(float ySize) { return this->setSize({this->rect.getSize().x, ySize}); }
 
     inline CBaseUIElement *setRect(McRect rect) {
         this->rect = rect;
@@ -199,25 +193,26 @@ class CBaseUIElement : public KeyboardListener {
     McRect rect;
     McRect relRect;
 
-    vec2 &vPos;    // reference to rect.vMin
-    vec2 &vSize;   // reference to rect.vSize
-    vec2 &vmPos;   // reference to relRect.vMin
-    vec2 &vmSize;  // reference to relRect.vSize
+    // vec2 &vPos;    // reference to rect.vMin
+    // vec2 &vSize;   // reference to rect.vSize
+    // vec2 &vmPos;   // reference to relRect.vMin
+    // vec2 &vmSize;  // reference to relRect.vSize
 
     // attributes
    public:
-    bool grabs_clicks = false;  // TODO: remove this (confusing behavior)
+    bool grabs_clicks{false};  // TODO: remove this (confusing behavior)
    protected:
-    bool bVisible = true;
-    bool bActive = false;  // we are doing something, e.g. textbox is blinking and ready to receive input
-    bool bBusy = false;    // we demand the focus to be kept on us, e.g. click-drag scrolling in a scrollview
-    bool bEnabled = true;
+    bool bVisible{true};
+    bool bActive{false};  // we are doing something, e.g. textbox is blinking and ready to receive input
+    bool bBusy{false};    // we demand the focus to be kept on us, e.g. click-drag scrolling in a scrollview
+    bool bEnabled{true};
 
-    bool bKeepActive = false;  // once clicked, don't lose m_bActive, we have to manually release it (e.g. textbox)
-    bool bMouseInside = false;
+    bool bKeepActive{false};  // once clicked, don't lose m_bActive, we have to manually release it (e.g. textbox)
+    bool bMouseInside{false};
 
-    bool bHandleLeftMouse = true;
-    bool bHandleRightMouse = false;
+    bool bHandleLeftMouse{true};
+    bool bHandleRightMouse{false};
+
    private:
     uint8_t mouseInsideCheck{0};
     uint8_t mouseUpCheck{0};

@@ -40,12 +40,12 @@ void UserCard2::draw() {
     this->setSize(card_size);
 
     // position user icon
-    const f32 iconHeight = this->vSize.y - AVATAR_MARGIN * 2;
+    const f32 iconHeight = this->getSize().y - AVATAR_MARGIN * 2;
     const f32 iconWidth = iconHeight;
-    this->avatar->setPos(this->vPos.x + AVATAR_MARGIN, this->vPos.y + AVATAR_MARGIN);
+    this->avatar->setPos(this->getPos().x + AVATAR_MARGIN, this->getPos().y + AVATAR_MARGIN);
     this->avatar->setSize(iconWidth, iconHeight);
 
-    g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y));
+    g->pushClipRect(McRect(this->getPos(), this->getSize()));
 
     UString status_text = US_("");
     switch(this->info->action) {
@@ -147,11 +147,11 @@ void UserCard2::draw() {
             g->setColor(0xff091b47);
             break;
     }
-    g->fillRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
+    g->fillRect(this->getPos(), this->getSize());
 
     // draw user icon
     g->setColor(0xff1a1a1a);
-    g->fillRect(this->vPos.x + AVATAR_MARGIN, this->vPos.y + AVATAR_MARGIN, this->avatar->getSize().x,
+    g->fillRect(this->getPos().x + AVATAR_MARGIN, this->getPos().y + AVATAR_MARGIN, this->avatar->getSize().x,
                 this->avatar->getSize().y);
     this->avatar->draw_avatar(1.f);
 
@@ -162,7 +162,7 @@ void UserCard2::draw() {
     {
         McFont *usernameFont = osu->getSongBrowserFont();
         const f32 usernameScale = 0.4f;
-        const f32 height = this->vSize.y * 0.5f;
+        const f32 height = this->getSize().y * 0.5f;
         const f32 paddingTopPercent = (1.0f - usernameScale) * 0.1f;
         const f32 paddingTop = height * paddingTopPercent;
 
@@ -176,7 +176,7 @@ void UserCard2::draw() {
         yCounter += usernameFont->getHeight() * scale + paddingTop;
 
         g->scale(scale, scale);
-        g->translate(this->vPos.x + xCounter, this->vPos.y + yCounter);
+        g->translate(this->getPos().x + xCounter, this->getPos().y + yCounter);
         g->setColor(0xffffffff);
         g->drawString(usernameFont, this->info->name);
     }
@@ -184,9 +184,9 @@ void UserCard2::draw() {
 
     // draw status
     const auto font = engine->getDefaultFont();
-    const f32 status_scale = this->vSize.y * 0.5f / font->getHeight() * 0.3f;
+    const f32 status_scale = this->getSize().y * 0.5f / font->getHeight() * 0.3f;
     yCounter += font->getHeight() * status_scale * 0.1f;
-    auto line_width = this->vSize.x - (xCounter + AVATAR_MARGIN);
+    auto line_width = this->getSize().x - (xCounter + AVATAR_MARGIN);
     auto lines = font->wrap(status_text, line_width);
     for(auto &line : lines) {
         yCounter += (font->getHeight() * status_scale * 1.5);
@@ -194,7 +194,7 @@ void UserCard2::draw() {
         g->pushTransform();
         g->setColor(0xffffffff);
         g->scale(status_scale, status_scale);
-        g->translate(this->vPos.x + xCounter, this->vPos.y + yCounter);
+        g->translate(this->getPos().x + xCounter, this->getPos().y + yCounter);
         g->drawString(font, line);
         g->popTransform();
     }

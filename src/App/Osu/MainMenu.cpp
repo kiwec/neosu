@@ -1609,13 +1609,13 @@ void MainMenu::onVersionPressed() {
 }
 
 void PauseButton::draw() {
-    int third = this->vSize.x / 3;
+    int third = this->getSize().x / 3;
 
     g->setColor(0xffffffff);
 
     if(!this->bIsPaused) {
-        g->fillRect(this->vPos.x, this->vPos.y, third, this->vSize.y + 1);
-        g->fillRect(this->vPos.x + 2 * third, this->vPos.y, third, this->vSize.y + 1);
+        g->fillRect(this->getPos().x, this->getPos().y, third, this->getSize().y + 1);
+        g->fillRect(this->getPos().x + 2 * third, this->getPos().y, third, this->getSize().y + 1);
     } else {
         g->setColor(0xffffffff);
         VertexArrayObject vao;
@@ -1623,41 +1623,41 @@ void PauseButton::draw() {
         const int smoothPixels = 2;
 
         // center triangle
-        vao.addVertex(this->vPos.x, this->vPos.y + smoothPixels);
+        vao.addVertex(this->getPos().x, this->getPos().y + smoothPixels);
         vao.addColor(0xffffffff);
-        vao.addVertex(this->vPos.x + this->vSize.x, this->vPos.y + this->vSize.y / 2);
+        vao.addVertex(this->getPos().x + this->getSize().x, this->getPos().y + this->getSize().y / 2);
         vao.addColor(0xffffffff);
-        vao.addVertex(this->vPos.x, this->vPos.y + this->vSize.y - smoothPixels);
+        vao.addVertex(this->getPos().x, this->getPos().y + this->getSize().y - smoothPixels);
         vao.addColor(0xffffffff);
 
         // top smooth
-        vao.addVertex(this->vPos.x, this->vPos.y + smoothPixels);
+        vao.addVertex(this->getPos().x, this->getPos().y + smoothPixels);
         vao.addColor(0xffffffff);
-        vao.addVertex(this->vPos.x, this->vPos.y);
+        vao.addVertex(this->getPos().x, this->getPos().y);
         vao.addColor(0x00000000);
-        vao.addVertex(this->vPos.x + this->vSize.x, this->vPos.y + this->vSize.y / 2);
+        vao.addVertex(this->getPos().x + this->getSize().x, this->getPos().y + this->getSize().y / 2);
         vao.addColor(0xffffffff);
 
-        vao.addVertex(this->vPos.x, this->vPos.y);
+        vao.addVertex(this->getPos().x, this->getPos().y);
         vao.addColor(0x00000000);
-        vao.addVertex(this->vPos.x + this->vSize.x, this->vPos.y + this->vSize.y / 2);
+        vao.addVertex(this->getPos().x + this->getSize().x, this->getPos().y + this->getSize().y / 2);
         vao.addColor(0xffffffff);
-        vao.addVertex(this->vPos.x + this->vSize.x, this->vPos.y + this->vSize.y / 2 - smoothPixels);
+        vao.addVertex(this->getPos().x + this->getSize().x, this->getPos().y + this->getSize().y / 2 - smoothPixels);
         vao.addColor(0x00000000);
 
         // bottom smooth
-        vao.addVertex(this->vPos.x, this->vPos.y + this->vSize.y - smoothPixels);
+        vao.addVertex(this->getPos().x, this->getPos().y + this->getSize().y - smoothPixels);
         vao.addColor(0xffffffff);
-        vao.addVertex(this->vPos.x, this->vPos.y + this->vSize.y);
+        vao.addVertex(this->getPos().x, this->getPos().y + this->getSize().y);
         vao.addColor(0x00000000);
-        vao.addVertex(this->vPos.x + this->vSize.x, this->vPos.y + this->vSize.y / 2);
+        vao.addVertex(this->getPos().x + this->getSize().x, this->getPos().y + this->getSize().y / 2);
         vao.addColor(0xffffffff);
 
-        vao.addVertex(this->vPos.x, this->vPos.y + this->vSize.y);
+        vao.addVertex(this->getPos().x, this->getPos().y + this->getSize().y);
         vao.addColor(0x00000000);
-        vao.addVertex(this->vPos.x + this->vSize.x, this->vPos.y + this->vSize.y / 2);
+        vao.addVertex(this->getPos().x + this->getSize().x, this->getPos().y + this->getSize().y / 2);
         vao.addColor(0xffffffff);
-        vao.addVertex(this->vPos.x + this->vSize.x, this->vPos.y + this->vSize.y / 2 + smoothPixels);
+        vao.addVertex(this->getPos().x + this->getSize().x, this->getPos().y + this->getSize().y / 2 + smoothPixels);
         vao.addColor(0x00000000);
 
         g->drawVAO(&vao);

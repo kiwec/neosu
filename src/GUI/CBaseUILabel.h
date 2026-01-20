@@ -15,7 +15,7 @@ class CBaseUILabel : public CBaseUIElement {
     void update(CBaseUIEventCtx &c) override;
 
     // cancer
-    void setRelSizeX(float x) { this->vmSize.x = x; }
+    void setRelSizeX(float x) { this->relRect.setSize({x, this->relRect.getSize().y}); }
 
     // set
     CBaseUILabel *setDrawFrame(bool drawFrame) {

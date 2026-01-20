@@ -81,12 +81,12 @@ void CarouselButton::draw() {
     // debug outer/actual bounding box
     if(cv::debug_osu.getBool()) {
         g->setColor(0xffff0000);
-        g->drawLine(this->vPos.x, this->vPos.y, this->vPos.x + this->vSize.x, this->vPos.y);
-        g->drawLine(this->vPos.x, this->vPos.y, this->vPos.x, this->vPos.y + this->vSize.y);
-        g->drawLine(this->vPos.x, this->vPos.y + this->vSize.y, this->vPos.x + this->vSize.x,
-                    this->vPos.y + this->vSize.y);
-        g->drawLine(this->vPos.x + this->vSize.x, this->vPos.y, this->vPos.x + this->vSize.x,
-                    this->vPos.y + this->vSize.y);
+        g->drawLine(this->getPos().x, this->getPos().y, this->getPos().x + this->getSize().x, this->getPos().y);
+        g->drawLine(this->getPos().x, this->getPos().y, this->getPos().x, this->getPos().y + this->getSize().y);
+        g->drawLine(this->getPos().x, this->getPos().y + this->getSize().y, this->getPos().x + this->getSize().x,
+                    this->getPos().y + this->getSize().y);
+        g->drawLine(this->getPos().x + this->getSize().x, this->getPos().y, this->getPos().x + this->getSize().x,
+                    this->getPos().y + this->getSize().y);
     }
 }
 
@@ -95,7 +95,7 @@ void CarouselButton::drawMenuButtonBackground() {
     g->pushTransform();
     {
         g->scale(this->fScale, this->fScale);
-        g->translate(this->vPos.x + this->vSize.x / 2, this->vPos.y + this->vSize.y / 2);
+        g->translate(this->getPos().x + this->getSize().x / 2, this->getPos().y + this->getSize().y / 2);
         g->drawImage(osu->getSkin()->i_menu_button_bg);
     }
     g->popTransform();
@@ -107,16 +107,16 @@ void CarouselButton::update(CBaseUIEventCtx &c) {
     // HACKHACK: absolutely disgusting
     // temporarily fool CBaseUIElement with modified position and size
     {
-        vec2 posBackup = this->vPos;
-        vec2 sizeBackup = this->vSize;
+        vec2 posBackup = this->getPos();
+        vec2 sizeBackup = this->getSize();
 
-        this->vPos = this->getActualPos();
-        this->vSize = this->getActualSize();
+        this->rect.setPos(this->getActualPos());
+        this->rect.setSize(this->getActualSize());
         {
             CBaseUIButton::update(c);
         }
-        this->vPos = posBackup;
-        this->vSize = sizeBackup;
+        this->rect.setPos(posBackup);
+        this->rect.setSize(sizeBackup);
     }
 
     // HACKHACK: this should really be part of the UI base
@@ -160,8 +160,8 @@ void CarouselButton::updateLayoutEx() {
     {
         const float centerOffsetAnimationTarget =
             ((cv::songbrowser_button_anim_y_curve.getBool() && !g_carousel->isScrollingFast())
-                 ? 1.0f - std::clamp<float>(std::abs((this->vPos.y + (this->vSize.y / 2) - g_carousel->getPos().y -
-                                                      g_carousel->getSize().y / 2) /
+                 ? 1.0f - std::clamp<float>(std::abs((this->getPos().y + (this->getSize().y / 2) -
+                                                      g_carousel->getPos().y - g_carousel->getSize().y / 2) /
                                                      (g_carousel->getSize().y / 2)),
                                             0.0f, 1.0f)
                  : 1.f) +

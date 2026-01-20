@@ -65,23 +65,23 @@ void ScoreButton::draw() {
             // TODO/FIXME: this is bullshit?
             const f32 scale = SongBrowser::getUIScale() / (backgroundImage.scale() * 1.83f);
             g->scale(scale, scale);
-            g->translate(this->vPos.x + 2, (this->vPos.y + this->vSize.y / 2));
+            g->translate(this->getPos().x + 2, (this->getPos().y + this->getSize().y / 2));
             g->drawImage(backgroundImage, AnchorPoint::LEFT);
         }
         g->popTransform();
     } else if(this->style == STYLE::TOP_RANKS) {
         g->setColor(Color(0xff666666).setA(0.59f * (0.5f + 0.5f * this->fIndexNumberAnim)));  // from 33413c to 4e7466
 
-        g->fillRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
+        g->fillRect(this->getPos(), this->getSize());
     }
 
-    const int yPos = (int)this->vPos.y;  // avoid max shimmering
+    const int yPos = (int)this->getPos().y;  // avoid max shimmering
 
     // index number
     if(this->avatar) {
-        const float margin = this->vSize.y * 0.1;
-        f32 avatar_width = this->vSize.y - (2.f * margin);
-        this->avatar->setPos(this->vPos.x + margin, this->vPos.y + margin);
+        const float margin = this->getSize().y * 0.1;
+        f32 avatar_width = this->getSize().y - (2.f * margin);
+        this->avatar->setPos(this->getPos().x + margin, this->getPos().y + margin);
         this->avatar->setSize(avatar_width, avatar_width);
 
         // Update avatar visibility status
@@ -94,12 +94,12 @@ void ScoreButton::draw() {
     g->pushTransform();
     {
         UString indexNumberString = fmt::format("{}", this->iScoreIndexNumber);
-        const float scale = (this->vSize.y / indexNumberFont->getHeight()) * indexNumberScale;
+        const float scale = (this->getSize().y / indexNumberFont->getHeight()) * indexNumberScale;
 
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x + this->vSize.x * indexNumberWidthPercent * 0.5f -
+        g->translate((int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent * 0.5f -
                            indexNumberFont->getStringWidth(indexNumberString) * scale / 2.0f),
-                     (int)(yPos + this->vSize.y / 2.0f + indexNumberFont->getHeight() * scale / 2.0f));
+                     (int)(yPos + this->getSize().y / 2.0f + indexNumberFont->getHeight() * scale / 2.0f));
         g->translate(0.5f, 0.5f);
         g->setColor(Color(0xff000000).setA(1.0f - (1.0f - this->fIndexNumberAnim)));
 
@@ -119,25 +119,25 @@ void ScoreButton::draw() {
     {
         const float scale = Osu::getImageScaleToFitResolution(
             gradeImg->getSizeBaseRaw(),
-            vec2(this->vSize.x * (1.0f - indexNumberWidthPercent), this->vSize.y * gradeHeightPercent));
+            vec2(this->getSize().x * (1.0f - indexNumberWidthPercent), this->getSize().y * gradeHeightPercent));
         gradeWidth = gradeImg->getSizeBaseRaw().x * scale;
 
         g->setColor(0xffffffff);
-        gradeImg->drawRaw(vec2((int)(this->vPos.x + this->vSize.x * indexNumberWidthPercent + gradeWidth / 2.0f),
-                               (int)(this->vPos.y + this->vSize.y / 2.0f)),
+        gradeImg->drawRaw(vec2((int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent + gradeWidth / 2.0f),
+                               (int)(this->getPos().y + this->getSize().y / 2.0f)),
                           scale);
     }
     g->popTransform();
 
-    const float gradePaddingRight = this->vSize.y * 0.165f;
+    const float gradePaddingRight = this->getSize().y * 0.165f;
 
     // username | (artist + songName + diffName)
     const float usernameScale = (this->style == STYLE::TOP_RANKS ? 0.6f : 0.7f);
     McFont *usernameFont = osu->getSongBrowserFont();
-    g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y));
+    g->pushClipRect(McRect(this->getPos(), this->getSize()));
     g->pushTransform();
     {
-        const float height = this->vSize.y * 0.5f;
+        const float height = this->getSize().y * 0.5f;
         const float paddingTopPercent = (1.0f - usernameScale) * (this->style == STYLE::TOP_RANKS ? 0.15f : 0.4f);
         const float paddingTop = height * paddingTopPercent;
         const float scale = (height / usernameFont->getHeight()) * usernameScale;
@@ -145,7 +145,7 @@ void ScoreButton::draw() {
         UString &string = (this->style == STYLE::TOP_RANKS ? this->sScoreTitle : this->sScoreUsername);
 
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x + this->vSize.x * indexNumberWidthPercent + gradeWidth + gradePaddingRight),
+        g->translate((int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent + gradeWidth + gradePaddingRight),
                      (int)(yPos + height / 2.0f + usernameFont->getHeight() * scale / 2.0f + paddingTop));
         g->translate(0.75f, 0.75f);
         g->setColor(Color(0xff000000).setA(0.75f));
@@ -160,11 +160,11 @@ void ScoreButton::draw() {
 
     // score | pp | weighted 95% (pp)
     const float scoreScale = 0.5f;
-    McFont *scoreFont = (this->vSize.y < 50 ? engine->getDefaultFont()
+    McFont *scoreFont = (this->getSize().y < 50 ? engine->getDefaultFont()
                                             : usernameFont);  // HACKHACK: switch font for very low resolutions
     g->pushTransform();
     {
-        const float height = this->vSize.y * 0.5f;
+        const float height = this->getSize().y * 0.5f;
         const float paddingBottomPercent = (1.0f - scoreScale) * (this->style == STYLE::TOP_RANKS ? 0.1f : 0.25f);
         const float paddingBottom = height * paddingBottomPercent;
         const float scale = (height / scoreFont->getHeight()) * scoreScale;
@@ -172,7 +172,7 @@ void ScoreButton::draw() {
         UString &string = (this->style == STYLE::TOP_RANKS ? this->sScoreScorePPWeightedPP : this->sScoreScorePP);
 
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x + this->vSize.x * indexNumberWidthPercent + gradeWidth + gradePaddingRight),
+        g->translate((int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent + gradeWidth + gradePaddingRight),
                      (int)(yPos + height * 1.5f + scoreFont->getHeight() * scale / 2.0f - paddingBottom));
         g->translate(0.75f, 0.75f);
         g->setColor(Color(0xff000000).setA(0.75f));
@@ -196,8 +196,8 @@ void ScoreButton::draw() {
     }
     g->popTransform();
 
-    const float rightSideThirdHeight = this->vSize.y * 0.333f;
-    const float rightSidePaddingRight = (this->style == STYLE::TOP_RANKS ? 5 : this->vSize.x * 0.025f);
+    const float rightSideThirdHeight = this->getSize().y * 0.333f;
+    const float rightSidePaddingRight = (this->style == STYLE::TOP_RANKS ? 5 : this->getSize().x * 0.025f);
 
     // mods
     const float modScale = 0.7f;
@@ -210,7 +210,7 @@ void ScoreButton::draw() {
         const float scale = (height / modFont->getHeight()) * modScale;
 
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x + this->vSize.x - modFont->getStringWidth(this->sScoreMods) * scale -
+        g->translate((int)(this->getPos().x + this->getSize().x - modFont->getStringWidth(this->sScoreMods) * scale -
                            rightSidePaddingRight),
                      (int)(yPos + height * 0.5f + modFont->getHeight() * scale / 2.0f + paddingTop));
         g->translate(0.75f, 0.75f);
@@ -237,7 +237,7 @@ void ScoreButton::draw() {
         const float scale = (height / accFont->getHeight()) * accScale;
 
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x + this->vSize.x - accFont->getStringWidth(scoreAccuracy) * scale -
+        g->translate((int)(this->getPos().x + this->getSize().x - accFont->getStringWidth(scoreAccuracy) * scale -
                            rightSidePaddingRight),
                      (int)(yPos + height * 1.5f + accFont->getHeight() * scale / 2.0f + paddingTop));
         g->translate(0.75f, 0.75f);
@@ -262,7 +262,7 @@ void ScoreButton::draw() {
             const float scale = (height / customFont->getHeight()) * customScale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->vPos.x + this->vSize.x - customFont->getStringWidth(this->sCustom) * scale -
+            g->translate((int)(this->getPos().x + this->getSize().x - customFont->getStringWidth(this->sCustom) * scale -
                                rightSidePaddingRight),
                          (int)(yPos + height * 2.325f + customFont->getHeight() * scale / 2.0f + paddingTop));
             g->translate(0.75f, 0.75f);
@@ -288,7 +288,7 @@ void ScoreButton::draw() {
             const float scale = (height / weightFont->getHeight()) * weightScale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->vPos.x + this->vSize.x - weightFont->getStringWidth(this->sScoreWeight) * scale -
+            g->translate((int)(this->getPos().x + this->getSize().x - weightFont->getStringWidth(this->sScoreWeight) * scale -
                                rightSidePaddingRight),
                          (int)(yPos + height * 2.5f + weightFont->getHeight() * scale / 2.0f - paddingBottom));
             g->translate(0.75f, 0.75f);
@@ -308,16 +308,16 @@ void ScoreButton::draw() {
     McFont *iconFont = osu->getFontIcons();
     McFont *timeFont = accFont;
     if(this->iScoreUnixTimestamp > 0) {
-        const float iconScale = (this->vSize.y / iconFont->getHeight()) * upIconScale;
+        const float iconScale = (this->getSize().y / iconFont->getHeight()) * upIconScale;
         const float iconHeight = iconFont->getHeight() * iconScale;
         f32 iconPaddingLeft = 2;
-        if(this->style == STYLE::TOP_RANKS) iconPaddingLeft += this->vSize.y * 0.125f;
+        if(this->style == STYLE::TOP_RANKS) iconPaddingLeft += this->getSize().y * 0.125f;
 
         g->pushTransform();
         {
             g->scale(iconScale, iconScale);
-            g->translate((int)(this->vPos.x + this->vSize.x + iconPaddingLeft),
-                         (int)(yPos + this->vSize.y / 2 + iconHeight / 2));
+            g->translate((int)(this->getPos().x + this->getSize().x + iconPaddingLeft),
+                         (int)(yPos + this->getSize().y / 2 + iconHeight / 2));
             g->translate(1, 1);
             g->setColor(Color(0xff000000).setA(0.75f));
 
@@ -337,9 +337,9 @@ void ScoreButton::draw() {
             g->pushTransform();
             {
                 g->scale(timeScale, timeScale);
-                g->translate((int)(this->vPos.x + this->vSize.x + iconPaddingLeft +
+                g->translate((int)(this->getPos().x + this->getSize().x + iconPaddingLeft +
                                    iconFont->getStringWidth(recentScoreIconString) * iconScale + timePaddingLeft),
-                             (int)(yPos + this->vSize.y / 2 + timeFont->getHeight() * timeScale / 2));
+                             (int)(yPos + this->getSize().y / 2 + timeFont->getHeight() * timeScale / 2));
                 g->translate(0.75f, 0.75f);
                 g->setColor(Color(0xff000000).setA(0.85f));
 
@@ -356,7 +356,7 @@ void ScoreButton::draw() {
 
     if(this->style == STYLE::TOP_RANKS) {
         g->setColor(0xff111111);
-        g->drawRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
+        g->drawRect(this->getPos(), this->getSize());
     }
 }
 
@@ -684,7 +684,7 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
     this->avatar.reset();
     if(sc.player_id != 0) {
         this->avatar =
-            std::make_unique<UIAvatar>(sc.player_id, this->vPos.x, this->vPos.y, this->vSize.y, this->vSize.y);
+            std::make_unique<UIAvatar>(sc.player_id, this->getPos().x, this->getPos().y, this->getSize().y, this->getSize().y);
 
         const UserInfo *user = BANCHO::User::try_get_user_info(sc.player_id);
         this->is_friend = user && user->is_friend();

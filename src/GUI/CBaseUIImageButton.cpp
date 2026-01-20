@@ -34,7 +34,7 @@ void CBaseUIImageButton::draw() {
         if(this->fRot != 0.0f) g->rotate(this->fRot);
 
         // center and draw
-        g->translate(this->vPos.x + (int)(this->vSize.x / 2), this->vPos.y + (int)(this->vSize.y / 2));
+        g->translate(this->getPos().x + (int)(this->getSize().x / 2), this->getPos().y + (int)(this->getSize().y / 2));
         g->drawImage(image);
 
         g->popTransform();
@@ -56,16 +56,16 @@ void CBaseUIImageButton::onResized() {
     Image *image = resourceManager->getImage(this->sImageResourceName);
     if(this->bScaleToFit && image != nullptr) {
         if(!this->bKeepAspectRatio) {
-            this->vScale = vec2(this->vSize.x / image->getWidth(), this->vSize.y / image->getHeight());
-            this->vSize.x = (int)(image->getWidth() * this->vScale.x);
-            this->vSize.y = (int)(image->getHeight() * this->vScale.y);
+            this->vScale = vec2(this->getSize().x / image->getWidth(), this->getSize().y / image->getHeight());
+            this->rect.setSize(
+                vec2{(int)(image->getWidth() * this->vScale.x), (int)(image->getHeight() * this->vScale.y)});
         } else {
-            float scaleFactor = this->vSize.x / image->getWidth() < this->vSize.y / image->getHeight()
-                                    ? this->vSize.x / image->getWidth()
-                                    : this->vSize.y / image->getHeight();
+            float scaleFactor = this->getSize().x / image->getWidth() < this->getSize().y / image->getHeight()
+                                    ? this->getSize().x / image->getWidth()
+                                    : this->getSize().y / image->getHeight();
             this->vScale = vec2(scaleFactor, scaleFactor);
-            this->vSize.x = (int)(image->getWidth() * this->vScale.x);
-            this->vSize.y = (int)(image->getHeight() * this->vScale.y);
+            this->rect.setSize(
+                vec2{(int)(image->getWidth() * this->vScale.x), (int)(image->getHeight() * this->vScale.y)});
         }
     }
 }

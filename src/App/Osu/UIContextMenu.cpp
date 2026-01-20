@@ -87,21 +87,21 @@ void UIContextMenu::draw() {
     if(!this->bVisible2) return;
 
     if(this->fAnimation > 0.0f && this->fAnimation < 1.0f) {
-        g->push3DScene(McRect(this->vPos.x,
-                              this->vPos.y + ((this->vSize.y / 2.0f) * (this->bInvertAnimation ? 1.0f : -1.0f)),
-                              this->vSize.x, this->vSize.y));
+        g->push3DScene(McRect(this->getPos().x,
+                              this->getPos().y + ((this->getSize().y / 2.0f) * (this->bInvertAnimation ? 1.0f : -1.0f)),
+                              this->getSize().x, this->getSize().y));
         g->rotate3DScene((1.0f - this->fAnimation) * 90.0f * (this->bInvertAnimation ? 1.0f : -1.0f), 0, 0);
     }
 
     // draw background
     g->setColor(Color(this->backgroundColor).setA(this->backgroundColor.Af() * this->fAnimation));
 
-    g->fillRect(this->vPos.x + 1, this->vPos.y + 1, this->vSize.x - 1, this->vSize.y - 1);
+    g->fillRect(this->getPos().x + 1, this->getPos().y + 1, this->getSize().x - 1, this->getSize().y - 1);
 
     // draw frame
     g->setColor(Color(this->frameColor).setA(this->frameColor.Af() * (this->fAnimation * this->fAnimation)));
 
-    g->drawRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
+    g->drawRect(this->getPos(), this->getSize());
 
     CBaseUIScrollView::draw();
 
@@ -259,22 +259,22 @@ void UIContextMenu::end(bool invertAnimation, EndStyle style) {
     {
         this->setVerticalScrolling(false);
 
-        if(clampTop && this->vPos.y < 0) {
+        if(clampTop && this->getPos().y < 0) {
             enableScrolling = true;
 
-            const float underflow = std::abs(this->vPos.y);
+            const float underflow = std::abs(this->getPos().y);
 
-            this->setRelPosY(this->vPos.y + underflow);
-            this->setPosY(this->vPos.y + underflow);
-            this->setSizeY(this->vSize.y - underflow);
+            this->setRelPosY(this->getPos().y + underflow);
+            this->setPosY(this->getPos().y + underflow);
+            this->setSizeY(this->getSize().y - underflow);
         }
 
-        if(clampBot && this->vPos.y + this->vSize.y > osu->getVirtScreenHeight()) {
+        if(clampBot && this->getPos().y + this->getSize().y > osu->getVirtScreenHeight()) {
             enableScrolling = true;
 
-            const float overflow = std::abs(this->vPos.y + this->vSize.y - osu->getVirtScreenHeight());
+            const float overflow = std::abs(this->getPos().y + this->getSize().y - osu->getVirtScreenHeight());
 
-            this->setSizeY(this->vSize.y - overflow - 1);
+            this->setSizeY(this->getSize().y - overflow - 1);
         }
 
         if(enableScrolling) {

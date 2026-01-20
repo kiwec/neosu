@@ -173,14 +173,14 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
         int iconWidth = 0;
         g->pushTransform();
         {
-            const float scale = (this->vSize.y / iconFont->getHeight()) * iconScale;
+            const float scale = (this->getSize().y / iconFont->getHeight()) * iconScale;
             const float paddingLeft = scale * 15;
 
             iconWidth = paddingLeft + iconFont->getStringWidth(this->sIconString) * scale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->vPos.x + paddingLeft),
-                         (int)(this->vPos.y + this->vSize.y / 2 + iconFont->getHeight() * scale / 2));
+            g->translate((int)(this->getPos().x + paddingLeft),
+                         (int)(this->getPos().y + this->getSize().y / 2 + iconFont->getHeight() * scale / 2));
             g->setColor(0xffffffff);
             g->drawString(iconFont, this->sIconString);
         }
@@ -193,11 +193,11 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
         {
             const float stringWidth = textFont->getStringWidth(this->sText);
 
-            const float scale = ((this->vSize.x - iconWidth) / stringWidth) * textScale;
+            const float scale = ((this->getSize().x - iconWidth) / stringWidth) * textScale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->vPos.x + iconWidth + (this->vSize.x - iconWidth) / 2 - stringWidth * scale / 2),
-                         (int)(this->vPos.y + this->vSize.y / 2 + textFont->getHeight() * scale / 2));
+            g->translate((int)(this->getPos().x + iconWidth + (this->getSize().x - iconWidth) / 2 - stringWidth * scale / 2),
+                         (int)(this->getPos().y + this->getSize().y / 2 + textFont->getHeight() * scale / 2));
             g->setColor(0xff02c3e5);
             g->drawString(textFont, this->sText);
         }
@@ -221,14 +221,14 @@ class NoRecordsSetElement final : public CBaseUILabel {
         int iconWidth = 0;
         g->pushTransform();
         {
-            const float scale = (this->vSize.y / iconFont->getHeight()) * iconScale;
+            const float scale = (this->getSize().y / iconFont->getHeight()) * iconScale;
             const float paddingLeft = scale * 15;
 
             iconWidth = paddingLeft + iconFont->getStringWidth(this->sIconString) * scale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->vPos.x + paddingLeft),
-                         (int)(this->vPos.y + this->vSize.y / 2 + iconFont->getHeight() * scale / 2));
+            g->translate((int)(this->getPos().x + paddingLeft),
+                         (int)(this->getPos().y + this->getSize().y / 2 + iconFont->getHeight() * scale / 2));
             g->setColor(0xffffffff);
             g->drawString(iconFont, this->sIconString);
         }
@@ -241,11 +241,11 @@ class NoRecordsSetElement final : public CBaseUILabel {
         {
             const float stringWidth = textFont->getStringWidth(this->sText);
 
-            const float scale = ((this->vSize.x - iconWidth) / stringWidth) * textScale;
+            const float scale = ((this->getSize().x - iconWidth) / stringWidth) * textScale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->vPos.x + iconWidth + (this->vSize.x - iconWidth) / 2 - stringWidth * scale / 2),
-                         (int)(this->vPos.y + this->vSize.y / 2 + textFont->getHeight() * scale / 2));
+            g->translate((int)(this->getPos().x + iconWidth + (this->getSize().x - iconWidth) / 2 - stringWidth * scale / 2),
+                         (int)(this->getPos().y + this->getSize().y / 2 + textFont->getHeight() * scale / 2));
             g->setColor(0xff02c3e5);
             g->drawString(textFont, this->sText);
         }

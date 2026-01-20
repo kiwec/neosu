@@ -35,8 +35,8 @@ class ConsoleBoxTextbox : public CBaseUITextbox {
                 g->setColor(0xff444444);
                 g->pushTransform();
                 {
-                    g->translate((int)(this->vPos.x + this->iTextAddX + this->fTextScrollAddX),
-                                 (int)(this->vPos.y + this->iTextAddY));
+                    g->translate((int)(this->getPos().x + this->iTextAddX + this->fTextScrollAddX),
+                                 (int)(this->getPos().y + this->iTextAddY));
                     g->drawString(this->font, this->sSuggestion);
                 }
                 g->popTransform();
@@ -79,9 +79,9 @@ class ConsoleBoxSuggestionButton : public CBaseUIButton {
                                   (float)helpTextStringWidth);
 
                     g->scale(scale, scale);
-                    g->translate((int)(this->vPos.x + this->fStringWidth + helpTextOffset * scale / 2 +
+                    g->translate((int)(this->getPos().x + this->fStringWidth + helpTextOffset * scale / 2 +
                                        helpTextSeparatorStringWidth * scale),
-                                 (int)(this->vPos.y + this->vSize.y / 2.0f + this->fStringHeight / 2.0f -
+                                 (int)(this->getPos().y + this->getSize().y / 2.0f + this->fStringHeight / 2.0f -
                                        this->font->getHeight() * (1.0f - scale) / 2.0f));
                     g->setColor(0xff444444);
                     g->drawString(this->font, helpTextSeparator);

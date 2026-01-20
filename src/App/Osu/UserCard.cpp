@@ -42,27 +42,27 @@ void UserCard::draw() {
     if(!this->bVisible) return;
 
     int yCounter = 0;
-    const float iconHeight = this->vSize.y;
+    const float iconHeight = this->getSize().y;
     const float iconWidth = iconHeight;
 
     // draw user icon background
     g->setColor(argb(1.0f, 0.1f, 0.1f, 0.1f));
-    g->fillRect(this->vPos.x + 1, this->vPos.y + 1, iconWidth, iconHeight);
+    g->fillRect(this->getPos().x + 1, this->getPos().y + 1, iconWidth, iconHeight);
 
     // draw user icon
     if(this->avatar) {
-        this->avatar->setPos(this->vPos.x + 1, this->vPos.y + 1);
+        this->avatar->setPos(this->getPos().x + 1, this->getPos().y + 1);
         this->avatar->setSize(iconWidth, iconHeight);
         this->avatar->draw_avatar(1.f);
     } else {
         g->setColor(0xffffffff);
-        g->pushClipRect(McRect(this->vPos.x + 1, this->vPos.y + 2, iconWidth, iconHeight));
+        g->pushClipRect(McRect(this->getPos().x + 1, this->getPos().y + 2, iconWidth, iconHeight));
         g->pushTransform();
         {
             const float scale =
                 Osu::getImageScaleToFillResolution(osu->getSkin()->i_user_icon, vec2(iconWidth, iconHeight));
             g->scale(scale, scale);
-            g->translate(this->vPos.x + iconWidth / 2 + 1, this->vPos.y + iconHeight / 2 + 1);
+            g->translate(this->getPos().x + iconWidth / 2 + 1, this->getPos().y + iconHeight / 2 + 1);
             g->drawImage(osu->getSkin()->i_user_icon);
         }
         g->popTransform();
@@ -73,20 +73,20 @@ void UserCard::draw() {
     McFont *usernameFont = osu->getSongBrowserFont();
     const float usernameScale = 0.4f;
     float usernamePaddingLeft = 0.0f;
-    g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, iconHeight));
+    g->pushClipRect(McRect(this->getPos().x, this->getPos().y, this->getSize().x, iconHeight));
     g->pushTransform();
     {
-        const float height = this->vSize.y * 0.5f;
+        const float height = this->getSize().y * 0.5f;
         const float paddingTopPercent = (1.0f - usernameScale) * 0.1f;
         const float paddingTop = height * paddingTopPercent;
         const float paddingLeftPercent = (1.0f - usernameScale) * 0.3f;
         usernamePaddingLeft = height * paddingLeftPercent;
         const float scale = (height / usernameFont->getHeight()) * usernameScale;
 
-        yCounter += (int)(this->vPos.y + usernameFont->getHeight() * scale + paddingTop);
+        yCounter += (int)(this->getPos().y + usernameFont->getHeight() * scale + paddingTop);
 
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x + iconWidth + usernamePaddingLeft), yCounter);
+        g->translate((int)(this->getPos().x + iconWidth + usernamePaddingLeft), yCounter);
         g->setColor(0xffffffff);
         g->drawString(usernameFont, this->sText);
     }
@@ -102,7 +102,7 @@ void UserCard::draw() {
             UString performanceString = fmt::format("Performance:{}pp", (int)std::round(this->fPP));
             UString accuracyString = fmt::format("Accuracy:{:.2f}%", this->fAcc * 100.0f);
 
-            const float height = this->vSize.y * 0.5f;
+            const float height = this->getSize().y * 0.5f;
             const float paddingTopPercent = (1.0f - performanceScale) * 0.2f;
             const float paddingTop = height * paddingTopPercent;
             const float paddingMiddlePercent = (1.0f - performanceScale) * 0.15f;
@@ -112,7 +112,7 @@ void UserCard::draw() {
             yCounter += performanceFont->getHeight() * scale + paddingTop;
 
             g->scale(scale, scale);
-            g->translate((int)(this->vPos.x + iconWidth + usernamePaddingLeft), yCounter);
+            g->translate((int)(this->getPos().x + iconWidth + usernamePaddingLeft), yCounter);
             g->setColor(0xffffffff);
             if(cv::user_draw_pp.getBool()) g->drawString(performanceFont, performanceString);
 
@@ -130,7 +130,7 @@ void UserCard::draw() {
         {
             UString scoreString = fmt::format("Lv{}", this->iLevel);
 
-            const float height = this->vSize.y * 0.5f;
+            const float height = this->getSize().y * 0.5f;
             const float paddingTopPercent = (1.0f - scoreScale) * 0.2f;
             const float paddingTop = height * paddingTopPercent;
             const float scale = (height / scoreFont->getHeight()) * scoreScale;
@@ -139,7 +139,7 @@ void UserCard::draw() {
 
             // HACK: Horizontal scaling a bit so font size is closer to stable
             g->scale(scale * 0.9f, scale);
-            g->translate((int)(this->vPos.x + iconWidth + usernamePaddingLeft), yCounter);
+            g->translate((int)(this->getPos().x + iconWidth + usernamePaddingLeft), yCounter);
             g->setColor(0xffffffff);
             if(cv::user_draw_level.getBool()) g->drawString(scoreFont, scoreString);
         }
@@ -148,17 +148,17 @@ void UserCard::draw() {
         // draw level percentage bar (to next level)
         if(cv::user_draw_level_bar.getBool()) {
             const float barBorder = 1.f;
-            const float barHeight = (int)(this->vSize.y - 2 * barBorder) * 0.15f;
-            const float barWidth = (int)((this->vSize.x - 2 * barBorder) * 0.61f);
+            const float barHeight = (int)(this->getSize().y - 2 * barBorder) * 0.15f;
+            const float barWidth = (int)((this->getSize().x - 2 * barBorder) * 0.61f);
             g->setColor(0xff272727);  // WYSI
-            g->fillRect(this->vPos.x + this->vSize.x - barWidth - barBorder - 1,
-                        this->vPos.y + this->vSize.y - barHeight - barBorder, barWidth, barHeight);
+            g->fillRect(this->getPos().x + this->getSize().x - barWidth - barBorder - 1,
+                        this->getPos().y + this->getSize().y - barHeight - barBorder, barWidth, barHeight);
             g->setColor(0xff888888);
-            g->drawRect(this->vPos.x + this->vSize.x - barWidth - barBorder - 1,
-                        this->vPos.y + this->vSize.y - barHeight - barBorder, barWidth, barHeight);
+            g->drawRect(this->getPos().x + this->getSize().x - barWidth - barBorder - 1,
+                        this->getPos().y + this->getSize().y - barHeight - barBorder, barWidth, barHeight);
             g->setColor(0xffbf962a);
-            g->fillRect(this->vPos.x + this->vSize.x - barWidth - barBorder - 1,
-                        this->vPos.y + this->vSize.y - barHeight - barBorder,
+            g->fillRect(this->getPos().x + this->getSize().x - barWidth - barBorder - 1,
+                        this->getPos().y + this->getSize().y - barHeight - barBorder,
                         barWidth * std::clamp<float>(this->fPercentToNextLevel, 0.0f, 1.0f), barHeight);
         }
 
@@ -171,7 +171,7 @@ void UserCard::draw() {
 
             const float border = 1.f;
 
-            const float height = this->vSize.y * 0.5f;
+            const float height = this->getSize().y * 0.5f;
             const float scale = (height / deltaFont->getHeight()) * deltaScale;
 
             const float performanceDeltaStringWidth = deltaFont->getStringWidth(performanceDeltaString) * scale;
@@ -179,7 +179,7 @@ void UserCard::draw() {
             const vec2 backgroundSize =
                 vec2(performanceDeltaStringWidth + border, deltaFont->getHeight() * scale + border * 3);
             const vec2 pos =
-                vec2(this->vPos.x + this->vSize.x - performanceDeltaStringWidth - border, this->vPos.y + border);
+                vec2(this->getPos().x + this->getSize().x - performanceDeltaStringWidth - border, this->getPos().y + border);
             const vec2 textPos = vec2(pos.x, pos.y + deltaFont->getHeight() * scale);
 
             // background (to ensure readability even with stupid long usernames)

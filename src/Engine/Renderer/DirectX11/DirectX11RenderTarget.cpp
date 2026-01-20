@@ -34,7 +34,7 @@ DirectX11RenderTarget::DirectX11RenderTarget(int x, int y, int width, int height
 }
 
 void DirectX11RenderTarget::init() {
-    debugLog("Building RenderTarget ({}x{}) ...", (int)this->vSize.x, (int)this->vSize.y);
+    debugLog("Building RenderTarget ({}x{}) ...", (int)this->getSize().x, (int)this->getSize().y);
 
     HRESULT hr;
 
@@ -52,8 +52,8 @@ void DirectX11RenderTarget::init() {
         colorTextureDesc.SampleDesc.Count = 1;
         colorTextureDesc.SampleDesc.Quality = 0;
         colorTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-        colorTextureDesc.Width = (UINT)this->vSize.x;
-        colorTextureDesc.Height = (UINT)this->vSize.y;
+        colorTextureDesc.Width = (UINT)this->getSize().x;
+        colorTextureDesc.Height = (UINT)this->getSize().y;
     }
     hr = device->CreateTexture2D(&colorTextureDesc, nullptr, &this->renderTexture);
     if(FAILED(hr)) {
@@ -75,8 +75,8 @@ void DirectX11RenderTarget::init() {
         depthStencilTextureDesc.SampleDesc.Count = 1;
         depthStencilTextureDesc.SampleDesc.Quality = 0;
         depthStencilTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-        depthStencilTextureDesc.Width = (UINT)this->vSize.x;
-        depthStencilTextureDesc.Height = (UINT)this->vSize.y;
+        depthStencilTextureDesc.Width = (UINT)this->getSize().x;
+        depthStencilTextureDesc.Height = (UINT)this->getSize().y;
     }
     hr = device->CreateTexture2D(&depthStencilTextureDesc, nullptr, &this->depthStencilTexture);
     if(FAILED(hr)) {
@@ -165,7 +165,7 @@ void DirectX11RenderTarget::draw(int x, int y) {
     bind();
     {
         g->setColor(this->color);
-        g->drawQuad(x, y, this->vSize.x, this->vSize.y);
+        g->drawQuad(x, y, this->getSize().x, this->getSize().y);
     }
     unbind();
 }
@@ -190,10 +190,10 @@ void DirectX11RenderTarget::drawRect(int x, int y, int width, int height) {
         return;
     }
 
-    const float texCoordWidth0 = x / this->vSize.x;
-    const float texCoordWidth1 = (x + width) / this->vSize.x;
-    const float texCoordHeight1 = y / this->vSize.y;
-    const float texCoordHeight0 = (y + height) / this->vSize.y;
+    const float texCoordWidth0 = x / this->getSize().x;
+    const float texCoordWidth1 = (x + width) / this->getSize().x;
+    const float texCoordHeight1 = y / this->getSize().y;
+    const float texCoordHeight0 = (y + height) / this->getSize().y;
 
     bind();
     {

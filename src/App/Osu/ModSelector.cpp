@@ -63,15 +63,15 @@ class ModSelectorOverrideSliderDescButton final : public CBaseUIButton {
    private:
     void drawText() override {
         if(this->font != nullptr && this->sText.length() > 0) {
-            float xPosAdd = this->vSize.x / 2.0f - this->fStringWidth / 2.0f;
+            float xPosAdd = this->getSize().x / 2.0f - this->fStringWidth / 2.0f;
 
-            // g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y));
+            // g->pushClipRect(McRect(this->getPos(), this->getSize()));
             {
                 g->setColor(this->textColor);
                 g->pushTransform();
                 {
-                    g->translate((int)(this->vPos.x + (xPosAdd)),
-                                 (int)(this->vPos.y + this->vSize.y / 2.0f + this->fStringHeight / 2.0f));
+                    g->translate((int)(this->getPos().x + (xPosAdd)),
+                                 (int)(this->getPos().y + this->getSize().y / 2.0f + this->fStringHeight / 2.0f));
                     g->drawString(this->font, this->sText);
                 }
                 g->popTransform();
@@ -98,14 +98,14 @@ class ModSelectorOverrideSliderLockButton final : public CBaseUICheckbox {
         iconString.insert(0, icon);
 
         McFont *iconFont = osu->getFontIcons();
-        const float scale = (this->vSize.y / iconFont->getHeight()) * this->fAnim;
+        const float scale = (this->getSize().y / iconFont->getHeight()) * this->fAnim;
         g->setColor(this->bChecked ? 0xffffffff : 0xff1166ff);
 
         g->pushTransform();
         {
             g->scale(scale, scale);
-            g->translate(this->vPos.x + this->vSize.x / 2.0f - iconFont->getStringWidth(iconString) * scale / 2.0f,
-                         this->vPos.y + this->vSize.y / 2.0f + (iconFont->getHeight() * scale / 2.0f) * 0.8f);
+            g->translate(this->getPos().x + this->getSize().x / 2.0f - iconFont->getStringWidth(iconString) * scale / 2.0f,
+                         this->getPos().y + this->getSize().y / 2.0f + (iconFont->getHeight() * scale / 2.0f) * 0.8f);
             g->drawString(iconFont, iconString);
         }
         g->popTransform();

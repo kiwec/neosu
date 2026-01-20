@@ -105,41 +105,53 @@ class Graphics {
     virtual void setAlpha(float alpha) = 0;
 
     // 2d primitive drawing
-    virtual void drawPixels(int x, int y, int width, int height, DrawPixelsType type,
-                            const void *pixels) = 0;
+    virtual void drawPixels(int x, int y, int width, int height, DrawPixelsType type, const void *pixels) = 0;
     virtual void drawPixel(int x, int y) = 0;
     virtual void drawLinef(float x1, float y1, float x2, float y2) = 0;
-    virtual void drawRectf(const RectOptions &opt) = 0;  // this is the main drawrect function
 
+    virtual void drawRectf(const RectOptions &opt) = 0;  // this is the main drawrect function
+    virtual void fillRectf(float x, float y, float width, float height) = 0;
+    virtual void fillRoundedRect(int x, int y, int width, int height, int radius) = 0;
+    virtual void fillGradient(int x, int y, int width, int height, Color topLeftColor, Color topRightColor,
+                              Color bottomLeftColor, Color bottomRightColor) = 0;
+
+    // passthroughs to convert various kinds of arguments to the base implementation
     inline void drawRectf(float x, float y, float width, float height, bool withColor = false, Color top = -1,
                           Color right = -1, Color bottom = -1, Color left = -1) {
-        this->drawRectf(RectOptions{.x = x,
-                                    .y = y,
-                                    .width = width,
-                                    .height = height,
-                                    .top = top,
-                                    .right = right,
-                                    .bottom = bottom,
-                                    .left = left,
-                                    .withColor = withColor});
+        return this->drawRectf(RectOptions{.x = x,
+                                           .y = y,
+                                           .width = width,
+                                           .height = height,
+                                           .top = top,
+                                           .right = right,
+                                           .bottom = bottom,
+                                           .left = left,
+                                           .withColor = withColor});
     }
 
     inline void drawLine(int x1, int y1, int x2, int y2) {
-        this->drawLinef((float)x1 + 0.5f, (float)y1 + 0.5f, (float)x2 + 0.5f, (float)y2 + 0.5f);
+        return this->drawLinef((float)x1 + 0.5f, (float)y1 + 0.5f, (float)x2 + 0.5f, (float)y2 + 0.5f);
     }
-    inline void drawLine(vec2 pos1, vec2 pos2) { this->drawLinef(pos1.x, pos1.y, pos2.x, pos2.y); }
+    inline void drawLine(vec2 pos1, vec2 pos2) { return this->drawLinef(pos1.x, pos1.y, pos2.x, pos2.y); }
     inline void drawRectf(float x, float y, float width, float height, Color top, Color right, Color bottom,
                           Color left) {
-        this->drawRectf(x, y, width, height, true, top, right, bottom, left);
+        return this->drawRectf(x, y, width, height, true, top, right, bottom, left);
     }
     inline void drawRect(int x, int y, int width, int height) {
-        this->drawRectf((float)x + 0.5f, (float)y + 0.5f, (float)width, (float)height);
+        return this->drawRectf((float)x + 0.5f, (float)y + 0.5f, (float)width, (float)height);
     }
     inline void drawRect(int x, int y, int width, int height, Color top, Color right, Color bottom, Color left) {
-        this->drawRectf((float)x + 0.5f, (float)y + 0.5f, (float)width, (float)height, top, right, bottom, left);
+        return this->drawRectf((float)x + 0.5f, (float)y + 0.5f, (float)width, (float)height, top, right, bottom, left);
     }
+    inline void drawRect(vec2 pos, vec2 size) {
+        return this->drawRect((int)pos.x, (int)pos.y, (int)size.x, (int)size.y);
+    }
+    inline void drawRect(vec2 pos, vec2 size, Color top, Color right, Color bottom, Color left) {
+        return this->drawRect((int)pos.x, (int)pos.y, (int)size.x, (int)size.y, top, right, bottom, left);
+    }
+
     inline void drawBorder(int x, int y, int width, int height, float thickness) {
-        this->drawRectf(RectOptions{
+        return this->drawRectf(RectOptions{
             .x = (float)x + thickness / 2.f,
             .y = (float)y + thickness / 2.f,
             .width = (float)width - thickness,
@@ -148,16 +160,23 @@ class Graphics {
             .withColor = false,
         });
     }
-
-    virtual void fillRectf(float x, float y, float width, float height) = 0;
-
-    inline void fillRect(int x, int y, int width, int height) {
-        this->fillRectf((float)x, (float)y, (float)width, (float)height);
+    inline void drawBorder(vec2 pos, vec2 size, float thickness) {
+        return this->drawBorder((int)pos.x, (int)pos.y, (int)size.x, (int)size.y, thickness);
     }
-
-    virtual void fillRoundedRect(int x, int y, int width, int height, int radius) = 0;
-    virtual void fillGradient(int x, int y, int width, int height, Color topLeftColor, Color topRightColor,
-                              Color bottomLeftColor, Color bottomRightColor) = 0;
+    inline void fillRect(int x, int y, int width, int height) {
+        return this->fillRectf((float)x, (float)y, (float)width, (float)height);
+    }
+    inline void fillRect(vec2 pos, vec2 size) {
+        return this->fillRect((int)pos.x, (int)pos.y, (int)size.x, (int)size.y);
+    }
+    inline void fillRoundedRect(vec2 pos, vec2 size, int radius) {
+        return this->fillRoundedRect((int)pos.x, (int)pos.y, (int)size.x, (int)size.y, radius);
+    }
+    inline void fillGradient(vec2 pos, vec2 size, Color topLeftColor, Color topRightColor, Color bottomLeftColor,
+                             Color bottomRightColor) {
+        return this->fillGradient((int)pos.x, (int)pos.y, (int)size.x, (int)size.y, topLeftColor, topRightColor,
+                                  bottomLeftColor, bottomRightColor);
+    }
 
     virtual void drawQuad(int x, int y, int width, int height) = 0;
     virtual void drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRight, vec2 bottomLeft, Color topLeftColor,
@@ -224,8 +243,7 @@ class Graphics {
     // factory
     virtual Image *createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) = 0;
     virtual Image *createImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) = 0;
-    virtual RenderTarget *createRenderTarget(int x, int y, int width, int height,
-                                             MultisampleType multiSampleType) = 0;
+    virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, MultisampleType multiSampleType) = 0;
     virtual Shader *createShaderFromFile(std::string vertexShaderFilePath, std::string fragmentShaderFilePath) = 0;
     virtual Shader *createShaderFromSource(std::string vertexShader, std::string fragmentShader) = 0;
     virtual VertexArrayObject *createVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage,

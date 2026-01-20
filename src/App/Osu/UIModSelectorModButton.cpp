@@ -54,7 +54,7 @@ void UIModSelectorModButton::draw() {
             if(draw_inverted_colors) {
                 g->setColorInversion(true);
             }
-            activeImage->draw(this->vPos + this->vSize / 2.f);
+            activeImage->draw(this->getPos() + this->getSize() / 2.f);
             if(draw_inverted_colors) {
                 g->setColorInversion(false);
             }
@@ -63,16 +63,16 @@ void UIModSelectorModButton::draw() {
     }
 
     if(!this->bAvailable) {
-        const int size = this->vSize.x > this->vSize.y ? this->vSize.x : this->vSize.y;
+        const int size = this->getSize().x > this->getSize().y ? this->getSize().x : this->getSize().y;
 
         g->setColor(0xff000000);
-        g->drawLine(this->vPos.x + 1, this->vPos.y, this->vPos.x + size + 1, this->vPos.y + size);
+        g->drawLine(this->getPos().x + 1, this->getPos().y, this->getPos().x + size + 1, this->getPos().y + size);
         g->setColor(0xffffffff);
-        g->drawLine(this->vPos.x, this->vPos.y, this->vPos.x + size, this->vPos.y + size);
+        g->drawLine(this->getPos().x, this->getPos().y, this->getPos().x + size, this->getPos().y + size);
         g->setColor(0xff000000);
-        g->drawLine(this->vPos.x + size + 1, this->vPos.y, this->vPos.x + 1, this->vPos.y + size);
+        g->drawLine(this->getPos().x + size + 1, this->getPos().y, this->getPos().x + 1, this->getPos().y + size);
         g->setColor(0xffffffff);
-        g->drawLine(this->vPos.x + size, this->vPos.y, this->vPos.x, this->vPos.y + size);
+        g->drawLine(this->getPos().x + size, this->getPos().y, this->getPos().x, this->getPos().y + size);
     }
 }
 

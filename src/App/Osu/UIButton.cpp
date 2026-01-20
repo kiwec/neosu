@@ -20,13 +20,13 @@ void UIButton::draw() {
     Image *buttonMiddle = this->bDefaultSkin ? osu->getSkin()->i_button_mid_default : osu->getSkin()->i_button_mid;
     Image *buttonRight = this->bDefaultSkin ? osu->getSkin()->i_button_right_default : osu->getSkin()->i_button_right;
 
-    float leftScale = osu->getImageScaleToFitResolution(buttonLeft, this->vSize);
+    float leftScale = osu->getImageScaleToFitResolution(buttonLeft, this->getSize());
     float leftWidth = buttonLeft->getWidth() * leftScale;
 
-    float rightScale = osu->getImageScaleToFitResolution(buttonRight, this->vSize);
+    float rightScale = osu->getImageScaleToFitResolution(buttonRight, this->getSize());
     float rightWidth = buttonRight->getWidth() * rightScale;
 
-    float middleWidth = this->vSize.x - leftWidth - rightWidth;
+    float middleWidth = this->getSize().x - leftWidth - rightWidth;
 
     {
         auto color = this->is_loading ? rgba(0x33, 0x33, 0x33, 0xff) : this->color;
@@ -39,30 +39,30 @@ void UIButton::draw() {
 
     buttonLeft->bind();
     {
-        g->drawQuad((int)this->vPos.x, (int)this->vPos.y, (int)leftWidth, (int)this->vSize.y);
+        g->drawQuad((int)this->getPos().x, (int)this->getPos().y, (int)leftWidth, (int)this->getSize().y);
     }
     buttonLeft->unbind();
 
     buttonMiddle->bind();
     {
-        g->drawQuad((int)this->vPos.x + (int)leftWidth, (int)this->vPos.y, (int)middleWidth, (int)this->vSize.y);
+        g->drawQuad((int)this->getPos().x + (int)leftWidth, (int)this->getPos().y, (int)middleWidth, (int)this->getSize().y);
     }
     buttonMiddle->unbind();
 
     buttonRight->bind();
     {
-        g->drawQuad((int)this->vPos.x + (int)leftWidth + (int)middleWidth, (int)this->vPos.y, (int)rightWidth,
-                    (int)this->vSize.y);
+        g->drawQuad((int)this->getPos().x + (int)leftWidth + (int)middleWidth, (int)this->getPos().y, (int)rightWidth,
+                    (int)this->getSize().y);
     }
     buttonRight->unbind();
 
     if(this->is_loading) {
-        const float scale = (this->vSize.y * 0.8) / osu->getSkin()->i_loading_spinner->getSize().y;
+        const float scale = (this->getSize().y * 0.8) / osu->getSkin()->i_loading_spinner->getSize().y;
         g->setColor(0xffffffff);
         g->pushTransform();
         g->rotate(engine->getTime() * 180, 0, 0, 1);
         g->scale(scale, scale);
-        g->translate(this->vPos.x + this->vSize.x / 2.0f, this->vPos.y + this->vSize.y / 2.0f);
+        g->translate(this->getPos().x + this->getSize().x / 2.0f, this->getPos().y + this->getSize().y / 2.0f);
         g->drawImage(osu->getSkin()->i_loading_spinner);
         g->popTransform();
     } else {
@@ -141,11 +141,11 @@ void UIButtonVertical::drawText() {
     g->pushTransform();
     {
         const f32 scale = 1.f;
-        f32 xPosAdd = this->vSize.x / 2.f + (this->fStringHeight / 2.f * scale);
+        f32 xPosAdd = this->getSize().x / 2.f + (this->fStringHeight / 2.f * scale);
         g->rotate(-90);
         g->scale(scale, scale);
-        g->translate((i32)(this->vPos.x + xPosAdd),
-                     (i32)(this->vPos.y + (this->fStringWidth / 2.f) * scale + this->vSize.y / 2.f));
+        g->translate((i32)(this->getPos().x + xPosAdd),
+                     (i32)(this->getPos().y + (this->fStringWidth / 2.f) * scale + this->getSize().y / 2.f));
 
         // shadow
         if(this->bDrawShadow) {

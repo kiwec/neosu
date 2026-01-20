@@ -58,20 +58,20 @@ void ToastElement::draw() {
 
     // background
     g->setColor(Color(this->isMouseInside() ? 0xff222222 : 0xff111111).setA(alpha));
-    g->fillRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
+    g->fillRect(this->getPos(), this->getSize());
 
     // border
     g->setColor(Color(this->isMouseInside() ? rgb(255, 255, 255) : this->borderColor).setA(alpha));
-    g->drawBorder(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y, osu->getUIScale());
+    g->drawBorder(this->getPos(), this->getSize(), osu->getUIScale());
 
     // text
-    f64 y = this->vPos.y;
+    f64 y = this->getPos().y;
     for(const auto &line : this->lines) {
         y += (this->font->getHeight() * 1.5);
         g->setColor(Color(0xffffffff).setA(alpha));
 
         g->pushTransform();
-        g->translate(this->vPos.x + TOAST_INNER_X_MARGIN, y);
+        g->translate(this->getPos().x + TOAST_INNER_X_MARGIN, y);
         g->drawString(this->font, line);
         g->popTransform();
     }

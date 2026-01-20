@@ -24,7 +24,7 @@ UISearchOverlay::UISearchOverlay(float xPos, float yPos, float xSize, float ySiz
 void UISearchOverlay::draw() {
     /*
     g->setColor(0xaaaaaaaa);
-    g->fillRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
+    g->fillRect(this->getPos(), this->getSize());
     */
 
     // draw search text and background
@@ -53,7 +53,7 @@ void UISearchOverlay::draw() {
     // calc global x offset for overflowing line (don't wrap, just move everything to the left)
     int textOverflowXOffset = 0;
     {
-        const int actualXEnd = (int)(this->vPos.x + this->vSize.x - offsetTextStringWidth * searchTextScale -
+        const int actualXEnd = (int)(this->getPos().x + this->getSize().x - offsetTextStringWidth * searchTextScale -
                                      (searchTextFont->getHeight() * searchTextScale) * 0.5f - this->iOffsetRight) +
                                (int)(searchTextFont->getStringWidth(searchText1) * searchTextScale) +
                                (int)(searchStringWidth * searchTextScale);
@@ -76,7 +76,7 @@ void UISearchOverlay::draw() {
         const int offsetTextWidthWithOverflow = offsetTextWidthWithoutOverflow + textOverflowXOffset;
 
         g->setColor(argb(this->sSearchString.length() > 0 ? 100 : 30, 0, 0, 0));
-        g->fillRect(this->vPos.x + this->vSize.x - offsetTextWidthWithOverflow, this->vPos.y,
+        g->fillRect(this->getPos().x + this->getSize().x - offsetTextWidthWithOverflow, this->getPos().y,
                     offsetTextWidthWithOverflow, height);
     }
 
@@ -87,9 +87,9 @@ void UISearchOverlay::draw() {
         g->translate(0, (int)(searchTextFont->getHeight() / 2.0f));
         g->scale(searchTextScale, searchTextScale);
         g->translate(
-            (int)(this->vPos.x + this->vSize.x - offsetTextStringWidth * searchTextScale -
+            (int)(this->getPos().x + this->getSize().x - offsetTextStringWidth * searchTextScale -
                   (searchTextFont->getHeight() * searchTextScale) * 0.5f - this->iOffsetRight - textOverflowXOffset),
-            (int)(this->vPos.y + (searchTextFont->getHeight() * searchTextScale) * 1.5f));
+            (int)(this->getPos().y + (searchTextFont->getHeight() * searchTextScale) * 1.5f));
 
         // draw search text and text
         g->pushTransform();

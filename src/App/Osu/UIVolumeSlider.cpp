@@ -63,8 +63,8 @@ void UIVolumeSlider::drawBlock() {
 
         g->scale((this->vBlockSize.y / img->getSize().x) * scaleMultiplier,
                  (this->vBlockSize.y / img->getSize().y) * scaleMultiplier);
-        g->translate(this->vPos.x + this->vBlockPos.x + this->vBlockSize.x / 2.0f,
-                     this->vPos.y + this->vBlockPos.y + this->vBlockSize.y / 2.0f + 1);
+        g->translate(this->getPos().x + this->vBlockPos.x + this->vBlockSize.x / 2.0f,
+                     this->getPos().y + this->vBlockPos.y + this->vBlockSize.y / 2.0f + 1);
         g->setColor(0xffffffff);
         g->drawImage(img);
     }
@@ -73,8 +73,8 @@ void UIVolumeSlider::drawBlock() {
     // draw percentage
     g->pushTransform();
     {
-        g->translate((int)(this->vPos.x + this->vSize.x + this->vSize.x * 0.0335f),
-                     (int)(this->vPos.y + this->vSize.y / 2 + this->font->getHeight() / 2));
+        g->translate((int)(this->getPos().x + this->getSize().x + this->getSize().x * 0.0335f),
+                     (int)(this->getPos().y + this->getSize().y / 2 + this->font->getHeight() / 2));
         g->setColor(0xff000000);
         g->translate(1, 1);
         g->drawString(this->font, fmt::format("{}%", (int)(std::round(this->getFloat() * 100.0f))));
@@ -111,5 +111,5 @@ bool UIVolumeSlider::checkWentMouseInside() {
 }
 
 float UIVolumeSlider::getMinimumExtraTextWidth() {
-    return this->vSize.x * 0.0335f * 2.0f + this->font->getStringWidth("100%");
+    return this->getSize().x * 0.0335f * 2.0f + this->font->getStringWidth("100%");
 }

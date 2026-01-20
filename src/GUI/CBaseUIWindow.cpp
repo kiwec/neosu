@@ -30,16 +30,16 @@ CBaseUIWindow::CBaseUIWindow(float xPos, float yPos, float xSize, float ySize, c
     if(this->iTitleBarHeight < titleBarButtonSize) this->iTitleBarHeight = titleBarButtonSize + 4 * dpiScale;
 
     this->titleBarContainer =
-        new CBaseUIContainer(this->vPos.x, this->vPos.y, this->vSize.x, this->iTitleBarHeight, "titlebarcontainer");
+        new CBaseUIContainer(this->getPos().x, this->getPos().y, this->getSize().x, this->iTitleBarHeight, "titlebarcontainer");
 
     this->closeButton = new CBaseUIButton(
-        this->vSize.x - titleBarButtonSize - (this->iTitleBarHeight - titleBarButtonSize) / 2.0f,
+        this->getSize().x - titleBarButtonSize - (this->iTitleBarHeight - titleBarButtonSize) / 2.0f,
         this->iTitleBarHeight / 2.0f - titleBarButtonSize / 2.0f, titleBarButtonSize, titleBarButtonSize, "", "");
     this->closeButton->setClickCallback(SA::MakeDelegate<&CBaseUIWindow::close>(this));
     this->closeButton->setDrawFrame(false);
 
     this->minimizeButton = new CBaseUIButton(
-        this->vSize.x - titleBarButtonSize * 2 - (this->iTitleBarHeight - titleBarButtonSize) / 2.0f -
+        this->getSize().x - titleBarButtonSize * 2 - (this->iTitleBarHeight - titleBarButtonSize) / 2.0f -
             titleBarButtonGap,
         this->iTitleBarHeight / 2.0f - titleBarButtonSize / 2.0f, titleBarButtonSize, titleBarButtonSize, "", "");
     this->minimizeButton->setVisible(false);
@@ -51,8 +51,8 @@ CBaseUIWindow::CBaseUIWindow(float xPos, float yPos, float xSize, float ySize, c
 
     // main container
     this->container =
-        new CBaseUIContainer(this->vPos.x, this->vPos.y + this->titleBarContainer->getSize().y, this->vSize.x,
-                             this->vSize.y - this->titleBarContainer->getSize().y, "maincontainer");
+        new CBaseUIContainer(this->getPos().x, this->getPos().y + this->titleBarContainer->getSize().y, this->getSize().x,
+                             this->getSize().y - this->titleBarContainer->getSize().y, "maincontainer");
 
     // colors
     this->frameColor = 0xffffffff;
@@ -82,7 +82,7 @@ CBaseUIWindow::CBaseUIWindow(float xPos, float yPos, float xSize, float ySize, c
     this->setVisible(false);
 
     // for very small resolutions on engine start
-    if(this->vPos.y + this->vSize.y > engine->getScreenHeight()) {
+    if(this->getPos().y + this->getSize().y > engine->getScreenHeight()) {
         this->setSizeY(engine->getScreenHeight() - 12 * dpiScale);
     }
 }
@@ -107,7 +107,7 @@ void CBaseUIWindow::draw() {
             // HACKHACK: shadows can't render inside a 3DScene
             m_shadow->renderOffscreen();
 
-            g->push3DScene(McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y));
+            g->push3DScene(McRect(this->getPos(), this->getSize()));
                     g->rotate3DScene(0, (this->bAnimIn ? -1 : 1) * (1-m_fAnimation)*10, 0);
                     g->translate3DScene(0, 0, -(1-m_fAnimation)*100);
                     m_shadow->draw();
@@ -126,27 +126,27 @@ void CBaseUIWindow::draw() {
 
             if(this->bRoundedRectangle) {
                 // int border = 0;
-                g->fillRoundedRect(this->vPos.x, this->vPos.y, this->vSize.x + 1, this->vSize.y + 1, 6);
+                g->fillRoundedRect(this->getPos(), this->getSize() + 1.f, 6);
             } else
-                g->fillRect(this->vPos.x, this->vPos.y, this->vSize.x + 1, this->vSize.y + 1);
+                g->fillRect(this->getPos(), this->getSize() + 1.f);
         }
 
         // draw frame
         if(this->bDrawFrame) {
             if(this->frameDarkColor != 0 || this->frameBrightColor != 0)
-                g->drawRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y, this->frameDarkColor,
+                g->drawRect(this->getPos(), this->getSize(), this->frameDarkColor,
                             this->frameBrightColor, this->frameBrightColor, this->frameDarkColor);
             else {
                 g->setColor(/*m_bEnabled ? 0xffffff00 : */ this->frameColor);
-                g->drawRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
+                g->drawRect(this->getPos(), this->getSize());
             }
         }
 
         // draw window contents
-        g->pushClipRect(McRect(this->vPos.x + 1, this->vPos.y + 2, this->vSize.x - 1, this->vSize.y - 1));
+        g->pushClipRect(McRect(this->getPos().x + 1, this->getPos().y + 2, this->getSize().x - 1, this->getSize().y - 1));
         {
             // draw main container
-            g->pushClipRect(McRect(this->vPos.x + 1, this->vPos.y + 2, this->vSize.x - 1, this->vSize.y - 1));
+            g->pushClipRect(McRect(this->getPos().x + 1, this->getPos().y + 2, this->getSize().x - 1, this->getSize().y - 1));
             {
                 this->container->draw();
                 this->drawCustomContent();
@@ -156,28 +156,28 @@ void CBaseUIWindow::draw() {
             // draw title bar background
             if(this->bDrawBackground && !this->bRoundedRectangle) {
                 g->setColor(this->backgroundColor);
-                g->fillRect(this->vPos.x, this->vPos.y, this->vSize.x, this->iTitleBarHeight);
+                g->fillRect(this->getPos().x, this->getPos().y, this->getSize().x, this->iTitleBarHeight);
             }
 
             // draw title bar line
             if(this->bDrawTitleBarLine) {
                 g->setColor(this->frameColor);
-                g->drawLine(this->vPos.x, this->vPos.y + this->iTitleBarHeight, this->vPos.x + this->vSize.x,
-                            this->vPos.y + this->iTitleBarHeight);
+                g->drawLine(this->getPos().x, this->getPos().y + this->iTitleBarHeight, this->getPos().x + this->getSize().x,
+                            this->getPos().y + this->iTitleBarHeight);
             }
 
             // draw title
             g->setColor(this->titleColor);
             g->pushTransform();
             {
-                g->translate((int)(this->vPos.x + this->vSize.x / 2.0f - this->fTitleFontWidth / 2.0f),
-                             (int)(this->vPos.y + this->fTitleFontHeight / 2.0f + this->iTitleBarHeight / 2.0f));
+                g->translate((int)(this->getPos().x + this->getSize().x / 2.0f - this->fTitleFontWidth / 2.0f),
+                             (int)(this->getPos().y + this->fTitleFontHeight / 2.0f + this->iTitleBarHeight / 2.0f));
                 g->drawString(this->titleFont, this->sTitle);
             }
             g->popTransform();
 
             // draw title bar container
-            g->pushClipRect(McRect(this->vPos.x + 1, this->vPos.y + 2, this->vSize.x - 1, this->iTitleBarHeight));
+            g->pushClipRect(McRect(this->getPos().x + 1, this->getPos().y + 2, this->getSize().x - 1, this->iTitleBarHeight));
             {
                 this->titleBarContainer->draw();
             }
@@ -212,10 +212,10 @@ void CBaseUIWindow::draw() {
 
         m_rt->setColor(argb((int)(this->fAnimation*255.0f), 255, 255, 255));
 
-        g->push3DScene(McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y));
+        g->push3DScene(McRect(this->getPos(), this->getSize()));
                 g->rotate3DScene((this->bAnimIn ? -1 : 1) * (1-m_fAnimation)*10, 0, 0);
                 g->translate3DScene(0, 0, -(1-m_fAnimation)*100);
-                m_rt->draw(this->vPos.x, this->vPos.y);
+                m_rt->draw(this->getPos().x, this->getPos().y);
         g->pop3DScene();
         */
     }
@@ -246,9 +246,9 @@ void CBaseUIWindow::update(CBaseUIEventCtx &c) {
                 break;
             case RESIZETYPE::TOPLEFT:
                 this->setPos(
-                    std::clamp<float>(this->vLastPos.x + (mouse->getPos().x - this->vMousePosBackup.x), -this->vSize.x,
+                    std::clamp<float>(this->vLastPos.x + (mouse->getPos().x - this->vMousePosBackup.x), -this->getSize().x,
                                       this->vLastPos.x + this->vLastSize.x - this->vResizeLimit.x),
-                    std::clamp<float>(this->vLastPos.y + (mouse->getPos().y - this->vMousePosBackup.y), -this->vSize.y,
+                    std::clamp<float>(this->vLastPos.y + (mouse->getPos().y - this->vMousePosBackup.y), -this->getSize().y,
                                       this->vLastPos.y + this->vLastSize.y - this->vResizeLimit.y));
                 this->setSize(std::clamp<float>(this->vLastSize.x + (this->vMousePosBackup.x - mouse->getPos().x),
                                                 this->vResizeLimit.x, engine->getScreenWidth()),
@@ -258,7 +258,7 @@ void CBaseUIWindow::update(CBaseUIEventCtx &c) {
 
             case RESIZETYPE::LEFT:
                 this->setPosX(std::clamp<float>(this->vLastPos.x + (mouse->getPos().x - this->vMousePosBackup.x),
-                                                -this->vSize.x,
+                                                -this->getSize().x,
                                                 this->vLastPos.x + this->vLastSize.x - this->vResizeLimit.x));
                 this->setSizeX(std::clamp<float>(this->vLastSize.x + (this->vMousePosBackup.x - mouse->getPos().x),
                                                  this->vResizeLimit.x, engine->getScreenWidth()));
@@ -266,7 +266,7 @@ void CBaseUIWindow::update(CBaseUIEventCtx &c) {
 
             case RESIZETYPE::BOTLEFT:
                 this->setPosX(std::clamp<float>(this->vLastPos.x + (mouse->getPos().x - this->vMousePosBackup.x),
-                                                -this->vSize.x,
+                                                -this->getSize().x,
                                                 this->vLastPos.x + this->vLastSize.x - this->vResizeLimit.x));
                 this->setSizeX(std::clamp<float>(this->vLastSize.x + (this->vMousePosBackup.x - mouse->getPos().x),
                                                  this->vResizeLimit.x, engine->getScreenWidth()));
@@ -293,7 +293,7 @@ void CBaseUIWindow::update(CBaseUIEventCtx &c) {
 
             case RESIZETYPE::TOPRIGHT:
                 this->setPosY(std::clamp<float>(this->vLastPos.y + (mouse->getPos().y - this->vMousePosBackup.y),
-                                                -this->vSize.y,
+                                                -this->getSize().y,
                                                 this->vLastPos.y + this->vLastSize.y - this->vResizeLimit.y));
                 this->setSizeY(std::clamp<float>(this->vLastSize.y + (this->vMousePosBackup.y - mouse->getPos().y),
                                                  this->vResizeLimit.y, engine->getScreenHeight()));
@@ -303,7 +303,7 @@ void CBaseUIWindow::update(CBaseUIEventCtx &c) {
 
             case RESIZETYPE::TOP:
                 this->setPosY(std::clamp<float>(this->vLastPos.y + (mouse->getPos().y - this->vMousePosBackup.y),
-                                                -this->vSize.y,
+                                                -this->getSize().y,
                                                 this->vLastPos.y + this->vLastSize.y - this->vResizeLimit.y));
                 this->setSizeY(std::clamp<float>(this->vLastSize.y + (this->vMousePosBackup.y - mouse->getPos().y),
                                                  this->vResizeLimit.y, engine->getScreenHeight()));
@@ -349,29 +349,29 @@ void CBaseUIWindow::udpateResizeAndMoveLogic(bool captureMouse) {
     if(this->bCoherenceMode) return;  // NOTE: resizing in coherence mode is handled in main_Windows.cpp
 
     // backup
-    this->vLastSize = this->vSize;
+    this->vLastSize = this->getSize();
     this->vMousePosBackup = mouse->getPos();
-    this->vLastPos = this->vPos;
+    this->vLastPos = this->getPos();
 
     if(this->bResizeable) {
         // reset
         this->iResizeType = RESIZETYPE::UNKNOWN;
 
         int resizeHandleSize = 5;
-        McRect resizeTopLeft = McRect(this->vPos.x, this->vPos.y, resizeHandleSize, resizeHandleSize);
-        McRect resizeLeft = McRect(this->vPos.x, this->vPos.y, resizeHandleSize, this->vSize.y);
+        McRect resizeTopLeft = McRect(this->getPos().x, this->getPos().y, resizeHandleSize, resizeHandleSize);
+        McRect resizeLeft = McRect(this->getPos().x, this->getPos().y, resizeHandleSize, this->getSize().y);
         McRect resizeBottomLeft =
-            McRect(this->vPos.x, this->vPos.y + this->vSize.y - resizeHandleSize, resizeHandleSize, resizeHandleSize);
+            McRect(this->getPos().x, this->getPos().y + this->getSize().y - resizeHandleSize, resizeHandleSize, resizeHandleSize);
         McRect resizeBottom =
-            McRect(this->vPos.x, this->vPos.y + this->vSize.y - resizeHandleSize, this->vSize.x, resizeHandleSize);
+            McRect(this->getPos().x, this->getPos().y + this->getSize().y - resizeHandleSize, this->getSize().x, resizeHandleSize);
         McRect resizeBottomRight =
-            McRect(this->vPos.x + this->vSize.x - resizeHandleSize, this->vPos.y + this->vSize.y - resizeHandleSize,
+            McRect(this->getPos().x + this->getSize().x - resizeHandleSize, this->getPos().y + this->getSize().y - resizeHandleSize,
                    resizeHandleSize, resizeHandleSize);
         McRect resizeRight =
-            McRect(this->vPos.x + this->vSize.x - resizeHandleSize, this->vPos.y, resizeHandleSize, this->vSize.y);
+            McRect(this->getPos().x + this->getSize().x - resizeHandleSize, this->getPos().y, resizeHandleSize, this->getSize().y);
         McRect resizeTopRight =
-            McRect(this->vPos.x + this->vSize.x - resizeHandleSize, this->vPos.y, resizeHandleSize, resizeHandleSize);
-        McRect resizeTop = McRect(this->vPos.x, this->vPos.y, this->vSize.x, resizeHandleSize);
+            McRect(this->getPos().x + this->getSize().x - resizeHandleSize, this->getPos().y, resizeHandleSize, resizeHandleSize);
+        McRect resizeTop = McRect(this->getPos().x, this->getPos().y, this->getSize().x, resizeHandleSize);
 
         if(resizeTopLeft.contains(this->vMousePosBackup)) {
             if(captureMouse) this->iResizeType = RESIZETYPE::TOPLEFT;
@@ -413,7 +413,7 @@ void CBaseUIWindow::udpateResizeAndMoveLogic(bool captureMouse) {
         this->bResizing = true;
     else if(captureMouse) {
         // handle moving
-        McRect titleBarGrab = McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->iTitleBarHeight);
+        McRect titleBarGrab = McRect(this->getPos().x, this->getPos().y, this->getSize().x, this->iTitleBarHeight);
         if(titleBarGrab.contains(this->vMousePosBackup)) this->bMoving = true;
     }
 
@@ -473,7 +473,7 @@ CBaseUIWindow *CBaseUIWindow::enableCoherenceMode() {
     this->minimizeButton->setVisible(true);
     this->setPos(0, 0);
     this->setSize(engine->getScreenWidth() - 1, engine->getScreenHeight() - 1);
-    /// env->setWindowSize(this->vSize.x+1, this->vSize.y+1);
+    /// env->setWindowSize(this->getSize().x+1, this->getSize().y+1);
 
     return this;
 }
@@ -498,37 +498,37 @@ void CBaseUIWindow::onMouseUpOutside(bool /*left*/, bool /*right*/) {
 }
 
 void CBaseUIWindow::updateTitleBarMetrics() {
-    this->closeButton->setRelPos(this->vSize.x - this->closeButton->getSize().x -
+    this->closeButton->setRelPos(this->getSize().x - this->closeButton->getSize().x -
                                      (this->iTitleBarHeight - this->closeButton->getSize().x) / 2.0f,
                                  this->iTitleBarHeight / 2.0f - this->closeButton->getSize().y / 2.0f);
-    this->minimizeButton->setRelPos(this->vSize.x - this->minimizeButton->getSize().x * 2 -
+    this->minimizeButton->setRelPos(this->getSize().x - this->minimizeButton->getSize().x * 2 -
                                         (this->iTitleBarHeight - this->minimizeButton->getSize().x) / 2.0f - 6,
                                     this->iTitleBarHeight / 2.0f - this->minimizeButton->getSize().y / 2.0f);
 
     this->fTitleFontWidth = this->titleFont->getStringWidth(this->sTitle);
     this->fTitleFontHeight = this->titleFont->getHeight();
-    this->titleBarContainer->setSize(this->vSize.x, this->iTitleBarHeight);
+    this->titleBarContainer->setSize(this->getSize().x, this->iTitleBarHeight);
 }
 
 void CBaseUIWindow::onMoved() {
-    this->titleBarContainer->setPos(this->vPos);
-    this->container->setPos(this->vPos.x, this->vPos.y + this->titleBarContainer->getSize().y);
+    this->titleBarContainer->setPos(this->getPos());
+    this->container->setPos(this->getPos().x, this->getPos().y + this->titleBarContainer->getSize().y);
 
     this->updateTitleBarMetrics();
 
     // if (!m_bCoherenceMode)
-    //	m_rt->setPos(this->vPos);
-    /// m_shadow->setPos(this->vPos.x-m_shadow->getRadius(), this->vPos.y-m_shadow->getRadius());
+    //	m_rt->setPos(this->getPos());
+    /// m_shadow->setPos(this->getPos().x-m_shadow->getRadius(), this->getPos().y-m_shadow->getRadius());
 }
 
 void CBaseUIWindow::onResized() {
     this->updateTitleBarMetrics();
 
-    this->container->setSize(this->vSize.x, this->vSize.y - this->titleBarContainer->getSize().y);
+    this->container->setSize(this->getSize().x, this->getSize().y - this->titleBarContainer->getSize().y);
 
     // if (!m_bCoherenceMode)
-    //	m_rt->rebuild(this->vPos.x, this->vPos.y, this->vSize.x+1, this->vSize.y+1);
-    /// m_shadow->setSize(this->vSize.x+m_shadow->getRadius()*2, this->vSize.y+m_shadow->getRadius()*2+4);
+    //	m_rt->rebuild(this->getPos().x, this->getPos().y, this->getSize().x+1, this->getSize().y+1);
+    /// m_shadow->setSize(this->getSize().x+m_shadow->getRadius()*2, this->getSize().y+m_shadow->getRadius()*2+4);
 }
 
 void CBaseUIWindow::onResolutionChange(vec2 newResolution) {

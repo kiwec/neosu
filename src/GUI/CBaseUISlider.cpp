@@ -46,29 +46,29 @@ void CBaseUISlider::draw() {
     // draw background
     if(this->bDrawBackground) {
         g->setColor(this->backgroundColor);
-        g->fillRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y + 1);
+        g->fillRect(this->getPos(), vec2{this->getSize().x, this->getSize().y + 1.f});
     }
 
     // draw frame
     g->setColor(this->frameColor);
-    if(this->bDrawFrame) g->drawRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y + 1);
+    if(this->bDrawFrame) g->drawRect(this->getPos(), vec2{this->getSize().x, this->getSize().y + 1.f});
 
     // draw sliding line
     if(!this->bHorizontal)
-        g->drawLine(this->vPos.x + this->vSize.x / 2.0f, this->vPos.y + this->vBlockSize.y / 2.0,
-                    this->vPos.x + this->vSize.x / 2.0f, this->vPos.y + this->vSize.y - this->vBlockSize.y / 2.0f);
+        g->drawLine(this->getPos().x + this->getSize().x / 2.0f, this->getPos().y + this->vBlockSize.y / 2.0,
+                    this->getPos().x + this->getSize().x / 2.0f, this->getPos().y + this->getSize().y - this->vBlockSize.y / 2.0f);
     else
-        g->drawLine(this->vPos.x + (this->vBlockSize.x - 1) / 2 + 1, this->vPos.y + this->vSize.y / 2.0f + 1,
-                    this->vPos.x + this->vSize.x - (this->vBlockSize.x - 1) / 2,
-                    this->vPos.y + this->vSize.y / 2.0f + 1);
+        g->drawLine(this->getPos().x + (this->vBlockSize.x - 1) / 2 + 1, this->getPos().y + this->getSize().y / 2.0f + 1,
+                    this->getPos().x + this->getSize().x - (this->vBlockSize.x - 1) / 2,
+                    this->getPos().y + this->getSize().y / 2.0f + 1);
 
     this->drawBlock();
 }
 
 void CBaseUISlider::drawBlock() {
     // draw block
-    vec2 center = this->vPos + vec2(this->vBlockSize.x / 2 + (this->vSize.x - this->vBlockSize.x) * this->getPercent(),
-                                    this->vSize.y / 2);
+    vec2 center = this->getPos() + vec2(this->vBlockSize.x / 2 + (this->getSize().x - this->vBlockSize.x) * this->getPercent(),
+                                    this->getSize().y / 2);
     vec2 topLeft = center - this->vBlockSize / 2.f;
     vec2 topRight = center + vec2(this->vBlockSize.x / 2 + 1, -this->vBlockSize.y / 2);
     vec2 halfLeft = center + vec2(-this->vBlockSize.x / 2, 1);
@@ -99,28 +99,28 @@ void CBaseUISlider::update(CBaseUIEventCtx &c) {
             if(this->bAnimated) {
                 anim::moveQuadOut(
                     &this->vBlockPos.y,
-                    std::clamp<float>(mousepos.y - this->vGrabBackup.y, 0.0f, this->vSize.y - this->vBlockSize.y),
+                    std::clamp<float>(mousepos.y - this->vGrabBackup.y, 0.0f, this->getSize().y - this->vBlockSize.y),
                     0.10f, 0.0f, true);
             } else {
                 this->vBlockPos.y =
-                    std::clamp<float>(mousepos.y - this->vGrabBackup.y, 0.0f, this->vSize.y - this->vBlockSize.y);
+                    std::clamp<float>(mousepos.y - this->vGrabBackup.y, 0.0f, this->getSize().y - this->vBlockSize.y);
             }
 
             this->fCurPercent = std::clamp<float>(
-                1.0f - (std::round(this->vBlockPos.y) / (this->vSize.y - this->vBlockSize.y)), 0.0f, 1.0f);
+                1.0f - (std::round(this->vBlockPos.y) / (this->getSize().y - this->vBlockSize.y)), 0.0f, 1.0f);
         } else {
             if(this->bAnimated) {
                 anim::moveQuadOut(
                     &this->vBlockPos.x,
-                    std::clamp<float>(mousepos.x - this->vGrabBackup.x, 0.0f, this->vSize.x - this->vBlockSize.x),
+                    std::clamp<float>(mousepos.x - this->vGrabBackup.x, 0.0f, this->getSize().x - this->vBlockSize.x),
                     0.10f, 0.0f, true);
             } else {
                 this->vBlockPos.x =
-                    std::clamp<float>(mousepos.x - this->vGrabBackup.x, 0.0f, this->vSize.x - this->vBlockSize.x);
+                    std::clamp<float>(mousepos.x - this->vGrabBackup.x, 0.0f, this->getSize().x - this->vBlockSize.x);
             }
 
             this->fCurPercent =
-                std::clamp<float>(std::round(this->vBlockPos.x) / (this->vSize.x - this->vBlockSize.x), 0.0f, 1.0f);
+                std::clamp<float>(std::round(this->vBlockPos.x) / (this->getSize().x - this->vBlockSize.x), 0.0f, 1.0f);
         }
 
         // set new value
@@ -155,7 +155,7 @@ void CBaseUISlider::update(CBaseUIEventCtx &c) {
     if(!activeMouseMotion) {
         if(anim::isAnimating(&this->vBlockPos.x)) {
             this->fCurPercent =
-                std::clamp<float>(std::round(this->vBlockPos.x) / (this->vSize.x - this->vBlockSize.x), 0.0f, 1.0f);
+                std::clamp<float>(std::round(this->vBlockPos.x) / (this->getSize().x - this->vBlockSize.x), 0.0f, 1.0f);
 
             if(this->bLiveUpdate)
                 this->setValue(std::lerp(this->fMinValue, this->fMaxValue, this->fCurPercent), false);
@@ -165,7 +165,7 @@ void CBaseUISlider::update(CBaseUIEventCtx &c) {
 
         if(anim::isAnimating(&this->vBlockPos.y)) {
             this->fCurPercent = std::clamp<float>(
-                1.0f - (std::round(this->vBlockPos.y) / (this->vSize.y - this->vBlockSize.y)), 0.0f, 1.0f);
+                1.0f - (std::round(this->vBlockPos.y) / (this->getSize().y - this->vBlockSize.y)), 0.0f, 1.0f);
 
             if(this->bLiveUpdate)
                 this->setValue(std::lerp(this->fMinValue, this->fMaxValue, this->fCurPercent), false);
@@ -197,9 +197,9 @@ void CBaseUISlider::fireChangeCallback() {
 
 void CBaseUISlider::updateBlockPos() {
     if(!this->bHorizontal)
-        this->vBlockPos.x = this->vSize.x / 2.0f - this->vBlockSize.x / 2.0f;
+        this->vBlockPos.x = this->getSize().x / 2.0f - this->vBlockSize.x / 2.0f;
     else
-        this->vBlockPos.y = this->vSize.y / 2.0f - this->vBlockSize.y / 2.0f;
+        this->vBlockPos.y = this->getSize().y / 2.0f - this->vBlockSize.y / 2.0f;
 }
 
 CBaseUISlider *CBaseUISlider::setBounds(float minValue, float maxValue) {
@@ -228,15 +228,15 @@ CBaseUISlider *CBaseUISlider::setValue(float value, bool animate, bool call_call
 
     if(!this->bHorizontal) {
         if(animate)
-            anim::moveQuadOut(&this->vBlockPos.y, (this->vSize.y - this->vBlockSize.y) * (1.0f - percent), 0.2f, 0.0f,
+            anim::moveQuadOut(&this->vBlockPos.y, (this->getSize().y - this->vBlockSize.y) * (1.0f - percent), 0.2f, 0.0f,
                               true);
         else
-            this->vBlockPos.y = (this->vSize.y - this->vBlockSize.y) * (1.0f - percent);
+            this->vBlockPos.y = (this->getSize().y - this->vBlockSize.y) * (1.0f - percent);
     } else {
         if(animate)
-            anim::moveQuadOut(&this->vBlockPos.x, (this->vSize.x - this->vBlockSize.x) * percent, 0.2f, 0.0f, true);
+            anim::moveQuadOut(&this->vBlockPos.x, (this->getSize().x - this->vBlockSize.x) * percent, 0.2f, 0.0f, true);
         else
-            this->vBlockPos.x = (this->vSize.x - this->vBlockSize.x) * percent;
+            this->vBlockPos.x = (this->getSize().x - this->vBlockSize.x) * percent;
     }
 
     if(call_callback && changeCallbackCheck && this->sliderChangeCallback != nullptr) {
@@ -269,9 +269,9 @@ CBaseUISlider *CBaseUISlider::setInitialValue(float value) {
     if(this->fCurValue == this->fMaxValue) percent = 1.0f;
 
     if(!this->bHorizontal)
-        this->vBlockPos.y = (this->vSize.y - this->vBlockSize.y) * (1.0f - percent);
+        this->vBlockPos.y = (this->getSize().y - this->vBlockSize.y) * (1.0f - percent);
     else
-        this->vBlockPos.x = (this->vSize.x - this->vBlockSize.x) * percent;
+        this->vBlockPos.x = (this->getSize().x - this->vBlockSize.x) * percent;
 
     this->updateBlockPos();
 
@@ -311,12 +311,12 @@ void CBaseUISlider::onMouseUpOutside(bool /*left*/, bool /*right*/) {
 void CBaseUISlider::onMouseDownInside(bool /*left*/, bool /*right*/) {
     this->fPrevValue = this->fCurValue;
 
-    if(McRect(this->vPos.x + this->vBlockPos.x, this->vPos.y + this->vBlockPos.y, this->vBlockSize.x,
+    if(McRect(this->getPos().x + this->vBlockPos.x, this->getPos().y + this->vBlockPos.y, this->vBlockSize.x,
               this->vBlockSize.y)
            .contains(mouse->getPos()))
         this->vGrabBackup = mouse->getPos() - this->vBlockPos;
     else
-        this->vGrabBackup = this->vPos + this->vBlockSize / 2.f;
+        this->vGrabBackup = this->getPos() + this->vBlockSize / 2.f;
 
     this->bBusy = true;
 }

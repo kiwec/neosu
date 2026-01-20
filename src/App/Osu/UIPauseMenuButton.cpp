@@ -33,7 +33,7 @@ void UIPauseMenuButton::draw() {
             g->scale(this->vScale.x, this->vScale.y);
 
             // center and draw
-            g->translate(this->vPos.x + (int)(this->vSize.x / 2), this->vPos.y + (int)(this->vSize.y / 2));
+            g->translate(this->getPos().x + (int)(this->getSize().x / 2), this->getPos().y + (int)(this->getSize().y / 2));
             g->drawImage(image);
         }
         g->popTransform();

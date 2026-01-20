@@ -11,8 +11,8 @@ class CBaseUICheckbox : public CBaseUIButton {
 
     void draw() override;
 
-    inline float getBlockSize() { return this->vSize.y / 2; }
-    inline float getBlockBorder() { return this->vSize.y / 4; }
+    inline float getBlockSize() { return this->getSize().y / 2; }
+    inline float getBlockBorder() { return this->getSize().y / 4; }
     [[nodiscard]] inline bool isChecked() const { return this->bChecked; }
 
     CBaseUICheckbox *setChecked(bool checked, bool fireChangeEvent = true);

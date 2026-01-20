@@ -20,13 +20,13 @@ void CBaseUILabel::draw() {
     // draw background
     if(this->bDrawBackground) {
         g->setColor(this->backgroundColor);
-        g->fillRect(this->vPos.x + 1, this->vPos.y + 1, this->vSize.x - 1, this->vSize.y - 1);
+        g->fillRect(this->getPos().x + 1, this->getPos().y + 1, this->getSize().x - 1, this->getSize().y - 1);
     }
 
     // draw frame
     if(this->bDrawFrame) {
         g->setColor(this->frameColor);
-        g->drawRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
+        g->drawRect(this->getPos(), this->getSize());
     }
 
     // draw text
@@ -40,21 +40,21 @@ void CBaseUILabel::drawText() {
             case TEXT_JUSTIFICATION::LEFT:
                 break;
             case TEXT_JUSTIFICATION::CENTERED:
-                xPosAdd = this->vSize.x / 2.f - this->fStringWidth / 2.f;
+                xPosAdd = this->getSize().x / 2.f - this->fStringWidth / 2.f;
                 break;
             case TEXT_JUSTIFICATION::RIGHT:
-                xPosAdd = this->vSize.x - this->fStringWidth;
+                xPosAdd = this->getSize().x - this->fStringWidth;
                 break;
         }
 
-        // g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y));
+        // g->pushClipRect(McRect(this->getPos(), this->getSize()));
 
         g->setColor(this->textColor);
         g->pushTransform();
         {
             g->scale(this->fScale, this->fScale);  // XXX: not sure if scaling respects text justification
-            g->translate((i32)(this->vPos.x + xPosAdd),
-                         (i32)(this->vPos.y + this->vSize.y / 2.f + this->fStringHeight / 2.f));
+            g->translate((i32)(this->getPos().x + xPosAdd),
+                         (i32)(this->getPos().y + this->getSize().y / 2.f + this->fStringHeight / 2.f));
             g->drawString(this->font, this->sText);
         }
         g->popTransform();

@@ -78,7 +78,7 @@ void UIModList::draw() {
     if(flags::has<LegacyFlags::ScoreV2>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_sv2);
 
     g->setColor(0xffffffff);
-    vec2 modPos = this->vPos;
+    vec2 modPos = this->getPos();
     for(auto mod : mods) {
         float target_height = this->getSize().y;
         float scaling_factor = target_height / mod->getSize().y;

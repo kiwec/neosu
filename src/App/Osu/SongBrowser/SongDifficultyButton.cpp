@@ -48,7 +48,7 @@ SongDifficultyButton::~SongDifficultyButton() { anim::deleteExistingAnimation(&t
 
 void SongDifficultyButton::draw() {
     // NOTE(spec): we don't need this check because the updateClipping() call in the scrollview already sets visibility
-    /*  || this->vPos.y + this->vSize.y < 0 || this->vPos.y > osu->getVirtScreenHeight() */
+    /*  || this->getPos().y + this->getSize().y < 0 || this->getPos().y > osu->getVirtScreenHeight() */
     if(!this->bVisible) {
         return;
     }

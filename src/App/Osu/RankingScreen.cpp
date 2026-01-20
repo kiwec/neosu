@@ -55,18 +55,17 @@ class RankingScreenIndexLabel final : public CBaseUILabel {
         // draw background gradient
         const Color topColor = 0xdd634e13;
         const Color bottomColor = 0xdd785f15;
-        g->fillGradient(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y, topColor, topColor, bottomColor,
-                        bottomColor);
+        g->fillGradient(this->getPos(), this->getSize(), topColor, topColor, bottomColor, bottomColor);
 
         // draw ranking index text
         const float textScale = 0.45f;
         g->pushTransform();
         {
-            const float scale = (this->vSize.y / this->fStringHeight) * textScale;
+            const float scale = (this->getSize().y / this->fStringHeight) * textScale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->vPos.x + this->vSize.x / 2 - this->fStringWidth * scale / 2),
-                         (int)(this->vPos.y + this->vSize.y / 2 + this->font->getHeight() * scale / 2));
+            g->translate((int)(this->getPos().x + this->getSize().x / 2 - this->fStringWidth * scale / 2),
+                         (int)(this->getPos().y + this->getSize().y / 2 + this->font->getHeight() * scale / 2));
             g->translate(1, 1);
             g->setColor(0xff000000);
             g->drawString(this->font, this->sText);
@@ -95,8 +94,7 @@ class RankingScreenBottomElement final : public CBaseUILabel {
         // draw background gradient
         const Color topColor = 0xdd3a2e0c;
         const Color bottomColor = 0xdd493a0f;
-        g->fillGradient(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y, topColor, topColor, bottomColor,
-                        bottomColor);
+        g->fillGradient(this->getPos(), this->getSize(), topColor, topColor, bottomColor, bottomColor);
     }
 
     void setVisible2(bool visible2) { this->bVisible2 = visible2; }
@@ -120,7 +118,7 @@ class RankingScreenScrollDownInfoButton final : public CBaseUIButton {
         const float textScale = 0.45f;
         g->pushTransform();
         {
-            const float scale = (this->vSize.y / this->fStringHeight) * textScale;
+            const float scale = (this->getSize().y / this->fStringHeight) * textScale;
 
             float animation = std::fmod((float)(engine->getTime() - 0.0f) * 3.2f, 2.0f);
             if(animation > 1.0f) animation = 2.0f - animation;
@@ -129,8 +127,8 @@ class RankingScreenScrollDownInfoButton final : public CBaseUIButton {
             const float offset = -this->fStringHeight * scale * 0.25f + animation * this->fStringHeight * scale * 0.25f;
 
             g->scale(scale, scale);
-            g->translate((int)(this->vPos.x + this->vSize.x / 2 - this->fStringWidth * scale / 2),
-                         (int)(this->vPos.y + this->vSize.y / 2 + this->fStringHeight * scale / 2 - offset));
+            g->translate((int)(this->getPos().x + this->getSize().x / 2 - this->fStringWidth * scale / 2),
+                         (int)(this->getPos().y + this->getSize().y / 2 + this->fStringHeight * scale / 2 - offset));
             g->translate(2, 2);
             g->setColor(Color(0xff000000).setA(this->fAlpha));
 

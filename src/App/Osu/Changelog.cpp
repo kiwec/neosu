@@ -826,8 +826,8 @@ class ChangelogLabel final : public CBaseUIButton {
 
             const int margin = 0;
             const int marginX = margin + 10;
-            g->fillRect(this->vPos.x - marginX, this->vPos.y - margin, this->vSize.x + marginX * 2,
-                        this->vSize.y + margin * 2);
+            g->fillRect(this->getPos().x - marginX, this->getPos().y - margin, this->getSize().x + marginX * 2,
+                        this->getSize().y + margin * 2);
         }
 
         if(!this->bVisible) return;
@@ -835,8 +835,8 @@ class ChangelogLabel final : public CBaseUIButton {
         g->setColor(this->textColor);
         g->pushTransform();
         {
-            g->translate((int)(this->vPos.x + this->vSize.x / 2.0f - this->fStringWidth / 2.0f),
-                         (int)(this->vPos.y + this->vSize.y / 2.0f + this->fStringHeight / 2.0f));
+            g->translate((int)(this->getPos().x + this->getSize().x / 2.0f - this->fStringWidth / 2.0f),
+                         (int)(this->getPos().y + this->getSize().y / 2.0f + this->fStringHeight / 2.0f));
             g->drawString(this->font, this->sText);
         }
         g->popTransform();

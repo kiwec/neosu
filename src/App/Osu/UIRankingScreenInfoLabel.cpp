@@ -38,7 +38,7 @@ void UIRankingScreenInfoLabel::draw() {
     const UString subTitleText{fmt::format("Beatmap by {}", this->sMapper)};
     const UString playerText{this->buildPlayerString()};
 
-    const f32 globalScale = std::max((this->vSize.y / this->getMinimumHeight()) * 0.741f, 1.0f);
+    const f32 globalScale = std::max((this->getSize().y / this->getMinimumHeight()) * 0.741f, 1.0f);
     const f32 fontHeight = this->font->getHeight();
 
     // draw title
@@ -48,7 +48,7 @@ void UIRankingScreenInfoLabel::draw() {
         const f32 scale = globalScale;
 
         g->scale(scale, scale);
-        g->translate(this->vPos.x, this->vPos.y + fontHeight * scale);
+        g->translate(this->getPos().x, this->getPos().y + fontHeight * scale);
         g->drawString(this->font, titleText);
     }
     g->popTransform();
@@ -63,8 +63,8 @@ void UIRankingScreenInfoLabel::draw() {
 
         g->translate((int)(-subTitleStringWidth / 2), (int)(fontHeight / 2));
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x + (subTitleStringWidth / 2) * scale),
-                     (int)(this->vPos.y + fontHeight * globalScale + (fontHeight / 2) * scale + this->iMargin));
+        g->translate((int)(this->getPos().x + (subTitleStringWidth / 2) * scale),
+                     (int)(this->getPos().y + fontHeight * globalScale + (fontHeight / 2) * scale + this->iMargin));
         g->drawString(this->font, subTitleText);
     }
     g->popTransform();
@@ -79,8 +79,8 @@ void UIRankingScreenInfoLabel::draw() {
 
         g->translate((int)(-playerStringWidth / 2), (int)(fontHeight / 2));
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x + (playerStringWidth / 2) * scale),
-                     (int)(this->vPos.y + fontHeight * globalScale + fontHeight * scale + (fontHeight / 2) * scale +
+        g->translate((int)(this->getPos().x + (playerStringWidth / 2) * scale),
+                     (int)(this->getPos().y + fontHeight * globalScale + fontHeight * scale + (fontHeight / 2) * scale +
                            this->iMargin * 2));
         g->drawString(this->font, playerText);
     }

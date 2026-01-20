@@ -43,8 +43,8 @@ void UIRankingScreenRankingPanel::draw() {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(this->vPos.x + osu->getUIScale(111.0f) * uiScale,
-                     this->vPos.y + (osu->getSkin()->i_scores[0]->getHeight() / 2) * scale +
+        g->translate(this->getPos().x + osu->getUIScale(111.0f) * uiScale,
+                     this->getPos().y + (osu->getSkin()->i_scores[0]->getHeight() / 2) * scale +
                          (osu->getUIScale(11.0f) + globalYOffset) * uiScale);
         ui->getHUD()->drawScoreNumber(this->iScore, scale);
     }
@@ -82,8 +82,8 @@ void UIRankingScreenRankingPanel::draw() {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(this->vPos.x + osu->getUIScale(15.0f) * uiScale,
-                     this->vPos.y + (osu->getSkin()->i_scores[0]->getHeight() / 2.f) * scale +
+        g->translate(this->getPos().x + osu->getUIScale(15.0f) * uiScale,
+                     this->getPos().y + (osu->getSkin()->i_scores[0]->getHeight() / 2.f) * scale +
                          (osu->getUIScale(row4 + 10) + globalYOffset) * uiScale);
         ui->getHUD()->drawComboSimple(this->iCombo, scale);
     }
@@ -95,9 +95,9 @@ void UIRankingScreenRankingPanel::draw() {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(this->vPos.x + osu->getSkin()->i_ranking_max_combo->getWidth() * scale * 0.5f +
+        g->translate(this->getPos().x + osu->getSkin()->i_ranking_max_combo->getWidth() * scale * 0.5f +
                          osu->getUIScale(4.0f) * uiScale,
-                     this->vPos.y + (osu->getUIScale(row4 - 5 - row4ImageOffset) + globalYOffset) * uiScale);
+                     this->getPos().y + (osu->getUIScale(row4 - 5 - row4ImageOffset) + globalYOffset) * uiScale);
         g->drawImage(osu->getSkin()->i_ranking_max_combo);
     }
     g->popTransform();
@@ -107,8 +107,8 @@ void UIRankingScreenRankingPanel::draw() {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(this->vPos.x + osu->getUIScale(195.0f) * uiScale,
-                     this->vPos.y + (osu->getSkin()->i_scores[0]->getHeight() / 2) * scale +
+        g->translate(this->getPos().x + osu->getUIScale(195.0f) * uiScale,
+                     this->getPos().y + (osu->getSkin()->i_scores[0]->getHeight() / 2) * scale +
                          (osu->getUIScale(row4 + 10) + globalYOffset) * uiScale);
         ui->getHUD()->drawAccuracySimple(this->fAccuracy * 100.0f, scale);
     }
@@ -120,9 +120,9 @@ void UIRankingScreenRankingPanel::draw() {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(this->vPos.x + osu->getSkin()->i_ranking_accuracy->getWidth() * scale * 0.5f +
+        g->translate(this->getPos().x + osu->getSkin()->i_ranking_accuracy->getWidth() * scale * 0.5f +
                          osu->getUIScale(183.0f) * uiScale,
-                     this->vPos.y + (osu->getUIScale(row4 - 3 - row4ImageOffset) + globalYOffset) * uiScale);
+                     this->getPos().y + (osu->getUIScale(row4 - 3 - row4ImageOffset) + globalYOffset) * uiScale);
         g->drawImage(osu->getSkin()->i_ranking_accuracy);
     }
     g->popTransform();
@@ -131,7 +131,7 @@ void UIRankingScreenRankingPanel::draw() {
     if(this->bPerfect) {
         scale = osu->getImageScale(osu->getSkin()->i_ranking_perfect->getSizeBaseRaw(), 94.0f) * uiScale;
         osu->getSkin()->i_ranking_perfect->drawRaw(
-            this->vPos +
+            this->getPos() +
                 vec2(osu->getUIScale(osu->getSkin()->version > 1.0f ? 260 : 200),
                      osu->getUIScale(430.0f) + globalYOffset) *
                     vec2(1.0f, 0.97f) * uiScale -
@@ -145,7 +145,7 @@ void UIRankingScreenRankingPanel::drawHitImage(SkinImage *img, float /*scale*/, 
                                                              // legacy layout expectations
 
     // img->setAnimationFrameForce(0);
-    img->draw(vec2(this->vPos.x + osu->getUIScale(pos.x) * uiScale, this->vPos.y + osu->getUIScale(pos.y) * uiScale),
+    img->draw(vec2(this->getPos().x + osu->getUIScale(pos.x) * uiScale, this->getPos().y + osu->getUIScale(pos.y) * uiScale),
               uiScale, 0.f, false /* try non-animated */);
 }
 
@@ -157,8 +157,8 @@ void UIRankingScreenRankingPanel::drawNumHits(int numHits, float scale, vec2 pos
     {
         g->scale(scale, scale);
         g->translate(
-            this->vPos.x + osu->getUIScale(pos.x) * uiScale,
-            this->vPos.y + (osu->getSkin()->i_scores[0]->getHeight() / 2) * scale + osu->getUIScale(pos.y) * uiScale);
+            this->getPos().x + osu->getUIScale(pos.x) * uiScale,
+            this->getPos().y + (osu->getSkin()->i_scores[0]->getHeight() / 2) * scale + osu->getUIScale(pos.y) * uiScale);
         ui->getHUD()->drawComboSimple(numHits, scale);
     }
     g->popTransform();
