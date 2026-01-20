@@ -483,18 +483,15 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
 }
 
 void Database::AsyncScoreSaver::initAsync() {
-    // fake log label
-    static constexpr const char *func = "AsyncScoreSaver";
-
     auto compressed_replay = LegacyReplay::compress_frames(this->scorecopy.replay);
     if(!compressed_replay.empty()) {
         auto replay_path = fmt::format(NEOSU_REPLAYS_PATH "/{:d}.replay.lzma", this->scorecopy.unixTimestamp);
-        debugLogLambda("Saving replay to {}...", replay_path);
+        debugLog("Saving replay to {}...", replay_path);
         io->write(replay_path, std::move(compressed_replay), [replay_path](bool success) {
             if(success) {
-                debugLogLambda("Replay saved.");
+                debugLog("Replay saved.");
             } else {
-                debugLogLambda("Failed to save replay to {}!", replay_path);
+                debugLog("Failed to save replay to {}!", replay_path);
             }
         });
     }

@@ -195,10 +195,10 @@ void submit_score(FinishedScore score) {
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto url = fmt::format("{}osu.{}/web/osu-submit-modular-selector.php", scheme, BanchoState::endpoint);
-    networkHandler->httpRequestAsync(url, std::move(options), [func = LOGGER_FUNC](NeoNet::Response response) {
+    networkHandler->httpRequestAsync(url, std::move(options), [](NeoNet::Response response) {
         if(response.success) {
             // TODO: handle success (pp, etc + error codes)
-            debugLogLambda("Score submit result: {}", response.body);
+            debugLog("Score submit result: {}", response.body);
 
             // Reset leaderboards so new score will appear
             db->getOnlineScores().clear();

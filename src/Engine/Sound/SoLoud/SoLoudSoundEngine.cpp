@@ -403,16 +403,16 @@ void SoLoudSoundEngine::onFocusLost() {
 }
 
 bool SoLoudSoundEngine::setOutputDeviceInt(const SoundEngine::OUTPUT_DEVICE &desiredDevice, bool force) {
-    auto dumpOutputDevices = [&, func = LOGGER_FUNC]() {
+    auto dumpOutputDevices = [&]() {
         const auto &curDev = this->currentOutputDevice;
-        debugLogLambda("CURRENT id: {} drv: {} enbl: {} def: {} init: {} name: {}", curDev.id, (u8)curDev.driver,
+        debugLog("CURRENT id: {} drv: {} enbl: {} def: {} init: {} name: {}", curDev.id, (u8)curDev.driver,
                        curDev.enabled, curDev.isDefault, curDev.isInit, curDev.name);
         for(const auto &dev : this->outputDevices) {
-            debugLogLambda("OUR id: {} name: {} drv: {} enbl: {} def: {} init: {}", dev.id, dev.name, (u8)dev.driver,
+            debugLog("OUR id: {} name: {} drv: {} enbl: {} def: {} init: {}", dev.id, dev.name, (u8)dev.driver,
                            dev.enabled, dev.isDefault, dev.isInit, dev.name);
         }
         for(const auto &[id, dev] : this->mSoloudDevices) {
-            debugLogLambda("SOLOUD id: {} name: {} def: {} excl: {} identifier: {}", id,
+            debugLog("SOLOUD id: {} name: {} def: {} excl: {} identifier: {}", id,
                            std::string_view{dev.name.data(), strlen(dev.name.data())}, dev.isDefault, dev.isExclusive,
                            std::string_view{dev.identifier.data(), strlen(dev.identifier.data())});
         }

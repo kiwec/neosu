@@ -478,7 +478,20 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case INP_NOTIFICATION: {
             std::string notification = packet.read_stdstring();
-            ui->getNotificationOverlay()->addToast(notification, INFO_TOAST);
+            // some servers do some BS with whitespace/padding
+            // remove that but keep them on separate lines if they came in that way
+            std::string cleaned_notification;
+            for(auto line : SString::split_newlines(notification)) {
+                if(line.empty()) continue;
+                SString::trim_inplace(line);
+                if(line.empty()) continue;
+                cleaned_notification.append(std::string{line} + '\n');
+            }
+            if(!cleaned_notification.empty()) {
+                cleaned_notification.pop_back();
+            }
+
+            ui->getNotificationOverlay()->addToast(cleaned_notification, INFO_TOAST);
             break;
         }
 
@@ -872,17 +885,17 @@ void BanchoState::handle_packet(Packet &packet) {
 
             auto file_path = map->getFilePath();
 
-            DatabaseBeatmap::MapFileReadDoneCallback callback = [url, md5, file_path,
-                                                                 func = LOGGER_FUNC](std::vector<u8> osu_file) -> void {
+            DatabaseBeatmap::MapFileReadDoneCallback callback = [url, md5,
+                                                                 file_path](std::vector<u8> osu_file) -> void {
                 if(!networkHandler) return;  // quit if we got called while shutting down
 
                 if(osu_file.empty()) {
-                    debugLogLambda("Failed to get map file data for md5: {} path: {}", md5.string(), file_path);
+                    debugLog("Failed to get map file data for md5: {} path: {}", md5.string(), file_path);
                     return;
                 }
                 auto md5_check = crypto::hash::md5_hex((u8 *)osu_file.data(), osu_file.size());
                 if(md5 != md5_check) {
-                    debugLogLambda("After loading map {}, we got different md5 {}!", md5.string(), md5_check.string());
+                    debugLog("After loading map {}, we got different md5 {}!", md5.string(), md5_check.string());
                     return;
                 }
 

@@ -56,10 +56,12 @@
 
 namespace Logger {
 namespace {  // static
-std::shared_ptr<spdlog::async_logger> g_logger;
-spdlog::async_logger *g_logger_raw_ptr{nullptr};
-std::shared_ptr<spdlog::async_logger> g_raw_logger;
-spdlog::async_logger *g_raw_logger_raw_ptr{nullptr};
+std::shared_ptr<spdlog::async_logger> s_logger;
+spdlog::async_logger *s_logger_raw_ptr{nullptr};
+std::shared_ptr<spdlog::async_logger> s_raw_logger;
+spdlog::async_logger *s_raw_logger_raw_ptr{nullptr};
+
+bool s_log_initialized{false};
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 bool s_created_console{false};
@@ -74,19 +76,68 @@ struct custom_spdmtx : public Sync::mutex {
     }
 };
 
+// custom %! (function name) formatter, because std::source_location::current().function_name()
+// gives WAY too much information
+class custom_srcloc_formatter : public spdlog::custom_flag_formatter {
+    static forceinline void trim_funcname_inplace(std::string_view &str) {
+        // skip possible "static", "virtual"
+        for(const auto pfx : std::array{"static "sv, "virtual "sv}) {
+            const size_t pfxpos = str.find(pfx);
+            if(pfxpos != std::string_view::npos) {
+                str = str.substr(pfxpos + pfx.size());
+            }
+        }
+        const size_t spacepos = str.find(' ');
+        // skip function type
+        if(spacepos != std::string_view::npos) {
+            str = str.substr(spacepos + 1);
+        }
+        // include everything until function parameters begin
+        const size_t lastparens = str.rfind('(');
+        if(lastparens != std::string_view::npos) {
+            str = str.substr(0, lastparens);
+        }
+#ifndef _DEBUG
+        // if not in debug, trim to last scope
+        const size_t pos = str.rfind("::"sv);
+        if(pos != std::string_view::npos) {
+            str = str.substr(pos + 2);  // +2 to skip "::"
+        }
+#endif
+        return;
+    }
+
+   public:
+    void format(const spdlog::details::log_msg &logmsg, const std::tm & /*tms*/, spdlog::memory_buf_t &dest) override {
+        if(logmsg.source.funcname && logmsg.source.funcname[0] != '\0') {
+            std::string_view funcname_view{logmsg.source.funcname};
+            trim_funcname_inplace(funcname_view);
+            dest.append(funcname_view);
+        }
+    }
+
+    [[nodiscard]] std::unique_ptr<custom_flag_formatter> clone() const override {
+        return spdlog::details::make_unique<custom_srcloc_formatter>();
+    }
+};
+
 }  // namespace
 
 namespace _detail {
-// global var defs
-bool g_initialized{false};
 
-void log_int(const char *filename, int line, const char *funcname, log_level::level_enum lvl,
+void log_int(const char *filename, unsigned int line, const char *funcname, log_level::level_enum lvl,
              std::string_view str) noexcept {
-    return g_logger_raw_ptr->log(spdlog::source_loc{filename, line, funcname}, (spdlog::level::level_enum)lvl, str);
+    // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
+    if(likely(s_log_initialized)) {
+        return s_logger_raw_ptr->log(spdlog::source_loc{filename, static_cast<int>(line), funcname},
+                                     (spdlog::level::level_enum)lvl, str);
+    } else {
+        printf("%.*s\n", static_cast<int>(str.length()), str.data());
+    }
 }
 
 void logRaw_int(log_level::level_enum lvl, std::string_view str) noexcept {
-    return g_raw_logger_raw_ptr->log((spdlog::level::level_enum)lvl, str);
+    return s_raw_logger_raw_ptr->log((spdlog::level::level_enum)lvl, str);
 }
 
 }  // namespace _detail
@@ -135,8 +186,9 @@ class ConsoleBoxSink final : public spdlog::sinks::base_sink<custom_spdmtx> {
     ConsoleBoxSink() noexcept {
         // create separate formatters for different logger types
         // also, don't auto-append newlines, each console log is already on a new line
-        base_sink::formatter_ =
-            std::make_unique<spdlog::pattern_formatter>(ENGINE_LOG_PATTERN, spdlog::pattern_time_type::local, "");
+        auto tempformatter = std::make_unique<spdlog::pattern_formatter>(spdlog::pattern_time_type::local, "");
+        tempformatter->add_flag<custom_srcloc_formatter>('!').set_pattern(ENGINE_LOG_PATTERN);
+        base_sink::formatter_ = std::move(tempformatter);
 
         // raw formatter always uses plain pattern
         raw_formatter_ = std::make_unique<spdlog::pattern_formatter>("%v", spdlog::pattern_time_type::local, "");
@@ -195,8 +247,10 @@ class DualPatternFileSink final : public spdlog::sinks::base_sink<custom_spdmtx>
                                  const spdlog::file_event_handlers &event_handlers = {}) noexcept
         : file_helper_{event_handlers} {
         // do both the prefix and the fancy log pattern
-        base_sink::formatter_ =
-            std::make_unique<spdlog::pattern_formatter>(FILE_LOG_PATTERN_PREF " " FANCY_LOG_PATTERN);
+        auto tempformatter = std::make_unique<spdlog::pattern_formatter>();
+        tempformatter->add_flag<custom_srcloc_formatter>('!').set_pattern(FILE_LOG_PATTERN_PREF " " FANCY_LOG_PATTERN);
+        base_sink::formatter_ = std::move(tempformatter);
+
         // plain after the prefix
         raw_formatter_ = std::make_unique<spdlog::pattern_formatter>(FILE_LOG_PATTERN_PREF " %v");
 
@@ -233,7 +287,7 @@ class DualPatternFileSink final : public spdlog::sinks::base_sink<custom_spdmtx>
 
 // to be called in main(), for one-time setup/teardown
 void init(bool create_console) noexcept {
-    if(g_initialized) return;
+    if(s_log_initialized) return;
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
     // when the spdlog::sinks::wincolor_stdout_sink is created, it checks GetStdHandle(STD_OUTPUT_HANDLE) at initialization
@@ -277,7 +331,11 @@ void init(bool create_console) noexcept {
     using mt_stdout_sink_t = spdlog::sinks::ansicolor_stdout_sink<custom_spdmtx>;
 #endif
     auto stdout_sink{std::make_shared<mt_stdout_sink_t>()};
-    stdout_sink->set_pattern(FANCY_LOG_PATTERN);
+    {
+        auto tempformatter = std::make_unique<spdlog::pattern_formatter>();
+        tempformatter->add_flag<custom_srcloc_formatter>('!').set_pattern(FANCY_LOG_PATTERN);
+        stdout_sink->set_formatter(std::move(tempformatter));
+    }
 
     // unformatted stdout sink
     auto raw_stdout_sink{std::make_shared<mt_stdout_sink_t>()};
@@ -301,49 +359,49 @@ void init(bool create_console) noexcept {
     }
 
     // create main async logger with stdout + console + optional file sink
-    g_logger =
+    s_logger =
         std::make_shared<spdlog::async_logger>(DEFAULT_LOGGER_NAME, main_sinks.begin(), main_sinks.end(),
                                                spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
-    g_logger_raw_ptr = g_logger.get();
+    s_logger_raw_ptr = s_logger.get();
 
     // create raw async logger with separate stdout + console + optional file sink
-    g_raw_logger =
+    s_raw_logger =
         std::make_shared<spdlog::async_logger>(RAW_LOGGER_NAME, raw_sinks.begin(), raw_sinks.end(),
                                                spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
-    g_raw_logger_raw_ptr = g_raw_logger.get();
+    s_raw_logger_raw_ptr = s_raw_logger.get();
 
     // set to trace level so we print out all messages
     // TODO: add custom log level support (ConVar callback + build type?)
-    g_logger->set_level(spdlog::level::trace);
-    g_raw_logger->set_level(spdlog::level::trace);
+    s_logger->set_level(spdlog::level::trace);
+    s_raw_logger->set_level(spdlog::level::trace);
 
     // for async loggers, flush operations are queued to the background thread
     // disable automatic flushing based on level, let periodic flusher handle it
-    g_logger->flush_on(spdlog::level::off);
-    g_raw_logger->flush_on(spdlog::level::off);
+    s_logger->flush_on(spdlog::level::off);
+    s_raw_logger->flush_on(spdlog::level::off);
 
     // register both loggers so they both get periodic flushing
-    spdlog::register_logger(g_logger);
-    spdlog::register_logger(g_raw_logger);
+    spdlog::register_logger(s_logger);
+    spdlog::register_logger(s_raw_logger);
 
     // flush every 500ms
     // console commands will trigger a flush for responsiveness, though
     spdlog::flush_every(std::chrono::milliseconds(500));
 
     // make the s_logger default (doesn't really matter right now since we're handling it manually, i think, but still)
-    spdlog::set_default_logger(g_logger);
+    spdlog::set_default_logger(s_logger);
 
-    g_initialized = true;
+    s_log_initialized = true;
 };
 
 // spdlog::shutdown() explodes if its called at program exit (by global atexit handler), so we need to manually shut it down
 void shutdown() noexcept {
-    if(!g_initialized) return;
+    if(!s_log_initialized) return;
     flush();
-    g_initialized = false;
+    s_log_initialized = false;
 
-    g_raw_logger.reset();
-    g_logger.reset();
+    s_raw_logger.reset();
+    s_logger.reset();
 
     // spdlog docs recommend calling this on exit
     // for async loggers, this waits for the background thread to finish processing queued messages
@@ -359,9 +417,9 @@ void shutdown() noexcept {
 
 // manual trigger for console commands
 void flush() noexcept {
-    if(likely(g_initialized)) {
-        g_logger->flush();
-        g_raw_logger->flush();
+    if(likely(s_log_initialized)) {
+        s_logger->flush();
+        s_raw_logger->flush();
     } else {
         fflush(stdout);
         fflush(stderr);

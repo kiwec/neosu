@@ -1483,9 +1483,9 @@ void MainMenu::writeVersionFile() {
     // remember, don't show the notification arrow until the version changes again
     io->write(MCENGINE_DATA_DIR "version.txt",
               fmt::format("{}\n{}", cv::version.getString(), cv::build_timestamp.getString()),
-              [func = LOGGER_FUNC](bool success) -> void {
+              [](bool success) -> void {
                   if(!success) {
-                      debugLogLambda("Warning: failed to write new version to {}", MCENGINE_DATA_DIR "version.txt");
+                      debugLog("Warning: failed to write new version to {}", MCENGINE_DATA_DIR "version.txt");
                   }
               });
 }

@@ -513,7 +513,7 @@ void OsuDirectScreen::search(std::string_view query) {
     this->loading = true;
 
     networkHandler->httpRequestAsync(
-        url, std::move(options), [func = LOGGER_FUNC, current_request_id, this](const NeoNet::Response& response) {
+        url, std::move(options), [current_request_id, this](const NeoNet::Response& response) {
             this->loading = false;
 
             if(current_request_id != this->request_id) {
@@ -540,7 +540,7 @@ void OsuDirectScreen::search(std::string_view query) {
                     return;
                 }
 
-                debugLogLambda("Received {} maps", nb_results);
+                debugLog("Received {} maps", nb_results);
                 for(i32 i = 1; i < set_lines.size(); i++) {
                     const auto meta = Downloader::parse_beatmapset_metadata(set_lines[i]);
                     if(meta.set_id == 0) continue;

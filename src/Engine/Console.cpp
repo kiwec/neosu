@@ -146,9 +146,9 @@ void Console::execConfigFile(std::string_view filename_view) {
     // if we don't remove prefixed lines, this could prevent users from
     // setting some convars back to their default value
     if(needs_write) {
-        io->write(filename, rewritten_file, [filename, func = LOGGER_FUNC](bool success) {
+        io->write(filename, rewritten_file, [filename](bool success) {
             if(!success) {
-                debugLogLambda("WARNING: failed to write out config to {}!", filename);
+                debugLog("WARNING: failed to write out config to {}!", filename);
             }
         });
     }

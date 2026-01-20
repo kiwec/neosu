@@ -10,23 +10,10 @@ using fmt::literals::operator""_cf;
 
 #include <string_view>
 #include <cassert>
-
-#define LOGGER_FUNC __FUNCTION__
-
-#if defined(_MSC_VER) && !defined(_DEBUG)
-#define LOGGER_FUNC_TRIMMED Logger::trim_to_last_scope_internal(static_cast<const char *>(LOGGER_FUNC))
-#define LOGGER_FUNC_CAPTURED Logger::trim_to_last_scope_internal(func)
-#else
-#define LOGGER_FUNC_TRIMMED static_cast<const char *>(LOGGER_FUNC)
-#define LOGGER_FUNC_CAPTURED func
-#endif
+#include <source_location>
 
 // main logging macro
-#define debugLog(str__, ...) Logger::log(__FILE__, __LINE__, LOGGER_FUNC_TRIMMED, str__ __VA_OPT__(, ) __VA_ARGS__)
-
-// explicitly capture func = LOGGER_FUNC in lambda, then use this
-#define debugLogLambda(str__, ...) \
-    Logger::log(__FILE__, __LINE__, LOGGER_FUNC_CAPTURED, str__ __VA_OPT__(, ) __VA_ARGS__)
+#define debugLog(str__, ...) Logger::log(std::source_location::current(), str__ __VA_OPT__(, ) __VA_ARGS__)
 
 // log only if condition is true
 #define logIf(cond__, str__, ...) (static_cast<bool>(cond__) ? debugLog(str__ __VA_OPT__(, ) __VA_ARGS__) : void(0))
@@ -57,11 +44,9 @@ namespace log_level {
 enum level_enum : int { trace = 0, debug = 1, info = 2, warn = 3, err = 4, critical = 5, off = 6, n_levels };
 }
 
-void log_int(const char *filename, int line, const char *funcname, log_level::level_enum lvl,
+void log_int(const char *filename, unsigned int line, const char *funcname, log_level::level_enum lvl,
              std::string_view str) noexcept;
 void logRaw_int(log_level::level_enum lvl, std::string_view str) noexcept;
-
-extern bool g_initialized;
 }  // namespace _detail
 
 // Logger::init() is called immediately after main()
@@ -76,35 +61,24 @@ void flush() noexcept;
 
 // _cf strings
 template <typename S, typename... Args>
-inline void log(const char *filename, int line, const char *funcname, S &&fmt, Args &&...args) noexcept
+inline void log(std::source_location loc, S &&fmt, Args &&...args) noexcept
     requires(std::is_base_of_v<fmt::compiled_string, S> && sizeof...(Args) > 0)
 {
-    // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
-    if(likely(_detail::g_initialized))
-        _detail::log_int(filename, line, funcname, _detail::log_level::info, fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...));
-    else
-        printf("%s\n", fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...).c_str());
+    _detail::log_int(loc.file_name(), loc.line(), loc.function_name(), _detail::log_level::info,
+                     fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...));
 }
 
 // fmt strings
 template <typename... Args>
-inline void log(const char *filename, int line, const char *funcname, const fmt::format_string<Args...> &fmt,
-                Args &&...args) noexcept
+inline void log(std::source_location loc, const fmt::format_string<Args...> &fmt, Args &&...args) noexcept
     requires(sizeof...(Args) > 0)
 {
-    // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
-    if(likely(_detail::g_initialized))
-        _detail::log_int(filename, line, funcname, _detail::log_level::info,
-                         fmt::format(fmt, std::forward<Args>(args)...));
-    else
-        printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
+    _detail::log_int(loc.file_name(), loc.line(), loc.function_name(), _detail::log_level::info,
+                     fmt::format(fmt, std::forward<Args>(args)...));
 }
 
-inline void log(const char *filename, int line, const char *funcname, std::string_view str) noexcept {
-    if(likely(_detail::g_initialized))
-        _detail::log_int(filename, line, funcname, _detail::log_level::info, str);
-    else
-        printf("%.*s\n", static_cast<int>(str.length()), str.data());
+inline void log(std::source_location loc, std::string_view str) noexcept {
+    _detail::log_int(loc.file_name(), loc.line(), loc.function_name(), _detail::log_level::info, str);
 }
 
 // raw logging without any context
@@ -114,10 +88,7 @@ template <typename S, typename... Args>
 inline void logRaw(S &&fmt, Args &&...args) noexcept
     requires(std::is_base_of_v<fmt::compiled_string, S> && sizeof...(Args) > 0)
 {
-    if(likely(_detail::g_initialized))
-        _detail::logRaw_int(_detail::log_level::info, fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...));
-    else
-        printf("%s\n", fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...).c_str());
+    _detail::logRaw_int(_detail::log_level::info, fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...));
 }
 
 // fmt strings
@@ -125,29 +96,10 @@ template <typename... Args>
 inline void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept
     requires(sizeof...(Args) > 0)
 {
-    if(likely(_detail::g_initialized))
-        _detail::logRaw_int(_detail::log_level::info, fmt::format(fmt, std::forward<Args>(args)...));
-    else
-        printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
+    _detail::logRaw_int(_detail::log_level::info, fmt::format(fmt, std::forward<Args>(args)...));
 }
-
 
 // standalone strings
-inline void logRaw(std::string_view str) noexcept {
-    if(likely(_detail::g_initialized))
-        _detail::logRaw_int(_detail::log_level::info, str);
-    else
-        printf("%.*s\n", static_cast<int>(str.length()), str.data());
-}
+inline void logRaw(std::string_view str) noexcept { _detail::logRaw_int(_detail::log_level::info, str); }
 
-// msvc always adds the full scope to LOGGER_FUNC, which we don't want for non-debug builds
-#if defined(_MSC_VER) && !defined(_DEBUG)
-forceinline const char *trim_to_last_scope_internal(std::string_view str) {
-    auto pos = str.rfind("::");
-    if(pos != std::string_view::npos) {
-        return str.data() + pos + 2;  // +2 to skip "::"
-    }
-    return str.data();
-}
-#endif
 };  // namespace Logger

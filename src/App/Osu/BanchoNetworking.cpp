@@ -93,7 +93,7 @@ void attempt_logging_in() {
     last_packet_ms = Timing::getTicksMS();
 
     // TODO: allow user to cancel login attempt
-    networkHandler->httpRequestAsync(query_url, std::move(options), [func = LOGGER_FUNC](NeoNet::Response response) {
+    networkHandler->httpRequestAsync(query_url, std::move(options), [](NeoNet::Response response) {
         if(!response.success) {
             auto errmsg = fmt::format("Failed to log in: {}", response.error_msg);
             ui->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
@@ -113,10 +113,10 @@ void attempt_logging_in() {
         if(features_it != response.headers.end()) {
             if(strstr(features_it->second.c_str(), "submit=0") != nullptr) {
                 BanchoState::score_submission_policy = ServerPolicy::NO;
-                debugLogLambda("Server doesn't want score submission. :(");
+                debugLog("Server doesn't want score submission. :(");
             } else if(strstr(features_it->second.c_str(), "submit=1") != nullptr) {
                 BanchoState::score_submission_policy = ServerPolicy::YES;
-                debugLogLambda("Server wants score submission! :D");
+                debugLog("Server wants score submission! :D");
             }
         }
 
@@ -142,9 +142,9 @@ void send_bancho_packet_http(Packet outgoing) {
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
 
-    networkHandler->httpRequestAsync(query_url, std::move(options), [func = LOGGER_FUNC](NeoNet::Response response) {
+    networkHandler->httpRequestAsync(query_url, std::move(options), [](NeoNet::Response response) {
         if(!response.success) {
-            debugLogLambda("Failed to send packet, HTTP error {}", response.response_code);
+            debugLog("Failed to send packet, HTTP error {}", response.response_code);
             return;
         }
 

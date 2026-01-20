@@ -4036,27 +4036,27 @@ void OptionsOverlayImpl::save() {
     debugLog("Osu: Saving user config file ...");
 
     static constexpr const std::string_view cfg_name = NEOSU_CFG_PATH "/osu.cfg"sv;
-    static AsyncIOHandler::WriteCallback wr_callback = [func = LOGGER_FUNC](bool success) -> void {
+    static AsyncIOHandler::WriteCallback wr_callback = [](bool success) -> void {
         if(!success) {
             if(osu) {
                 ui->getNotificationOverlay()->addToast(US_("Failed to save osu.cfg"), ERROR_TOAST);
             } else {
-                debugLogLambda("Failed to save osu.cfg");
+                debugLog("Failed to save osu.cfg");
             }
         } else if(cv::debug_file.getBool()) {
-            debugLogLambda("Successfully wrote osu.cfg");
+            debugLog("Successfully wrote osu.cfg");
         }
     };
 
-    static AsyncIOHandler::ReadCallback rd_callback = [func = LOGGER_FUNC](std::vector<u8> read_data) -> void {
+    static AsyncIOHandler::ReadCallback rd_callback = [](std::vector<u8> read_data) -> void {
         std::vector<std::string> read_lines;
         if(read_data.empty()) {
             if(Environment::fileExists(cfg_name)) {
-                debugLogLambda("WARNING: read no data from previous osu.cfg!\n");
+                debugLog("WARNING: read no data from previous osu.cfg!\n");
                 // back it up just in case
                 std::string backup_name = fmt::format("{}.{:%F}.bak", cfg_name, fmt::gmtime(std::time(nullptr)));
                 if(File::copy(cfg_name, backup_name)) {
-                    debugLogLambda("backed up {} -> {}\n", cfg_name, backup_name);
+                    debugLog("backed up {} -> {}\n", cfg_name, backup_name);
                 }
             }
         } else {
