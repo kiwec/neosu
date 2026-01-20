@@ -1209,6 +1209,7 @@ void discoverSystemFallbacks() {
 #elif defined(MCENGINE_PLATFORM_LINUX)
     // linux system fonts (common locations)
     std::vector<std::string> systemFonts = {"/usr/share/fonts/TTF/dejavu/DejaVuSans.ttf",
+                                            "/usr/share/fonts/TTF/DejaVuSans.ttf",
                                             "/usr/share/fonts/TTF/liberation/LiberationSans-Regular.ttf",
                                             "/usr/share/fonts/liberation/LiberationSans-Regular.ttf",
                                             "/usr/share/fonts/noto/NotoSans-Regular.ttf",

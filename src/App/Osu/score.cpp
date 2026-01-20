@@ -538,7 +538,6 @@ std::string FinishedScore::dbgstr() const {
     std::string playerName: {}
     std::string client: {}
     std::string server: {}
-    std::vector<u8> hitdeltas.size(): {}
     std::vector<LegacyReplay::Frame> replay.size(): {}
     u64 peppy_replay_tms: {}
     i64 bancho_score_id: {}
@@ -569,9 +568,9 @@ std::string FinishedScore::dbgstr() const {
     bool is_online_score: {}
     bool is_online_replay_available: {})",
         beatmap_hash, fmt::underlying(mods.flags), fmt::ptr(map), score, spinner_bonus, unixTimestamp, play_time_ms,
-        playerName, client, server, hitdeltas.size(), replay.size(), peppy_replay_tms, bancho_score_id, player_id,
-        num300s, num100s, num50s, numGekis, numKatus, numMisses, comboMax, ppv2_version, ppv2_score, ppv2_total_stars,
-        ppv2_aim_stars, ppv2_speed_stars, numSliderBreaks, unstableRate, hitErrorAvgMin, hitErrorAvgMax,
-        maxPossibleCombo, numHitObjects, numCircles, fmt::underlying(grade), perfect, passed, ragequit, is_online_score,
+        playerName, client, server, replay.size(), peppy_replay_tms, bancho_score_id, player_id, num300s, num100s,
+        num50s, numGekis, numKatus, numMisses, comboMax, ppv2_version, ppv2_score, ppv2_total_stars, ppv2_aim_stars,
+        ppv2_speed_stars, numSliderBreaks, unstableRate, hitErrorAvgMin, hitErrorAvgMax, maxPossibleCombo,
+        numHitObjects, numCircles, fmt::underlying(grade), perfect, passed, ragequit, is_online_score,
         is_online_replay_available);
 }

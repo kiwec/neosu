@@ -45,10 +45,18 @@ struct FinishedScore {
                playerName == c.playerName;              //
     }
 
+    // Absolute hit deltas of every hitobject (0-254). 255 == miss
+    // This is exclusive to PPV3-converted scores
+    // NOTE: unfinished feature
+    // std::vector<u8> hitdeltas;
+
+    std::vector<LegacyReplay::Frame> replay;  // not always loaded
+
+    const DatabaseBeatmap *map{nullptr};  // NOTE: do NOT assume this is set
+
     MD5Hash beatmap_hash;
     Replay::Mods mods;
 
-    const DatabaseBeatmap *map{nullptr};  // NOTE: do NOT assume this is set
     u64 score = 0;
     u64 spinner_bonus = 0;
     u64 unixTimestamp = 0;
@@ -58,12 +66,6 @@ struct FinishedScore {
 
     std::string client;
     std::string server;
-
-    // Absolute hit deltas of every hitobject (0-254). 255 == miss
-    // This is exclusive to PPV3-converted scores
-    std::vector<u8> hitdeltas;
-
-    std::vector<LegacyReplay::Frame> replay;  // not always loaded
 
     // Only present in scores parsed from osu!.db, aka "peppy" replays
     // So it will always be 0 in mcosu/neosu scores, or in online scores
@@ -97,13 +99,13 @@ struct FinishedScore {
     int numCircles = -1;
 
     ScoreGrade grade = ScoreGrade::N;
-    bool perfect = false;
-    bool passed = false;
-    bool ragequit = false;
+    bool perfect : 1 = false;
+    bool passed : 1 = false;
+    bool ragequit : 1 = false;
 
     // Online scores are not saved to db
-    bool is_online_score = false;
-    bool is_online_replay_available = false;
+    bool is_online_score : 1 = false;
+    bool is_online_replay_available : 1 = false;
 
     // NOTE: unfinished feature
     // float ppv3_score = 0.f;

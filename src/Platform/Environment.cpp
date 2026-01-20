@@ -266,8 +266,8 @@ const UString &Environment::getUsername() const noexcept {
         m_sUsername = UString{username.data(), std::max(0, (int)username_len - 1)};
     }
 #elif defined(__APPLE__) || defined(MCENGINE_PLATFORM_LINUX) || defined(MCENGINE_PLATFORM_WASM)
-    const char *user = getenv("USER");
-    if(user != nullptr) m_sUsername = {user};
+    std::string user = getEnvVariable("USER");
+    if(!user.empty()) m_sUsername = {user};
 #ifndef MCENGINE_PLATFORM_WASM
     else {
         struct passwd *pwd = getpwuid(getuid());
