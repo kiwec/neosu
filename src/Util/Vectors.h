@@ -82,7 +82,11 @@ inline constexpr bool allEqual(const V &vec1, const V vec2) {
 namespace fmt {
 template <typename Vec, int N>
 struct float_vec_formatter {
-    constexpr auto parse(format_parse_context &ctx) const { return ctx.begin(); }
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) const {
+        return ctx.begin();
+    }
+
     template <typename FormatContext>
     auto format(const Vec &p, FormatContext &ctx) const {
         if constexpr(N == 2) {
@@ -97,7 +101,11 @@ struct float_vec_formatter {
 
 template <typename Vec, int N>
 struct int_vec_formatter {
-    constexpr auto parse(format_parse_context &ctx) const { return ctx.begin(); }
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) const {
+        return ctx.begin();
+    }
+
     template <typename FormatContext>
     auto format(const Vec &p, FormatContext &ctx) const {
         if constexpr(N == 2) {

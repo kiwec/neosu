@@ -79,7 +79,11 @@ class McRect {
 namespace fmt {
 template <>
 struct formatter<McRect> {
-    constexpr auto parse(format_parse_context &ctx) const { return ctx.begin(); }
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) const {
+        return ctx.begin();
+    }
+
     template <typename FormatContext>
     auto format(const McRect &r, FormatContext &ctx) const {
         return format_to(ctx.out(), "({:.2f},{:.2f}): {:.2f}x{:.2f}"_cf, r.vMin.x, r.vMin.y, r.vSize.x, r.vSize.y);

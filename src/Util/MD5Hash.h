@@ -7,6 +7,7 @@
 #include <string>
 
 #ifndef BUILD_TOOLS_ONLY
+#include "fmt/base.h"
 #include "ankerl/unordered_dense.h"
 namespace Hash {
 namespace flat = ankerl::unordered_dense;
@@ -68,6 +69,11 @@ struct hash<MD5Hash> {
 namespace fmt {
 template <>
 struct formatter<MD5Hash> : formatter<string_view> {
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) const {
+        return ctx.begin();
+    }
+
     template <typename FormatContext>
     auto format(const MD5Hash &ustr, FormatContext &ctx) const noexcept {
         return formatter<string_view>::format(ustr.string(), ctx);
