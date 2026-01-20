@@ -107,8 +107,9 @@ class Database final {
     BeatmapSet *addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override = -1,
                               bool diffcalc_immediately = false, bool is_peppy = false);
 
-    int addScore(const FinishedScore &score);
-    void deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp);
+    // returns true if adding succeeded
+    bool addScore(const FinishedScore &score);
+    void deleteScore(const FinishedScore &scoreToDelete);
     static void sortScoresInPlace(std::vector<FinishedScore> &scores);
 
     PlayerPPScores getPlayerPPScores(const std::string &playerName);
@@ -251,7 +252,8 @@ class Database final {
     void sortScores(const MD5Hash &beatmapMD5Hash);
     bool addScoreRaw(const FinishedScore &score);
     // returns position of existing score in the scores[hash] array if found, -1 otherwise
-    int isScoreAlreadyInDB(u64 unix_timestamp, const MD5Hash &map_hash);
+    // this isn't completely accurate but allows skipping importing some duplicate entries early from dbs
+    int isScoreAlreadyInDB(const MD5Hash &map_hash, u64 unix_timestamp, const std::string &playerName);
 
     std::unique_ptr<AsyncDBLoader> loader;
     std::unique_ptr<AsyncScoreSaver> score_saver;

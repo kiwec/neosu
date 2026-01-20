@@ -196,8 +196,9 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
             const float scale = ((this->getSize().x - iconWidth) / stringWidth) * textScale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->getPos().x + iconWidth + (this->getSize().x - iconWidth) / 2 - stringWidth * scale / 2),
-                         (int)(this->getPos().y + this->getSize().y / 2 + textFont->getHeight() * scale / 2));
+            g->translate(
+                (int)(this->getPos().x + iconWidth + (this->getSize().x - iconWidth) / 2 - stringWidth * scale / 2),
+                (int)(this->getPos().y + this->getSize().y / 2 + textFont->getHeight() * scale / 2));
             g->setColor(0xff02c3e5);
             g->drawString(textFont, this->sText);
         }
@@ -244,8 +245,9 @@ class NoRecordsSetElement final : public CBaseUILabel {
             const float scale = ((this->getSize().x - iconWidth) / stringWidth) * textScale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->getPos().x + iconWidth + (this->getSize().x - iconWidth) / 2 - stringWidth * scale / 2),
-                         (int)(this->getPos().y + this->getSize().y / 2 + textFont->getHeight() * scale / 2));
+            g->translate(
+                (int)(this->getPos().x + iconWidth + (this->getSize().x - iconWidth) / 2 - stringWidth * scale / 2),
+                (int)(this->getPos().y + this->getSize().y / 2 + textFont->getHeight() * scale / 2));
             g->setColor(0xff02c3e5);
             g->drawString(textFont, this->sText);
         }
@@ -3313,7 +3315,7 @@ void SongBrowser::onScoreContextMenu(ScoreButton *scoreButton, int id) {
     // NOTE: see ScoreButton::onContextMenu()
 
     if(id == 2) {
-        db->deleteScore(scoreButton->getScore().beatmap_hash, scoreButton->getScoreUnixTimestamp());
+        db->deleteScore(scoreButton->getScore());
 
         this->rebuildScoreButtons();
         osu->getUserButton()->updateUserStats();
@@ -3502,13 +3504,12 @@ void SongBrowser::onCollectionButtonContextMenu(CollectionButton *collectionButt
     }
 }
 
-void SongBrowser::highlightScore(u64 unixTimestamp) {
-    for(auto &i : this->scoreButtonCache) {
-        if(i->getScore().unixTimestamp == unixTimestamp) {
-            this->scoreBrowser->scrollToElement(i, 0, 10);
-            i->highlight();
-            break;
-        }
+void SongBrowser::highlightScore(const FinishedScore &scoreToHighlight) {
+    if(auto cachedit =
+           std::ranges::find(this->scoreButtonCache, scoreToHighlight, [](const auto &btn) { return btn->getScore(); });
+       cachedit != this->scoreButtonCache.end()) {
+        this->scoreBrowser->scrollToElement(*cachedit, 0, 10);
+        (*cachedit)->highlight();
     }
 }
 

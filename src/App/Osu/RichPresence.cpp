@@ -1,6 +1,7 @@
 // Copyright (c) 2018, PG, All rights reserved.
 #include "RichPresence.h"
 
+#include "Logging.h"
 #include "OsuConVars.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"

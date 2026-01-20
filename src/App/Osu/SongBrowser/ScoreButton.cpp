@@ -123,9 +123,10 @@ void ScoreButton::draw() {
         gradeWidth = gradeImg->getSizeBaseRaw().x * scale;
 
         g->setColor(0xffffffff);
-        gradeImg->drawRaw(vec2((int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent + gradeWidth / 2.0f),
-                               (int)(this->getPos().y + this->getSize().y / 2.0f)),
-                          scale);
+        gradeImg->drawRaw(
+            vec2((int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent + gradeWidth / 2.0f),
+                 (int)(this->getPos().y + this->getSize().y / 2.0f)),
+            scale);
     }
     g->popTransform();
 
@@ -145,8 +146,9 @@ void ScoreButton::draw() {
         UString &string = (this->style == STYLE::TOP_RANKS ? this->sScoreTitle : this->sScoreUsername);
 
         g->scale(scale, scale);
-        g->translate((int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent + gradeWidth + gradePaddingRight),
-                     (int)(yPos + height / 2.0f + usernameFont->getHeight() * scale / 2.0f + paddingTop));
+        g->translate(
+            (int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent + gradeWidth + gradePaddingRight),
+            (int)(yPos + height / 2.0f + usernameFont->getHeight() * scale / 2.0f + paddingTop));
         g->translate(0.75f, 0.75f);
         g->setColor(Color(0xff000000).setA(0.75f));
 
@@ -161,7 +163,7 @@ void ScoreButton::draw() {
     // score | pp | weighted 95% (pp)
     const float scoreScale = 0.5f;
     McFont *scoreFont = (this->getSize().y < 50 ? engine->getDefaultFont()
-                                            : usernameFont);  // HACKHACK: switch font for very low resolutions
+                                                : usernameFont);  // HACKHACK: switch font for very low resolutions
     g->pushTransform();
     {
         const float height = this->getSize().y * 0.5f;
@@ -172,8 +174,9 @@ void ScoreButton::draw() {
         UString &string = (this->style == STYLE::TOP_RANKS ? this->sScoreScorePPWeightedPP : this->sScoreScorePP);
 
         g->scale(scale, scale);
-        g->translate((int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent + gradeWidth + gradePaddingRight),
-                     (int)(yPos + height * 1.5f + scoreFont->getHeight() * scale / 2.0f - paddingBottom));
+        g->translate(
+            (int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent + gradeWidth + gradePaddingRight),
+            (int)(yPos + height * 1.5f + scoreFont->getHeight() * scale / 2.0f - paddingBottom));
         g->translate(0.75f, 0.75f);
         g->setColor(Color(0xff000000).setA(0.75f));
 
@@ -262,8 +265,8 @@ void ScoreButton::draw() {
             const float scale = (height / customFont->getHeight()) * customScale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->getPos().x + this->getSize().x - customFont->getStringWidth(this->sCustom) * scale -
-                               rightSidePaddingRight),
+            g->translate((int)(this->getPos().x + this->getSize().x -
+                               customFont->getStringWidth(this->sCustom) * scale - rightSidePaddingRight),
                          (int)(yPos + height * 2.325f + customFont->getHeight() * scale / 2.0f + paddingTop));
             g->translate(0.75f, 0.75f);
             g->setColor(Color(0xff000000).setA(0.75f));
@@ -288,8 +291,8 @@ void ScoreButton::draw() {
             const float scale = (height / weightFont->getHeight()) * weightScale;
 
             g->scale(scale, scale);
-            g->translate((int)(this->getPos().x + this->getSize().x - weightFont->getStringWidth(this->sScoreWeight) * scale -
-                               rightSidePaddingRight),
+            g->translate((int)(this->getPos().x + this->getSize().x -
+                               weightFont->getStringWidth(this->sScoreWeight) * scale - rightSidePaddingRight),
                          (int)(yPos + height * 2.5f + weightFont->getHeight() * scale / 2.0f - paddingBottom));
             g->translate(0.75f, 0.75f);
             g->setColor(Color(0xff000000).setA(0.75f));
@@ -368,31 +371,20 @@ void ScoreButton::update(CBaseUIEventCtx &c) {
             // NOTE: Allows dropped sliderends. Should fix with @PPV3
             const bool fullCombo = (sc.maxPossibleCombo > 0 && sc.numMisses == 0 && sc.numSliderBreaks == 0);
 
-            if(sc.is_online_score) {
-                if(const auto &it = db->getOnlineScores().find(sc.beatmap_hash); it != db->getOnlineScores().end()) {
-                    for(auto &other : it->second) {
-                        if(other.unixTimestamp == sc.unixTimestamp) {
-                            g_songbrowser->score_resort_scheduled = true;
-                            other = this->storedScore;
-                            break;
-                        }
-                    }
-                }
-            } else {
-                Sync::shared_lock readlock(db->scores_mtx);
-                if(const auto &it = db->getScoresMutable().find(sc.beatmap_hash); it != db->getScoresMutable().end()) {
-                    for(auto &other : it->second) {
-                        if(other.unixTimestamp == sc.unixTimestamp) {
-                            g_songbrowser->score_resort_scheduled = true;
-                            readlock.unlock();
-                            readlock.release();
-                            Sync::unique_lock writelock(db->scores_mtx);
-                            other = this->storedScore;
-                            break;
-                        }
-                    }
+            if(!sc.is_online_score) {
+                db->scores_mtx.lock();
+            }
+            auto &hashToScore = sc.is_online_score ? db->getOnlineScores() : db->getScoresMutable();
+            if(const auto &it = hashToScore.find(sc.beatmap_hash); it != hashToScore.end()) {
+                if(auto scorevecIt = std::ranges::find(it->second, sc); scorevecIt != it->second.end()) {
+                    g_songbrowser->score_resort_scheduled = true;
+                    *scorevecIt = sc;
                 }
             }
+            if(!sc.is_online_score) {
+                db->scores_mtx.unlock();
+            }
+
             this->sScoreScorePP = fmt::format("PP: {}pp ({}x{:s})", (int)std::round(sc.get_pp()), sc.comboMax,
                                               comboBasedSuffix(sc.perfect, fullCombo));
         }
@@ -662,11 +654,8 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
 
     sc.beatmap_hash = map->getMD5();
     sc.map = map;
-    // debugLog(
-    //     "score.beatmap_hash {} this->beatmap_hash {} score.has_possible_replay {} this->has_possible_replay {} "
-    //     "score.playername {} this->playername {}",
-    //     score.beatmap_hash.string(), this->score.beatmap_hash.string(), score.has_possible_replay(),
-    //     this->score.has_possible_replay(), score.playerName, this->score.playerName);
+    // debugLog(sc.dbgstr());
+
     this->iScoreIndexNumber = index;
 
     f32 AR = sc.mods.ar_override;
@@ -683,8 +672,8 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
 
     this->avatar.reset();
     if(sc.player_id != 0) {
-        this->avatar =
-            std::make_unique<UIAvatar>(sc.player_id, this->getPos().x, this->getPos().y, this->getSize().y, this->getSize().y);
+        this->avatar = std::make_unique<UIAvatar>(sc.player_id, this->getPos().x, this->getPos().y, this->getSize().y,
+                                                  this->getSize().y);
 
         const UserInfo *user = BANCHO::User::try_get_user_info(sc.player_id);
         this->is_friend = user && user->is_friend();

@@ -32,6 +32,7 @@ class McFont;
 class ConVar;
 
 class SongBrowserBackgroundSearchMatcher;
+struct FinishedScore;
 
 #ifndef UTIL_MD5HASH_H
 
@@ -134,7 +135,7 @@ class SongBrowser final : public ScreenBackable {
     void onSongButtonContextMenu(SongButton *songButton, const UString &text, int id);
     void onCollectionButtonContextMenu(CollectionButton *collectionButton, const UString &text, int id);
 
-    void highlightScore(u64 unixTimestamp);
+    void highlightScore(const FinishedScore &scoreToHighlight);
     void selectRandomBeatmap();
     void playNextRandomBeatmap() {
         this->selectRandomBeatmap();

@@ -126,8 +126,8 @@ std::vector<u8> compress_frames(const std::vector<Frame>& frames) {
 
     std::string replay_string;
     for(Frame frame : frames) {
-        std::string frame_str = fmt::format("{}|{:.4f}|{:.4f}|{},", frame.milliseconds_since_last_frame, frame.x, frame.y,
-                                         frame.key_flags);
+        std::string frame_str =
+            fmt::format("{}|{:.4f}|{:.4f}|{},", frame.milliseconds_since_last_frame, frame.x, frame.y, frame.key_flags);
         replay_string.append(frame_str.c_str(), frame_str.length());
     }
 
@@ -258,16 +258,10 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
     }
 
     if(update_db) {
-        Sync::shared_lock readlock(db->scores_mtx);
+        Sync::unique_lock lk(db->scores_mtx);
         if(const auto& it = db->getScoresMutable().find(score.beatmap_hash); it != db->getScoresMutable().end()) {
-            for(auto& db_score : it->second) {
-                if(db_score.unixTimestamp != score.unixTimestamp) continue;
-                readlock.unlock();
-                readlock.release();
-                Sync::unique_lock writelock(db->scores_mtx);
-                db_score.replay = score.replay;
-
-                break;
+            if(auto scorevecIt = std::ranges::find(it->second, score); scorevecIt != it->second.end()) {
+                scorevecIt->replay = score.replay;
             }
         }
     }

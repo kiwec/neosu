@@ -33,24 +33,17 @@ struct internal {
 };
 
 void internal::update_score_in_db(const FinishedScore& score, f64 pp, f64 total_stars, f64 aim_stars, f64 speed_stars) {
-    Sync::shared_lock readlock(db->scores_mtx);
+    Sync::unique_lock lk(db->scores_mtx);
     auto it = db->getScoresMutable().find(score.beatmap_hash);
     if(it == db->getScoresMutable().end()) return;
 
-    for(auto& dbScore : it->second) {
-        if(dbScore.unixTimestamp == score.unixTimestamp) {
-            readlock.unlock();
-            readlock.release();
-            Sync::unique_lock writelock(db->scores_mtx);
-
-            dbScore.ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
-            dbScore.ppv2_score = pp;
-            dbScore.ppv2_total_stars = total_stars;
-            dbScore.ppv2_aim_stars = aim_stars;
-            dbScore.ppv2_speed_stars = speed_stars;
-            db->scores_changed.store(true, std::memory_order_release);
-            return;
-        }
+    if(auto scorevecIt = std::ranges::find(it->second, score); scorevecIt != it->second.end()) {
+        scorevecIt->ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
+        scorevecIt->ppv2_score = pp;
+        scorevecIt->ppv2_total_stars = total_stars;
+        scorevecIt->ppv2_aim_stars = aim_stars;
+        scorevecIt->ppv2_speed_stars = speed_stars;
+        db->scores_changed.store(true, std::memory_order_release);
     }
 }
 

@@ -508,10 +508,11 @@ void Database::AsyncScoreSaver::initAsync() {
     this->setReady(true);
 }
 
-int Database::addScore(const FinishedScore &score) {
+bool Database::addScore(const FinishedScore &score) {
     // if addScoreRaw returns false, it means it wasn't added because we already have the score
     // so just skip everything and return the index
-    if(this->addScoreRaw(score)) {
+    const bool added = this->addScoreRaw(score);
+    if(added) {
         this->sortScores(score.beatmap_hash);
 
         this->scores_changed = true;
@@ -533,22 +534,10 @@ int Database::addScore(const FinishedScore &score) {
     }
 
     // @PPV3: use new replay format
-
-    // return sorted index
-    Sync::shared_lock lock(this->scores_mtx);
-    if(const auto &scoreit = this->scores.find(score.beatmap_hash); scoreit != this->scores.end()) {
-        const auto &scoreVec = scoreit->second;
-        const u64 ts = score.unixTimestamp;
-
-        for(int i = 0; i < scoreVec.size(); i++) {
-            if(scoreVec[i].unixTimestamp == ts) return i;
-        }
-    }
-
-    return -1;
+    return added;
 }
 
-int Database::isScoreAlreadyInDB(u64 unix_timestamp, const MD5Hash &map_hash) {
+int Database::isScoreAlreadyInDB(const MD5Hash &map_hash, u64 unix_timestamp, const std::string &playerName) {
     Sync::shared_lock lock(this->scores_mtx);
 
     // operator[] might add a new entry
@@ -557,7 +546,7 @@ int Database::isScoreAlreadyInDB(u64 unix_timestamp, const MD5Hash &map_hash) {
 
     for(int existing_pos = -1; const auto &existing : scoreit->second) {
         existing_pos++;
-        if(existing.unixTimestamp == unix_timestamp) {
+        if(existing.unixTimestamp == unix_timestamp && existing.playerName == playerName) {
             // Score has already been added
             return existing_pos;
         }
@@ -572,7 +561,7 @@ bool Database::addScoreRaw(const FinishedScore &score) {
     int existing_pos{-1};
     bool overwrite{false};
 
-    if((existing_pos = this->isScoreAlreadyInDB(score.unixTimestamp, score.beatmap_hash)) >= 0) {
+    if((existing_pos = this->isScoreAlreadyInDB(score.beatmap_hash, score.unixTimestamp, score.playerName)) >= 0) {
         // a bit hacky, but allow overwriting mcosu scores with peppy/neosu scores
         // otherwise scores imported to mcosu from stable will be marked as "from mcosu"
         // which we consider to never have a replay available
@@ -607,12 +596,13 @@ bool Database::addScoreRaw(const FinishedScore &score) {
     return true;
 }
 
-void Database::deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp) {
+void Database::deleteScore(const FinishedScore &scoreToDelete) {
+    if(scoreToDelete.beatmap_hash.empty()) return;
+
     Sync::unique_lock lock(this->scores_mtx);
-    if(const auto &scoreit = this->scores.find(beatmapMD5Hash); scoreit != this->scores.end()) {
-        if(std::erase_if(scoreit->second, [scoreUnixTimestamp](const auto &sc) -> bool {
-               return sc.unixTimestamp == scoreUnixTimestamp;
-           }) > 0) {
+    if(const auto &scoreit = this->scores.find(scoreToDelete.beatmap_hash); scoreit != this->scores.end()) {
+        if(std::erase_if(scoreit->second,
+                         [scoreToDelete](const auto &existing) -> bool { return scoreToDelete == existing; })) {
             this->scores_changed.store(true, std::memory_order_release);
         }
     }
@@ -2178,8 +2168,8 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                     /* isImportedLegacyScore = */ dbr.skip<uint8_t>();  // too lazy to handle this logic
                 }
                 const auto unixTimestamp = dbr.read<uint64_t>();
-                if(this->isScoreAlreadyInDB(unixTimestamp, md5hash) >= 0) {
-                    dbr.skip_string();  // playerName
+                const std::string playerName{dbr.read_string()};
+                if(this->isScoreAlreadyInDB(md5hash, unixTimestamp, playerName) >= 0) {
                     u32 bytesToSkipUntilNextScore = 0;
                     bytesToSkipUntilNextScore +=
                         (sizeof(uint16_t) * 8) + (sizeof(int64_t)) + (sizeof(int32_t)) + (sizeof(f32) * 12);
@@ -2194,8 +2184,6 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                 }
 
                 // default
-                const std::string playerName{dbr.read_string()};
-
                 const auto num300s = dbr.read<uint16_t>();
                 const auto num100s = dbr.read<uint16_t>();
                 const auto num50s = dbr.read<uint16_t>();

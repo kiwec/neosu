@@ -104,7 +104,7 @@ void UserStatsScreen::rebuildScoreButtons() {
             SongDifficultyButton *diff_btn = ui->getSongBrowser()->getDiffButtonByHash(btnsc.beatmap_hash);
             ui->setScreen(ui->getSongBrowser());
             ui->getSongBrowser()->selectSongButton(diff_btn);
-            ui->getSongBrowser()->highlightScore(btnsc.unixTimestamp);
+            ui->getSongBrowser()->highlightScore(btnsc);
         }));
 
         m_scoreButtons.push_back(button);

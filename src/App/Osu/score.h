@@ -3,6 +3,7 @@
 #include "Replay.h"
 
 #include <vector>
+#include <unordered_set>
 
 class ConVar;
 class DatabaseBeatmap;
@@ -29,6 +30,21 @@ enum class ScoreGrade : uint8_t {
 };
 
 struct FinishedScore {
+    [[nodiscard]] inline bool operator==(const FinishedScore &c) const {
+        return unixTimestamp == c.unixTimestamp &&      //
+               score == c.score &&                      //
+               mods == c.mods &&                        //
+               beatmap_hash == c.beatmap_hash &&        //
+               bancho_score_id == c.bancho_score_id &&  //
+               player_id == c.player_id &&              //
+               num300s == c.num300s &&                  //
+               num100s == c.num100s &&                  //
+               num50s == c.num50s &&                    //
+               numMisses == c.numMisses &&              //
+               comboMax == c.comboMax &&                //
+               playerName == c.playerName;              //
+    }
+
     MD5Hash beatmap_hash;
     Replay::Mods mods;
 
@@ -93,6 +109,8 @@ struct FinishedScore {
     // float ppv3_score = 0.f;
     // std::string ppv3_algorithm;
 
+    [[nodiscard]] std::string dbgstr() const;
+
     [[nodiscard]] inline bool is_peppy_imported() const { return this->server == "ppy.sh"; }
     [[nodiscard]] inline bool is_mcosu_imported() const { return this->client.starts_with("mcosu"); }
 
@@ -109,6 +127,26 @@ struct FinishedScore {
         }
     }
 };
+
+namespace std {
+template <>
+struct hash<FinishedScore> {
+    using is_avalanching = void;
+    size_t operator()(const FinishedScore &s) const noexcept {
+        size_t h = hash<MD5Hash>{}(s.beatmap_hash);
+
+        auto combine = [&h](size_t v) { h ^= v + 0x9e3779b9 + (h << 6) + (h >> 2); };
+
+        combine(s.unixTimestamp);
+        combine(static_cast<size_t>(s.mods.flags));
+        combine(s.score);
+        combine(static_cast<size_t>(s.bancho_score_id));
+        combine(hash<string_view>{}(s.playerName));
+
+        return h;
+    }
+};
+}  // namespace std
 
 class LiveScore {
    public:

@@ -3886,8 +3886,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
         }
 
         if(score.passed || cv::save_failed_scores.getBool()) {
-            int scoreIndex = db->addScore(score);
-            if(scoreIndex == -1) {
+            if(db->addScore(score)) {
                 ui->getNotificationOverlay()->addToast(US_("Failed saving score!"), ERROR_TOAST);
             }
         }

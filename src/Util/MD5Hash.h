@@ -64,6 +64,17 @@ struct hash<MD5Hash> {
 }  // namespace std
 
 #ifndef BUILD_TOOLS_ONLY
+
+namespace fmt {
+template <>
+struct formatter<MD5Hash> : formatter<string_view> {
+    template <typename FormatContext>
+    auto format(const MD5Hash &ustr, FormatContext &ctx) const noexcept {
+        return formatter<string_view>::format(ustr.string(), ctx);
+    }
+};
+}  // namespace fmt
+
 template <>
 struct Hash::flat::hash<MD5Hash> {
     using is_avalanching = void;
