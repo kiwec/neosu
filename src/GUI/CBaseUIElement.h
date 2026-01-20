@@ -218,10 +218,7 @@ class CBaseUIElement : public KeyboardListener {
 
     bool bHandleLeftMouse = true;
     bool bHandleRightMouse = false;
-
    private:
     uint8_t mouseInsideCheck{0};
     uint8_t mouseUpCheck{0};
-
-    mutable uint64_t lastDumpFrame{0};  // for avoiding debug spam
 };

@@ -90,28 +90,25 @@ void CBaseUIElement::update(CBaseUIEventCtx &c) {
 }
 
 void CBaseUIElement::dumpElem() const {
+    using namespace CBaseUIDebug;
     size_t currentFrame = engine->getFrameCount();
-
-    if(currentFrame != this->lastDumpFrame) {
-        if(this->lastDumpFrame > 0) {
-            Logger::logRaw(R"(frame: {}
-sName: {}
-bVisible: {}
-bActive: {}
-bBusy: {}
-bEnabled: {}
-bKeepActive: {}
-bMouseInside: {}
-bHandleLeftMouse: {}
-bHandleRightMouse: {}
-vPos: {}
-vmPos: {},
-mouseInsideCheck: {:02b},
-mouseUpCheck: {:02b})",
-                           currentFrame, this->sName, this->bVisible, this->bActive, this->bBusy, this->bEnabled,
-                           this->bKeepActive, this->bMouseInside, this->bHandleLeftMouse, this->bHandleRightMouse,
-                           this->rect, this->relRect, this->mouseInsideCheck, this->mouseUpCheck);
-        }
-        this->lastDumpFrame = currentFrame;
-    }
+    Logger::logRaw(R"(==== UI ELEMENT {:p} DEBUG ====
+frame:              {}
+sName:              {}
+bVisible:           {}
+bActive:            {}
+bBusy:              {}
+bEnabled:           {}
+bKeepActive:        {}
+bMouseInside:       {}
+bHandleLeftMouse:   {}
+bHandleRightMouse:  {}
+rect:               {}
+relRect:            {}
+mouseInsideCheck:   {:02b}
+mouseUpCheck:       {:02b}
+==== END UI ELEMENT DEBUG ====)",
+                   fmt::ptr(this), currentFrame, this->sName, this->bVisible, this->bActive, this->bBusy,
+                   this->bEnabled, this->bKeepActive, this->bMouseInside, this->bHandleLeftMouse,
+                   this->bHandleRightMouse, this->rect, this->relRect, this->mouseInsideCheck, this->mouseUpCheck);
 }

@@ -74,35 +74,30 @@ void flush() noexcept;
 // is stdout a terminal (util func.)
 [[nodiscard]] bool isaTTY() noexcept;
 
-// logging with format strings
+// _cf strings
 template <typename S, typename... Args>
 inline void log(const char *filename, int line, const char *funcname, S &&fmt, Args &&...args) noexcept
     requires(std::is_base_of_v<fmt::compiled_string, S> && sizeof...(Args) > 0)
 {
     // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
     if(likely(_detail::g_initialized))
-        _detail::log_int(filename, line, funcname, _detail::log_level::info,
-                         fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...));
+        _detail::log_int(filename, line, funcname, _detail::log_level::info, fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...));
     else
         printf("%s\n", fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...).c_str());
 }
 
-// not sure what template coaxing needs to be done to avoid duplicating these, but the above works for 
-// compile time format strings (_cf suffixed), but the below doesn't
-template <typename... Args>
-inline void log(const char *filename, int line, const char *funcname, const fmt::format_string<Args...> &fmt,
-                Args &&...args) noexcept
-    requires(sizeof...(Args) > 0)
+// fmt strings
+template <typename... T>
+inline void log(const char *filename, int line, const char *funcname, fmt::format_string<T...> &&fmt, T &&...args) noexcept
+    requires(sizeof...(T) > 0)
 {
-    // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
     if(likely(_detail::g_initialized))
         _detail::log_int(filename, line, funcname, _detail::log_level::info,
-                         fmt::format(fmt, std::forward<Args>(args)...));
+                            fmt::vformat(std::move(fmt), fmt::vargs<T...>{{std::forward<T>(args)...}}));
     else
-        printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
+        printf("%s\n", fmt::vformat(std::move(fmt), fmt::vargs<T...>{{std::forward<T>(args)...}}).c_str());
 }
 
-// same but for logging strings/literals
 inline void log(const char *filename, int line, const char *funcname, std::string_view str) noexcept {
     if(likely(_detail::g_initialized))
         _detail::log_int(filename, line, funcname, _detail::log_level::info, str);
@@ -111,6 +106,8 @@ inline void log(const char *filename, int line, const char *funcname, std::strin
 }
 
 // raw logging without any context
+
+// _cf strings
 template <typename S, typename... Args>
 inline void logRaw(S &&fmt, Args &&...args) noexcept
     requires(std::is_base_of_v<fmt::compiled_string, S> && sizeof...(Args) > 0)
@@ -121,16 +118,19 @@ inline void logRaw(S &&fmt, Args &&...args) noexcept
         printf("%s\n", fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...).c_str());
 }
 
-template <typename... Args>
-inline void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept
-    requires(sizeof...(Args) > 0)
+// fmt strings
+template <typename... T>
+inline void logRaw(fmt::format_string<T...> &&fmt, T &&...args) noexcept
+    requires(sizeof...(T) > 0)
 {
     if(likely(_detail::g_initialized))
-        _detail::logRaw_int(_detail::log_level::info, fmt::format(fmt, std::forward<Args>(args)...));
+        _detail::logRaw_int(_detail::log_level::info,
+                            fmt::vformat(std::move(fmt), fmt::vargs<T...>{{std::forward<T>(args)...}}));
     else
-        printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
+        printf("%s\n", fmt::vformat(std::move(fmt), fmt::vargs<T...>{{std::forward<T>(args)...}}).c_str());
 }
 
+// standalone strings
 inline void logRaw(std::string_view str) noexcept {
     if(likely(_detail::g_initialized))
         _detail::logRaw_int(_detail::log_level::info, str);
