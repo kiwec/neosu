@@ -139,8 +139,6 @@ class Osu final : public App, public MouseListener {
     }
     inline void setShouldPauseBGThreads(bool pause) { this->pause_bg_threads.store(pause, std::memory_order_release); }
 
-    [[nodiscard]] bool shouldDrawRuntimeInfo() const;
-
     [[nodiscard]] inline McRect getVirtScreenRect() const { return this->internalRect; }
     [[nodiscard]] inline vec2 getVirtScreenSize() const { return this->internalRect.getSize(); }
     [[nodiscard]] inline int getVirtScreenWidth() const { return (int)this->internalRect.getWidth(); }
@@ -295,7 +293,6 @@ class Osu final : public App, public MouseListener {
     bool bModAutoTemp{false};  // when ctrl+clicking a map, the auto mod should disable itself after the map finishes
 
     // XXX: dirty
-    void drawRuntimeInfo();
     float fQuickRetryTime{0.f};
     bool bQuickRetryDown{false};
     bool bSkinLoadScheduled{false};
@@ -336,7 +333,6 @@ class Osu final : public App, public MouseListener {
     bool bWasBossKeyPaused{false};
     bool bSkinLoadWasReload{false};
     bool bFontReloadScheduled{false};
-    bool bDrawBuildInfo{true};
 
     friend class BeatmapInterface;
     bool bIsPlayingASelectedBeatmap{false};

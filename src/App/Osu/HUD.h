@@ -47,6 +47,7 @@ class HUD final : public UIScreen {
 
     void draw() override;
     void drawDummy();
+    void drawRuntimeInfo();
 
     void drawCursor(vec2 pos, float alphaMultiplier = 1.0f, bool secondTrail = false, bool updateAndDrawTrail = true);
     void drawCursorTrail(
@@ -118,8 +119,8 @@ class HUD final : public UIScreen {
         float time;
     };
 
-    float getCursorScaleFactor();
-    void addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos);
+    static float getCursorScaleFactor();
+    void addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) const;
 
    private:
     std::vector<SCORE_ENTRY> getCurrentScores();
@@ -182,9 +183,11 @@ class HUD final : public UIScreen {
                                f32 beatmapPercentFinishedPlayable, const std::vector<BREAK> &breaks);
     void drawInputOverlay(int numK1, int numK2, int numM1, int numM2);
 
-    float getCursorTrailScaleFactor();
+    [[nodiscard]] bool shouldDrawRuntimeInfo() const;
 
-    float getScoreScale();
+    static float getCursorTrailScaleFactor();
+
+    static float getScoreScale();
 
     McFont *tempFont;
 

@@ -242,7 +242,8 @@ void UI::draw() {
         this->hud->drawCursor(mouse->getPos());
     }
 
-    osu->drawRuntimeInfo();
+    // draw build info on top of everything else
+    this->hud->drawRuntimeInfo();
 
     // if we are not using the native window resolution
     if(isBufferedDraw) {

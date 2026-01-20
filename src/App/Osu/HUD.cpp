@@ -27,13 +27,13 @@
 #include "Skin.h"
 #include "SkinImage.h"
 #include "SongBrowser/SongBrowser.h"
+#include "SoundEngine.h"
 #include "UI.h"
 #include "UIAvatar.h"
 #include "VertexArrayObject.h"
 #include "score.h"
 
 #include "shaders.h"
-
 
 HUD::HUD() : UIScreen() {
     // resources
@@ -333,8 +333,7 @@ void HUD::drawDummy() {
                           .ppfc = 1234.f,
                           .hitWindow300 = 25.f,
                           .hitdeltaMin = -5,
-                          .hitdeltaMax = 15}
-    );
+                          .hitdeltaMax = 15});
 
     this->drawWarningArrows();
 
@@ -425,9 +424,9 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
         const bool smoothCursorTrail =
             osu->getSkin()->useSmoothCursorTrail() || cv::cursor_trail_smooth_force.getBool();
 
-        const f32 trailWidth = trailImage->getWidth() * this->getCursorTrailScaleFactor() * cv::cursor_scale.getFloat();
+        const f32 trailWidth = trailImage->getWidth() * HUD::getCursorTrailScaleFactor() * cv::cursor_scale.getFloat();
         const f32 trailHeight =
-            trailImage->getHeight() * this->getCursorTrailScaleFactor() * cv::cursor_scale.getFloat();
+            trailImage->getHeight() * HUD::getCursorTrailScaleFactor() * cv::cursor_scale.getFloat();
 
         if(smoothCursorTrail) this->cursorTrailVAO->clear();
 
@@ -511,7 +510,7 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
 
 void HUD::drawCursorTrailRaw(f32 alpha, vec2 pos) {
     const auto &trailImage = osu->getSkin()->i_cursor_trail;
-    const f32 scale = this->getCursorTrailScaleFactor();
+    const f32 scale = HUD::getCursorTrailScaleFactor();
     const f32 animatedScale =
         scale *
         (osu->getSkin()->o_cursor_expand && cv::cursor_trail_expand.getBool() ? this->fCursorExpandAnim : 1.0f) *
@@ -613,7 +612,7 @@ void HUD::drawFps() {
 
     // console font does not scale with DPI
     static const int runtimeConfigHeight = (int)(engine->getConsoleFont()->getHeight() * 1.25f);
-    const int belowPadding = osu->shouldDrawRuntimeInfo() ? runtimeConfigHeight : 0;
+    const int belowPadding = this->shouldDrawRuntimeInfo() ? runtimeConfigHeight : 0;
 
     // shadow
     g->setColor(0xff000000);
@@ -1790,7 +1789,8 @@ void HUD::drawStatistics(HUDStats s) const {
                          cv::hud_statistics_misses_offset_y.getInt());
 
         if(cv::draw_statistics_sliderbreaks.getBool())
-            addStatistic(fmt::format("SBrk: {:d}"_cf, s.sliderbreaks), cv::hud_statistics_sliderbreaks_offset_x.getInt(),
+            addStatistic(fmt::format("SBrk: {:d}"_cf, s.sliderbreaks),
+                         cv::hud_statistics_sliderbreaks_offset_x.getInt(),
                          cv::hud_statistics_sliderbreaks_offset_y.getInt());
 
         if(cv::draw_statistics_maxpossiblecombo.getBool())
@@ -2320,7 +2320,7 @@ float HUD::getCursorScaleFactor() {
     return ((float)osu->getVirtScreenHeight() / spriteRes) * mapScale;
 }
 
-float HUD::getCursorTrailScaleFactor() { return this->getCursorScaleFactor() / osu->getSkin()->i_cursor_trail.scale(); }
+float HUD::getCursorTrailScaleFactor() { return HUD::getCursorScaleFactor() / osu->getSkin()->i_cursor_trail.scale(); }
 
 float HUD::getScoreScale() {
     return osu->getImageScale(osu->getSkin()->i_scores[0], 13 * 1.5f) * cv::hud_scale.getFloat() *
@@ -2460,7 +2460,7 @@ void HUD::animateKiExplode() {
     // if not additive: fade from 1.0 alpha to 0, scale from 1.0 to 1.6
 }
 
-void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) {
+void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) const {
     if(pos.x < -osu->getVirtScreenWidth() || pos.x > osu->getVirtScreenWidth() * 2 ||
        pos.y < -osu->getVirtScreenHeight() || pos.y > osu->getVirtScreenHeight() * 2)
         return;  // fuck oob trails
@@ -2473,7 +2473,7 @@ void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) {
         (osu->getSkin()->o_cursor_expand && cv::cursor_trail_expand.getBool() ? this->fCursorExpandAnim : 1.0f) *
         cv::cursor_trail_scale.getFloat();
     const float trailWidth =
-        trailImage->getWidth() * this->getCursorTrailScaleFactor() * scaleAnim * cv::cursor_scale.getFloat();
+        trailImage->getWidth() * HUD::getCursorTrailScaleFactor() * scaleAnim * cv::cursor_scale.getFloat();
 
     CURSORTRAIL ct;
     ct.pos = pos;
@@ -2556,4 +2556,66 @@ void HUD::updateScoringMetric() {
             this->scoring_metric = WinCondition::SCOREV1;
         }
     }
+}
+
+bool HUD::shouldDrawRuntimeInfo() const {
+    if(osu->isInPlayModeAndNotPaused()) return false;
+    return cv::draw_runtime_info.getBool();
+}
+
+void HUD::drawRuntimeInfo() {
+    if(!this->shouldDrawRuntimeInfo()) return;
+
+    // this information shouldn't scale with DPI
+    McFont *font = engine->getConsoleFont();
+
+    static const UString infoString = []() -> UString {
+        const char *osstr;
+        switch(Env::getOS()) {
+            case OS::WINDOWS:
+                osstr = "win";
+                break;
+            case OS::LINUX:
+                osstr = "lnx";
+                break;
+            case OS::WASM:
+                osstr = "wsm";
+                break;
+            case OS::MAC:
+                osstr = "mac";
+                break;
+            case OS::NONE:
+                std::unreachable();
+                break;
+        }
+
+        return fmt::format("{}.{}-{}.{}.{}",                 //
+                           cv::build_timestamp.getString(),  //
+                           osstr,                            //
+                           MC_ARCHSTR, /* e.g. x32/x64/arm64 for windows or x86/x86-64/aarch64 for non-windows */
+                           env->usingDX11() ? "dx" : "gl",  //
+                           soundEngine->getTypeId() == SoundEngine::BASS ? "bss" : "sld");
+    }();
+
+    static const int infoStringWidth = font->getStringWidth(infoString);
+    static const int fontHeight = font->getHeight();
+
+    const int shadowOffset = 1;
+
+    g->pushTransform();
+    {
+        // shadow
+        g->setColor(rgba(0, 0, 0, 100));
+
+        g->translate(osu->getVirtScreenWidth() - infoStringWidth + shadowOffset,
+                     osu->getVirtScreenHeight() - fontHeight + shadowOffset + 6);
+        g->drawString(font, infoString);
+
+        // text
+        g->setColor(rgba(255, 255, 255, 100));
+
+        g->translate(-shadowOffset, -shadowOffset);
+        g->drawString(font, infoString);
+    }
+    g->popTransform();
 }
