@@ -103,7 +103,7 @@ class ModSelector final : public UIScreen {
 
     UIButton *addActionButton(const UString &text);
 
-    void close(bool toggleKey);
+    void close(bool force);
 
     float fAnimation;
     float fExperimentalAnimation;

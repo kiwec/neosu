@@ -183,6 +183,7 @@ neosu_SOURCES = \
 	src/Util/Quaternion.cpp \
 	src/Util/Rect.cpp \
 	src/Util/SString.cpp \
+	src/Util/SyncPrimitives/SyncJthread.cpp \
 	src/Util/UString.cpp \
 	src/Util/crypto.cpp \
 	src/Util/dynutils.cpp \

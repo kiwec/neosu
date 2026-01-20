@@ -103,9 +103,14 @@ class UString {
 
     // member functions
     UString(const UString &ustr) noexcept = default;
-    UString(UString &&ustr) noexcept = default;
+    UString(UString &&ustr) noexcept : sUnicode(std::move(ustr.sUnicode)), sUtf8(std::move(ustr.sUtf8)) {}
     UString &operator=(const UString &ustr) noexcept = default;
-    UString &operator=(UString &&ustr) noexcept = default;
+    UString &operator=(UString &&ustr) noexcept {
+        if(this == &ustr) return *this;
+        sUnicode = std::move(ustr.sUnicode);
+        sUtf8 = std::move(ustr.sUtf8);
+        return *this;
+    }
     UString &operator=(std::nullptr_t) noexcept;
     ~UString() noexcept = default;
 

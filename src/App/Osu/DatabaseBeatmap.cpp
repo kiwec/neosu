@@ -93,6 +93,14 @@ u32 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::getMaxComboAtIndex(uSz index) const {
     return maxComboAtIndex.back();
 }
 
+DatabaseBeatmap::SLIDER::SLIDER() noexcept = default;
+DatabaseBeatmap::SLIDER::~SLIDER() noexcept = default;
+
+DatabaseBeatmap::SLIDER::SLIDER(const SLIDER &) noexcept = default;
+DatabaseBeatmap::SLIDER &DatabaseBeatmap::SLIDER::operator=(const SLIDER &) noexcept = default;
+DatabaseBeatmap::SLIDER::SLIDER(SLIDER &&) noexcept = default;
+DatabaseBeatmap::SLIDER &DatabaseBeatmap::SLIDER::operator=(SLIDER &&) noexcept = default;
+
 #ifndef BUILD_TOOLS_ONLY
 
 bool DatabaseBeatmap::prefer_cjk_names() { return cv::prefer_cjk.getBool(); }

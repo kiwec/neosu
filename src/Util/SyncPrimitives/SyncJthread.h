@@ -1,4 +1,4 @@
-// Copyright (c) 2025, WH, All rights reserved.
+// Copyright (c) 2025-2026, WH, All rights reserved.
 #pragma once
 // jthreads (+ stop token support)
 
@@ -15,11 +15,19 @@ using jthread = std::jthread;
 #else
 #include "SyncStoptoken.h"
 
-#include <SDL3/SDL_thread.h>
-#include <SDL3/SDL_cpuinfo.h>
-
 #include <functional>
-#include <cassert>
+
+// fwd decls to avoid including SDL things here
+#ifndef CDECLCALL
+#if defined(MCENGINE_PLATFORM_WINDOWS) && !defined(__GNUC__)
+#define CDECLCALL __cdecl
+#else
+#define CDECLCALL
+#endif
+#endif
+
+typedef struct SDL_Thread SDL_Thread;
+typedef uint64_t SDL_ThreadID;
 
 namespace Sync {
 
@@ -30,6 +38,8 @@ class sdl_jthread {
    private:
     SDL_Thread* m_thread{nullptr};
     stop_source m_stop_source;
+
+    static SDL_Thread* create_thread_internal(void* ctx, void* entry) noexcept;
 
    public:
     using id = SDL_ThreadID;
@@ -45,7 +55,7 @@ class sdl_jthread {
             std::tuple<std::decay_t<Args>...> args;
             stop_token token;
 
-            static int SDLCALL invoke(void* data) {
+            static int CDECLCALL invoke(void* data) {
                 auto* ctx = static_cast<thread_context*>(data);
 
                 // invoke with or without stop_token depending on signature
@@ -64,23 +74,14 @@ class sdl_jthread {
         };
 
         // allocate the context/arg wrapper
-        auto* ctx = new thread_context{std::forward<F>(f), std::make_tuple(std::forward<Args>(args)...),
-                                       m_stop_source.get_token()};
+        auto* ctx = new thread_context{
+            std::forward<F>(f), std::make_tuple(std::forward<Args>(args)...), m_stop_source.get_token()};
 
-        auto props = SDL_CreateProperties();
-        assert(props);
-
-        SDL_SetPointerProperty(props, SDL_PROP_THREAD_CREATE_ENTRY_FUNCTION_POINTER, (void*)&thread_context::invoke);
-        SDL_SetPointerProperty(props, SDL_PROP_THREAD_CREATE_USERDATA_POINTER, ctx);
-        SDL_SetNumberProperty(props, SDL_PROP_THREAD_CREATE_STACKSIZE_NUMBER, 8LL * 1024 * 1024); /* 8MB */
-
-        m_thread = SDL_CreateThreadWithProperties(props);
+        m_thread = create_thread_internal(ctx, (void*)&thread_context::invoke);
 
         if(!m_thread) {
             delete ctx;  // cleanup on failure
         }
-
-        SDL_DestroyProperties(props);
     }
 
     ~sdl_jthread() {
@@ -117,24 +118,17 @@ class sdl_jthread {
         m_stop_source.swap(other.m_stop_source);
     }
 
-    [[nodiscard]] bool joinable() const noexcept {
-        SDL_ThreadState state = SDL_THREAD_UNKNOWN;
-        return m_thread && ((state = SDL_GetThreadState(m_thread)) == SDL_THREAD_ALIVE || state == SDL_THREAD_COMPLETE);
-    }
+    [[nodiscard]] bool joinable() const noexcept;
 
-    void join() {
-        assert(joinable());
-        SDL_WaitThread(m_thread, nullptr);
-        m_thread = nullptr;
-    }
+    void join();
 
-    void detach() { SDL_DetachThread(m_thread); }
+    void detach();
 
-    [[nodiscard]] id get_id() const noexcept { return SDL_GetThreadID(m_thread); }
+    [[nodiscard]] id get_id() const noexcept;
 
     [[nodiscard]] native_handle_type native_handle() { return m_thread; }
 
-    [[nodiscard]] static unsigned int hardware_concurrency() noexcept { return SDL_GetNumLogicalCPUCores(); }
+    [[nodiscard]] static unsigned int hardware_concurrency() noexcept;
 
     // stop token functionality
     [[nodiscard]] stop_source& get_stop_source() noexcept { return m_stop_source; }

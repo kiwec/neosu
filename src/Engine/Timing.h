@@ -12,8 +12,6 @@
 #include "BaseEnvironment.h"
 #include "types.h"
 
-#include <SDL3/SDL_timer.h>
-
 #include <thread>
 #include <concepts>
 
@@ -50,12 +48,7 @@ inline constexpr u64 US_PER_MS = 1'000;
 inline constexpr u64 MS_PER_SECOND = 1'000;
 
 namespace detail {
-inline INLINE_BODY void yield_internal() noexcept {
-    if constexpr(Env::cfg(OS::WASM))
-        SDL_DelayNS(0);
-    else
-        std::this_thread::yield();
-}
+void yield_internal() noexcept;
 
 template <u64 Ratio>
 static constexpr forceinline INLINE_BODY u64 convert_time(u64 ns) noexcept {
@@ -73,7 +66,7 @@ void sleep_ns_precise_internal(u64 ns) noexcept;
 
 }  // namespace detail
 
-inline INLINE_BODY u64 getTicksNS() noexcept { return SDL_GetTicksNS(); }
+[[nodiscard]] u64 getTicksNS() noexcept;
 
 static constexpr forceinline INLINE_BODY u64 ticksNSToMS(u64 ns) noexcept {
     return detail::convert_time<NS_PER_MS>(ns);

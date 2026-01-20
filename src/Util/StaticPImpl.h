@@ -30,11 +30,14 @@ class StaticPImpl {
 #if defined(_MSC_VER) && !defined(__clang__)
 // a bunch of common stdlib things are annoyingly way bigger on msvc
 // so just use a flat 1.25x multiplier (since its not even a "real" platform we support)
-#define MSVC_BLOAT_ACCOMODATION_MULTIPLIER 1.25
+#define BLOAT_ACCOMODATION_MULTIPLIER 1.25
+#elif defined(__GNUC__) && defined(__GLIBCXX__) && defined(_GLIBCXX_DEBUG)
+// ABI is different and stuff is larger with _GLIBCXX_DEBUG
+#define BLOAT_ACCOMODATION_MULTIPLIER 1.25
 #else
-#define MSVC_BLOAT_ACCOMODATION_MULTIPLIER 1
+#define BLOAT_ACCOMODATION_MULTIPLIER 1
 #endif
-#define PMUL_(real_) (size_t)((real_) * MSVC_BLOAT_ACCOMODATION_MULTIPLIER)
+#define PMUL_(real_) (size_t)((real_) * BLOAT_ACCOMODATION_MULTIPLIER)
     alignas(BufferAlignment) unsigned char m_buffer[PMUL_(RealImplSize)];
 
     void (*m_destructor)(void *);
@@ -102,6 +105,6 @@ class StaticPImpl {
 };
 
 #undef PMUL_
-#undef MSVC_BLOAT_ACCOMODATION_MULTIPLIER
+#undef BLOAT_ACCOMODATION_MULTIPLIER
 
 #endif

@@ -1,6 +1,8 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #include "Timing.h"
 
+#include <SDL3/SDL_timer.h>
+
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #include "WinDebloatDefs.h"
 #include <libloaderapi.h>
@@ -13,7 +15,8 @@
 #include <cassert>
 #endif
 
-namespace Timing::detail {
+namespace Timing {
+namespace detail {
 #ifdef MCENGINE_PLATFORM_WINDOWS
 namespace {  // static
 
@@ -103,7 +106,7 @@ void init_sleeper() {
 }  // namespace
 
 void sleep_ns_internal(u64 ns) noexcept {
-    if (!s_sleeper_initialized) {
+    if(!s_sleeper_initialized) {
         s_sleeper_initialized = true;
         init_sleeper();
     }
@@ -118,7 +121,7 @@ void sleep_ns_internal(u64 ns) noexcept {
 }
 
 void sleep_ns_precise_internal(u64 ns) noexcept {
-    if (!s_sleeper_initialized) {
+    if(!s_sleeper_initialized) {
         s_sleeper_initialized = true;
         init_sleeper();
     }
@@ -150,7 +153,19 @@ void sleep_ns_precise_internal(u64 ns) noexcept {
 void sleep_ns_internal(u64 ns) noexcept { SDL_DelayNS(ns); }
 void sleep_ns_precise_internal(u64 ns) noexcept { SDL_DelayPrecise(ns); }
 #endif
-}  // namespace Timing::detail
+
+void yield_internal() noexcept {
+    if constexpr(Env::cfg(OS::WASM))
+        SDL_DelayNS(0);
+    else
+        std::this_thread::yield();
+}
+
+}  // namespace detail
+
+u64 getTicksNS() noexcept { return SDL_GetTicksNS(); }
+
+}  // namespace Timing
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 
@@ -166,10 +181,9 @@ struct tm *localtime_x(const time_t *timer, struct tm *timebuf) {
     return timebuf;
 }
 
-errno_t ctime_x(const time_t *timer, char* buffer) {
-    if (!buffer || !timer || *timer < 0) return EINVAL;
+errno_t ctime_x(const time_t *timer, char *buffer) {
+    if(!buffer || !timer || *timer < 0) return EINVAL;
     return _ctime64_s(buffer, 26, timer);
 }
-
 
 #endif

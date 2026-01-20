@@ -787,8 +787,7 @@ AS_IF([test "x$enable_debug" = "xyes"], [
             NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -mconsole"
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -mconsole -Wl,--subsystem,console:${win_subsystem_ver}"
 
-            CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
-            CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG -g3 -ggdb3 -gdwarf-5 -Og"
+            CXXFLAGS="$CXXFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
             CFLAGS="$CFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
         ])
     ], [
@@ -801,8 +800,8 @@ AS_IF([test "x$enable_debug" = "xyes"], [
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -D_DEBUG"
     AS_IF([test -z "$CLANG"], [
         NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -Wcast-align -Wpacked-not-aligned"
-        # CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
-        # CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG"
+        CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
+        CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG"
     ])
     AC_SUBST([ENABLE_DEBUG])
     AS_IF([test "x$enable_strip" != "xyes"], [enable_strip=no]) # disable stripping unless its explicitly requested for debug (why tho?)

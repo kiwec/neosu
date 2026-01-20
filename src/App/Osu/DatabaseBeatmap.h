@@ -223,6 +223,14 @@ class DatabaseBeatmap final {
     };
 
     struct SLIDER {
+        SLIDER() noexcept; // needs extern ctors/dtors due to SLIDER_SCORING_TIME being externally defined
+        ~SLIDER() noexcept;
+
+        SLIDER(const SLIDER &) noexcept;
+        SLIDER &operator=(const SLIDER &) noexcept;
+        SLIDER(SLIDER &&) noexcept;
+        SLIDER &operator=(SLIDER &&) noexcept;
+
         int x, y;
         char type;
         int repeat;

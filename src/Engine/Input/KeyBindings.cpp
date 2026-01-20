@@ -1,5 +1,6 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "KeyBindings.h"
+#include <SDL3/SDL_scancode.h>
 
 // clang-format off
 #if defined(_WIN32)
@@ -200,3 +201,118 @@ i32 old_keycode_to_sdl_keycode(i32 key) {
 }
 
 // clang-format on
+
+// just a sanity check to make sure these stay in sync
+
+// alphabet
+static_assert((u32)KEY_A == SDL_SCANCODE_A);
+static_assert((u32)KEY_B == SDL_SCANCODE_B);
+static_assert((u32)KEY_C == SDL_SCANCODE_C);
+static_assert((u32)KEY_D == SDL_SCANCODE_D);
+static_assert((u32)KEY_E == SDL_SCANCODE_E);
+static_assert((u32)KEY_F == SDL_SCANCODE_F);
+static_assert((u32)KEY_G == SDL_SCANCODE_G);
+static_assert((u32)KEY_H == SDL_SCANCODE_H);
+static_assert((u32)KEY_I == SDL_SCANCODE_I);
+static_assert((u32)KEY_J == SDL_SCANCODE_J);
+static_assert((u32)KEY_K == SDL_SCANCODE_K);
+static_assert((u32)KEY_L == SDL_SCANCODE_L);
+static_assert((u32)KEY_M == SDL_SCANCODE_M);
+static_assert((u32)KEY_N == SDL_SCANCODE_N);
+static_assert((u32)KEY_O == SDL_SCANCODE_O);
+static_assert((u32)KEY_P == SDL_SCANCODE_P);
+static_assert((u32)KEY_Q == SDL_SCANCODE_Q);
+static_assert((u32)KEY_R == SDL_SCANCODE_R);
+static_assert((u32)KEY_S == SDL_SCANCODE_S);
+static_assert((u32)KEY_T == SDL_SCANCODE_T);
+static_assert((u32)KEY_U == SDL_SCANCODE_U);
+static_assert((u32)KEY_V == SDL_SCANCODE_V);
+static_assert((u32)KEY_W == SDL_SCANCODE_W);
+static_assert((u32)KEY_X == SDL_SCANCODE_X);
+static_assert((u32)KEY_Y == SDL_SCANCODE_Y);
+static_assert((u32)KEY_Z == SDL_SCANCODE_Z);
+
+// numbers
+static_assert((u32)KEY_0 == SDL_SCANCODE_0);
+static_assert((u32)KEY_1 == SDL_SCANCODE_1);
+static_assert((u32)KEY_2 == SDL_SCANCODE_2);
+static_assert((u32)KEY_3 == SDL_SCANCODE_3);
+static_assert((u32)KEY_4 == SDL_SCANCODE_4);
+static_assert((u32)KEY_5 == SDL_SCANCODE_5);
+static_assert((u32)KEY_6 == SDL_SCANCODE_6);
+static_assert((u32)KEY_7 == SDL_SCANCODE_7);
+static_assert((u32)KEY_8 == SDL_SCANCODE_8);
+static_assert((u32)KEY_9 == SDL_SCANCODE_9);
+
+// numpad
+static_assert((u32)KEY_NUMPAD0 == SDL_SCANCODE_KP_0);
+static_assert((u32)KEY_NUMPAD1 == SDL_SCANCODE_KP_1);
+static_assert((u32)KEY_NUMPAD2 == SDL_SCANCODE_KP_2);
+static_assert((u32)KEY_NUMPAD3 == SDL_SCANCODE_KP_3);
+static_assert((u32)KEY_NUMPAD4 == SDL_SCANCODE_KP_4);
+static_assert((u32)KEY_NUMPAD5 == SDL_SCANCODE_KP_5);
+static_assert((u32)KEY_NUMPAD6 == SDL_SCANCODE_KP_6);
+static_assert((u32)KEY_NUMPAD7 == SDL_SCANCODE_KP_7);
+static_assert((u32)KEY_NUMPAD8 == SDL_SCANCODE_KP_8);
+static_assert((u32)KEY_NUMPAD9 == SDL_SCANCODE_KP_9);
+static_assert((u32)KEY_MULTIPLY == SDL_SCANCODE_KP_MULTIPLY);
+static_assert((u32)KEY_ADD == SDL_SCANCODE_KP_PLUS);
+static_assert((u32)KEY_SEPARATOR == SDL_SCANCODE_KP_EQUALS);
+static_assert((u32)KEY_SUBTRACT == SDL_SCANCODE_KP_MINUS);
+static_assert((u32)KEY_DECIMAL == SDL_SCANCODE_KP_DECIMAL);
+static_assert((u32)KEY_DIVIDE == SDL_SCANCODE_KP_DIVIDE);
+
+// function keys
+static_assert((u32)KEY_F1 == SDL_SCANCODE_F1);
+static_assert((u32)KEY_F2 == SDL_SCANCODE_F2);
+static_assert((u32)KEY_F3 == SDL_SCANCODE_F3);
+static_assert((u32)KEY_F4 == SDL_SCANCODE_F4);
+static_assert((u32)KEY_F5 == SDL_SCANCODE_F5);
+static_assert((u32)KEY_F6 == SDL_SCANCODE_F6);
+static_assert((u32)KEY_F7 == SDL_SCANCODE_F7);
+static_assert((u32)KEY_F8 == SDL_SCANCODE_F8);
+static_assert((u32)KEY_F9 == SDL_SCANCODE_F9);
+static_assert((u32)KEY_F10 == SDL_SCANCODE_F10);
+static_assert((u32)KEY_F11 == SDL_SCANCODE_F11);
+static_assert((u32)KEY_F12 == SDL_SCANCODE_F12);
+
+// arrow keys
+static_assert((u32)KEY_LEFT == SDL_SCANCODE_LEFT);
+static_assert((u32)KEY_RIGHT == SDL_SCANCODE_RIGHT);
+static_assert((u32)KEY_UP == SDL_SCANCODE_UP);
+static_assert((u32)KEY_DOWN == SDL_SCANCODE_DOWN);
+
+// special keys
+static_assert((u32)KEY_TAB == SDL_SCANCODE_TAB);
+static_assert((u32)KEY_NUMPAD_ENTER == SDL_SCANCODE_KP_ENTER);
+static_assert((u32)KEY_ENTER == SDL_SCANCODE_RETURN);
+static_assert((u32)KEY_LSHIFT == SDL_SCANCODE_LSHIFT);
+static_assert((u32)KEY_RSHIFT == SDL_SCANCODE_RSHIFT);
+static_assert((u32)KEY_LCONTROL == SDL_SCANCODE_LCTRL);
+static_assert((u32)KEY_RCONTROL == SDL_SCANCODE_RCTRL);
+static_assert((u32)KEY_LALT == SDL_SCANCODE_LALT);
+static_assert((u32)KEY_RALT == SDL_SCANCODE_RALT);
+static_assert((u32)KEY_ESCAPE == SDL_SCANCODE_ESCAPE);
+static_assert((u32)KEY_TILDE == SDL_SCANCODE_GRAVE);
+static_assert((u32)KEY_SPACE == SDL_SCANCODE_SPACE);
+static_assert((u32)KEY_BACKSPACE == SDL_SCANCODE_BACKSPACE);
+static_assert((u32)KEY_END == SDL_SCANCODE_END);
+static_assert((u32)KEY_INSERT == SDL_SCANCODE_INSERT);
+static_assert((u32)KEY_DELETE == SDL_SCANCODE_DELETE);
+static_assert((u32)KEY_HELP == SDL_SCANCODE_HELP);
+static_assert((u32)KEY_HOME == SDL_SCANCODE_HOME);
+static_assert((u32)KEY_LSUPER == SDL_SCANCODE_LGUI);
+static_assert((u32)KEY_RSUPER == SDL_SCANCODE_RGUI);
+static_assert((u32)KEY_PAGEUP == SDL_SCANCODE_PAGEUP);
+static_assert((u32)KEY_PAGEDOWN == SDL_SCANCODE_PAGEDOWN);
+
+// media keys
+static_assert((u32)KEY_PLAY == SDL_SCANCODE_MEDIA_PLAY);
+static_assert((u32)KEY_PAUSE == SDL_SCANCODE_MEDIA_PAUSE);
+static_assert((u32)KEY_PLAYPAUSE == SDL_SCANCODE_MEDIA_PLAY_PAUSE);
+static_assert((u32)KEY_STOP == SDL_SCANCODE_MEDIA_STOP);
+static_assert((u32)KEY_PREV == SDL_SCANCODE_MEDIA_PREVIOUS_TRACK);
+static_assert((u32)KEY_NEXT == SDL_SCANCODE_MEDIA_NEXT_TRACK);
+static_assert((u32)KEY_MUTE == SDL_SCANCODE_MUTE);
+static_assert((u32)KEY_VOLUMEDOWN == SDL_SCANCODE_VOLUMEDOWN);
+static_assert((u32)KEY_VOLUMEUP == SDL_SCANCODE_VOLUMEUP);
