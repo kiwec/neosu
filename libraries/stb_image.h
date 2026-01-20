@@ -132,6 +132,27 @@ RECENT REVISION HISTORY:
 #ifndef STBI_INCLUDE_STB_IMAGE_H
 #define STBI_INCLUDE_STB_IMAGE_H
 
+// McEngine NOTE: For code completion to work in this file, these are defined to the same as in Engine/Image.cpp
+#if !defined(STB_IMAGE_IMPLEMENTATION) && \
+    (defined(_CLANGD) || defined(Q_CREATOR_RUN) || defined(__INTELLISENSE__) || defined(__CDT_PARSER__))
+
+#define STBI_NO_STDIO
+#define STBI_NO_HDR
+#define STBI_NO_PNM
+#define STBI_NO_PIC
+#define STBI_MINGW_ENABLE_SSE2
+#define STBI_MAX_DIMENSIONS (16384ULL * 16384ULL)
+
+#ifndef _DEBUG
+#define STBI_ASSERT
+#endif
+
+#define STB_IMAGE_IMPLEMENTATION
+
+// to avoid warnings about definitions in headers
+#define STBIDEF inline
+#endif
+
 // DOCUMENTATION
 //
 // Limitations:

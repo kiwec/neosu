@@ -1176,6 +1176,7 @@ void Environment::updateWindowStateCache() {
 
     // update display rect
     {
+        bool found = false;
         if(const SDL_DisplayID di = SDL_GetDisplayForWindow(m_window)) {
             const float scale = getPixelDensity();
             // fullscreen is currently buggy on mac, don't make other platforms shittier just because macos is finnicky
@@ -1186,17 +1187,23 @@ void Environment::updateWindowStateCache() {
                 if(SDL_GetDisplayUsableBounds(di, &bounds)) {
                     m_vLastKnownNativeScreenSize =
                         vec2{static_cast<float>(bounds.w), static_cast<float>(bounds.h)} * scale;
+                    found = true;
                 }
             }
 
             // GetDesktopDisplayMode should return the actual, full resolution
-            if(const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di)) {
-                m_vLastKnownNativeScreenSize = vec2{static_cast<float>(dm->w), static_cast<float>(dm->h)} * scale;
+            if(!found) {
+                if(const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di)) {
+                    m_vLastKnownNativeScreenSize = vec2{static_cast<float>(dm->w), static_cast<float>(dm->h)} * scale;
+                    found = true;
+                }
             }
         }
 
         // fallback
-        m_vLastKnownNativeScreenSize = getWindowSize();
+        if(!found) {
+            m_vLastKnownNativeScreenSize = getWindowSize();
+        }
     }
 }
 
