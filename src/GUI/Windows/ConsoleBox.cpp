@@ -135,7 +135,10 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, ""), fConsoleDelay(engine-
     cv::cmd::showconsolebox.setCallback(SA::MakeDelegate<&ConsoleBox::show>(this));
     cv::cmd::clear.setCallback(SA::MakeDelegate<&ConsoleBox::clear>(this));
 
-    Console::execConfigFile("autoexec.cfg");
+    if constexpr(Env::cfg(BUILD::DEBUG)) {
+        // don't allow this to run in release builds, because it happens before client protection mechanisms are set up
+        Console::execConfigFile("autoexec.cfg");
+    }
 }
 
 ConsoleBox::~ConsoleBox() { anim::deleteExistingAnimation(&this->fLogYPos); }

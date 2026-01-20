@@ -10,7 +10,8 @@
 #include "Logging.h"
 #include "Mouse.h"
 #include "Graphics.h"
-#include "Hashing.h"  // IWYU pragma: keep
+
+#include <unordered_set>
 
 // #include "ResourceManager.h"
 // #include "Logging.h"
@@ -27,10 +28,8 @@ u32 layeredScrollsHandledInFrame{0};
 using ScrollContainer = CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer;
 }  // namespace
 
-// unordered_dense sets allow for fast iteration speed (internal storage is a vector),
-// and relatively much faster insertion/deletion (of arbitrary elements) than a std::vector
-// so this is kind of a hack to avoid iterating over a bunch of not-visible elements
-struct ScrollContainer::VisibleSet : public Hash::flat::set<CBaseUIElement *> {};
+// this is kind of a hack to avoid iterating over a bunch of not-visible elements
+struct ScrollContainer::VisibleSet : public std::unordered_set<CBaseUIElement *> {};
 
 CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer::CBaseUIScrollViewContainer(float Xpos, float Ypos,
                                                                                              float Xsize, float Ysize,
@@ -174,8 +173,8 @@ void CBaseUIScrollView::draw() {
     // draw base frame
     if(this->bDrawFrame) {
         if(this->frameDarkColor != 0 || this->frameBrightColor != 0)
-            g->drawRect(this->getPos(), this->getSize(), this->frameDarkColor,
-                        this->frameBrightColor, this->frameBrightColor, this->frameDarkColor);
+            g->drawRect(this->getPos(), this->getSize(), this->frameDarkColor, this->frameBrightColor,
+                        this->frameBrightColor, this->frameDarkColor);
         else {
             g->setColor(this->frameColor);
             g->drawRect(this->getPos(), this->getSize());
@@ -184,10 +183,10 @@ void CBaseUIScrollView::draw() {
 
     // draw elements & scrollbars
     if(this->bHorizontalClipping || this->bVerticalClipping) {
-        auto clip_rect =
-            McRect(this->bHorizontalClipping ? this->getPos().x + 1 : 0, this->bVerticalClipping ? this->getPos().y + 2 : 0,
-                   this->bHorizontalClipping ? this->getSize().x - 1 : engine->getScreenWidth(),
-                   this->bVerticalClipping ? this->getSize().y - 1 : engine->getScreenHeight());
+        auto clip_rect = McRect(this->bHorizontalClipping ? this->getPos().x + 1 : 0,
+                                this->bVerticalClipping ? this->getPos().y + 2 : 0,
+                                this->bHorizontalClipping ? this->getSize().x - 1 : engine->getScreenWidth(),
+                                this->bVerticalClipping ? this->getSize().y - 1 : engine->getScreenHeight());
         g->pushClipRect(clip_rect);
     }
 
@@ -431,10 +430,11 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
         } else {
             // debugLog("scrollbar scrolling movement not vertical scrolling");
 
-            const f64 percent = std::clamp<f64>((curMousePos.x - this->getPos().x - this->horizontalScrollbar.getHeight() -
-                                                 this->horizontalScrollbar.getWidth() - this->vMouseBackup.x - 1.0) /
-                                                    (this->getSize().x - 2.0 * this->horizontalScrollbar.getHeight()),
-                                                0.0, 1.0);
+            const f64 percent =
+                std::clamp<f64>((curMousePos.x - this->getPos().x - this->horizontalScrollbar.getHeight() -
+                                 this->horizontalScrollbar.getWidth() - this->vMouseBackup.x - 1.0) /
+                                    (this->getSize().x - 2.0 * this->horizontalScrollbar.getHeight()),
+                                0.0, 1.0);
             this->scrollToXInt(-this->vScrollSize.x * percent, true, false);
         }
     }
@@ -641,12 +641,12 @@ void CBaseUIScrollView::updateClipping() {
     const uSz prevTotalSize = this->previousClippingTotalElements;
     this->previousClippingTotalElements = elements.size();
 
-    const bool useCache = this->bVerticalScrolling &&                                          //
-                          visibleElements->size() > 2 &&                                       // sanity checks
-                          elements.size() > 0 &&                                               //
-                          prevVisibleSize > 0 &&                                               //
-                          prevVisibleSize == visibleElements->size() &&                        //
-                          prevTotalSize == elements.size() &&                                  //
+    const bool useCache = this->bVerticalScrolling &&                                              //
+                          visibleElements->size() > 2 &&                                           // sanity checks
+                          elements.size() > 0 &&                                                   //
+                          prevVisibleSize > 0 &&                                                   //
+                          prevVisibleSize == visibleElements->size() &&                            //
+                          prevTotalSize == elements.size() &&                                      //
                           !(2.f * this->getSize().y >= -this->vScrollPos.y ||                      // overscroll, top
                             2.f * this->getSize().y >= this->vScrollPos.y + this->vScrollSize.y);  // overscroll, bottom
     // don't use cached clipping near top/bottom bounds because we might have set some elements as invisible without replacing them
@@ -721,11 +721,12 @@ void CBaseUIScrollView::updateScrollbars() {
             std::clamp<f64>(std::max(verticalHeightPercent * this->getSize().y, verticalBlockWidth) * overscroll,
                             verticalBlockWidth, std::max((f64)this->getSize().y, verticalBlockWidth));
 
-        this->verticalScrollbar = McRect(
-            this->getPos().x + this->getSize().x - (verticalBlockWidth * this->fScrollbarSizeMultiplier),
-            this->getPos().y + (verticalPercent * (this->getSize().y - (verticalBlockWidth * 2.0) - verticalBlockHeight) +
-                            verticalBlockWidth + 1.0),
-            (verticalBlockWidth * this->fScrollbarSizeMultiplier), verticalBlockHeight);
+        this->verticalScrollbar =
+            McRect(this->getPos().x + this->getSize().x - (verticalBlockWidth * this->fScrollbarSizeMultiplier),
+                   this->getPos().y +
+                       (verticalPercent * (this->getSize().y - (verticalBlockWidth * 2.0) - verticalBlockHeight) +
+                        verticalBlockWidth + 1.0),
+                   (verticalBlockWidth * this->fScrollbarSizeMultiplier), verticalBlockHeight);
         if(this->bScrollbarOnLeft) {
             this->verticalScrollbar.setMinX(this->getPos().x);
             this->verticalScrollbar.setMaxX(verticalBlockWidth * this->fScrollbarSizeMultiplier);
@@ -743,8 +744,9 @@ void CBaseUIScrollView::updateScrollbars() {
         const f64 horizontalBlockHeight = std::max(horizontalHeightPercent * this->getSize().x, horizontalBlockWidth);
 
         this->horizontalScrollbar = McRect(
-            this->getPos().x + (horizontalPercent * (this->getSize().x - (horizontalBlockWidth * 2.0) - horizontalBlockHeight) +
-                            horizontalBlockWidth + 1.0),
+            this->getPos().x +
+                (horizontalPercent * (this->getSize().x - (horizontalBlockWidth * 2.0) - horizontalBlockHeight) +
+                 horizontalBlockWidth + 1.0),
             this->getPos().y + this->getSize().y - horizontalBlockWidth, horizontalBlockHeight, horizontalBlockWidth);
     }
 }
@@ -771,8 +773,10 @@ CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border) {
 
     // TODO: duplicate code, ref onResized(), but can't call onResized() due to possible endless recursion if
     // setScrollSizeToContent() within onResized() HACKHACK: shit code
-    if(this->bVerticalScrolling && this->vScrollSize.y < this->getSize().y && this->vScrollPos.y != 1) this->scrollToY(1);
-    if(this->bHorizontalScrolling && this->vScrollSize.x < this->getSize().x && this->vScrollPos.x != 1) this->scrollToX(1);
+    if(this->bVerticalScrolling && this->vScrollSize.y < this->getSize().y && this->vScrollPos.y != 1)
+        this->scrollToY(1);
+    if(this->bHorizontalScrolling && this->vScrollSize.x < this->getSize().x && this->vScrollPos.x != 1)
+        this->scrollToX(1);
 
     this->updateScrollbars();
 
@@ -839,8 +843,10 @@ void CBaseUIScrollView::onResized() {
 
     // TODO: duplicate code
     // HACKHACK: shit code
-    if(this->bVerticalScrolling && this->vScrollSize.y < this->getSize().y && this->vScrollPos.y != 1) this->scrollToY(1);
-    if(this->bHorizontalScrolling && this->vScrollSize.x < this->getSize().x && this->vScrollPos.x != 1) this->scrollToX(1);
+    if(this->bVerticalScrolling && this->vScrollSize.y < this->getSize().y && this->vScrollPos.y != 1)
+        this->scrollToY(1);
+    if(this->bHorizontalScrolling && this->vScrollSize.x < this->getSize().x && this->vScrollPos.x != 1)
+        this->scrollToX(1);
 
     this->updateScrollbars();
 }

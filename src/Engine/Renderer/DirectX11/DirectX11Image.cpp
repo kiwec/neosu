@@ -54,6 +54,10 @@ void DirectX11Image::init() {
     auto* device = static_cast<DirectX11Interface*>(g.get())->getDevice();
     auto* context = static_cast<DirectX11Interface*>(g.get())->getDeviceContext();
 
+    // cap to 32px smallest mipmap (same as OpenGL)
+    const UINT maxDim = (UINT)std::max(this->iWidth, this->iHeight);
+    const UINT mipLevels = (UINT)std::max(1, (int)std::floor(std::log2(maxDim)) - 4);
+
     // create texture (with initial data)
     D3D11_TEXTURE2D_DESC textureDesc;
     D3D11_SUBRESOURCE_DATA initData;
@@ -62,7 +66,7 @@ void DirectX11Image::init() {
         {
             textureDesc.Width = (UINT)this->iWidth;
             textureDesc.Height = (UINT)this->iHeight;
-            textureDesc.MipLevels = (this->bMipmapped ? 0 : 1);
+            textureDesc.MipLevels = (this->bMipmapped ? mipLevels : 1);
             textureDesc.ArraySize = 1;
             textureDesc.Format =
                 Image::NUM_CHANNELS == 4
@@ -99,7 +103,7 @@ void DirectX11Image::init() {
                 engine->showMessageError(
                     "Image Error",
                     fmt::format("DirectX Image error, couldn't CreateTexture2D({}, {:x}, {:x}) on file {}", hr, hr,
-                                    MAKE_DXGI_HRESULT(hr), this->sFilePath));
+                                MAKE_DXGI_HRESULT(hr), this->sFilePath));
                 return;
             }
         } else {
@@ -116,8 +120,7 @@ void DirectX11Image::init() {
         {
             shaderResourceViewDesc.Format = textureDesc.Format;
             shaderResourceViewDesc.ViewDimension = D3D_SRV_DIMENSION::D3D11_SRV_DIMENSION_TEXTURE2D;
-            shaderResourceViewDesc.Texture2D.MipLevels =
-                (this->bMipmapped ? (UINT)(std::log2((double)std::max(this->iWidth, this->iHeight))) : 1);
+            shaderResourceViewDesc.Texture2D.MipLevels = (this->bMipmapped ? mipLevels : 1);
             shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
         }
         hr = device->CreateShaderResourceView(this->texture, &shaderResourceViewDesc, &this->shaderResourceView);
@@ -129,8 +132,8 @@ void DirectX11Image::init() {
                      MAKE_DXGI_HRESULT(hr), this->sFilePath);
             engine->showMessageError(
                 "Image Error",
-                fmt::format("DirectX Image error, couldn't CreateShaderResourceView({}, {:x}, {:x}) on file {}", hr,
-                                hr, MAKE_DXGI_HRESULT(hr), this->sFilePath));
+                fmt::format("DirectX Image error, couldn't CreateShaderResourceView({}, {:x}, {:x}) on file {}", hr, hr,
+                            MAKE_DXGI_HRESULT(hr), this->sFilePath));
 
             return;
         }

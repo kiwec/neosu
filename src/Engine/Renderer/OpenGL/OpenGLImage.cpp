@@ -79,6 +79,11 @@ void OpenGLImage::init() {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->rawImage.getX(), this->rawImage.getY(), 0, GL_RGBA,
                      GL_UNSIGNED_BYTE, this->rawImage.data());
         if(this->bMipmapped) {
+            // cap mipmap levels at 32px minimum dimension to avoid excessive generation cost
+            // we're not going to care about huge images looking good when downscaled to webpage icon size
+            const int maxDim = std::max(this->rawImage.getX(), this->rawImage.getY());
+            const int maxLevel = std::max(0, (int)std::floor(std::log2(maxDim)) - 5);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, maxLevel);
             glGenerateMipmap(GL_TEXTURE_2D);
         }
     }

@@ -31,6 +31,7 @@
 #ifdef DETAILED_PROFILING
 #include <execution>
 #include "fmt/ranges.h"
+#include "Timing.h"
 
 #define DBGTIME(__amt__, ...)                                                \
     do {                                                                     \
