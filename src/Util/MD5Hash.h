@@ -41,7 +41,7 @@ struct ALIGNED_TO(16) MD5Hash final {
     inline void clear() { this->hash = {}; }
 
     // you'd have to be extremely unlucky to have an MD5 of all zeros
-    inline bool empty() { return this->hash == std::array<char, 32>{}; }
+    [[nodiscard]] inline bool empty() const { return this->hash == std::array<char, 32>{}; }
 
     std::array<char, 32> hash{};
 

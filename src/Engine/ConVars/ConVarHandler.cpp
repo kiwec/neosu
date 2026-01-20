@@ -112,7 +112,7 @@ std::string ConVarHandler::flagsToString(uint8_t flags) {
     for(bool first = true; const auto &[flag, str] : flagStringPairArray) {
         if((flags & flag) == flag) {
             if(!first) {
-                string.append(" ");
+                string.push_back(' ');
             }
             first = false;
             string.append(str);
