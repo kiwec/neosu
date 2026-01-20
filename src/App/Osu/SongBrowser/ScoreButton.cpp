@@ -697,10 +697,10 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
     this->sScoreUsername = UString(sc.playerName.c_str());
     this->sScoreScore = fmt::format("Score: {} ({}x{:s})", sc.score, sc.comboMax, comboSuffix);
 
-    if(sc.get_pp() == -1.0) {
+    if(f64 pp = sc.get_pp(); pp == -1.0) {
         this->sScoreScorePP = fmt::format("PP: ??? ({}x{:s})", sc.comboMax, comboSuffix);
     } else {
-        this->sScoreScorePP = fmt::format("PP: {}pp ({}x{:s})", (int)std::round(sc.get_pp()), sc.comboMax, comboSuffix);
+        this->sScoreScorePP = fmt::format("PP: {}pp ({}x{:s})", (int)std::round(pp), sc.comboMax, comboSuffix);
     }
 
     this->sScoreAccuracy = fmt::format("{:.2f}%", accuracy);

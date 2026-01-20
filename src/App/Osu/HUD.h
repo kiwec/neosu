@@ -6,6 +6,7 @@
 #include "UString.h"
 
 #include <memory>
+#include <cassert>
 
 class UIAvatar;
 class ScoreboardSlot;
@@ -107,24 +108,87 @@ class HUD final : public UIScreen {
 
     MD5Hash beatmap_md5;
 
-    struct CURSORTRAIL {
+    static float getCursorScaleFactor();
+
+   private:
+    std::vector<SCORE_ENTRY> getCurrentScores();
+    WinCondition scoring_metric{};
+
+    struct CursorTrailElement {
         vec2 pos{0.f};
         float time;
         float alpha;
         float scale;
     };
 
-    struct CURSORRIPPLE {
+    // ring buffer
+    struct CursorTrail {
+       private:
+        std::vector<CursorTrailElement> buffer;
+        size_t head{0};  // index of oldest element
+        size_t tail{0};  // index where next element will be written
+        size_t count{0};
+
+       public:
+        CursorTrail();
+
+        [[nodiscard]] size_t size() const { return count; }
+        [[nodiscard]] bool empty() const { return count == 0; }
+        [[nodiscard]] size_t capacity() const { return buffer.size(); }
+
+        void push_back(const CursorTrailElement &elem) {
+            if(buffer.empty()) return;
+
+            buffer[tail] = elem;
+            tail = (tail + 1) % buffer.size();
+
+            if(count < buffer.size()) {
+                count++;
+            } else {
+                head = (head + 1) % buffer.size();
+            }
+        }
+
+        void pop_front() {
+            if(count > 0) {
+                head = (head + 1) % buffer.size();
+                count--;
+            }
+        }
+
+        CursorTrailElement &front() { return buffer[head]; }
+        [[nodiscard]] const CursorTrailElement &front() const { return buffer[head]; }
+
+        CursorTrailElement &back() { return buffer[(tail + buffer.size() - 1) % buffer.size()]; }
+        [[nodiscard]] const CursorTrailElement &back() const {
+            return buffer[(tail + buffer.size() - 1) % buffer.size()];
+        }
+
+        CursorTrailElement &next() {
+            assert(!buffer.empty());
+
+            auto &ret = buffer[tail];
+            tail = (tail + 1) % buffer.size();
+
+            if(count < buffer.size()) {
+                count++;
+            } else {
+                head = (head + 1) % buffer.size();
+            }
+            return ret;
+        }
+
+        // index 0 = oldest (front), index size()-1 = newest (back)
+        CursorTrailElement &operator[](size_t i) { return buffer[(head + i) % buffer.size()]; }
+        const CursorTrailElement &operator[](size_t i) const { return buffer[(head + i) % buffer.size()]; }
+
+        void clear() { head = tail = count = 0; }
+    };
+
+    struct CursorRippleElement {
         vec2 pos{0.f};
         float time;
     };
-
-    static float getCursorScaleFactor();
-    void addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) const;
-
-   private:
-    std::vector<SCORE_ENTRY> getCurrentScores();
-    WinCondition scoring_metric{};
 
     struct HITERROR {
         float time;
@@ -160,10 +224,10 @@ class HUD final : public UIScreen {
         int hitdeltaMin, hitdeltaMax;
     };
 
-    struct HUDStatsCache;
-
-    void drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trail, vec2 pos,
-                            float alphaMultiplier = 1.0f, bool emptyTrailFrame = false);
+    void onCursorTrailMaxChange();
+    void addCursorTrailPosition(CursorTrail &trail, vec2 pos) const;
+    void drawCursorTrailInt(Shader *trailShader, CursorTrail &trail, vec2 pos, float alphaMultiplier = 1.0f,
+                            bool emptyTrailFrame = false);
     void drawCursorTrailRaw(float alpha, vec2 pos);
     void drawAccuracy(float accuracy);
     void drawCombo(int combo);
@@ -223,13 +287,13 @@ class HUD final : public UIScreen {
 
     // cursor & trail & ripples
     float fCursorExpandAnim;
-    std::vector<CURSORTRAIL> cursorTrail;
-    std::vector<CURSORTRAIL> cursorTrail2;
-    std::vector<CURSORTRAIL> cursorTrailSpectator1;
-    std::vector<CURSORTRAIL> cursorTrailSpectator2;
+    CursorTrail cursorTrail;
+    CursorTrail cursorTrail2;
+    CursorTrail cursorTrailSpectator1;
+    CursorTrail cursorTrailSpectator2;
     Shader *cursorTrailShader;
     std::unique_ptr<VertexArrayObject> cursorTrailVAO;
-    std::vector<CURSORRIPPLE> cursorRipples;
+    std::vector<CursorRippleElement> cursorRipples;
 
     // target heatmap
     std::vector<TARGET> targets;

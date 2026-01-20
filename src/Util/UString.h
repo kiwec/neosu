@@ -395,8 +395,8 @@ namespace fmt {
 template <>
 struct formatter<UString> : formatter<string_view> {
     template <typename FormatContext>
-    auto format(const UString &str, FormatContext &ctx) const noexcept {
-        return formatter<string_view>::format(str.utf8View(), ctx);
+    auto format(const UString &ustr, FormatContext &ctx) const noexcept {
+        return formatter<string_view>::format(ustr.utf8View(), ctx);
     }
 };
 

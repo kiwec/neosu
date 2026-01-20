@@ -8,6 +8,7 @@
 #include "BanchoUsers.h"
 #include "BeatmapInterface.h"
 #include "CBaseUIContainer.h"
+#include "Logging.h"
 #include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
@@ -35,6 +36,19 @@
 
 #include "shaders.h"
 
+HUD::CursorTrail::CursorTrail() : buffer(std::clamp(cv::cursor_trail_max_size.getInt() * 2, 1, 32768)) {}
+
+// cv::cursor_trail_max_size callback
+void HUD::onCursorTrailMaxChange() {
+    cv::cursor_trail_max_size.setValue(std::clamp(cv::cursor_trail_max_size.getInt(), 1, 16384), false);
+    this->cursorTrailVAO->clear();
+
+    this->cursorTrail = CursorTrail{};
+    this->cursorTrail2 = CursorTrail{};
+    this->cursorTrailSpectator1 = CursorTrail{};
+    this->cursorTrailSpectator2 = CursorTrail{};
+}
+
 HUD::HUD() : UIScreen() {
     // resources
     this->tempFont = engine->getDefaultFont();
@@ -42,7 +56,8 @@ HUD::HUD() : UIScreen() {
         env->usingDX11() ? VSH_STRING(DX11_, cursortrail) : VSH_STRING(GL_, cursortrail),
         env->usingDX11() ? FSH_STRING(DX11_, cursortrail) : FSH_STRING(GL_, cursortrail), "cursortrail");
 
-    this->cursorTrail.reserve(cv::cursor_trail_max_size.getInt() * 2);
+    cv::cursor_trail_max_size.setCallback(SA::MakeDelegate<&HUD::onCursorTrailMaxChange>(this));
+
     this->cursorTrailVAO.reset(
         g->createVertexArrayObject(DrawPrimitive::PRIMITIVE_QUADS, DrawUsageType::USAGE_DYNAMIC, false));
 
@@ -74,7 +89,21 @@ HUD::HUD() : UIScreen() {
     this->fKiScaleAnim = 0.8f;
 }
 
-HUD::~HUD() {}
+HUD::~HUD() {
+    anim::deleteExistingAnimation(&this->fScoreBarBreakAnim);
+    anim::deleteExistingAnimation(&this->fComboAnim1);
+    anim::deleteExistingAnimation(&this->fComboAnim2);
+    anim::deleteExistingAnimation(&this->fInputoverlayK1AnimScale);
+    anim::deleteExistingAnimation(&this->fInputoverlayK1AnimColor);
+    anim::deleteExistingAnimation(&this->fInputoverlayK2AnimScale);
+    anim::deleteExistingAnimation(&this->fInputoverlayK2AnimColor);
+    anim::deleteExistingAnimation(&this->fInputoverlayM1AnimScale);
+    anim::deleteExistingAnimation(&this->fInputoverlayM1AnimColor);
+    anim::deleteExistingAnimation(&this->fInputoverlayM2AnimScale);
+    anim::deleteExistingAnimation(&this->fInputoverlayM2AnimColor);
+    anim::deleteExistingAnimation(&this->fCursorExpandAnim);
+    anim::deleteExistingAnimation(&this->fKiScaleAnim);
+}
 
 void HUD::draw() {
     const auto &pf = osu->getMapInterface();
@@ -402,7 +431,7 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
     }
 
     // cursor ripples cleanup
-    if(this->cursorRipples.size() > 0 && engine->getTime() > this->cursorRipples[0].time) {
+    if(this->cursorRipples.size() > 0 && engine->getTime() > this->cursorRipples.front().time) {
         this->cursorRipples.erase(this->cursorRipples.begin());
     }
 }
@@ -415,7 +444,7 @@ void HUD::drawCursorTrail(vec2 pos, float alphaMultiplier, bool secondTrail) {
                              alphaMultiplier, fposuTrailJumpFix);
 }
 
-void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trail, vec2 pos, f32 alphaMultiplier,
+void HUD::drawCursorTrailInt(Shader *trailShader, CursorTrail &trail, vec2 pos, f32 alphaMultiplier,
                              bool emptyTrailFrame) {
     const auto &trailImage = osu->getSkin()->i_cursor_trail;
     const f64 timeNow = engine->getTime();
@@ -442,12 +471,13 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
 
         if(smoothCursorTrail) {
             VertexArrayObject &vao = *this->cursorTrailVAO;
+            vao.reserve((i + 1) * 4);
 
             const f32 scaleMulX = trailWidth / 2;
             const f32 scaleMulY = trailHeight / 2;
 
             while(i >= 0) {
-                CURSORTRAIL &curTrl = trail[i];
+                CursorTrailElement &curTrl = trail[i];
                 const f32 realWidth = scaleMulX * curTrl.scale;
                 const f32 realHeight = scaleMulY * curTrl.scale;
                 curTrl.alpha = std::clamp<f32>(((curTrl.time - timeNow) / trailLength) * alphaMultiplier, 0.0f, 1.0f) *
@@ -470,7 +500,7 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
             }
         } else {  // old style trail
             while(i >= 0) {
-                CURSORTRAIL &curTrl = trail[i];
+                CursorTrailElement &curTrl = trail[i];
                 curTrl.alpha = std::clamp<f32>(((curTrl.time - timeNow) / trailLength) * alphaMultiplier, 0.0f, 1.0f) *
                                alphaScaleOpt;
 
@@ -501,10 +531,10 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
     }
 
     // trail cleanup
-    while((trail.size() > 1 && timeNow > trail[0].time) ||
+    while((trail.size() > 1 && timeNow > trail.front().time) ||
           trail.size() > cv::cursor_trail_max_size.getInt())  // always leave at least 1 previous entry in there
     {
-        trail.erase(trail.begin());
+        trail.pop_front();
     }
 }
 
@@ -2432,7 +2462,7 @@ void HUD::animateInputOverlay(GameplayKeys key_flag, bool down) {
 void HUD::addCursorRipple(vec2 pos) {
     if(!cv::draw_cursor_ripples.getBool()) return;
 
-    CURSORRIPPLE ripple;
+    CursorRippleElement ripple;
     ripple.pos = pos;
     ripple.time = engine->getTime() + cv::cursor_ripple_duration.getFloat();
 
@@ -2460,7 +2490,7 @@ void HUD::animateKiExplode() {
     // if not additive: fade from 1.0 alpha to 0, scale from 1.0 to 1.6
 }
 
-void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) const {
+void HUD::addCursorTrailPosition(CursorTrail &trail, vec2 pos) const {
     if(pos.x < -osu->getVirtScreenWidth() || pos.x > osu->getVirtScreenWidth() * 2 ||
        pos.y < -osu->getVirtScreenHeight() || pos.y > osu->getVirtScreenHeight() * 2)
         return;  // fuck oob trails
@@ -2475,56 +2505,59 @@ void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) cons
     const float trailWidth =
         trailImage->getWidth() * HUD::getCursorTrailScaleFactor() * scaleAnim * cv::cursor_scale.getFloat();
 
-    CURSORTRAIL ct;
-    ct.pos = pos;
-    ct.time = engine->getTime() +
-              (smoothCursorTrail ? cv::cursor_trail_smooth_length.getFloat() : cv::cursor_trail_length.getFloat());
-    ct.alpha = 1.0f;
-    ct.scale = scaleAnim;
+    CursorTrailElement *ctToSet = nullptr;
 
+    const vec2 nextPos = pos;
+    const f64 nextTime = engine->getTime() + (smoothCursorTrail ? cv::cursor_trail_smooth_length.getFloat()
+                                                                : cv::cursor_trail_length.getFloat());
     if(smoothCursorTrail) {
         // interpolate mid points between the last point and the current point
         if(trail.size() > 0) {
-            const vec2 prevPos = trail.back().pos;
-            const float prevTime = trail.back().time;
-            const float prevScale = trail.back().scale;
+            const CursorTrailElement &prev = trail.back();
+            const vec2 prevPos = prev.pos;
+            const float prevTime = prev.time;
+            const float prevScale = prev.scale;
 
-            vec2 delta = pos - prevPos;
+            vec2 delta = nextPos - prevPos;
             const int numMidPoints = (int)(vec::length(delta) / (trailWidth / cv::cursor_trail_smooth_div.getFloat()));
             if(numMidPoints > 0) {
                 const vec2 step = vec::normalize(delta) * (trailWidth / cv::cursor_trail_smooth_div.getFloat());
-                const float timeStep = (ct.time - prevTime) / (float)(numMidPoints);
-                const float scaleStep = (ct.scale - prevScale) / (float)(numMidPoints);
+                const float timeStep = (nextTime - prevTime) / (float)(numMidPoints);
+                const float scaleStep = (scaleAnim - prevScale) / (float)(numMidPoints);
                 for(int i = std::clamp<int>(numMidPoints - cv::cursor_trail_max_size.getInt() / 2, 0,
                                             cv::cursor_trail_max_size.getInt());
                     i < numMidPoints; i++)  // limit to half the maximum new mid points per frame
                 {
-                    CURSORTRAIL mid;
+                    CursorTrailElement &mid = trail.next();
                     mid.pos = prevPos + step * (i + 1.f);
-                    mid.time = prevTime + timeStep * (i + 1);
+                    mid.time = prevTime + timeStep * (i + 1.f);
                     mid.alpha = 1.0f;
-                    mid.scale = prevScale + scaleStep * (i + 1);
-                    trail.push_back(mid);
+                    mid.scale = prevScale + scaleStep * (i + 1.f);
                 }
             }
         } else {
-            trail.push_back(ct);
+            ctToSet = &trail.next();
         }
     } else if((trail.size() > 0 && engine->getTime() > trail.back().time - cv::cursor_trail_length.getFloat() +
                                                            cv::cursor_trail_spacing.getFloat() / 1000.f) ||
               trail.size() == 0) {
         if(trail.size() > 0 && trail.back().pos == pos && !cv::always_render_cursor_trail.getBool()) {
-            trail.back().time = ct.time;
-            trail.back().alpha = 1.0f;
-            trail.back().scale = ct.scale;
+            ctToSet = &trail.back();
         } else {
-            trail.push_back(ct);
+            ctToSet = &trail.next();
         }
+    }
+
+    if(ctToSet) {
+        ctToSet->pos = nextPos;
+        ctToSet->time = nextTime;
+        ctToSet->alpha = 1.f;
+        ctToSet->scale = scaleAnim;
     }
 
     // early cleanup
     while(trail.size() > cv::cursor_trail_max_size.getInt()) {
-        trail.erase(trail.begin());
+        trail.pop_front();
     }
 }
 
@@ -2532,11 +2565,8 @@ void HUD::resetHitErrorBar() { this->hiterrors.clear(); }
 
 McRect HUD::getSkipClickRect() {
     const ivec2 osuScreenInt = osu->getVirtScreenSize();
-    const vec2 skipImageSize = osu->getSkin()->i_play_skip->getSize() * cv::hud_scale.getFloat();
-    return {osuScreenInt.x - skipImageSize.x,  //
-            osuScreenInt.y - skipImageSize.y,  //
-            skipImageSize.x,                   //
-            skipImageSize.y};
+    const ivec2 skipImageSize = {osu->getSkin()->i_play_skip->getSize() * cv::hud_scale.getFloat()};
+    return {osuScreenInt - skipImageSize, skipImageSize};
 }
 
 void HUD::updateScoringMetric() {

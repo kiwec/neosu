@@ -33,6 +33,9 @@ void VertexArrayObject::destroy() {
 }
 
 void VertexArrayObject::clear() {
+    this->iNumVertices = this->vertices.size();
+    this->bHasTexcoords = !this->texcoords.empty();
+
     this->vertices.clear();
     this->texcoords.clear();
     this->normals.clear();
@@ -44,94 +47,44 @@ void VertexArrayObject::clear() {
     // NOTE: do NOT set m_iNumVertices to 0! (also don't change m_bHasTexcoords)
 }
 
-void VertexArrayObject::addVertex(vec2 v) {
-    this->vertices.emplace_back(v.x, v.y, 0);
-    this->iNumVertices = this->vertices.size();
-}
-
-void VertexArrayObject::addVertex(float x, float y, float z) {
-    this->vertices.emplace_back(x, y, z);
-    this->iNumVertices = this->vertices.size();
-}
-
-void VertexArrayObject::addVertex(vec3 v) {
-    this->vertices.push_back(v);
-    this->iNumVertices = this->vertices.size();
-}
-
-void VertexArrayObject::addVertices(std::vector<vec3> vertices) {
+void VertexArrayObject::addVertices(std::vector<vec3> vertices) noexcept {
     this->vertices.insert(this->vertices.end(), std::make_move_iterator(vertices.begin()),
                           std::make_move_iterator(vertices.end()));
     this->iNumVertices = this->vertices.size();
 }
 
-void VertexArrayObject::addTexcoord(float u, float v) {
-    this->texcoords.emplace_back(u, v);
-    this->bHasTexcoords = true;
-}
-
-void VertexArrayObject::addTexcoord(vec2 uv) {
-    this->texcoords.push_back(uv);
-    this->bHasTexcoords = true;
-}
-
-void VertexArrayObject::addTexcoords(std::vector<vec2> texcoords) {
+void VertexArrayObject::addTexcoords(std::vector<vec2> texcoords) noexcept {
     this->texcoords.insert(this->texcoords.end(), std::make_move_iterator(texcoords.begin()),
                            std::make_move_iterator(texcoords.end()));
-    this->bHasTexcoords = true;
 }
 
-void VertexArrayObject::addNormal(vec3 normal) { this->normals.push_back(normal); }
-
-void VertexArrayObject::addNormal(float x, float y, float z) { this->normals.emplace_back(x, y, z); }
-
-void VertexArrayObject::addNormals(std::vector<vec3> normals) {
+void VertexArrayObject::addNormals(std::vector<vec3> normals) noexcept {
     this->normals.insert(this->normals.end(), std::make_move_iterator(normals.begin()),
                          std::make_move_iterator(normals.end()));
 }
 
-void VertexArrayObject::addColor(Color color) { this->colors.push_back(color); }
-
-void VertexArrayObject::addColors(std::vector<Color> color) {
+void VertexArrayObject::addColors(std::vector<Color> color) noexcept {
     this->colors.insert(this->colors.end(), std::make_move_iterator(color.begin()),
                         std::make_move_iterator(color.end()));
 }
 
-void VertexArrayObject::setVertex(int index, vec2 v) {
+void VertexArrayObject::setVertex(int index, vec2 v) noexcept {
     if(index < 0 || index > (this->vertices.size() - 1)) return;
 
-    this->vertices[index].x = v.x;
-    this->vertices[index].y = v.y;
+    this->vertices[index] = vec3{v.x, v.y, 0.f};
 
     this->partialUpdateVertexIndices.push_back(index);
 }
 
-void VertexArrayObject::setVertex(int index, vec3 v) {
+void VertexArrayObject::setVertex(int index, vec3 v) noexcept {
     if(index < 0 || index > (this->vertices.size() - 1)) return;
 
-    this->vertices[index].x = v.x;
-    this->vertices[index].y = v.y;
-    this->vertices[index].z = v.z;
+    this->vertices[index] = v;
 
     this->partialUpdateVertexIndices.push_back(index);
 }
 
-void VertexArrayObject::setVertex(int index, float x, float y, float z) {
-    if(index < 0 || index > (this->vertices.size() - 1)) return;
-
-    this->vertices[index].x = x;
-    this->vertices[index].y = y;
-    this->vertices[index].z = z;
-
-    this->partialUpdateVertexIndices.push_back(index);
-}
-
-void VertexArrayObject::setTexcoords(const std::vector<vec2>& texcoords) {
-    this->texcoords = texcoords;
-    this->bHasTexcoords = !texcoords.empty();
-}
-
-void VertexArrayObject::setColor(int index, Color color) {
+void VertexArrayObject::setColor(int index, Color color) noexcept {
     if(index < 0 || index > (this->colors.size() - 1)) return;
 
     this->colors[index] = color;
@@ -139,20 +92,18 @@ void VertexArrayObject::setColor(int index, Color color) {
     this->partialUpdateColorIndices.push_back(index);
 }
 
-void VertexArrayObject::setType(DrawPrimitive primitive) { this->primitive = primitive; }
-
-void VertexArrayObject::setDrawRange(int fromIndex, int toIndex) {
+void VertexArrayObject::setDrawRange(int fromIndex, int toIndex) noexcept {
     this->iDrawRangeFromIndex = fromIndex;
     this->iDrawRangeToIndex = toIndex;
 }
 
-void VertexArrayObject::setDrawPercent(float fromPercent, float toPercent, int nearestMultiple) {
+void VertexArrayObject::setDrawPercent(float fromPercent, float toPercent, int nearestMultiple) noexcept {
     this->fDrawPercentFromPercent = std::clamp<float>(fromPercent, 0.0f, 1.0f);
     this->fDrawPercentToPercent = std::clamp<float>(toPercent, 0.0f, 1.0f);
     this->iDrawPercentNearestMultiple = nearestMultiple;
 }
 
-void VertexArrayObject::reserve(size_t vertexCount) {
+void VertexArrayObject::reserve(size_t vertexCount) noexcept {
     this->vertices.reserve(vertexCount);
     this->texcoords.reserve(vertexCount);
 }

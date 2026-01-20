@@ -87,15 +87,17 @@ inline void log(const char *filename, int line, const char *funcname, S &&fmt, A
 }
 
 // fmt strings
-template <typename... T>
-inline void log(const char *filename, int line, const char *funcname, fmt::format_string<T...> &&fmt, T &&...args) noexcept
-    requires(sizeof...(T) > 0)
+template <typename... Args>
+inline void log(const char *filename, int line, const char *funcname, const fmt::format_string<Args...> &fmt,
+                Args &&...args) noexcept
+    requires(sizeof...(Args) > 0)
 {
+    // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
     if(likely(_detail::g_initialized))
         _detail::log_int(filename, line, funcname, _detail::log_level::info,
-                            fmt::vformat(std::move(fmt), fmt::vargs<T...>{{std::forward<T>(args)...}}));
+                         fmt::format(fmt, std::forward<Args>(args)...));
     else
-        printf("%s\n", fmt::vformat(std::move(fmt), fmt::vargs<T...>{{std::forward<T>(args)...}}).c_str());
+        printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
 }
 
 inline void log(const char *filename, int line, const char *funcname, std::string_view str) noexcept {
@@ -119,16 +121,16 @@ inline void logRaw(S &&fmt, Args &&...args) noexcept
 }
 
 // fmt strings
-template <typename... T>
-inline void logRaw(fmt::format_string<T...> &&fmt, T &&...args) noexcept
-    requires(sizeof...(T) > 0)
+template <typename... Args>
+inline void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept
+    requires(sizeof...(Args) > 0)
 {
     if(likely(_detail::g_initialized))
-        _detail::logRaw_int(_detail::log_level::info,
-                            fmt::vformat(std::move(fmt), fmt::vargs<T...>{{std::forward<T>(args)...}}));
+        _detail::logRaw_int(_detail::log_level::info, fmt::format(fmt, std::forward<Args>(args)...));
     else
-        printf("%s\n", fmt::vformat(std::move(fmt), fmt::vargs<T...>{{std::forward<T>(args)...}}).c_str());
+        printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
 }
+
 
 // standalone strings
 inline void logRaw(std::string_view str) noexcept {

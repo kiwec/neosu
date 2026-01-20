@@ -664,11 +664,7 @@ inline std::ostream& operator<<(std::ostream& os, const Matrix4& m) {
 namespace fmt {
 template <>
 struct formatter<Matrix2> {
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) const {
-        return ctx.begin();
-    }
-
+    constexpr auto parse(format_parse_context& ctx) const { return ctx.begin(); }
     template <typename FormatContext>
     auto format(const Matrix2& r, FormatContext& ctx) const {
         return format_to(ctx.out(), "{}"_cf, fmt::streamed(r));
@@ -677,11 +673,7 @@ struct formatter<Matrix2> {
 
 template <>
 struct formatter<Matrix3> {
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) const {
-        return ctx.begin();
-    }
-
+    constexpr auto parse(format_parse_context& ctx) const { return ctx.begin(); }
     template <typename FormatContext>
     auto format(const Matrix3& r, FormatContext& ctx) const {
         return format_to(ctx.out(), "{}"_cf, fmt::streamed(r));
@@ -690,11 +682,7 @@ struct formatter<Matrix3> {
 
 template <>
 struct formatter<Matrix4> {
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) const {
-        return ctx.begin();
-    }
-
+    constexpr auto parse(format_parse_context& ctx) const { return ctx.begin(); }
     template <typename FormatContext>
     auto format(const Matrix4& r, FormatContext& ctx) const {
         return format_to(ctx.out(), "{}"_cf, fmt::streamed(r));

@@ -222,6 +222,7 @@ MAIN_FUNC /* int argc, char *argv[] */
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
 
     SDL_SetHintWithPriority(SDL_HINT_VIDEO_DOUBLE_BUFFER, "1", SDL_HINT_NORMAL);
+    SDL_SetHintWithPriority(SDL_HINT_INVALID_PARAM_CHECKS, Env::cfg(BUILD::DEBUG) ? "2" : "1", SDL_HINT_NORMAL);
 
 #if defined(_WIN32)
     // this hint needs to be set before SDL_Init
