@@ -144,6 +144,8 @@ class Environment {
 
     // NOTE: createDirectory creates recursively
     static bool createDirectory(const std::string &directoryName) noexcept;
+    // be extremely careful with this!
+    static bool deletePathsRecursive(const std::string &path, int maxRecursionLevels = 1) noexcept;
 
     static bool renameFile(const std::string &oldFileName, const std::string &newFileName) noexcept;
     static bool deleteFile(const std::string &filePath) noexcept;

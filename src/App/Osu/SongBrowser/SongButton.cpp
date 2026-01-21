@@ -310,7 +310,7 @@ void SongButton::triggerContextMenu(vec2 pos) {
     cmenu->begin(0, true);
     {
         if(this->databaseBeatmap)
-            cmenu->addButtonJustified("[...] Open Beatmap Folder", TEXT_JUSTIFICATION::LEFT, 0)
+            cmenu->addButtonJustified("[=] Open Beatmap Folder", TEXT_JUSTIFICATION::LEFT, 0)
                 ->setClickCallback(SA::MakeDelegate<&SongButton::onOpenBeatmapFolderClicked>(this));
 
         if(this->databaseBeatmap != nullptr && this->databaseBeatmap->getDifficulties().size() < 1)
@@ -330,6 +330,13 @@ void SongButton::triggerContextMenu(vec2 pos) {
 
             cmenu->addButtonJustified("[-Set] Remove from Collection", TEXT_JUSTIFICATION::LEFT, 4);
         }
+
+        CBaseUIButton *spacer = cmenu->addButtonJustified("---", TEXT_JUSTIFICATION::CENTERED);
+        spacer->setEnabled(false);
+        spacer->setTextColor(0xff888888);
+        spacer->setTextDarkColor(0xff000000);
+
+        if(this->databaseBeatmap) cmenu->addButtonJustified("[=] Export Beatmapset", TEXT_JUSTIFICATION::LEFT, 5);
     }
     cmenu->end(false, false);
     cmenu->setClickCallback(SA::MakeDelegate<&SongButton::onContextMenu>(this));
@@ -395,9 +402,10 @@ void SongButton::onContextMenu(const UString &text, int id) {
         cmenu->setClickCallback(SA::MakeDelegate<&SongButton::onAddToCollectionConfirmed>(this));
         cmenu->clampToRightScreenEdge();
         cmenu->clampToBottomScreenEdge();
-    } else if(id == 3 || id == 4) {
+    } else if(id == 3 || id == 4 || id == 5) {
         // 3 = remove map from collection
         // 4 = remove set from collection
+        // 5 = export beatmapset
         g_songbrowser->onSongButtonContextMenu(this, text, id);
     }
 }

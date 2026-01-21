@@ -2,9 +2,11 @@
 
 #include "noinclude.h"
 #include "types.h"
+#include "SyncStoptoken.h"
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct archive;
@@ -14,6 +16,10 @@ class Archive {
    public:
     enum class Format : uint8_t {
         ZIP,
+        SEVENZIP_DEFLATE,
+        SEVENZIP_BZ2,
+        SEVENZIP_LZMA1,
+        SEVENZIP_LZMA2,
         TAR,
         TAR_GZ,
         TAR_BZ2,
@@ -23,7 +29,12 @@ class Archive {
     static constexpr std::string_view getExtSuffix(Format fmt) {
         switch(fmt) {
             case Format::ZIP:
+            case Format::SEVENZIP_DEFLATE:
                 return ".zip";
+            case Format::SEVENZIP_BZ2:
+            case Format::SEVENZIP_LZMA1:
+            case Format::SEVENZIP_LZMA2:
+                return ".7z";
             case Format::TAR:
                 return ".tar";
             case Format::TAR_GZ:
@@ -33,6 +44,7 @@ class Archive {
             case Format::TAR_XZ:
                 return ".tar.xz";
         }
+        std::unreachable();
     }
 
     static constexpr int COMPRESSION_STORE = 0;
@@ -92,7 +104,7 @@ class Archive {
         // convenience methods
         Entry* findEntry(const std::string& filename);
         bool extractAll(const std::string& outputDir, const std::vector<std::string>& ignorePaths = {},
-                        bool skipDirectories = false);
+                        bool skipDirectories = false, const Sync::stop_token& stopToken = {});
 
        private:
         void initFromFile(const std::string& filePath);
@@ -120,18 +132,20 @@ class Archive {
         // add file or directory recursively from disk
         // if diskPath is a file, adds it at archiveRoot/filename
         // if diskPath is a directory, adds all contents recursively under archiveRoot
-        bool addPath(const std::string& diskPath, const std::string& archiveRoot = "");
+        bool addPath(const std::string& diskPath, const std::string& archiveRoot = "",
+                     const Sync::stop_token& stopToken = {});
 
         // add file from memory
         bool addData(const std::string& archivePath, const u8* data, size_t size);
         bool addData(const std::string& archivePath, const std::vector<u8>& data);
         bool addData(const std::string& archivePath, std::vector<u8>&& data);
 
-        bool writeToFile(std::string outputPath, bool appendExtension = true);
-        [[nodiscard]] std::vector<u8> writeToMemory();
+        bool writeToFile(std::string outputPath, bool appendExtension = true, const Sync::stop_token& stopToken = {});
+        [[nodiscard]] std::vector<u8> writeToMemory(const Sync::stop_token& stopToken = {});
 
         [[nodiscard]] bool isEmpty() const { return this->pendingEntries.empty(); }
         [[nodiscard]] size_t getEntryCount() const { return this->pendingEntries.size(); }
+        [[nodiscard]] constexpr std::string_view getExtSuffix() const { return Archive::getExtSuffix(this->format); }
 
        private:
         struct PendingEntry {
@@ -141,14 +155,16 @@ class Archive {
         };
 
         bool configureArchive(struct archive* a);
-        bool writeEntries(struct archive* a);
-        bool addDirectoryRecursive(const std::string& diskDir, const std::string& archiveDir);
+        bool writeEntries(struct archive* a, const Sync::stop_token& stopToken);
+        bool addDirectoryRecursive(const std::string& diskDir, const std::string& archiveDir,
+                                   const Sync::stop_token& stopToken);
 
         [[nodiscard]] static std::string normalizePath(const std::string& path);
         [[nodiscard]] static std::string extractFilename(const std::string& path);
 
-        Format format;
-        int compressionLevel;
         std::vector<PendingEntry> pendingEntries;
+        int compressionLevel;
+        int threads;
+        Format format;
     };
 };

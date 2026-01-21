@@ -360,6 +360,33 @@ bool Environment::createDirectory(const std::string &directoryName) noexcept {
     return SDL_CreateDirectory(directoryName.c_str());  // returns true if it already exists
 }
 
+bool Environment::deletePathsRecursive(const std::string &path, int recursionLevel) noexcept {
+    if(path == getExeFolder()) {
+        fubar_abort();
+    }
+
+    const std::string curFolder = getFolderFromFilePath(path);
+    if(curFolder == getExeFolder()) {
+        fubar_abort();
+    }
+
+    auto files = getFilesInFolder(curFolder);
+    for(const auto &file : files) {
+        deleteFile(curFolder + file);
+    }
+
+    --recursionLevel;
+    if(recursionLevel <= 0) {
+        return !SDL_RemovePath(curFolder.c_str());
+    }
+
+    auto folders = getFoldersInFolder(curFolder);
+    for(const auto &folder : folders) {
+        deletePathsRecursive(curFolder + folder, recursionLevel);
+    }
+    return true;  // ?
+}
+
 bool Environment::renameFile(const std::string &oldFileName, const std::string &newFileName) noexcept {
     if(oldFileName == newFileName) {
         return true;
@@ -1439,9 +1466,9 @@ std::string Environment::getThingFromPathHelper(std::string_view path, bool fold
         } else if(!endsWithSeparator)  // canonical failed, handle manually (if it's not already a directory)
         {
             if(lastSlash != std::string::npos)  // return parent
-                ustrPath = ustrPath.substr(0, lastSlash);
+                ustrPath = retPath.substr(0, lastSlash);
             else  // no separators found, just use ./
-                ustrPath = fmt::format(".{}{}", prefSep, ustrPath);
+                ustrPath = fmt::format(".{}{}", prefSep, retPath);
         }
         retPath = ustrPath.utf8View();
         // make sure whatever we got now ends with a slash

@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#include <string>
+
 class Graphics;
 struct CBaseUIEventCtx;
 
@@ -11,6 +13,11 @@ struct CBaseUIEventCtx;
 
 namespace BottomBar {
 enum Button : i8 { NONE = -1, MODE = 0, MODS = 1, RANDOM = 2, OPTIONS = 3 };
+
+void update_export_progress(float progress, std::string entry_being_processed, const std::string &collection);
+inline void update_export_progress_cb(float progress, std::string entry_being_processed) {
+    return update_export_progress(progress, std::move(entry_being_processed), "");
+}
 
 void update(CBaseUIEventCtx &c);
 void draw();

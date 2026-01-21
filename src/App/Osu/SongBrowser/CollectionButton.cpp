@@ -84,6 +84,13 @@ void CollectionButton::triggerContextMenu(vec2 pos) {
         spacer->setTextDarkColor(0xff000000);
 
         cmenu->addButton("[-]         Delete Collection", 2);
+
+        CBaseUIButton *spacer2 = cmenu->addButton("---");
+        spacer2->setEnabled(false);
+        spacer2->setTextColor(0xff888888);
+        spacer2->setTextDarkColor(0xff000000);
+
+        cmenu->addButton("[=]         Export Collection", 5);
     }
     cmenu->end(false, false);
     cmenu->setClickCallback(SA::MakeDelegate<&CollectionButton::onContextMenu>(this));
@@ -140,6 +147,9 @@ void CollectionButton::onContextMenu(const UString &text, int id) {
             cmenu->clampToRightScreenEdge();
             cmenu->clampToBottomScreenEdge();
         }
+    } else if(id == 5) {
+        // TODO: custom export names, maybe
+        g_songbrowser->onCollectionButtonContextMenu(this, this->sCollectionName, id);
     }
 }
 

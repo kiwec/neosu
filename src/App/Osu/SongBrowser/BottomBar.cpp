@@ -10,6 +10,7 @@
 #include "OptionsOverlay.h"
 #include "UIBackButton.h"
 #include "Osu.h"
+#include "MapExporter.h"
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "SkinImage.h"
@@ -17,9 +18,27 @@
 #include "UI.h"
 #include "UserCard.h"
 #include "Font.h"
+#include "SyncMutex.h"
+
+#include <atomic>
 
 namespace BottomBar {
 using namespace neosu::sbr;
+
+static Sync::mutex export_progress_mtx;
+static std::atomic<float> export_progress{-1.f};
+static std::string export_entry;
+static std::string export_collection;
+
+void update_export_progress(float progress, std::string entry_being_processed, const std::string& collection) {
+    export_collection = collection;
+    export_progress.store(progress, std::memory_order_relaxed);
+    if(progress > 0.f) {
+        Sync::unique_lock lk(export_progress_mtx, Sync::try_to_lock);
+        if(!lk.owns_lock()) return;  // we'll wait until we can acquire it without blocking
+        export_entry = std::move(entry_being_processed);
+    }
+}
 
 static McRect btns[4];
 static f32 hovers[4] = {0.f, 0.f, 0.f, 0.f};
@@ -194,7 +213,7 @@ void draw() {
     // XXX: move this to permanent toasts
     McFont* font = engine->getDefaultFont();
     i32 calcx = osu->getUserButton()->getPos().x + osu->getUserButton()->getSize().x + 20;
-    i32 calcy = osu->getUserButton()->getPos().y + 30;
+    i32 calcy = osu->getUserButton()->getPos().y + 15;
     if(DBRecalculator::get_maps_total() > 0) {
         UString msg = fmt::format("Calculating stars ({}/{}) ...", DBRecalculator::get_maps_processed(),
                                   DBRecalculator::get_maps_total());
@@ -204,6 +223,24 @@ void draw() {
         g->drawString(font, msg);
         g->popTransform();
         calcy += font->getHeight() + 10;
+    }
+    if(float progress = export_progress.load(std::memory_order_relaxed); progress > 0.f && progress < 1.f) {
+        std::string export_entry_copy;
+        {
+            Sync::scoped_lock lk(export_progress_mtx);
+            export_entry_copy = export_entry;
+        }
+        UString msg1 = fmt::format("Exporting {} {:.2f}%", !export_collection.empty() ? export_collection : "mapset",
+                                   progress * 100.f);
+        UString msg2 = fmt::format(" {:s}", export_entry_copy);
+        g->setColor(0xff333333);
+        g->pushTransform();
+        g->translate(calcx, calcy);
+        g->drawString(font, msg1);
+        g->translate(0, font->getHeight() + 10);
+        g->drawString(font, msg2);
+        g->popTransform();
+        calcy += font->getHeight() + 20;
     }
     if(cv::normalize_loudness.getBool() && VolNormalization::get_total() > 0 &&
        VolNormalization::get_computed() < VolNormalization::get_total()) {

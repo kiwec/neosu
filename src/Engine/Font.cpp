@@ -584,13 +584,10 @@ std::vector<UString> McFontImpl::wrap(const UString &text, f64 max_width) const 
                 lines.emplace_back();
                 line++;
                 line_width = 0.0;
-                word.append(text[i]);
-                word_width += char_width;
-            } else {
-                // Add character to word
-                word.append(text[i]);
-                word_width += char_width;
             }
+            // Add character to word
+            word.append(text[i]);
+            word_width += char_width;
         }
     }
 
@@ -649,8 +646,7 @@ bool McFontImpl::loadGlyphDynamic(char16_t ch, FT_Face existingFace) {
         }
 
         logIf(cv::r_debug_font_unicode.getBool() && face != m_ftFace,
-              "Font Info (for font resource {}): Using fallback font for character {}", m_parent->getName(),
-              debugstr);
+              "Font Info (for font resource {}): Using fallback font for character {}", m_parent->getName(), debugstr);
     }
 
     // ensure face size is set
@@ -681,8 +677,7 @@ bool McFontImpl::loadGlyphDynamic(char16_t ch, FT_Face existingFace) {
                             true /*dynamic*/);
 
         if(cv::r_debug_font_unicode.getBool()) {
-            debugLog("Font Info: Placed glyph {} in dynamic slot {} at ({}, {})", debugstr, slotIndex,
-                     slot.x, slot.y);
+            debugLog("Font Info: Placed glyph {} in dynamic slot {} at ({}, {})", debugstr, slotIndex, slot.x, slot.y);
         }
     } else {
         // empty glyph (e.g. space) - mark as valid without atlas rendering

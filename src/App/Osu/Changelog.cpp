@@ -35,6 +35,8 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v42_00;
     v42_00.title = "42.00 (" CHANGELOG_TIMESTAMP ")";
     v42_00.changes = {
+        R"(- Added Song Browser right click->Export Collection and Export Beatmapset)",
+        R"(  - Note that all of the difficulties from the beatmapset in a collection will be archived, not just the difficulty in the collection itself.)",
         R"(- Added Linux ARM64 releases)",
         R"(- Added asio_freq convar to allow custom sample rates on BASSASIO)",
         R"(- SoLoud fixes/improvements:)",

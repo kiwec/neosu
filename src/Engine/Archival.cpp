@@ -5,6 +5,7 @@
 #include "Logging.h"
 #include "SString.h"
 #include "ConVar.h"
+#include "Thread.h"
 
 #include <archive.h>
 #include <archive_entry.h>
@@ -13,9 +14,6 @@
 #include <cstring>
 #include <ctime>
 #include <fstream>
-
-// temp
-#define logArchive(...) logIf(Env::cfg(BUILD::DEBUG) || cv::debug_file.getBool() __VA_OPT__(, ) __VA_ARGS__)
 
 //------------------------------------------------------------------------------
 // Archive::Entry implementation
@@ -268,7 +266,7 @@ Archive::Entry* Archive::Reader::findEntry(const std::string& filename) {
 }
 
 bool Archive::Reader::extractAll(const std::string& outputDir, const std::vector<std::string>& ignorePaths,
-                                 bool skipDirectories) {
+                                 bool skipDirectories, const Sync::stop_token& stopToken) {
     if(!this->bValid) return false;
 
     auto entries = getAllEntries();
@@ -287,6 +285,11 @@ bool Archive::Reader::extractAll(const std::string& outputDir, const std::vector
     // create directories first (unless skipping)
     if(!skipDirectories) {
         for(const auto& dir : directories) {
+            if(stopToken.stop_requested()) {
+                debugLog("extraction interrupted during directory creation");
+                return false;
+            }
+
             std::string dirPath = fmt::format("{}/{}", outputDir, dir.getFilename());
 
             // check ignore list
@@ -307,6 +310,11 @@ bool Archive::Reader::extractAll(const std::string& outputDir, const std::vector
 
     // extract files
     for(const auto& file : files) {
+        if(stopToken.stop_requested()) {
+            debugLog("extraction interrupted");
+            return false;
+        }
+
         std::string filePath = fmt::format("{}/{}", outputDir, file.getFilename());
 
         // check ignore list
@@ -347,7 +355,10 @@ bool Archive::Reader::isPathSafe(const std::string& path) { return path.find("..
 // Archive::Writer implementation
 //------------------------------------------------------------------------------
 
-Archive::Writer::Writer(Format format, int compressionLevel) : format(format), compressionLevel(compressionLevel) {}
+Archive::Writer::Writer(Format format, int compressionLevel)
+    : compressionLevel(compressionLevel),
+      threads(std::clamp<int>(cv::archive_threads.getInt(), 0, McThread::get_logical_cpu_count())),
+      format(format) {}
 
 std::string Archive::Writer::normalizePath(const std::string& path) {
     std::string ret = path;
@@ -385,13 +396,13 @@ std::string Archive::Writer::extractFilename(const std::string& path) {
 bool Archive::Writer::addFile(const std::string& diskPath, const std::string& archivePath) {
     auto type = File::exists(diskPath);
     if(type == File::FILETYPE::FOLDER) {
-        logArchive("addFile called on directory, use addPath for directories: {:s}", diskPath.c_str());
+        logIfCV(debug_file, "addFile called on directory, use addPath for directories: {:s}", diskPath.c_str());
         return false;
     }
 
     File file(diskPath, File::MODE::READ);
     if(!file.canRead()) {
-        logArchive("failed to open file for reading: {:s}", diskPath.c_str());
+        logIfCV(debug_file, "failed to open file for reading: {:s}", diskPath.c_str());
         return false;
     }
 
@@ -406,7 +417,8 @@ bool Archive::Writer::addFile(const std::string& diskPath, const std::string& ar
     return addData(finalArchivePath, std::move(data));
 }
 
-bool Archive::Writer::addPath(const std::string& diskPath, const std::string& archiveRoot) {
+bool Archive::Writer::addPath(const std::string& diskPath, const std::string& archiveRoot,
+                              const Sync::stop_token& stopToken) {
     auto type = File::exists(diskPath);
 
     if(type == File::FILETYPE::FILE) {
@@ -414,27 +426,38 @@ bool Archive::Writer::addPath(const std::string& diskPath, const std::string& ar
         std::string archivePath = archiveRoot.empty() ? filename : fmt::format("{}/{}", archiveRoot, filename);
         return addFile(diskPath, archivePath);
     } else if(type == File::FILETYPE::FOLDER) {
-        return addDirectoryRecursive(diskPath, archiveRoot);
+        return addDirectoryRecursive(diskPath, archiveRoot, stopToken);
     }
 
-    logArchive("path does not exist or is not accessible: {:s}", diskPath.c_str());
+    logIfCV(debug_file, "path does not exist or is not accessible: {:s}", diskPath.c_str());
     return false;
 }
 
-bool Archive::Writer::addDirectoryRecursive(const std::string& diskDir, const std::string& archiveDir) {
+bool Archive::Writer::addDirectoryRecursive(const std::string& diskDir, const std::string& archiveDir,
+                                            const Sync::stop_token& stopToken) {
+    if(stopToken.stop_requested()) {
+        logIfCV(debug_file, "addDirectoryRecursive interrupted");
+        return false;
+    }
+
     // add files in this directory
     std::vector<std::string> files;
     if(!File::getDirectoryEntries(diskDir, false, files)) {
-        logArchive("failed to enumerate files in {:s}", diskDir.c_str());
+        logIfCV(debug_file, "failed to enumerate files in {:s}", diskDir.c_str());
         return false;
     }
 
     for(const auto& filename : files) {
+        if(stopToken.stop_requested()) {
+            logIfCV(debug_file, "addDirectoryRecursive interrupted during file enumeration");
+            return false;
+        }
+
         std::string diskPath = fmt::format("{}/{}", diskDir, filename);
         std::string archivePath = archiveDir.empty() ? filename : fmt::format("{}/{}", archiveDir, filename);
 
         if(!addFile(diskPath, archivePath)) {
-            logArchive("failed to add file: {:s}", diskPath.c_str());
+            logIfCV(debug_file, "failed to add file: {:s}", diskPath.c_str());
             return false;
         }
     }
@@ -442,7 +465,7 @@ bool Archive::Writer::addDirectoryRecursive(const std::string& diskDir, const st
     // recurse into subdirectories
     std::vector<std::string> dirs;
     if(!File::getDirectoryEntries(diskDir, true, dirs)) {
-        logArchive("failed to enumerate directories in {:s}", diskDir.c_str());
+        logIfCV(debug_file, "failed to enumerate directories in {:s}", diskDir.c_str());
         return false;
     }
 
@@ -450,7 +473,7 @@ bool Archive::Writer::addDirectoryRecursive(const std::string& diskDir, const st
         std::string subDiskDir = fmt::format("{}/{}", diskDir, dirname);
         std::string subArchiveDir = archiveDir.empty() ? dirname : fmt::format("{}/{}", archiveDir, dirname);
 
-        if(!addDirectoryRecursive(subDiskDir, subArchiveDir)) {
+        if(!addDirectoryRecursive(subDiskDir, subArchiveDir, stopToken)) {
             return false;
         }
     }
@@ -460,13 +483,13 @@ bool Archive::Writer::addDirectoryRecursive(const std::string& diskDir, const st
 
 bool Archive::Writer::addData(const std::string& archivePath, const u8* data, size_t size) {
     if(archivePath.empty()) {
-        logArchive("empty archive path");
+        logIfCV(debug_file, "empty archive path");
         return false;
     }
 
     std::string normalizedPath = normalizePath(archivePath);
     if(normalizedPath.empty()) {
-        logArchive("path normalized to empty string");
+        logIfCV(debug_file, "path normalized to empty string");
         return false;
     }
 
@@ -485,13 +508,13 @@ bool Archive::Writer::addData(const std::string& archivePath, const std::vector<
 
 bool Archive::Writer::addData(const std::string& archivePath, std::vector<u8>&& data) {
     if(archivePath.empty()) {
-        logArchive("empty archive path");
+        logIfCV(debug_file, "empty archive path");
         return false;
     }
 
     std::string normalizedPath = normalizePath(archivePath);
     if(normalizedPath.empty()) {
-        logArchive("path normalized to empty string");
+        logIfCV(debug_file, "path normalized to empty string");
         return false;
     }
 
@@ -506,28 +529,58 @@ bool Archive::Writer::addData(const std::string& archivePath, std::vector<u8>&& 
 
 bool Archive::Writer::configureArchive(struct archive* a) {
     int r;
+    std::string options;
 
     switch(this->format) {
         case Format::ZIP:
             r = archive_write_set_format_zip(a);
             if(r != ARCHIVE_OK) {
-                logArchive("failed to set ZIP format: {:s}", archive_error_string(a));
+                logIfCV(debug_file, "failed to set ZIP format: {:s}", archive_error_string(a));
                 return false;
             }
 
             if(this->compressionLevel == COMPRESSION_STORE) {
-                r = archive_write_set_options(a, "zip:compression=store");
+                options += "zip:compression=store,";
             } else if(this->compressionLevel != COMPRESSION_DEFAULT) {
-                std::string opts = fmt::format("zip:compression=deflate,zip:compression-level={:d}",
-                                               std::clamp(this->compressionLevel, 1, 9));
-                r = archive_write_set_options(a, opts.c_str());
+                options += fmt::format("zip:compression=deflate,zip:compression-level={:d},",
+                                       std::clamp(this->compressionLevel, 1, 9));
+            }
+            if(this->threads != 1) {
+                options += fmt::format("zip:threads={:d},", this->threads);
+            }
+            break;
+
+        case Format::SEVENZIP_DEFLATE:
+        case Format::SEVENZIP_BZ2:
+        case Format::SEVENZIP_LZMA1:
+        case Format::SEVENZIP_LZMA2:
+            r = archive_write_set_format_7zip(a);
+            if(r != ARCHIVE_OK) {
+                logIfCV(debug_file, "failed to set SEVENZIP format: {:s}", archive_error_string(a));
+                return false;
+            }
+
+            {
+                const std::string_view compression = this->compressionLevel == COMPRESSION_STORE ? "store"
+                                                     : this->format == Format::SEVENZIP_BZ2      ? "bzip2"
+                                                     : this->format == Format::SEVENZIP_LZMA1    ? "lzma1"
+                                                     : this->format == Format::SEVENZIP_LZMA2    ? "lzma2"
+                                                                                                 : "deflate";
+                options += fmt::format("7zip:compression={:s},", compression);
+            }
+            if(this->compressionLevel != COMPRESSION_DEFAULT) {
+                int level = std::clamp(this->compressionLevel, this->format == Format::SEVENZIP_BZ2 ? 1 : 0, 9);
+                options += fmt::format("7zip:compression-level={:d},", level);
+            }
+            if(this->threads != 1) {
+                options += fmt::format("7zip:threads={:d},", this->threads);
             }
             break;
 
         case Format::TAR:
             r = archive_write_set_format_pax_restricted(a);
             if(r != ARCHIVE_OK) {
-                logArchive("failed to set TAR format: {:s}", archive_error_string(a));
+                logIfCV(debug_file, "failed to set TAR format: {:s}", archive_error_string(a));
                 return false;
             }
             break;
@@ -535,66 +588,81 @@ bool Archive::Writer::configureArchive(struct archive* a) {
         case Format::TAR_GZ:
             r = archive_write_set_format_pax_restricted(a);
             if(r != ARCHIVE_OK) {
-                logArchive("failed to set TAR format: {:s}", archive_error_string(a));
+                logIfCV(debug_file, "failed to set TAR format: {:s}", archive_error_string(a));
                 return false;
             }
             r = archive_write_add_filter_gzip(a);
             if(r != ARCHIVE_OK) {
-                logArchive("failed to add gzip filter: {:s}", archive_error_string(a));
+                logIfCV(debug_file, "failed to add gzip filter: {:s}", archive_error_string(a));
                 return false;
             }
             if(this->compressionLevel != COMPRESSION_DEFAULT && this->compressionLevel != COMPRESSION_STORE) {
-                std::string opts = fmt::format("gzip:compression-level={:d}", std::clamp(this->compressionLevel, 1, 9));
-                archive_write_set_options(a, opts.c_str());
+                options += fmt::format("gzip:compression-level={:d},", std::clamp(this->compressionLevel, 1, 9));
             }
             break;
 
         case Format::TAR_BZ2:
             r = archive_write_set_format_pax_restricted(a);
             if(r != ARCHIVE_OK) {
-                logArchive("failed to set TAR format: {:s}", archive_error_string(a));
+                logIfCV(debug_file, "failed to set TAR format: {:s}", archive_error_string(a));
                 return false;
             }
             r = archive_write_add_filter_bzip2(a);
             if(r != ARCHIVE_OK) {
-                logArchive("failed to add bzip2 filter: {:s}", archive_error_string(a));
+                logIfCV(debug_file, "failed to add bzip2 filter: {:s}", archive_error_string(a));
                 return false;
             }
             if(this->compressionLevel != COMPRESSION_DEFAULT && this->compressionLevel != COMPRESSION_STORE) {
-                std::string opts =
-                    fmt::format("bzip2:compression-level={:d}", std::clamp(this->compressionLevel, 1, 9));
-                archive_write_set_options(a, opts.c_str());
+                options += fmt::format("bzip2:compression-level={:d},", std::clamp(this->compressionLevel, 1, 9));
             }
             break;
 
         case Format::TAR_XZ:
             r = archive_write_set_format_pax_restricted(a);
             if(r != ARCHIVE_OK) {
-                logArchive("failed to set TAR format: {:s}", archive_error_string(a));
+                logIfCV(debug_file, "failed to set TAR format: {:s}", archive_error_string(a));
                 return false;
             }
             r = archive_write_add_filter_xz(a);
             if(r != ARCHIVE_OK) {
-                logArchive("failed to add xz filter: {:s}", archive_error_string(a));
+                logIfCV(debug_file, "failed to add xz filter: {:s}", archive_error_string(a));
                 return false;
             }
             if(this->compressionLevel != COMPRESSION_DEFAULT && this->compressionLevel != COMPRESSION_STORE) {
-                std::string opts = fmt::format("xz:compression-level={:d}", std::clamp(this->compressionLevel, 0, 9));
-                archive_write_set_options(a, opts.c_str());
+                options += fmt::format("xz:compression-level={:d},", std::clamp(this->compressionLevel, 0, 9));
+            }
+            if(this->threads != 1) {
+                options += fmt::format("xz:threads={:d},", this->threads);
             }
             break;
+    }
+
+    if(!options.empty()) {
+        if(options.ends_with(',')) {
+            options.pop_back();
+        }
+        archive_write_set_options(a, options.c_str());
     }
 
     return true;
 }
 
-bool Archive::Writer::writeEntries(struct archive* a) {
+bool Archive::Writer::writeEntries(struct archive* a, const Sync::stop_token& stopToken) {
     time_t now = std::time(nullptr);
+    // libarchive has no native way to asynchronously cancel an operation, so write in chunks
+    // so that we have a chance to do so
+    constexpr size_t CHUNK_SIZE = 64ULL * 1024;
 
     for(const auto& pending : this->pendingEntries) {
+        if(stopToken.stop_requested()) {
+            logIfCV(debug_file, "write interrupted before entry '{:s}'", pending.archivePath.c_str());
+            archive_write_fail(a);
+            return false;
+        }
+
         struct archive_entry* entry = archive_entry_new();
         if(!entry) {
-            logArchive("failed to create archive entry");
+            logIfCV(debug_file, "failed to create archive entry");
             return false;
         }
 
@@ -613,18 +681,34 @@ bool Archive::Writer::writeEntries(struct archive* a) {
 
         int r = archive_write_header(a, entry);
         if(r != ARCHIVE_OK) {
-            logArchive("failed to write header for '{:s}': {:s}", pending.archivePath.c_str(), archive_error_string(a));
+            logIfCV(debug_file, "failed to write header for '{:s}': {:s}", pending.archivePath.c_str(),
+                    archive_error_string(a));
             archive_entry_free(entry);
             return false;
         }
 
         if(!pending.isDirectory && !pending.data.empty()) {
-            la_ssize_t written = archive_write_data(a, pending.data.data(), pending.data.size());
-            if(written < 0 || static_cast<size_t>(written) != pending.data.size()) {
-                logArchive("failed to write data for '{:s}': {:s}", pending.archivePath.c_str(),
-                           archive_error_string(a));
-                archive_entry_free(entry);
-                return false;
+            const u8* ptr = pending.data.data();
+            size_t remaining = pending.data.size();
+
+            while(remaining > 0) {
+                if(stopToken.stop_requested()) {
+                    logIfCV(debug_file, "write interrupted during '{:s}'", pending.archivePath.c_str());
+                    archive_entry_free(entry);
+                    archive_write_fail(a);
+                    return false;
+                }
+
+                size_t toWrite = std::min(remaining, CHUNK_SIZE);
+                la_ssize_t written = archive_write_data(a, ptr, toWrite);
+                if(written < 0) {
+                    logIfCV(debug_file, "failed to write data for '{:s}': {:s}", pending.archivePath.c_str(),
+                            archive_error_string(a));
+                    archive_entry_free(entry);
+                    return false;
+                }
+                ptr += written;
+                remaining -= static_cast<size_t>(written);
             }
         }
 
@@ -634,15 +718,15 @@ bool Archive::Writer::writeEntries(struct archive* a) {
     return true;
 }
 
-bool Archive::Writer::writeToFile(std::string outputPath, bool appendExtension) {
+bool Archive::Writer::writeToFile(std::string outputPath, bool appendExtension, const Sync::stop_token& stopToken) {
     if(this->pendingEntries.empty()) {
-        logArchive("no entries to write");
+        logIfCV(debug_file, "no entries to write");
         return false;
     }
 
     struct archive* a = archive_write_new();
     if(!a) {
-        logArchive("failed to create archive writer");
+        logIfCV(debug_file, "failed to create archive writer");
         return false;
     }
 
@@ -652,21 +736,21 @@ bool Archive::Writer::writeToFile(std::string outputPath, bool appendExtension) 
     }
 
     if(appendExtension) {
-        outputPath += getExtSuffix(this->format);
+        outputPath += getExtSuffix();
     }
 
     int r = archive_write_open_filename(a, outputPath.c_str());
     if(r != ARCHIVE_OK) {
-        logArchive("error opening: {:s}", archive_error_string(a));
+        logIfCV(debug_file, "error opening: {:s}", archive_error_string(a));
         archive_write_free(a);
         return false;
     }
 
-    bool success = writeEntries(a);
+    bool success = writeEntries(a, stopToken);
 
     r = archive_write_close(a);
     if(r != ARCHIVE_OK) {
-        logArchive("error closing: {:s}", archive_error_string(a));
+        logIfCV(debug_file, "error closing: {:s}", archive_error_string(a));
         success = false;
     }
 
@@ -674,17 +758,17 @@ bool Archive::Writer::writeToFile(std::string outputPath, bool appendExtension) 
     return success;
 }
 
-std::vector<u8> Archive::Writer::writeToMemory() {
+std::vector<u8> Archive::Writer::writeToMemory(const Sync::stop_token& stopToken) {
     std::vector<u8> result;
 
     if(this->pendingEntries.empty()) {
-        logArchive("no entries to write");
+        logIfCV(debug_file, "no entries to write");
         return result;
     }
 
     struct archive* a = archive_write_new();
     if(!a) {
-        logArchive("failed to create archive writer");
+        logIfCV(debug_file, "failed to create archive writer");
         return result;
     }
 
@@ -693,28 +777,37 @@ std::vector<u8> Archive::Writer::writeToMemory() {
         return result;
     }
 
+    struct WriteContext {
+        std::vector<u8>* output;
+        const Sync::stop_token* stopToken;
+    };
+    WriteContext ctx{&result, &stopToken};
+
     auto writeCallback = [](struct archive*, void* clientData, const void* buffer, size_t length) -> la_ssize_t {
-        auto* vec = static_cast<std::vector<u8>*>(clientData);
+        auto* c = static_cast<WriteContext*>(clientData);
+        if(c->stopToken->stop_requested()) {
+            return ARCHIVE_FATAL;
+        }
         const u8* bytes = static_cast<const u8*>(buffer);
-        vec->insert(vec->end(), bytes, bytes + length);
+        c->output->insert(c->output->end(), bytes, bytes + length);
         return static_cast<la_ssize_t>(length);
     };
 
-    int r = archive_write_open(a, &result, nullptr, writeCallback, nullptr);
+    int r = archive_write_open(a, &ctx, nullptr, writeCallback, nullptr);
     if(r != ARCHIVE_OK) {
-        logArchive("failed to open memory output: {:s}", archive_error_string(a));
+        logIfCV(debug_file, "failed to open memory output: {:s}", archive_error_string(a));
         archive_write_free(a);
         return {};
     }
 
-    if(!writeEntries(a)) {
+    if(!writeEntries(a, stopToken)) {
         archive_write_free(a);
         return {};
     }
 
     r = archive_write_close(a);
     if(r != ARCHIVE_OK) {
-        logArchive("failed to close archive: {:s}", archive_error_string(a));
+        logIfCV(debug_file, "failed to close archive: {:s}", archive_error_string(a));
         archive_write_free(a);
         return {};
     }

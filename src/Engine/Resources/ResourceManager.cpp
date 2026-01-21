@@ -430,6 +430,17 @@ void ResourceManager::setResourceName(Resource *res, std::string name) {
     return;
 }
 
+bool ResourceManager::addManagedResource(Resource *userPtr, const std::string &resourceName) {
+    auto res = pImpl->checkIfExistsAndHandle<Resource>(resourceName);
+    if(res != nullptr) return false;
+
+    // set it up
+    setResourceName(userPtr, resourceName);
+    loadResource(userPtr, false);
+
+    return true;
+}
+
 Image *ResourceManager::loadImage(std::string filepath, const std::string &resourceName, bool mipmapped,
                                   bool keepInSystemMemory) {
     auto res = pImpl->checkIfExistsAndHandle<Image>(resourceName);
@@ -478,9 +489,8 @@ Image *ResourceManager::loadImageAbsUnnamed(std::string absoluteFilepath, bool m
 
 Image *ResourceManager::createImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) {
     if(width > 8192 || height > 8192) {
-        engine->showMessageError(
-            "Resource Manager Error",
-            fmt::format("Invalid parameters in createImage({}, {}, {})!", width, height, (int)mipmapped));
+        engine->showMessageError("Resource Manager Error", fmt::format("Invalid parameters in createImage({}, {}, {})!",
+                                                                       width, height, (int)mipmapped));
         return nullptr;
     }
 

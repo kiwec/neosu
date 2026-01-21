@@ -49,7 +49,7 @@ class Resource {
     void loadAsync();
     void release();
     void reload();
-    void interruptLoad();
+    virtual void interruptLoad();
 
     [[nodiscard]] inline const std::string &getName() const { return this->sName; }
     [[nodiscard]] inline const std::string &getFilePath() const { return this->sFilePath; }

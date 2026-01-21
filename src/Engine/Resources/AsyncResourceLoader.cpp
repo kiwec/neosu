@@ -218,6 +218,12 @@ void AsyncResourceLoader::update(bool lowLatency) {
         }
 
         Resource *rs = work->resource;
+        // remove from tracking set (before load(), since that might want to reload itself)
+        {
+            Sync::scoped_lock lock(this->loadingResourcesMutex);
+            this->loadingResourcesSet.erase(rs);
+        }
+
         const bool interrupted =
             work->state.load(std::memory_order_acquire) == WorkState::ASYNC_INTERRUPTED || rs->isInterrupted();
         if(!interrupted) {
@@ -228,12 +234,6 @@ void AsyncResourceLoader::update(bool lowLatency) {
         }
 
         work->state.store(WorkState::SYNC_COMPLETE, std::memory_order_release);
-
-        // remove from tracking set
-        {
-            Sync::scoped_lock lock(this->loadingResourcesMutex);
-            this->loadingResourcesSet.erase(rs);
-        }
 
         this->iActiveWorkCount.fetch_sub(1, std::memory_order_acq_rel);
         if(!interrupted) numProcessed++;

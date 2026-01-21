@@ -40,6 +40,7 @@ neosu_SOURCES = \
 	src/App/Osu/LoadingScreen.cpp \
 	src/App/Osu/Lobby.cpp \
 	src/App/Osu/MainMenu.cpp \
+	src/App/Osu/MapExporter.cpp \
 	src/App/Osu/ModFPoSu.cpp \
 	src/App/Osu/ModSelector.cpp \
 	src/App/Osu/NeosuUrl.cpp \

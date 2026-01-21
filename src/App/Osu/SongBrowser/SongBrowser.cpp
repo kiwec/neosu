@@ -35,6 +35,7 @@
 #include "BanchoNetworking.h"
 #include "BanchoLeaderboard.h"
 #include "RichPresence.h"
+#include "MapExporter.h"
 
 #include "HUD.h"
 #include "OptionsOverlay.h"
@@ -3429,6 +3430,11 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
             }
 
             Collections::save_collections();
+        } else if(id == 5) {  // export beatmapset
+            assert(songButton->getDatabaseBeatmap());
+            std::string folder = songButton->getDatabaseBeatmap()->getFolder();
+            auto ctx = MapExporter::ExportContext{{folder}, "", BottomBar::update_export_progress_cb};
+            MapExporter::export_paths(std::move(ctx));
         }
     }
 
@@ -3502,6 +3508,33 @@ void SongBrowser::onCollectionButtonContextMenu(CollectionButton *collectionButt
                 this->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
             }
         }
+    } else if(id == 5) {  // export collection
+        std::vector<std::string> pathsToExport;
+        auto &existingCollection = Collections::get_or_create_collection(collection_name);
+        for(auto &mapHash : existingCollection.get_maps()) {
+            if(auto *diff = db->getBeatmapDifficulty(mapHash); diff) {
+                pathsToExport.push_back(diff->getFolder());
+            }
+        }
+
+        // uber sanity
+        std::string colNameSanitized = collection_name;
+        if(colNameSanitized.empty()) {
+            colNameSanitized = fmt::format("Untitled-Collection-{:%F:%T}", fmt::gmtime(std::time(nullptr)));
+        } else {
+            std::ranges::replace(colNameSanitized, '\\', '_');
+            std::ranges::replace(colNameSanitized, '/', '_');
+        }
+
+        // TODO: custom export name maybe
+        Environment::createDirectory(cv::export_folder.getString() + "/collections");
+
+        auto ctx = MapExporter::ExportContext{
+            pathsToExport, fmt::format("collections/{}", colNameSanitized),
+            [namestr = std::string{collection_name}](f32 progress, std::string entry) -> void {
+                return BottomBar::update_export_progress(progress, std::move(entry), namestr);
+            }};
+        MapExporter::export_paths(std::move(ctx));
     }
 }
 

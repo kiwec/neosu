@@ -15,6 +15,21 @@
 #include "Logging.h"
 #include "UI.h"
 
+namespace cv {
+static ConVar test_notification("test_notification", ""sv, CLIENT | NOLOAD | NOSAVE, [](std::string_view text) -> void {
+    if(ui && ui->getNotificationOverlay()) {
+        ui->getNotificationOverlay()->addNotification(text);
+        test_notification.setValue("", false);
+    }
+});
+static ConVar test_toast("test_toast", ""sv, CLIENT | NOLOAD | NOSAVE, [](std::string_view text) -> void {
+    if(ui && ui->getNotificationOverlay()) {
+        ui->getNotificationOverlay()->addToast(text, INFO_TOAST);
+        test_toast.setValue("", false);
+    }
+});
+}  // namespace cv
+
 NotificationOverlay::NotificationOverlay() : UIScreen() {
     this->bWaitForKey = false;
     this->bWaitForKeyDisallowsLeftClick = false;

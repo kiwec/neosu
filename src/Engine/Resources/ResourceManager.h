@@ -72,6 +72,11 @@ class ResourceManager final {
     // can't allow directly setting resource names, otherwise the map will go out of sync
     void setResourceName(Resource *res, std::string name);
 
+    // resources which will be garbage collected on shutdown
+    // userPtr must contain a pre-created (allocated with new) resource of any type
+    // returns true if it was successfully added to tracking
+    bool addManagedResource(Resource *userPtr, const std::string &resourceName);
+
     // images
     Image *loadImage(std::string filepath, const std::string &resourceName, bool mipmapped = false,
                      bool keepInSystemMemory = false);

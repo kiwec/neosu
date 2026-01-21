@@ -80,31 +80,41 @@ struct custom_spdmtx : public Sync::mutex {
 // gives WAY too much information
 class custom_srcloc_formatter : public spdlog::custom_flag_formatter {
     static forceinline void trim_funcname_inplace(std::string_view &str) {
-        // skip possible "static", "virtual"
-        for(const auto pfx : std::array{"static "sv, "virtual "sv}) {
-            const size_t pfxpos = str.find(pfx);
-            if(pfxpos != std::string_view::npos) {
-                str = str.substr(pfxpos + pfx.size());
+        // Strip parameter list by finding the last '('
+        // Works correctly for operators like operator() which become "...::operator()"
+        if(const size_t paren_pos = str.rfind('('); paren_pos != std::string_view::npos) {
+            str = str.substr(0, paren_pos);
+        }
+
+        const size_t last_scope = str.rfind("::");
+
+        if(last_scope != std::string_view::npos) {
+            // Scan backwards from the qualified name to find where the return type ends
+            // The qualified name has no spaces, so the first space we find (going backwards)
+            // marks the end of the return type
+            size_t name_start = last_scope;
+            while(name_start > 0 && str[name_start - 1] != ' ') {
+                --name_start;
+            }
+            if(name_start > 0) {
+                // Found a space; everything from name_start onwards is the qualified function name
+                str = str.substr(name_start);
+            }
+            // If name_start == 0, there's no return type (constructor/destructor)
+        } else {
+            // No "::", so this is a free function like "void foo"
+            // Find the last space and strip the return type
+            if(const size_t space_pos = str.rfind(' '); space_pos != std::string_view::npos) {
+                str = str.substr(space_pos + 1);
             }
         }
-        const size_t spacepos = str.find(' ');
-        // skip function type
-        if(spacepos != std::string_view::npos) {
-            str = str.substr(spacepos + 1);
-        }
-        // include everything until function parameters begin
-        const size_t lastparens = str.rfind('(');
-        if(lastparens != std::string_view::npos) {
-            str = str.substr(0, lastparens);
-        }
+
 #ifndef _DEBUG
-        // if not in debug, trim to last scope
-        const size_t pos = str.rfind("::"sv);
-        if(pos != std::string_view::npos) {
-            str = str.substr(pos + 2);  // +2 to skip "::"
+        // In release mode, trim to just the function name (no class/namespace qualification)
+        if(const size_t final_scope = str.rfind("::"); final_scope != std::string_view::npos) {
+            str = str.substr(final_scope + 2);
         }
 #endif
-        return;
     }
 
    public:
