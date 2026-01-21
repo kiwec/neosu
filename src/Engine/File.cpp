@@ -262,8 +262,19 @@ bool File::getDirectoryEntries(const std::string &pathToEnum, bool wantDirectori
     // before using the windows API.
 
     UString folder{pathToEnum};
-    if(!folder.endsWith(US_("/"))) {
-        folder.append(US_("/"));
+    // TODO: avoid this fragile bs
+    UString endSep{US_("/")};
+    UString otherSep{US_("\\")};
+    // for UNC/long paths, make sure we use a backslash as the last separator
+    if(folder.startsWith(US_(R"(\\?\)")) || folder.startsWith(US_(R"(\\.\)"))) {
+        endSep = US_("\\");
+        otherSep = US_("/");
+    }
+    if(!folder.endsWith(endSep)) {
+        if(folder.endsWith(otherSep)) {
+            folder.pop_back();
+        }
+        folder.append(endSep);
     }
     folder.append(US_("*.*"));
 

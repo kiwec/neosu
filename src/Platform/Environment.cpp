@@ -410,6 +410,7 @@ bool Environment::deleteFile(const std::string &filePath) noexcept { return SDL_
 
 namespace {
 // make sure we have a valid path for enumeration (ends with the right separator, and handles long paths on windows)
+// TODO: fix duplication between here and File
 std::string manualDirectoryFixup(std::string_view input) {
     assert(!input.empty());
 
