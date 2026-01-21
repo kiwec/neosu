@@ -28,7 +28,7 @@ class UIContextMenu final : public CBaseUIScrollView {
     void onChar(KeyboardEvent &e) override;
 
     using ButtonClickCallback = SA::delegate<void(const UString &, int)>;
-    void setClickCallback(const ButtonClickCallback &clickCallback) { this->clickCallback = clickCallback; }
+    void setClickCallback(ButtonClickCallback clickCallback) { this->clickCallback = std::move(clickCallback); }
 
     void begin(int minWidth = 0, bool bigStyle = false);
     UIContextMenuButton *addButtonJustified(const UString &text, TEXT_JUSTIFICATION j = TEXT_JUSTIFICATION::CENTERED,
@@ -41,16 +41,22 @@ class UIContextMenu final : public CBaseUIScrollView {
     enum class EndStyle : u8 {
         CLAMP_TOP = (1 << 0),
         CLAMP_BOT = (1 << 1),
-        STANDALONE_SCROLL = (1 << 2),
-        CLAMP_BOUNDS = CLAMP_TOP | CLAMP_BOT
+        CLAMP_LEFT = (1 << 2),
+        CLAMP_RIGHT = (1 << 3),
+        STANDALONE_SCROLL = (1 << 4),
+        REPOSITION_ONSCREEN = (1 << 5),
+        CLAMP_VERTICAL = CLAMP_TOP | CLAMP_BOT,
+        CLAMP_HORIZONTAL = CLAMP_LEFT | CLAMP_RIGHT,
+        CLAMP_BOUNDS = CLAMP_VERTICAL | CLAMP_HORIZONTAL,
     };
     void end(bool invertAnimation, EndStyle style);
 
     // compatibility wrapper to avoid messing with a bunch of code
     inline void end(bool invertAnimation, bool clampUnderflowAndOverflowAndEnableScrollingIfNecessary) {
-        return this->end(invertAnimation, clampUnderflowAndOverflowAndEnableScrollingIfNecessary
-                                              ? (EndStyle)((u8)EndStyle::CLAMP_BOUNDS | (u8)EndStyle::STANDALONE_SCROLL)
-                                              : EndStyle{0});
+        return this->end(invertAnimation,
+                         clampUnderflowAndOverflowAndEnableScrollingIfNecessary
+                             ? (EndStyle)((u8)EndStyle::CLAMP_VERTICAL | (u8)EndStyle::STANDALONE_SCROLL)
+                             : EndStyle{0});
     }
 
     CBaseUIElement *setVisible(bool visible) override {

@@ -2883,7 +2883,7 @@ void OptionsOverlayImpl::onSkinSelect() {
         {
             using namespace flags::operators;
             using enum UIContextMenu::EndStyle;
-            auto flags = !parent->bVisible ? CLAMP_BOUNDS | STANDALONE_SCROLL : UIContextMenu::EndStyle{0};
+            auto flags = !parent->bVisible ? CLAMP_VERTICAL | STANDALONE_SCROLL : UIContextMenu::EndStyle{0};
 
             // we want to be able to scroll the skin dropdown itself
             this->contextMenu->end(false, flags);

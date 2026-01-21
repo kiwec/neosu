@@ -236,7 +236,7 @@ class SongBrowser final : public ScreenBackable {
     void onSortScoresChange(const UString &text, int id = -1);
     void onWebClicked(CBaseUIButton *button);
 
-    void onQuickGroupClicked(CBaseUIButton *button);
+    void onQuickGroupClicked(CBaseUIButton *button, bool left = true, bool right = false);
     void onGroupClicked(CBaseUIButton *button);
     void onGroupChange(const UString &text, int id = -1);
 

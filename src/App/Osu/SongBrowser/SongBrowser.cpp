@@ -443,18 +443,22 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
 
         // "hardcoded" grouping tabs
         this->groupByCollectionBtn = new CBaseUIButton(0, 0, 0, 0, "", "Collections");
+        this->groupByCollectionBtn->setHandleRightMouse(true);
         this->groupByCollectionBtn->setClickCallback(SA::MakeDelegate<&SongBrowser::onQuickGroupClicked>(this));
         this->groupByCollectionBtn->grabs_clicks = true;
         this->topbarRight->addBaseUIElement(this->groupByCollectionBtn);
         this->groupByArtistBtn = new CBaseUIButton(0, 0, 0, 0, "", "By Artist");
+        this->groupByArtistBtn->setHandleRightMouse(true);
         this->groupByArtistBtn->setClickCallback(SA::MakeDelegate<&SongBrowser::onQuickGroupClicked>(this));
         this->groupByArtistBtn->grabs_clicks = true;
         this->topbarRight->addBaseUIElement(this->groupByArtistBtn);
         this->groupByDifficultyBtn = new CBaseUIButton(0, 0, 0, 0, "", "By Difficulty");
+        this->groupByDifficultyBtn->setHandleRightMouse(true);
         this->groupByDifficultyBtn->setClickCallback(SA::MakeDelegate<&SongBrowser::onQuickGroupClicked>(this));
         this->groupByDifficultyBtn->grabs_clicks = true;
         this->topbarRight->addBaseUIElement(this->groupByDifficultyBtn);
         this->groupByNothingBtn = new CBaseUIButton(0, 0, 0, 0, "", "No Grouping");
+        this->groupByNothingBtn->setHandleRightMouse(true);
         this->groupByNothingBtn->setClickCallback(SA::MakeDelegate<&SongBrowser::onQuickGroupClicked>(this));
         this->groupByNothingBtn->grabs_clicks = true;
         this->topbarRight->addBaseUIElement(this->groupByNothingBtn);
@@ -3079,8 +3083,8 @@ void SongBrowser::onWebClicked(CBaseUIButton * /*button*/) {
     }
 }
 
-void SongBrowser::onQuickGroupClicked(CBaseUIButton *button) {
-    if(button->getText().isEmpty()) return;
+void SongBrowser::onQuickGroupClicked(CBaseUIButton *button, bool /*left*/, bool right) {
+    if(right || button->getText().isEmpty()) return;
     const std::string_view btntxt = button->getText().utf8View();
 
     for(int gid = -1; const auto &gname : GROUP_NAMES) {
@@ -3520,7 +3524,7 @@ void SongBrowser::onCollectionButtonContextMenu(CollectionButton *collectionButt
         // uber sanity
         std::string colNameSanitized = collection_name;
         if(colNameSanitized.empty()) {
-            colNameSanitized = fmt::format("Untitled-Collection-{:%F:%T}", fmt::gmtime(std::time(nullptr)));
+            colNameSanitized = fmt::format("Untitled-Collection-{:%F-%H-%M-%S}", fmt::gmtime(std::time(nullptr)));
         } else {
             std::ranges::replace(colNameSanitized, '\\', '_');
             std::ranges::replace(colNameSanitized, '/', '_');

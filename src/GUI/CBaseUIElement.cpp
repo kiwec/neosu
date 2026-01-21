@@ -52,7 +52,7 @@ void CBaseUIElement::update(CBaseUIEventCtx &c) {
     if(buttonMask && c.propagate_clicks) {
         this->mouseUpCheck |= buttonMask;
         if(this->bMouseInside) {
-            c.propagate_clicks = !this->grabs_clicks;
+            c.propagate_clicks &= !this->grabs_clicks;
         }
 
         // onMouseDownOutside

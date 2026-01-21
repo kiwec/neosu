@@ -52,7 +52,8 @@ Archive::Entry::Entry(struct archive* archive, struct archive_entry* entry) {
 
         // check for errors during data extraction
         if(result != ARCHIVE_EOF) {
-            debugLog("failed to extract data for '{:s}': {:s}", this->sFilename.c_str(), archive_error_string(archive));
+            logIfCV(debug_file, "failed to extract data for '{:s}': {:s}", this->sFilename.c_str(),
+                    archive_error_string(archive));
             // clear any partial data on error
             this->data.clear();
         }
@@ -76,17 +77,17 @@ bool Archive::Entry::extractToFile(const std::string& outputPath) const {
 
     std::ofstream file(outputPath, std::ios::binary);
     if(!file.good()) {
-        debugLog("failed to create output file {:s}", outputPath.c_str());
+        logIfCV(debug_file, "failed to create output file {:s}", outputPath.c_str());
         return false;
     }
 
     if(this->data.empty()) {
-        debugLog("Archive WARNING: extracted data for path {:s} is empty.", outputPath.c_str());
+        logIfCV(debug_file, "Archive WARNING: extracted data for path {:s} is empty.", outputPath.c_str());
     }
 
     file.write(reinterpret_cast<const char*>(this->data.data()), static_cast<std::streamsize>(this->data.size()));
     if(file.bad()) {
-        debugLog("failed to write to file {:s}", outputPath.c_str());
+        logIfCV(debug_file, "failed to write to file {:s}", outputPath.c_str());
         return false;
     }
 
@@ -110,7 +111,7 @@ Archive::Reader::~Reader() { cleanup(); }
 void Archive::Reader::initFromFile(const std::string& filePath) {
     this->archive = archive_read_new();
     if(!this->archive) {
-        debugLog("failed to create archive reader");
+        logIfCV(debug_file, "failed to create archive reader");
         return;
     }
 
@@ -120,7 +121,7 @@ void Archive::Reader::initFromFile(const std::string& filePath) {
 
     int r = archive_read_open_filename(this->archive, filePath.c_str(), 10240);
     if(r != ARCHIVE_OK) {
-        debugLog("failed to open file {:s}: {:s}", filePath.c_str(), archive_error_string(this->archive));
+        logIfCV(debug_file, "failed to open file {:s}: {:s}", filePath.c_str(), archive_error_string(this->archive));
         cleanup();
         return;
     }
@@ -130,7 +131,7 @@ void Archive::Reader::initFromFile(const std::string& filePath) {
 
 void Archive::Reader::initFromMemory(const u8* data, size_t size) {
     if(!data || size == 0) {
-        debugLog("invalid memory buffer");
+        logIfCV(debug_file, "invalid memory buffer");
         return;
     }
 
@@ -139,7 +140,7 @@ void Archive::Reader::initFromMemory(const u8* data, size_t size) {
 
     this->archive = archive_read_new();
     if(!this->archive) {
-        debugLog("failed to create archive reader");
+        logIfCV(debug_file, "failed to create archive reader");
         return;
     }
 
@@ -149,7 +150,7 @@ void Archive::Reader::initFromMemory(const u8* data, size_t size) {
 
     int r = archive_read_open_memory(this->archive, this->vMemoryBuffer.data(), this->vMemoryBuffer.size());
     if(r != ARCHIVE_OK) {
-        debugLog("failed to open memory buffer: {:s}", archive_error_string(this->archive));
+        logIfCV(debug_file, "failed to open memory buffer: {:s}", archive_error_string(this->archive));
         cleanup();
         return;
     }
@@ -177,7 +178,7 @@ std::vector<Archive::Entry> Archive::Reader::getAllEntries() {
         if(!this->vMemoryBuffer.empty()) {
             initFromMemory(this->vMemoryBuffer.data(), this->vMemoryBuffer.size());
         } else {
-            debugLog("cannot restart iteration on file-based archive");
+            logIfCV(debug_file, "cannot restart iteration on file-based archive");
             return entries;
         }
     }
@@ -206,7 +207,7 @@ bool Archive::Reader::hasNext() {
         } else if(r == ARCHIVE_EOF) {
             return false;
         } else {
-            debugLog("error reading next header: {:s}", archive_error_string(this->archive));
+            logIfCV(debug_file, "error reading next header: {:s}", archive_error_string(this->archive));
             return false;
         }
     }
@@ -243,7 +244,7 @@ bool Archive::Reader::moveNext() {
     } else if(r == ARCHIVE_EOF) {
         return false;
     } else {
-        debugLog("error reading next header: {:s}", archive_error_string(this->archive));
+        logIfCV(debug_file, "error reading next header: {:s}", archive_error_string(this->archive));
         return false;
     }
 }
@@ -286,7 +287,7 @@ bool Archive::Reader::extractAll(const std::string& outputDir, const std::vector
     if(!skipDirectories) {
         for(const auto& dir : directories) {
             if(stopToken.stop_requested()) {
-                debugLog("extraction interrupted during directory creation");
+                logIfCV(debug_file, "extraction interrupted during directory creation");
                 return false;
             }
 
@@ -300,7 +301,7 @@ bool Archive::Reader::extractAll(const std::string& outputDir, const std::vector
             if(shouldIgnore) continue;
 
             if(!isPathSafe(dir.getFilename())) {
-                debugLog("skipping unsafe directory path {:s}", dir.getFilename().c_str());
+                logIfCV(debug_file, "skipping unsafe directory path {:s}", dir.getFilename().c_str());
                 continue;
             }
 
@@ -311,7 +312,7 @@ bool Archive::Reader::extractAll(const std::string& outputDir, const std::vector
     // extract files
     for(const auto& file : files) {
         if(stopToken.stop_requested()) {
-            debugLog("extraction interrupted");
+            logIfCV(debug_file, "extraction interrupted");
             return false;
         }
 
@@ -323,12 +324,12 @@ bool Archive::Reader::extractAll(const std::string& outputDir, const std::vector
         });
 
         if(shouldIgnore) {
-            debugLog("ignoring file {:s}", filePath.c_str());
+            logIfCV(debug_file, "ignoring file {:s}", filePath.c_str());
             continue;
         }
 
         if(!isPathSafe(file.getFilename())) {
-            debugLog("skipping unsafe file path {:s}", file.getFilename().c_str());
+            logIfCV(debug_file, "skipping unsafe file path {:s}", file.getFilename().c_str());
             continue;
         }
 
@@ -341,7 +342,7 @@ bool Archive::Reader::extractAll(const std::string& outputDir, const std::vector
         }
 
         if(!file.extractToFile(filePath)) {
-            debugLog("failed to extract file {:s}", filePath.c_str());
+            logIfCV(debug_file, "failed to extract file {:s}", filePath.c_str());
             return false;
         }
     }

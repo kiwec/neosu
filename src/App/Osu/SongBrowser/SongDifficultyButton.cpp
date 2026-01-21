@@ -148,7 +148,7 @@ void SongDifficultyButton::draw() {
     }
 }
 
-void SongDifficultyButton::update(CBaseUIEventCtx &c) {
+void SongDifficultyButton::update(CBaseUIEventCtx& c) {
     if(!this->bVisible) {
         this->fVisibleFor = 0.f;
         return;
@@ -194,12 +194,14 @@ void SongDifficultyButton::resetAnimations() {
 }
 
 void SongDifficultyButton::onClicked(bool left, bool right) {
-    soundEngine->play(osu->getSkin()->s_select_difficulty);
-
     // NOTE: Intentionally not calling Button::onClicked(left, right), since that one plays another sound
     CBaseUIButton::onClicked(left, right);
 
-    this->select();
+    if(left) {
+        soundEngine->play(osu->getSkin()->s_select_difficulty);
+
+        this->select();
+    }
 }
 
 void SongDifficultyButton::onSelected(bool wasSelected, SelOpts opts) {

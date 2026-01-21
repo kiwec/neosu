@@ -262,6 +262,9 @@ bool File::getDirectoryEntries(const std::string &pathToEnum, bool wantDirectori
     // before using the windows API.
 
     UString folder{pathToEnum};
+    if(!folder.endsWith(US_("/"))) {
+        folder.append(US_("/"));
+    }
     folder.append(US_("*.*"));
 
     WIN32_FIND_DATAW data{};

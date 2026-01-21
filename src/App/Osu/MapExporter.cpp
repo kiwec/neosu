@@ -120,7 +120,7 @@ struct Exporter final {
                 if(this->isInterrupted()) return finish();
 
                 std::string export_folder_sub =
-                    single_archive ? export_folder_top + fmt::format("temp-{:%F:%T}/", fmt::gmtime(std::time(nullptr)))
+                    single_archive ? export_folder_top + fmt::format("temp-{:%F-%H-%M-%S}/", fmt::gmtime(std::time(nullptr)))
                                    : export_folder_top;
 
                 if(single_archive) {

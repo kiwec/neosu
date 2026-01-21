@@ -59,6 +59,12 @@ class CarouselButton : public CBaseUIButton {
     CarouselButton *setVisible(bool visible) override;
 
     bool isMouseInside() override;
+    inline void onMouseUpInside(bool left = true, bool right = false) override {
+        CBaseUIButton::onMouseUpInside(left, right);
+        if(right) {
+            return this->onRightMouseUpInside();
+        }
+    }
 
     // i hate how difficult it is to understand a sequence of unnamed boolean arguments
     struct SelOpts {
@@ -131,8 +137,6 @@ class CarouselButton : public CBaseUIButton {
     std::atomic<bool> bIsSearchMatch;
 
     bool bHideIfSelected;
-    bool bRightClick;
-    bool bRightClickCheck;
     bool bSelected;
     bool bChildrenNeedSorting{true};
     bool bWasAnimationEverStarted{false};

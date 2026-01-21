@@ -241,10 +241,13 @@ void UIContextMenu::end(bool invertAnimation, EndStyle style) {
 
     this->bInvertAnimation = invertAnimation;
 
-    const bool clampTop = !!(style & EndStyle::CLAMP_TOP);
-    const bool clampBot = !!(style & EndStyle::CLAMP_BOT);
+    const bool clampTop = flags::has<EndStyle::CLAMP_TOP>(style);
+    const bool clampBot = flags::has<EndStyle::CLAMP_BOT>(style);
+    const bool clampLeft = flags::has<EndStyle::CLAMP_LEFT>(style);
+    const bool clampRight = flags::has<EndStyle::CLAMP_RIGHT>(style);
 
-    bool enableScrolling = !!(style & EndStyle::STANDALONE_SCROLL);
+    const bool fit = flags::has<EndStyle::REPOSITION_ONSCREEN>(style);
+    bool enableScrolling = flags::has<EndStyle::STANDALONE_SCROLL>(style);
 
     const int margin = 9 * Osu::getUIScale();
 
@@ -255,10 +258,37 @@ void UIContextMenu::end(bool invertAnimation, EndStyle style) {
         element->setSizeX(this->iWidthCounter - 2 * margin);
     }
 
-    // scrollview handling and edge cases
-    {
-        this->setVerticalScrolling(false);
+    this->setVerticalScrolling(false);
+    if(fit) {
+        if(this->getPos().y < 0) {
+            const float underflow = std::abs(this->getPos().y);
 
+            this->setRelPosY(this->getPos().y + underflow);
+            this->setPosY(this->getPos().y + underflow);
+        }
+
+        if(this->getPos().y + this->getSize().y > osu->getVirtScreenHeight()) {
+            const float overflow = std::abs(this->getPos().y + this->getSize().y - osu->getVirtScreenHeight());
+
+            this->setSizeY(this->getSize().y - overflow - 1);
+        }
+
+        if(this->getPos().x < 0) {
+            const float underflow = std::abs(this->getPos().x);
+
+            this->setRelPosX(this->getPos().x + underflow);
+            this->setPosX(this->getPos().x + underflow);
+        }
+        if(this->getPos().x + this->getSize().x > osu->getVirtScreenWidth()) {
+            const float overflow = std::abs(this->getPos().x + this->getSize().x - osu->getVirtScreenWidth());
+
+            this->setRelPosX(this->getPos().x - overflow - 1);
+            this->setPosX(this->getPos().x - overflow - 1);
+        }
+    }
+    // scrollview handling and edge cases
+
+    {
         if(clampTop && this->getPos().y < 0) {
             enableScrolling = true;
 
@@ -277,12 +307,26 @@ void UIContextMenu::end(bool invertAnimation, EndStyle style) {
             this->setSizeY(this->getSize().y - overflow - 1);
         }
 
-        if(enableScrolling) {
-            this->setVerticalScrolling(true);
-        }
+        // horizontal clamp
+        if(clampLeft && this->getPos().x < 0) {
+            const float underflow = std::abs(this->getPos().x);
 
-        this->setScrollSizeToContent();
+            this->setRelPosX(this->getPos().x + underflow);
+            this->setPosX(this->getPos().x + underflow);
+            this->setSizeX(this->getSize().x - underflow);
+        }
+        if(clampRight && this->getPos().x + this->getSize().x > osu->getVirtScreenWidth()) {
+            const float overflow = std::abs(this->getPos().x + this->getSize().x - osu->getVirtScreenWidth());
+
+            this->setSizeX(this->getSize().x - overflow - 1);
+        }
     }
+
+    if(enableScrolling) {
+        this->setVerticalScrolling(true);
+    }
+
+    this->setScrollSizeToContent();
 
     this->setVisible2(true);
 

@@ -3,6 +3,7 @@
 
 #include <utility>
 
+#include "Logging.h"
 #include "SongBrowser.h"
 #include "BeatmapCarousel.h"
 // ---
@@ -29,15 +30,14 @@ using namespace neosu::sbr;
 
 CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
+    this->setHandleRightMouse(true);
+
     this->font = osu->getSongBrowserFont();
     this->fontBold = osu->getSongBrowserFontBold();
 
     this->bVisible = false;
     this->bSelected = false;
     this->bHideIfSelected = false;
-
-    this->bRightClick = false;
-    this->bRightClickCheck = false;
 
     this->fTargetRelPosY = yPos;
     this->fScale = 1.0f;
@@ -117,24 +117,6 @@ void CarouselButton::update(CBaseUIEventCtx &c) {
         }
         this->rect.setPos(posBackup);
         this->rect.setSize(sizeBackup);
-    }
-
-    // HACKHACK: this should really be part of the UI base
-    // right click detection
-
-    // @spec TODO: it is now, but im too lazy to go through the logic to replace it
-    if(mouse->isRightDown()) {
-        if(!this->bRightClickCheck) {
-            this->bRightClickCheck = true;
-            this->bRightClick = this->isMouseInside();
-        }
-    } else {
-        if(this->bRightClick) {
-            if(this->isMouseInside()) this->onRightMouseUpInside();
-        }
-
-        this->bRightClickCheck = false;
-        this->bRightClick = false;
     }
 
     // animations need constant layout updates while visible
@@ -255,10 +237,12 @@ void CarouselButton::deselect() { this->bSelected = false; }
 void CarouselButton::resetAnimations() { this->setMoveAwayState(MOVE_AWAY_STATE::MOVE_CENTER, false); }
 
 void CarouselButton::onClicked(bool left, bool right) {
-    soundEngine->play(osu->getSkin()->s_select_difficulty);
-
     CBaseUIButton::onClicked(left, right);
-    this->select();
+    if(left) {
+        soundEngine->play(osu->getSkin()->s_select_difficulty);
+
+        this->select();
+    }
 }
 
 void CarouselButton::onMouseInside() {
