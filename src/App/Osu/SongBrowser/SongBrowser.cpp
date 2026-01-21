@@ -3002,7 +3002,8 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
 }
 
 void SongBrowser::onFilterScoresClicked(CBaseUIButton *button) {
-    const std::vector<std::string> filters{"Local", "Global", "Selected mods", "Country", "Friends", "Team"};
+    static const std::array filters{US_("Local"),   US_("Global"),  US_("Selected mods"),
+                                    US_("Country"), US_("Friends"), US_("Team")};
 
     this->contextMenu->setPos(button->getPos());
     this->contextMenu->setRelPos(button->getRelPos());
@@ -3010,13 +3011,13 @@ void SongBrowser::onFilterScoresClicked(CBaseUIButton *button) {
     {
         if(BanchoState::is_online()) {
             for(const auto &filter : filters) {
-                CBaseUIButton *button = this->contextMenu->addButton(filter.c_str());
+                CBaseUIButton *button = this->contextMenu->addButton(filter);
                 if(filter == cv::songbrowser_scores_filteringtype.getString()) {
                     button->setTextBrightColor(0xff00ff00);
                 }
             }
         } else {
-            CBaseUIButton *button = this->contextMenu->addButton("Local");
+            CBaseUIButton *button = this->contextMenu->addButton(US_("Local"));
             button->setTextBrightColor(0xff00ff00);
         }
     }

@@ -11,8 +11,34 @@ struct archive;
 struct archive_entry;
 
 class Archive {
-    NOCOPY_NOMOVE(Archive)
    public:
+    enum class Format : uint8_t {
+        ZIP,
+        TAR,
+        TAR_GZ,
+        TAR_BZ2,
+        TAR_XZ,
+    };
+
+    static constexpr std::string_view getExtSuffix(Format fmt) {
+        switch(fmt) {
+            case Format::ZIP:
+                return ".zip";
+            case Format::TAR:
+                return ".tar";
+            case Format::TAR_GZ:
+                return ".tar.gz";
+            case Format::TAR_BZ2:
+                return ".tar.bz2";
+            case Format::TAR_XZ:
+                return ".tar.xz";
+        }
+    }
+
+    static constexpr int COMPRESSION_STORE = 0;
+    static constexpr int COMPRESSION_DEFAULT = -1;
+    static constexpr int COMPRESSION_MAX = 9;
+
     class Entry {
        public:
         Entry(struct archive* archive, struct archive_entry* entry);
@@ -31,7 +57,7 @@ class Archive {
         [[nodiscard]] bool isFile() const;
 
         // extraction methods
-        [[nodiscard]] const std::vector<u8> &getUncompressedData() const;
+        [[nodiscard]] const std::vector<u8>& getUncompressedData() const;
         [[nodiscard]] bool extractToFile(const std::string& outputPath) const;
 
        private:
@@ -42,41 +68,87 @@ class Archive {
         std::vector<u8> data;  // store extracted data
     };
 
-   public:
-    // construct from file path
-    explicit Archive(const std::string& filePath);
+    class Reader {
+        NOCOPY_NOMOVE(Reader)
+       public:
+        // construct from file path
+        explicit Reader(const std::string& filePath);
 
-    // construct from memory buffer
-    Archive(const u8* data, size_t size);
+        // construct from memory buffer
+        Reader(const u8* data, size_t size);
+        ~Reader();
 
-    ~Archive();
+        // check if archive was opened successfully
+        [[nodiscard]] bool isValid() const { return this->bValid; }
 
-    // check if archive was opened successfully
-    [[nodiscard]] bool isValid() const { return this->bValid; }
+        // get all entries at once (useful for separating files/dirs)
+        std::vector<Entry> getAllEntries();
 
-    // get all entries at once (useful for separating files/dirs)
-    std::vector<Entry> getAllEntries();
+        // iteration interface
+        bool hasNext();
+        Entry getCurrentEntry();
+        bool moveNext();
 
-    // iteration interface
-    bool hasNext();
-    Entry getCurrentEntry();
-    bool moveNext();
+        // convenience methods
+        Entry* findEntry(const std::string& filename);
+        bool extractAll(const std::string& outputDir, const std::vector<std::string>& ignorePaths = {},
+                        bool skipDirectories = false);
 
-    // convenience methods
-    Entry* findEntry(const std::string& filename);
-    bool extractAll(const std::string& outputDir, const std::vector<std::string>& ignorePaths = {},
-                    bool skipDirectories = false);
+       private:
+        void initFromFile(const std::string& filePath);
+        void initFromMemory(const u8* data, size_t size);
+        void cleanup();
+        [[nodiscard]] static bool isPathSafe(const std::string& path);
 
-   private:
-    void initFromMemory(const u8* data, size_t size);
-    void initFromFile(const std::string& filePath);
-    void cleanup();
-    static bool createDirectoryRecursive(const std::string& path);
-    [[nodiscard]] static bool isPathSafe(const std::string& path);
+        struct archive* archive;
+        std::vector<u8> vMemoryBuffer;
+        bool bValid;
+        bool bIterationStarted;
+        std::unique_ptr<Entry> currentEntry;
+    };
 
-    struct archive* archive;
-    std::vector<u8> vMemoryBuffer;  // keep buffer alive for memory-based archives
-    bool bValid;
-    bool bIterationStarted;
-    std::unique_ptr<Entry> currentEntry;
+    class Writer {
+        NOCOPY_NOMOVE(Writer)
+       public:
+        explicit Writer(Format format = Format::ZIP, int compressionLevel = COMPRESSION_DEFAULT);
+        ~Writer() = default;
+
+        // add a single file from disk; fails if diskPath is a directory
+        // if archivePath is empty, uses filename from diskPath
+        bool addFile(const std::string& diskPath, const std::string& archivePath = "");
+
+        // add file or directory recursively from disk
+        // if diskPath is a file, adds it at archiveRoot/filename
+        // if diskPath is a directory, adds all contents recursively under archiveRoot
+        bool addPath(const std::string& diskPath, const std::string& archiveRoot = "");
+
+        // add file from memory
+        bool addData(const std::string& archivePath, const u8* data, size_t size);
+        bool addData(const std::string& archivePath, const std::vector<u8>& data);
+        bool addData(const std::string& archivePath, std::vector<u8>&& data);
+
+        bool writeToFile(std::string outputPath, bool appendExtension = true);
+        [[nodiscard]] std::vector<u8> writeToMemory();
+
+        [[nodiscard]] bool isEmpty() const { return this->pendingEntries.empty(); }
+        [[nodiscard]] size_t getEntryCount() const { return this->pendingEntries.size(); }
+
+       private:
+        struct PendingEntry {
+            std::string archivePath;
+            std::vector<u8> data;
+            bool isDirectory;
+        };
+
+        bool configureArchive(struct archive* a);
+        bool writeEntries(struct archive* a);
+        bool addDirectoryRecursive(const std::string& diskDir, const std::string& archiveDir);
+
+        [[nodiscard]] static std::string normalizePath(const std::string& path);
+        [[nodiscard]] static std::string extractFilename(const std::string& path);
+
+        Format format;
+        int compressionLevel;
+        std::vector<PendingEntry> pendingEntries;
+    };
 };

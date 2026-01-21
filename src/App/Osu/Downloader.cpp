@@ -252,7 +252,7 @@ i32 extract_beatmapset_id(const u8* data, size_t data_s) {
     debugLog("Reading beatmapset ({:d} bytes)", data_s);
     i32 set_id = -1;
 
-    Archive archive(data, data_s);
+    Archive::Reader archive(data, data_s);
     if(!archive.isValid()) {
         debugLog("Failed to open .osz file");
         return set_id;
@@ -283,7 +283,7 @@ i32 extract_beatmapset_id(const u8* data, size_t data_s) {
 bool extract_beatmapset(const u8* data, size_t data_s, std::string& map_dir) {
     debugLog("Extracting beatmapset ({:d} bytes)", data_s);
 
-    Archive archive(data, data_s);
+    Archive::Reader archive(data, data_s);
     if(!archive.isValid()) {
         debugLog("Failed to open .osz file");
         return false;

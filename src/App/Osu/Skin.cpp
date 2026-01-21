@@ -72,7 +72,7 @@ bool Skin::unpack(const char *filepath) {
         // close the file here
     }
 
-    Archive archive(fileBuffer.get(), fileSize);
+    Archive::Reader archive(fileBuffer.get(), fileSize);
     if(!archive.isValid()) {
         debugLog("Failed to open .osk file");
         return false;

@@ -175,7 +175,7 @@ void UpdateHandler::onDownloadComplete(const std::string &data, bool success, st
 
 void UpdateHandler::installUpdate() {
     debugLog("UpdateHandler: installing");
-    Archive archive(MCENGINE_DATA_DIR "update.zip");
+    Archive::Reader archive(MCENGINE_DATA_DIR "update.zip");
     if(!archive.isValid()) {
         debugLog("UpdateHandler ERROR: couldn't open archive!");
         this->status = STATUS_ERROR;
