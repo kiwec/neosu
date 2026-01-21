@@ -280,7 +280,7 @@ int OpenGLES32Shader::createShaderFromString(std::string shaderSource, int shade
             char *errorLog = new char[ret];
             {
                 glGetShaderInfoLog(shader, ret, &ret, errorLog);
-                Logger::logRaw("{}", errorLog);
+                logRaw("{}", errorLog);
             }
             delete[] errorLog;
         }

@@ -398,7 +398,7 @@ Osu::Osu()
 
         directoryWatcher->watch_directory(NEOSU_SKINS_PATH "/", [](const FileChangeEvent &ev) -> void {
             if(ev.type != FileChangeType::CREATED) return;
-            Logger::logRaw("[DirectoryWatcher] Importing new skin {}: type {}", ev.path, static_cast<u32>(ev.type));
+            logRaw("[DirectoryWatcher] Importing new skin {}: type {}", ev.path, static_cast<u32>(ev.type));
             if(env->getFileExtensionFromFilePath(ev.path) != "osk") return;
             const bool extracted = env->getEnvInterop().handle_osk(ev.path.c_str());
             if(extracted) env->deleteFile(ev.path);

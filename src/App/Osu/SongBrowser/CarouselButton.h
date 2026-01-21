@@ -118,8 +118,8 @@ class CarouselButton : public CBaseUIButton {
 
     void setMoveAwayState(MOVE_AWAY_STATE moveAwayState, bool animate = true);
 
-    static int marginPixelsX;
-    static int marginPixelsY;
+    static constexpr const int marginPixelsX{9};
+    static constexpr const int marginPixelsY{9};
     static float lastHoverSoundTime;
 
     McFont *fontBold;

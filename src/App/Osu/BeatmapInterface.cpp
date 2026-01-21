@@ -2474,7 +2474,7 @@ iCurMusicPos: {}
 ==== END MUSIC POSITION DEBUG ====)",
             currentTime, cv::interpolate_music_pos.getInt(), realMusicPos, this->iCurMusicPos);
 
-        Logger::logRaw(logString);
+        logRaw(logString);
     }
 }
 

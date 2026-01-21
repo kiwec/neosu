@@ -212,7 +212,7 @@ void SDLGLInterface::dumpGLContextInfo() {
         }
     }
     if(info.back() == '\n') info.pop_back();  // remove trailing newline
-    Logger::logRaw(info);
+    logRaw(info);
 }
 
 namespace {
@@ -287,13 +287,13 @@ void SDLGLInterface::setGLLog(bool on) {
 
 void GLAPIENTRY SDLGLInterface::glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                           const GLchar *message, const void * /*userParam*/) {
-    Logger::logRaw("[GLDebugCB]");
-    Logger::logRaw("    message: {}", std::string(message, length));
-    Logger::logRaw("    time: {:.4f}", engine->getTime());
-    Logger::logRaw("    id: {}", id);
-    Logger::logRaw("    source: {}", glDebugSourceString(source));
-    Logger::logRaw("    type: {}", glDebugTypeString(type));
-    Logger::logRaw("    severity: {}", glDebugSeverityString(severity));
+    logRaw("[GLDebugCB]");
+    logRaw("    message: {}", std::string(message, length));
+    logRaw("    time: {:.4f}", engine->getTime());
+    logRaw("    id: {}", id);
+    logRaw("    source: {}", glDebugSourceString(source));
+    logRaw("    type: {}", glDebugTypeString(type));
+    logRaw("    severity: {}", glDebugSeverityString(severity));
 }
 
 namespace cv {

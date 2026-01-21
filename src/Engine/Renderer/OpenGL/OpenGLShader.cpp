@@ -264,7 +264,7 @@ int OpenGLShader::createShaderFromString(std::string shaderSource, int shaderTyp
         if(returnValue > 0) {
             char *errorLog = new char[returnValue];
             glGetInfoLogARB(shader, returnValue, &returnValue, errorLog);
-            Logger::logRaw("{}", errorLog);
+            logRaw("{}", errorLog);
             delete[] errorLog;
         }
 

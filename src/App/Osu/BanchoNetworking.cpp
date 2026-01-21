@@ -282,9 +282,9 @@ void send_packet(Packet &packet) {
 
     // debugLog("Sending packet of type {:}: ", packet.id);
     // for (int i = 0; i < packet.pos; i++) {
-    //     Logger::logRaw("{:02x} ", packet.memory[i]);
+    //     logRaw("{:02x} ", packet.memory[i]);
     // }
-    // Logger::logRaw("");
+    // logRaw("");
 
     // We're not sending it immediately, instead we just add it to the pile of
     // packets to send

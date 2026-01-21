@@ -1003,7 +1003,7 @@ void MainMenu::update(CBaseUIEventCtx &c) {
         if(this->bMainMenuAnimFriendScheduled) this->bMainMenuAnimFriend = true;
         if(this->bMainMenuAnimFadeToFriendForNextAnim) this->bMainMenuAnimFriendScheduled = true;
 
-        this->fMainMenuAnimDuration = 10.0f + (float)((double)prand() / (double)RAND_MAX) * 5.0f;
+        this->fMainMenuAnimDuration = 10.0f + (float)((double)prand() / (double)PRAND_MAX) * 5.0f;
         this->fMainMenuAnimTime = engine->getTime() + this->fMainMenuAnimDuration;
         this->animMainButton();
     }
@@ -1403,9 +1403,9 @@ void MainMenu::animMainButton() {
         this->fMainMenuAnim2Target = (prand() % 2) == 1 ? 1.0f : -1.0f;
         this->fMainMenuAnim3Target = (prand() % 2) == 1 ? 1.0f : -1.0f;
 
-        const float randomDuration1 = (float)((double)prand() / (double)RAND_MAX) * 3.5f;
-        const float randomDuration2 = (float)((double)prand() / (double)RAND_MAX) * 3.5f;
-        const float randomDuration3 = (float)((double)prand() / (double)RAND_MAX) * 3.5f;
+        const float randomDuration1 = (float)((double)prand() / (double)PRAND_MAX) * 3.5f;
+        const float randomDuration2 = (float)((double)prand() / (double)PRAND_MAX) * 3.5f;
+        const float randomDuration3 = (float)((double)prand() / (double)PRAND_MAX) * 3.5f;
 
         anim::moveQuadOut(&this->fMainMenuAnim, 1.0f,
                           1.5f + std::max({randomDuration1, randomDuration2, randomDuration3}));

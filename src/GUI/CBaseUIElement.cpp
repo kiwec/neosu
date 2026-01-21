@@ -92,7 +92,7 @@ void CBaseUIElement::update(CBaseUIEventCtx &c) {
 void CBaseUIElement::dumpElem() const {
     using namespace CBaseUIDebug;
     size_t currentFrame = engine->getFrameCount();
-    Logger::logRaw(R"(==== UI ELEMENT {:p} DEBUG ====
+    logRaw(R"(==== UI ELEMENT {:p} DEBUG ====
 frame:              {}
 sName:              {}
 bVisible:           {}

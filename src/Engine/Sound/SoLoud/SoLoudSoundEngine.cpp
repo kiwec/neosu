@@ -66,7 +66,7 @@ SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
                     --end_pos;
                 }
 
-                Logger::logRaw(std::string_view{message, end_pos});
+                logRaw(std::string_view(message, end_pos));
             }
         };
 

@@ -72,7 +72,6 @@ void ScrollContainer::update(CBaseUIEventCtx &c) {
 
     this->invalidateUpdate = false;
 
-    MC_UNROLL
     for(auto *e : *this->vVisibleElements) {
         e->update(c);
         if(this->invalidateUpdate) {
@@ -91,7 +90,6 @@ void ScrollContainer::draw() {
 
     this->inIllegalToInvalidateIteration = true;
 
-    MC_UNROLL
     for(auto *e : *this->vVisibleElements) {
         // check actual screen visibility since we clipped "lazily"
         // shouldn't be too expensive since we're no longer iterating over hundreds of thousands of elements here
@@ -111,7 +109,6 @@ bool ScrollContainer::isBusy() {
 
     this->inIllegalToInvalidateIteration = true;
 
-    MC_UNROLL
     for(auto *e : *this->vVisibleElements) {
         // programmer error (don't do this in isBusy(), ever)
         assert(!this->invalidateUpdate);

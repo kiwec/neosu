@@ -48,7 +48,7 @@ ConVar *ConVarHandler::getConVarByName(std::string_view name, bool warnIfNotFoun
         std::string errormsg = "ENGINE: ConVar \"";
         errormsg.append(name);
         errormsg.append("\" does not exist...");
-        Logger::logRaw("{:s}", errormsg);
+        logRaw("{:s}", errormsg);
         engine->showMessageWarning("Engine Error", errormsg.c_str());
     }
 
@@ -187,7 +187,7 @@ struct ConVarHandler::ConVarBuiltins {
 
 void ConVarHandler::ConVarBuiltins::find(std::string_view args) {
     if(args.length() < 1) {
-        Logger::logRaw("Usage:  find <string>");
+        logRaw("Usage:  find <string>");
         return;
     }
 
@@ -206,37 +206,37 @@ void ConVarHandler::ConVarBuiltins::find(std::string_view args) {
     }
 
     if(matchingConVars.size() < 1) {
-        Logger::logRaw("No commands found containing {:s}.", args);
+        logRaw("No commands found containing {:s}.", args);
         return;
     }
 
-    Logger::logRaw("----------------------------------------------");
+    logRaw("----------------------------------------------");
     {
         std::string thelog = "[ find : ";
         thelog.append(args);
         thelog.append(" ]");
-        Logger::logRaw("{:s}", thelog);
+        logRaw("{:s}", thelog);
 
         for(auto &matchingConVar : matchingConVars) {
-            Logger::logRaw("{:s}", matchingConVar->getName());
+            logRaw("{:s}", matchingConVar->getName());
         }
     }
-    Logger::logRaw("----------------------------------------------");
+    logRaw("----------------------------------------------");
 }
 
 void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
     SString::trim_inplace(args);
 
     if(args.length() < 1) {
-        Logger::logRaw("Usage:  help <cvarname>");
-        Logger::logRaw("To get a list of all available commands, type \"listcommands\".");
+        logRaw("Usage:  help <cvarname>");
+        logRaw("To get a list of all available commands, type \"listcommands\".");
         return;
     }
 
     const std::vector<ConVar *> matches = cvars().getConVarByLetter(args);
 
     if(matches.size() < 1) {
-        Logger::logRaw("ConVar {:s} does not exist.", args);
+        logRaw("ConVar {:s} does not exist.", args);
         return;
     }
 
@@ -252,7 +252,7 @@ void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
 
     std::string_view helpstring = match->getHelpstring();
     if(helpstring.length() < 1) {
-        Logger::logRaw("ConVar {:s} does not have a helpstring.", match->getName());
+        logRaw("ConVar {:s} does not have a helpstring.", match->getName());
         return;
     }
 
@@ -271,11 +271,11 @@ void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
         thelog.append(" - ");
         thelog.append(helpstring);
     }
-    Logger::logRaw("{:s}", thelog);
+    logRaw("{:s}", thelog);
 }
 
 void ConVarHandler::ConVarBuiltins::listcommands(void) {
-    Logger::logRaw("----------------------------------------------");
+    logRaw("----------------------------------------------");
     {
         std::vector<ConVar *> convars = cvars().getConVarArray();
         std::ranges::sort(
@@ -304,10 +304,10 @@ void ConVarHandler::ConVarBuiltins::listcommands(void) {
                     tstring.append(var->getHelpstring());
                 }
             }
-            Logger::logRaw("{:s}", tstring);
+            logRaw("{:s}", tstring);
         }
     }
-    Logger::logRaw("----------------------------------------------");
+    logRaw("----------------------------------------------");
 }
 
 void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
@@ -356,16 +356,16 @@ void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
 
     io->write(MCENGINE_DATA_DIR "variables.htm", html_template, [](bool success) -> void {
         if(success) {
-            Logger::logRaw("ConVars dumped to variables.htm");
+            logRaw("ConVars dumped to variables.htm");
         } else {
-            Logger::logRaw("Failed to dump ConVars to variables.htm");
+            logRaw("Failed to dump ConVars to variables.htm");
         }
     });
 }
 
 void ConVarHandler::ConVarBuiltins::echo(std::string_view args) {
     if(args.length() > 0) {
-        Logger::logRaw(args);
+        logRaw(args);
     }
 }
 

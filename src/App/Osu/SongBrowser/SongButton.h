@@ -57,13 +57,18 @@ class SongButton : public CarouselButton {
     DatabaseBeatmap *databaseBeatmap{nullptr};
 
     // defaults
+    static constexpr const float fTextSpacingScale{0.075f};
+    static constexpr const float fTextMarginScale{0.075f};
+    static constexpr const float fTitleScale{0.22f};
+    static constexpr const float fSubTitleScale{0.14f};
+    static constexpr const float fGradeScale{0.45f};
+
+    // dynamic positioning
     float fTextOffset{0.0f};
     float fGradeOffset{0.0f};
-    float fTextSpacingScale{0.075f};
-    float fTextMarginScale{0.075f};
-    float fTitleScale{0.22f};
-    float fSubTitleScale{0.14f};
-    float fGradeScale{0.45f};
+
+    // thumbnails
+    float fVisibleFor{0.f};
 
    private:
     [[nodiscard]] inline std::vector<SongDifficultyButton *> &childDiffBtns() {
@@ -71,7 +76,6 @@ class SongButton : public CarouselButton {
     }
     DatabaseBeatmap *representativeBeatmap{nullptr};
 
-    float fVisibleFor{0.f};
     float fThumbnailFadeInTime{0.0f};
     void onOpenBeatmapFolderClicked();
 };

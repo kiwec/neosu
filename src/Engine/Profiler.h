@@ -49,8 +49,8 @@
             lti__ = 0;                                                       \
             auto current_max__ = std::ranges::max(lasttms__);                \
             if(current_max__ > overall_max__) overall_max__ = current_max__; \
-            Logger::logRaw("\n\tTIME FOR: " #__VA_ARGS__);                   \
-            Logger::logRaw("\tmax overall: {:.8f}" \
+            logRaw("\n\tTIME FOR: " #__VA_ARGS__);                   \
+            logRaw("\tmax overall: {:.8f}" \
 			         "\n\taverage: {:.4f} min: {:.4f} max: {:.4f}" \
 			         "\n\tpast " MC_STRINGIZE(__amt__) " times:" \
 			                                           "\n\t[ {:.4f} ]", \

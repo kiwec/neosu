@@ -130,7 +130,6 @@ CBaseUIContainer *CBaseUIContainer::deleteBaseUIElement(CBaseUIElement *element)
 }
 
 CBaseUIElement *CBaseUIContainer::getBaseUIElement(const UString &name) {
-    MC_UNROLL
     for(size_t i = 0; i < this->vElements.size(); i++) {
         if(this->vElements[i]->getName() == name) return this->vElements[i];
     }
@@ -141,7 +140,6 @@ CBaseUIElement *CBaseUIContainer::getBaseUIElement(const UString &name) {
 void CBaseUIContainer::draw() {
     if(!this->bVisible) return;
 
-    MC_UNROLL
     for(auto *e : this->vElements) {
         if(e->isVisible()) {
             e->draw();
@@ -153,8 +151,10 @@ void CBaseUIContainer::draw_debug() {
     g->setColor(0xffffffff);
     g->drawLine(this->getPos().x, this->getPos().y, this->getPos().x + this->getSize().x, this->getPos().y);
     g->drawLine(this->getPos().x, this->getPos().y, this->getPos().x, this->getPos().y + this->getSize().y);
-    g->drawLine(this->getPos().x, this->getPos().y + this->getSize().y, this->getPos().x + this->getSize().x, this->getPos().y + this->getSize().y);
-    g->drawLine(this->getPos().x + this->getSize().x, this->getPos().y, this->getPos().x + this->getSize().x, this->getPos().y + this->getSize().y);
+    g->drawLine(this->getPos().x, this->getPos().y + this->getSize().y, this->getPos().x + this->getSize().x,
+                this->getPos().y + this->getSize().y);
+    g->drawLine(this->getPos().x + this->getSize().x, this->getPos().y, this->getPos().x + this->getSize().x,
+                this->getPos().y + this->getSize().y);
 
     g->setColor(0xff0000ff);
     for(const auto *e : this->vElements) {
@@ -173,7 +173,7 @@ void CBaseUIContainer::update(CBaseUIEventCtx &c) {
 
     // NOTE 1: do NOT use a range-based for loop here, update() might invalidate iterators by changing the container contents...
     // NOTE 2: iterating backwards for proper event ordering, things should be drawn front-to-back, but the last drawn (on top) element should handle events first
-    MC_UNROLL
+
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *e = this->vElements[i];
         if(e->isVisible()) e->update(c);
@@ -185,8 +185,7 @@ void CBaseUIContainer::update_pos() {
     const vec2 thisPos = this->getPos();
 
     vec2 newPos{};
-    MC_UNR_cnt(64) /* clang-format getting confused */
-        for(auto *e : this->vElements) {
+    for(auto *e : this->vElements) {
         // setPos already has this logic, but inline it manually here
         // to avoid unnecessary indirection
         newPos = thisPos + e->getRelPos();
@@ -198,14 +197,12 @@ void CBaseUIContainer::update_pos() {
 }
 
 void CBaseUIContainer::onKeyUp(KeyboardEvent &e) {
-    MC_UNROLL
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *elem = this->vElements[i];
         if(elem->isVisible()) elem->onKeyUp(e);
     }
 }
 void CBaseUIContainer::onKeyDown(KeyboardEvent &e) {
-    MC_UNROLL
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *elem = this->vElements[i];
         if(elem->isVisible()) elem->onKeyDown(e);
@@ -213,7 +210,6 @@ void CBaseUIContainer::onKeyDown(KeyboardEvent &e) {
 }
 
 void CBaseUIContainer::onChar(KeyboardEvent &e) {
-    MC_UNROLL
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *elem = this->vElements[i];
         if(elem->isVisible()) elem->onChar(e);
@@ -221,7 +217,6 @@ void CBaseUIContainer::onChar(KeyboardEvent &e) {
 }
 
 void CBaseUIContainer::onFocusStolen() {
-    MC_UNROLL
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *elem = this->vElements[i];
         elem->stealFocus();
@@ -229,7 +224,6 @@ void CBaseUIContainer::onFocusStolen() {
 }
 
 void CBaseUIContainer::onEnabled() {
-    MC_UNROLL
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *elem = this->vElements[i];
         elem->setEnabled(true);
@@ -237,7 +231,6 @@ void CBaseUIContainer::onEnabled() {
 }
 
 void CBaseUIContainer::onDisabled() {
-    MC_UNROLL
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *elem = this->vElements[i];
         elem->setEnabled(false);
@@ -248,7 +241,7 @@ void CBaseUIContainer::onMouseDownOutside(bool /*left*/, bool /*right*/) { this-
 
 bool CBaseUIContainer::isBusy() {
     if(!this->bVisible) return false;
-    MC_UNROLL
+
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *elem = this->vElements[i];
         if(elem->isBusy()) return true;
@@ -259,7 +252,7 @@ bool CBaseUIContainer::isBusy() {
 
 bool CBaseUIContainer::isActive() {
     if(!this->bVisible) return false;
-    MC_UNROLL
+
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *elem = this->vElements[i];
         if(elem->isActive()) return true;

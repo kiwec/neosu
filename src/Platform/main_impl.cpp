@@ -109,7 +109,7 @@ SDL_AppResult SDLMain::initialize() {
     if(!m_gpuConfigurator->getInitInfo().empty()) {
         std::string graphicsVendor{g->getModel().toUtf8()};
         if(SString::contains_ncase(graphicsVendor, "nvidia")) {
-            Logger::logRaw("[GPUDriverConfigurator]: {}", m_gpuConfigurator->getInitInfo());
+            logRaw("[GPUDriverConfigurator]: {}", m_gpuConfigurator->getInitInfo());
         }
     }
     // if we got to this point, all relevant subsystems (input handling, graphics interface, etc.) have been initialized
@@ -167,7 +167,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
         size_t logsz =
             std::min(logBuf.size(), static_cast<size_t>(SDL_GetEventDescription(event, logBuf.data(), logBuf.size())));
         if(logsz > 0) {
-            Logger::logRaw("[handleEvent] frame: {}; event: {}"_cf, m_engine->getFrameCount(),
+            logRaw("[handleEvent] frame: {}; event: {}"_cf, m_engine->getFrameCount(),
                            std::string_view{logBuf.data(), logsz});
         }
     }
@@ -372,7 +372,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     break;
             }
             if(m_bEnvDebug) {  // print out current window flags after
-                Logger::logRaw(fmt::format("[handleEvent] current window flags: {}", windowFlagsDbgStr()));
+                logRaw(fmt::format("[handleEvent] current window flags: {}", windowFlagsDbgStr()));
             }
             break;
 
@@ -759,7 +759,7 @@ void SDLMain::setupLogging() {
             formatted.pop_back();
         }
 
-        Logger::logRaw(formatted);
+        logRaw(formatted);
     };
 
     SDL_SetLogOutputFunction(SDLLogCB, nullptr);

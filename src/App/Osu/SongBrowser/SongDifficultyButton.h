@@ -38,12 +38,11 @@ class SongDifficultyButton final : public SongButton {
    private:
     void onSelected(bool wasSelected, SelOpts opts) override;
     void updateOffsetAnimation();
+    static constexpr const float fDiffScale{0.18f};
 
     SongButton *parentSongButton;
 
-    float fDiffScale;
     float fOffsetPercentAnim;
-    float fVisibleFor{0.f};
 
     enum class OffsetState : u8 { UNINITIALIZED, SELECTED, DESELECTED };
     OffsetState lastOffsetState{OffsetState::UNINITIALIZED};

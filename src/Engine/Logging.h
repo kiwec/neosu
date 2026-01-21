@@ -12,14 +12,25 @@ using fmt::literals::operator""_cf;
 #include <cassert>
 #include <source_location>
 
-// main logging macro
-#define debugLog(str__, ...) Logger::log(std::source_location::current(), str__ __VA_OPT__(, ) __VA_ARGS__)
+// helper macros to allow using a single string directly or a format string with args
+#define _logFmtStart fmt::format(
+#define _logFmtEnd(...) , __VA_ARGS__)
+
+// main context-aware logging macro
+#define debugLog(str__, ...)                                                                    \
+    Logger::_detail::log_int(std::source_location::current(), Logger::_detail::log_level::info, \
+                             __VA_OPT__(_logFmtStart)(str__) __VA_OPT__(_logFmtEnd(__VA_ARGS__)))
 
 // log only if condition is true
-#define logIf(cond__, str__, ...) (static_cast<bool>(cond__) ? debugLog(str__ __VA_OPT__(, ) __VA_ARGS__) : void(0))
+#define logIf(cond__, ...) (static_cast<bool>(cond__) ? debugLog(__VA_ARGS__) : void(0))
 
 // log only if cvar__.getBool() == true
-#define logIfCV(cvar__, str__, ...) logIf(cv::cvar__.getBool(), str__ __VA_OPT__(, ) __VA_ARGS__)
+#define logIfCV(cvar__, ...) logIf(cv::cvar__.getBool(), __VA_ARGS__)
+
+// raw logging without any context
+#define logRaw(str__, ...)                                        \
+    Logger::_detail::logRaw_int(Logger::_detail::log_level::info, \
+                                __VA_OPT__(_logFmtStart)(str__) __VA_OPT__(_logFmtEnd(__VA_ARGS__)))
 
 /*
 // print the call stack immediately
@@ -27,7 +38,7 @@ using fmt::literals::operator""_cf;
 #define doBacktrace(...)                                                                                           \
     do {                                                                                                           \
         for(const auto &line : SString::split(fmt::format("{}", fmt::streamed(std::stacktrace::current())), "\n")) \
-            Logger::logRaw(line);                                                                                  \
+            logRaw(line);                                                                                  \
     } while(false);
 #include <stacktrace>
 #include "fmt/ostream.h"
@@ -44,8 +55,7 @@ namespace log_level {
 enum level_enum : int { trace = 0, debug = 1, info = 2, warn = 3, err = 4, critical = 5, off = 6, n_levels };
 }
 
-void log_int(const char *filename, unsigned int line, const char *funcname, log_level::level_enum lvl,
-             std::string_view str) noexcept;
+void log_int(std::source_location loc, log_level::level_enum lvl, std::string_view str) noexcept;
 void logRaw_int(log_level::level_enum lvl, std::string_view str) noexcept;
 }  // namespace _detail
 
@@ -58,48 +68,5 @@ void flush() noexcept;
 
 // is stdout a terminal (util func.)
 [[nodiscard]] bool isaTTY() noexcept;
-
-// _cf strings
-template <typename S, typename... Args>
-inline void log(std::source_location loc, S &&fmt, Args &&...args) noexcept
-    requires(std::is_base_of_v<fmt::compiled_string, S> && sizeof...(Args) > 0)
-{
-    _detail::log_int(loc.file_name(), loc.line(), loc.function_name(), _detail::log_level::info,
-                     fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...));
-}
-
-// fmt strings
-template <typename... Args>
-inline void log(std::source_location loc, const fmt::format_string<Args...> &fmt, Args &&...args) noexcept
-    requires(sizeof...(Args) > 0)
-{
-    _detail::log_int(loc.file_name(), loc.line(), loc.function_name(), _detail::log_level::info,
-                     fmt::format(fmt, std::forward<Args>(args)...));
-}
-
-inline void log(std::source_location loc, std::string_view str) noexcept {
-    _detail::log_int(loc.file_name(), loc.line(), loc.function_name(), _detail::log_level::info, str);
-}
-
-// raw logging without any context
-
-// _cf strings
-template <typename S, typename... Args>
-inline void logRaw(S &&fmt, Args &&...args) noexcept
-    requires(std::is_base_of_v<fmt::compiled_string, S> && sizeof...(Args) > 0)
-{
-    _detail::logRaw_int(_detail::log_level::info, fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...));
-}
-
-// fmt strings
-template <typename... Args>
-inline void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept
-    requires(sizeof...(Args) > 0)
-{
-    _detail::logRaw_int(_detail::log_level::info, fmt::format(fmt, std::forward<Args>(args)...));
-}
-
-// standalone strings
-inline void logRaw(std::string_view str) noexcept { _detail::logRaw_int(_detail::log_level::info, str); }
 
 };  // namespace Logger

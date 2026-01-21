@@ -32,7 +32,6 @@ SongDifficultyButton::SongDifficultyButton(float xPos, float yPos, float xSize, 
     this->databaseBeatmap = diff;
     this->parentSongButton = parentSongButton;
 
-    this->fDiffScale = 0.18f;
     this->fOffsetPercentAnim = 0.f;
 
     this->bUpdateGradeScheduled = true;

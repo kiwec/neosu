@@ -20,8 +20,6 @@
 #include "UI.h"
 #include "UIContextMenu.h"
 
-int CarouselButton::marginPixelsX = 9;
-int CarouselButton::marginPixelsY = 9;
 float CarouselButton::lastHoverSoundTime = 0;
 
 using namespace neosu::sbr;

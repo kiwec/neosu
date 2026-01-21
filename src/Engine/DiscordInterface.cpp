@@ -43,9 +43,9 @@ static struct IDiscordUserEvents users_events{};
 static void on_discord_log(void * /*cdata*/, enum EDiscordLogLevel level, const char *message) {
     //(void)cdata;
     if(level == DiscordLogLevel_Error) {
-        Logger::logRaw("[Discord] ERROR: {:s}", message);
+        logRaw("[Discord] ERROR: {:s}", message);
     } else {
-        Logger::logRaw("[Discord] {:s}", message);
+        logRaw("[Discord] {:s}", message);
     }
 }
 #endif

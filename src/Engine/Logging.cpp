@@ -135,19 +135,23 @@ class custom_srcloc_formatter : public spdlog::custom_flag_formatter {
 
 namespace _detail {
 
-void log_int(const char *filename, unsigned int line, const char *funcname, log_level::level_enum lvl,
-             std::string_view str) noexcept {
+void log_int(std::source_location loc, log_level::level_enum lvl, std::string_view str) noexcept {
     // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
     if(likely(s_log_initialized)) {
-        return s_logger_raw_ptr->log(spdlog::source_loc{filename, static_cast<int>(line), funcname},
-                                     (spdlog::level::level_enum)lvl, str);
+        return s_logger_raw_ptr->log(
+            spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+            (spdlog::level::level_enum)lvl, str);
     } else {
         printf("%.*s\n", static_cast<int>(str.length()), str.data());
     }
 }
 
 void logRaw_int(log_level::level_enum lvl, std::string_view str) noexcept {
-    return s_raw_logger_raw_ptr->log((spdlog::level::level_enum)lvl, str);
+    if(likely(s_log_initialized)) {
+        return s_raw_logger_raw_ptr->log((spdlog::level::level_enum)lvl, str);
+    } else {
+        printf("%.*s\n", static_cast<int>(str.length()), str.data());
+    }
 }
 
 }  // namespace _detail

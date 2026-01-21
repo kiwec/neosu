@@ -232,7 +232,7 @@ struct LivePPCalc::LivePPCalcImpl {
             retInfo.pp = DifficultyCalculator::calculatePPv2(ppv2pars);
 
             if(cv::debug_pp.getBool()) {
-                Logger::logRaw("[LivePPCalc] PP: {} params (post):\n{}", retInfo.pp,
+                logRaw("[LivePPCalc] PP: {} params (post):\n{}", retInfo.pp,
                                DifficultyCalculator::PPv2CalcParamsToString(ppv2pars));
             }
 

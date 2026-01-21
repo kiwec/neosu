@@ -34,8 +34,7 @@ void update_export_progress(float progress, std::string entry_being_processed, c
     export_collection = collection;
     export_progress.store(progress, std::memory_order_relaxed);
     if(progress > 0.f) {
-        Sync::unique_lock lk(export_progress_mtx, Sync::try_to_lock);
-        if(!lk.owns_lock()) return;  // we'll wait until we can acquire it without blocking
+        Sync::scoped_lock lk(export_progress_mtx);
         export_entry = std::move(entry_being_processed);
     }
 }
