@@ -294,10 +294,7 @@ class UString {
     void upperCase() noexcept;
 
     // operators
-    [[nodiscard]] constexpr const char16_t &operator[](int index) const noexcept {
-        int len = length();
-        return this->sUnicode[std::clamp(index, 0, len - 1)];
-    }
+    [[nodiscard]] constexpr const char16_t &operator[](int index) const noexcept { return this->sUnicode[index]; }
 
     friend bool operator==(const UString &ustr, const std::string &utf8v) noexcept {
         return static_cast<const std::string_view &>(ustr.sUtf8) == utf8v;

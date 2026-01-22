@@ -10,6 +10,7 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "File.h"
+#include "FixedSizeArray.h"
 #include "FontTypeMap.h"
 #include "ResourceManager.h"
 #include "VertexArrayObject.h"
@@ -22,8 +23,10 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <set>
 #include <utility>
 #include <cassert>
+#include <map>
 #include <memory>
 
 #include <freetype/freetype.h>
@@ -61,6 +64,12 @@ constexpr const char16_t UNKNOWN_CHAR{u'?'};  // ASCII '?'
 
 constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32 | REND::DX11) ? 6 : 4};
 
+// this is still a very conservative amount of memory
+constexpr const size_t CACHED_STRINGS_PER_FONT{4096};
+size_t stringToCacheIndex(std::u16string_view u16str) {
+    return std::hash<std::u16string_view>{}(u16str) % CACHED_STRINGS_PER_FONT;
+}
+
 // other shared-across-instances things
 struct FallbackFont {
     UString fontPath;
@@ -78,6 +87,13 @@ bool s_sharedFallbacksInitialized{false};
 
 Sync::shared_mutex s_sharedResourcesMutex;
 
+// face size tracking to avoid redundant setFaceSize calls
+struct LastSizedFTFace {
+    FT_Face face{nullptr};
+    int size{0};
+    int dpi{0};
+} s_lastSizedFace{};
+
 }  // namespace
 
 // implementation details for each McFont object
@@ -88,12 +104,11 @@ struct McFontImpl final {
    public:
     // Internal data structures and state
     struct GLYPH_METRICS {
-        char16_t character;
+        FT_Face face;  // source font face (nullptr if glyph not supported)
         unsigned int uvPixelsX, uvPixelsY;
         unsigned int sizePixelsX, sizePixelsY;
         int left, top, width, rows;
         float advance_x;
-        FT_Face face;  // source font face (nullptr if glyph not supported)
         bool inAtlas;  // whether UV coordinates are valid (glyph is rendered in atlas)
     };
 
@@ -118,15 +133,53 @@ struct McFontImpl final {
         bool occupied;
     };
 
+    struct VerTexMetCacheEntry {
+        std::u16string string;
+        void clear() {
+            string.clear();
+            verts.clear();
+            texcoords.clear();
+            metrics.clear();
+        }
+
+        void resize(size_t numVerts, size_t numMetrics) {
+            verts.resize(numVerts);
+            texcoords.resize(numVerts);
+            metrics.resize(numMetrics);
+        }
+
+        [[nodiscard]] size_t numVerts() const { return verts.size(); }
+        [[nodiscard]] size_t numMetrics() const { return metrics.size(); }
+
+        std::vector<vec3> &getVerts() { return verts; }
+        std::vector<vec2> &getTexcoords() { return texcoords; }
+        std::vector<const GLYPH_METRICS *> &getMetrics() { return metrics; }
+
+        [[nodiscard]] const std::vector<vec3> &getVerts() const { return verts; }
+        [[nodiscard]] const std::vector<vec2> &getTexcoords() const { return texcoords; }
+        [[nodiscard]] const std::vector<const GLYPH_METRICS *> &getMetrics() const { return metrics; }
+
+       private:
+        std::vector<vec3> verts{};
+        std::vector<vec2> texcoords{};
+        std::vector<const GLYPH_METRICS *> metrics{};
+    };
+
     std::vector<char16_t> m_vInitialGlyphs;
-    std::unordered_map<char16_t, GLYPH_METRICS> m_mGlyphMetrics;
+    std::unordered_map<char16_t, std::unique_ptr<GLYPH_METRICS>> m_mGlyphMetrics;
 
     std::unique_ptr<VertexArrayObject> m_vao;
     TextBatch m_batchQueue;
-    std::vector<vec3> m_vertices;
-    std::vector<vec2> m_texcoords;
+
+    std::vector<vec3> m_vBatchDrawVerts;
+    std::vector<vec2> m_vBatchDrawTexcoords;
 
     std::unique_ptr<TextureAtlas> m_textureAtlas{nullptr};
+
+    // string caching
+    std::vector<VerTexMetCacheEntry> m_vStringCache{CACHED_STRINGS_PER_FONT};
+    // for strings too short or too long to bother with caching
+    VerTexMetCacheEntry m_tempStringBuffer;
 
     // per-instance freetype resources (only primary font face)
     FT_Face m_ftFace;  // primary font face
@@ -142,11 +195,8 @@ struct McFontImpl final {
     int m_slotsPerRow;         // number of slots per row in dynamic region
     std::vector<DynamicSlot> m_dynamicSlots;
     std::unordered_map<char16_t, int> m_dynamicSlotMap;  // character -> slot index for O(1) lookup
-    uint64_t m_currentTime;                              // for LRU tracking
+    uint64_t m_currentAtlasTime;                         // for LRU tracking
     bool m_bAtlasNeedsReload;                            // flag to batch atlas reloads
-
-    // face size tracking to avoid redundant setFaceSize calls
-    FT_Face m_lastSizedFace;
 
     bool m_bBatchActive;
     bool m_bFreeTypeInitialized;
@@ -234,8 +284,13 @@ struct McFontImpl final {
     // fallback font management
     FT_Face getFontFaceForGlyph(char16_t ch);
 
-    void buildGlyphGeometry(const GLYPH_METRICS &gm, const vec3 &basePos, float advanceX, size_t &vertexCount);
-    void buildStringGeometry(const UString &text, size_t &vertexCount);
+    // returns end vertex from startVertex
+    size_t buildGlyphGeometry(std::vector<vec3> &vertsOut, std::vector<vec2> &texcoordsOut, const GLYPH_METRICS &gm,
+                              float advanceX, size_t startVertex);
+
+    // returns final vertices ready to be drawn in the out parameter
+    void buildStringGeometry(const UString &text, std::vector<vec3> &vertsOut, std::vector<vec2> &texcoordsOut,
+                             size_t maxGlyphs, size_t startVertex, std::vector<const GLYPH_METRICS *> *gmOut = nullptr);
 
     static std::unique_ptr<Channel[]> unpackMonoBitmap(const FT_Bitmap &bitmap);
 
@@ -328,12 +383,11 @@ void McFontImpl::constructor(const char16_t *characters, size_t numCharacters, i
     m_staticRegionHeight = 0;
     m_dynamicRegionY = 0;
     m_slotsPerRow = 0;
-    m_currentTime = 0;
+    m_currentAtlasTime = 0;
     m_bAtlasNeedsReload = false;
-    m_lastSizedFace = nullptr;
 
     // setup error glyph
-    m_errorGlyph = {.character = UNKNOWN_CHAR,
+    m_errorGlyph = {.face = nullptr,
                     .uvPixelsX = 10,
                     .uvPixelsY = 1,
                     .sizePixelsX = 1,
@@ -343,7 +397,6 @@ void McFontImpl::constructor(const char16_t *characters, size_t numCharacters, i
                     .width = 10,
                     .rows = 1,
                     .advance_x = 0,
-                    .face = nullptr,
                     .inAtlas = true};
 
     // pre-allocate space for initial glyphs
@@ -372,6 +425,7 @@ void McFontImpl::initAsync() {
     // set font size for this instance's primary face
     setFaceSize(m_ftFace);
 
+    m_mGlyphMetrics.reserve(m_vInitialGlyphs.size());
     // load metrics for all initial glyphs
     for(char16_t ch : m_vInitialGlyphs) {
         loadGlyphMetrics(ch);
@@ -403,6 +457,8 @@ void McFontImpl::destroy() {
         }
         m_bFreeTypeInitialized = false;
     }
+    m_vStringCache.clear();
+    m_vStringCache.resize(CACHED_STRINGS_PER_FONT);
 
     m_mGlyphMetrics.clear();
     m_dynamicSlots.clear();
@@ -422,21 +478,72 @@ void McFontImpl::drawString(const UString &text) {
 
     m_vao->clear();
 
-    const size_t totalVerts = text.length() * VERTS_PER_VAO;
-    m_vao->reserve(totalVerts);
-    m_vertices.resize(totalVerts);
-    m_texcoords.resize(totalVerts);
+    // cache entire strings' vertex/texcoord representations,
+    // and only do the minimal work necessary if needing to re-upload them to the texture atlas
+    const bool useCache = text.length() >= 8 && text.length() <= 384;  // arbitrary limits
+    VerTexMetCacheEntry &buffer = useCache ? m_vStringCache[stringToCacheIndex(text.u16View())] : m_tempStringBuffer;
+    if(useCache && buffer.string == text.u16View()) {
+        for(int i = -1; const GLYPH_METRICS *gm : buffer.getMetrics()) {
+            ++i;
+            char16_t ch = text[i];
+            if(ch >= 128) {
+                if(!gm->inAtlas) {
+                    loadGlyphDynamic(ch, gm->face);
+                }
+                if(gm->face != m_ftFace) {
+                    markSlotUsed(ch);
+                }
+            } else if(ch >= 32) {
+                assert(gm->inAtlas);
+            }
+        }
 
-    size_t vertexCount = 0;
-    buildStringGeometry(text, vertexCount);
+        if(m_bAtlasNeedsReload) {
+            size_t currentVertex = 0;
 
-    m_vao->setVertices(m_vertices);
-    m_vao->setTexcoords(m_texcoords);
+            float advanceX = 0.0f;
+            for(const GLYPH_METRICS *gm : buffer.getMetrics()) {
+                currentVertex =
+                    buildGlyphGeometry(buffer.getVerts(), buffer.getTexcoords(), *gm, advanceX, currentVertex);
+                advanceX += gm->advance_x;
+            }
+
+            m_textureAtlas->getAtlasImage()->reload();
+            m_bAtlasNeedsReload = false;
+        }
+    } else {
+        buffer.string = text.u16_str();
+
+        const size_t totalVerts = text.length() * VERTS_PER_VAO;
+        const int maxGlyphs = std::min(text.length(), (int)((double)totalVerts / (double)VERTS_PER_VAO));
+
+        buffer.resize(totalVerts, maxGlyphs);
+
+        buildStringGeometry(text, buffer.getVerts(), buffer.getTexcoords(), maxGlyphs, 0, &buffer.getMetrics());
+    }
+
+    // if(stringToCacheIndex(buffer.string) % 32 == 0) {
+    //     size_t totalBytes = 0;
+    //     for(const auto &elem : m_vStringCache) {
+    //         totalBytes += (elem.string.size() * sizeof(char16_t)) + (elem.getMetrics().size() * sizeof(void *)) +
+    //                       (elem.getVerts().size() * sizeof(vec3)) + (elem.getTexcoords().size() * sizeof(vec2));
+    //     }
+    //     debugLog("cache memory usage: {}MB", totalBytes / (1024ULL * 1024));
+    // }
+
+    m_vao->reserve(buffer.getVerts().size());
+
+    m_vao->setVertices(buffer.getVerts());
+    m_vao->setTexcoords(buffer.getTexcoords());
 
     m_textureAtlas->getAtlasImage()->bind();
     g->drawVAO(m_vao.get());
 
     if(cv::r_debug_drawstring_unbind.getBool()) m_textureAtlas->getAtlasImage()->unbind();
+
+    if(!useCache) {
+        buffer.clear();
+    }
 }
 
 void McFontImpl::beginBatch() {
@@ -472,8 +579,9 @@ void McFontImpl::flushBatch() {
     m_batchQueue.colorBuffer.clear();
     m_batchQueue.colorBuffer.reserve(m_batchQueue.totalVerts);
 
-    m_vertices.resize(m_batchQueue.totalVerts);
-    m_texcoords.resize(m_batchQueue.totalVerts);
+    m_vBatchDrawVerts.resize(m_batchQueue.totalVerts);
+    m_vBatchDrawTexcoords.resize(m_batchQueue.totalVerts);
+
     m_vao->clear();
     m_vao->reserve(m_batchQueue.totalVerts);
 
@@ -481,16 +589,21 @@ void McFontImpl::flushBatch() {
     for(size_t i = 0; i < m_batchQueue.usedEntries; i++) {
         const auto &entry = m_batchQueue.entryList[i];
         const size_t stringStart = currentVertex;
-        buildStringGeometry(entry.text, currentVertex);
+
+        const int maxGlyphs = std::min(entry.text.length(),
+                                       (int)((double)(m_batchQueue.totalVerts - stringStart) / (double)VERTS_PER_VAO));
+        buildStringGeometry(entry.text, m_vBatchDrawVerts, m_vBatchDrawTexcoords, maxGlyphs, stringStart);
+
+        currentVertex += VERTS_PER_VAO * maxGlyphs;
 
         for(size_t j = stringStart; j < currentVertex; j++) {
-            m_vertices[j] += entry.pos;
+            m_vBatchDrawVerts[j] += entry.pos;
             m_batchQueue.colorBuffer.push_back(entry.color);
         }
     }
 
-    m_vao->setVertices(m_vertices);
-    m_vao->setTexcoords(m_texcoords);
+    m_vao->setVertices(m_vBatchDrawVerts);
+    m_vao->setTexcoords(m_vBatchDrawTexcoords);
     m_vao->setColors(m_batchQueue.colorBuffer);
 
     m_textureAtlas->getAtlasImage()->bind();
@@ -500,6 +613,9 @@ void McFontImpl::flushBatch() {
     if(cv::r_debug_drawstring_unbind.getBool()) m_textureAtlas->getAtlasImage()->unbind();
 
     m_bBatchActive = false;
+
+    m_vBatchDrawVerts.clear();
+    m_vBatchDrawTexcoords.clear();
 }
 
 float McFontImpl::getGlyphWidth(char16_t character) const {
@@ -602,17 +718,28 @@ std::vector<UString> McFontImpl::wrap(const UString &text, f64 max_width) const 
 const McFontImpl::GLYPH_METRICS &McFontImpl::getGlyphMetrics(char16_t ch) const {
     FT_Face existingFace = nullptr;
     if(const auto &it = m_mGlyphMetrics.find(ch); it != m_mGlyphMetrics.end()) {
-        if(it->second.inAtlas) return it->second;
-        existingFace = it->second.face;
+        if(it->second->inAtlas) return *it->second;
+        existingFace = it->second->face;
     }
 
     // either no metrics, or metrics exist but glyph was evicted from atlas
-    if(m_bTryFindFallbacks && const_cast<McFontImpl *>(this)->loadGlyphDynamic(ch, existingFace)) {
-        return m_mGlyphMetrics.at(ch);
-    }
+    if(m_bTryFindFallbacks) {
+        auto &metrics = const_cast<McFontImpl *>(this)->m_mGlyphMetrics;
+        if(const_cast<McFontImpl *>(this)->loadGlyphDynamic(ch, existingFace)) {
+            return *metrics[ch];
+        } else {
+            // fallback to unknown character glyph
+            if(const auto &it = m_mGlyphMetrics.find(UNKNOWN_CHAR); it != m_mGlyphMetrics.end()) {
+                // update metrics to just always point to UNKNOWN_CHAR
 
-    // fallback to unknown character glyph
-    if(const auto &it = m_mGlyphMetrics.find(UNKNOWN_CHAR); it != m_mGlyphMetrics.end()) return it->second;
+                return *(metrics[ch] = std::make_unique<GLYPH_METRICS>(*it->second));
+            }
+        }
+    } else {
+        if(const auto &it = m_mGlyphMetrics.find(UNKNOWN_CHAR); it != m_mGlyphMetrics.end()) {
+            return *it->second;
+        }
+    }
 
     debugLog("Font Error: Missing default backup glyph (UNKNOWN_CHAR)?");
     return m_errorGlyph;
@@ -648,10 +775,7 @@ bool McFontImpl::loadGlyphDynamic(char16_t ch, FT_Face existingFace) {
     }
 
     // ensure face size is set
-    if(face != m_lastSizedFace) {
-        setFaceSize(face);
-        m_lastSizedFace = face;
-    }
+    setFaceSize(face);
 
     // load glyph once - store metrics only if this is a new glyph
     FT_BitmapGlyph bitmapGlyph = loadBitmapGlyph(ch, face, needMetrics);
@@ -679,7 +803,7 @@ bool McFontImpl::loadGlyphDynamic(char16_t ch, FT_Face existingFace) {
         }
     } else {
         // empty glyph (e.g. space) - mark as valid without atlas rendering
-        m_mGlyphMetrics[ch].inAtlas = true;
+        m_mGlyphMetrics[ch]->inAtlas = true;
     }
 
     FT_Done_Glyph(reinterpret_cast<FT_Glyph>(bitmapGlyph));
@@ -688,14 +812,14 @@ bool McFontImpl::loadGlyphDynamic(char16_t ch, FT_Face existingFace) {
 
 // atlas management methods
 int McFontImpl::allocateDynamicSlot(char16_t ch) {
-    m_currentTime++;
+    m_currentAtlasTime++;
 
     // look for free slot
     for(size_t i = 0; i < m_dynamicSlots.size(); i++) {
         auto &dynamicSlot = m_dynamicSlots[i];
         if(!dynamicSlot.occupied) {
             dynamicSlot.character = ch;
-            dynamicSlot.lastUsed = m_currentTime;
+            dynamicSlot.lastUsed = m_currentAtlasTime;
             dynamicSlot.occupied = true;
             m_dynamicSlotMap[ch] = static_cast<int>(i);
             return static_cast<int>(i);
@@ -721,12 +845,12 @@ int McFontImpl::allocateDynamicSlot(char16_t ch) {
         // mark evicted glyph as no longer in atlas, but preserve metrics for fast re-rendering
         const auto &it = m_mGlyphMetrics.find(dynamicLRUSlot.character);
         if(it != m_mGlyphMetrics.end()) {
-            it->second.inAtlas = false;
+            it->second->inAtlas = false;
         }
     }
 
     dynamicLRUSlot.character = ch;
-    dynamicLRUSlot.lastUsed = m_currentTime;
+    dynamicLRUSlot.lastUsed = m_currentAtlasTime;
     dynamicLRUSlot.occupied = true;
     m_dynamicSlotMap[ch] = lruIndex;
 
@@ -736,8 +860,8 @@ int McFontImpl::allocateDynamicSlot(char16_t ch) {
 void McFontImpl::markSlotUsed(char16_t ch) {
     const auto &it = m_dynamicSlotMap.find(ch);
     if(it != m_dynamicSlotMap.end()) {
-        m_currentTime++;
-        m_dynamicSlots[it->second].lastUsed = m_currentTime;
+        m_currentAtlasTime++;
+        m_dynamicSlots[it->second].lastUsed = m_currentAtlasTime;
     }
 }
 
@@ -876,7 +1000,7 @@ void McFontImpl::renderBitmapToAtlas(char16_t ch, int x, int y, const FT_Bitmap 
     }
 
     // update metrics with atlas coordinates
-    GLYPH_METRICS &metrics = m_mGlyphMetrics[ch];
+    GLYPH_METRICS &metrics = *m_mGlyphMetrics[ch];
     metrics.uvPixelsX = static_cast<u32>(x);
     metrics.uvPixelsY = static_cast<u32>(y);
     metrics.inAtlas = true;
@@ -897,7 +1021,19 @@ bool McFontImpl::initializeAtlas() {
 
     size_t rectIndex = 0;
     for(char16_t ch : m_vInitialGlyphs) {
-        const auto &metrics = m_mGlyphMetrics[ch];
+        auto &metricsP = m_mGlyphMetrics[ch];
+        // mark all initial glyphs as in atlas (including zero-size glyphs like space)
+        if(!metricsP) {
+            // this is convoluted/spaghetti but we might have skipped creating some glyphs
+            // for characters like DEL, just allocate the memory for it and mark it as in atlas
+            metricsP = std::make_unique<GLYPH_METRICS>();
+            metricsP->inAtlas = true;
+            continue;
+        }
+
+        auto &metrics = *metricsP;
+        metrics.inAtlas = true;
+
         if(metrics.sizePixelsX > 0 && metrics.sizePixelsY > 0) {
             // add packrect
             TextureAtlas::PackRect pr{.x = 0,
@@ -939,13 +1075,10 @@ bool McFontImpl::initializeAtlas() {
     // render all packed glyphs to static region
     for(const auto &rect : packRects) {
         const char16_t ch = rectsToChars[rect.id];
-        const auto &metrics = m_mGlyphMetrics[ch];
+        const auto &metrics = *m_mGlyphMetrics[ch];
         if(metrics.face) {
             // ensure face size is set
-            if(metrics.face != m_lastSizedFace) {
-                setFaceSize(metrics.face);
-                m_lastSizedFace = metrics.face;
-            }
+            setFaceSize(metrics.face);
 
             // load bitmap (metrics already stored, so don't overwrite)
             FT_BitmapGlyph bitmapGlyph = loadBitmapGlyph(ch, metrics.face, false /*storeMetrics*/);
@@ -953,14 +1086,6 @@ bool McFontImpl::initializeAtlas() {
                 renderBitmapToAtlas(ch, rect.x, rect.y, bitmapGlyph->bitmap, false /*not dynamic*/);
                 FT_Done_Glyph(reinterpret_cast<FT_Glyph>(bitmapGlyph));
             }
-        }
-    }
-
-    // mark all initial glyphs as in atlas (including zero-size glyphs like space)
-    for(char16_t ch : m_vInitialGlyphs) {
-        const auto &it = m_mGlyphMetrics.find(ch);
-        if(it != m_mGlyphMetrics.end()) {
-            it->second.inAtlas = true;
         }
     }
 
@@ -1029,8 +1154,11 @@ FT_BitmapGlyph McFontImpl::loadBitmapGlyph(char16_t ch, FT_Face face, bool store
     auto bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
 
     if(storeMetrics) {
-        GLYPH_METRICS &metrics = m_mGlyphMetrics[ch];
-        metrics.character = ch;
+        auto &metricsPtr = m_mGlyphMetrics[ch];
+        assert(!metricsPtr);
+        metricsPtr = std::make_unique<GLYPH_METRICS>();
+        auto &metrics = *metricsPtr;
+
         metrics.left = bitmapGlyph->left;
         metrics.top = bitmapGlyph->top;
         metrics.width = bitmapGlyph->bitmap.width;
@@ -1049,13 +1177,13 @@ FT_BitmapGlyph McFontImpl::loadBitmapGlyph(char16_t ch, FT_Face face, bool store
     return bitmapGlyph;
 }
 
-void McFontImpl::buildGlyphGeometry(const GLYPH_METRICS &gm, const vec3 &basePos, float advanceX, size_t &vertexCount) {
+size_t McFontImpl::buildGlyphGeometry(std::vector<vec3> &vertsOut, std::vector<vec2> &texcoordsOut,
+                                      const GLYPH_METRICS &gm, float advanceX, size_t startVertex) {
     const float atlasWidth{static_cast<float>(m_textureAtlas->getAtlasImage()->getWidth())};
     const float atlasHeight{static_cast<float>(m_textureAtlas->getAtlasImage()->getHeight())};
 
-    const float x{basePos.x + static_cast<float>(gm.left) + advanceX};
-    const float y{basePos.y - static_cast<float>(gm.top - gm.rows)};
-    const float z{basePos.z};
+    const float x{+static_cast<float>(gm.left) + advanceX};
+    const float y{-static_cast<float>(gm.top - gm.rows)};
     const float sx{static_cast<float>(gm.width)};
     const float sy{static_cast<float>(-gm.rows)};
 
@@ -1065,10 +1193,10 @@ void McFontImpl::buildGlyphGeometry(const GLYPH_METRICS &gm, const vec3 &basePos
     const float texSizeY{static_cast<float>(gm.sizePixelsY) / atlasHeight};
 
     // corners of the "quad"
-    vec3 bottomLeft{x, y + sy, z};
-    vec3 topLeft{x, y, z};
-    vec3 topRight{x + sx, y, z};
-    vec3 bottomRight{x + sx, y + sy, z};
+    vec3 bottomLeft{x, y + sy, 0};
+    vec3 topLeft{x, y, 0};
+    vec3 topRight{x + sx, y, 0};
+    vec3 bottomRight{x + sx, y + sy, 0};
 
     // texcoords
     vec2 texBottomLeft{texX, texY};
@@ -1076,54 +1204,57 @@ void McFontImpl::buildGlyphGeometry(const GLYPH_METRICS &gm, const vec3 &basePos
     vec2 texTopRight{texX + texSizeX, texY + texSizeY};
     vec2 texBottomRight{texX + texSizeX, texY};
 
-    const size_t idx{vertexCount};
-
     if constexpr(VERTS_PER_VAO > 4) {
         // triangles (quads are slower for GL ES because they need to be converted to triangles at submit time)
         // first triangle (bottom-left, top-left, top-right)
-        m_vertices[idx] = bottomLeft;
-        m_vertices[idx + 1] = topLeft;
-        m_vertices[idx + 2] = topRight;
+        vertsOut[startVertex] = bottomLeft;
+        vertsOut[startVertex + 1] = topLeft;
+        vertsOut[startVertex + 2] = topRight;
 
-        m_texcoords[idx] = texBottomLeft;
-        m_texcoords[idx + 1] = texTopLeft;
-        m_texcoords[idx + 2] = texTopRight;
+        texcoordsOut[startVertex] = texBottomLeft;
+        texcoordsOut[startVertex + 1] = texTopLeft;
+        texcoordsOut[startVertex + 2] = texTopRight;
 
         // second triangle (bottom-left, top-right, bottom-right)
-        m_vertices[idx + 3] = bottomLeft;
-        m_vertices[idx + 4] = topRight;
-        m_vertices[idx + 5] = bottomRight;
+        vertsOut[startVertex + 3] = bottomLeft;
+        vertsOut[startVertex + 4] = topRight;
+        vertsOut[startVertex + 5] = bottomRight;
 
-        m_texcoords[idx + 3] = texBottomLeft;
-        m_texcoords[idx + 4] = texTopRight;
-        m_texcoords[idx + 5] = texBottomRight;
+        texcoordsOut[startVertex + 3] = texBottomLeft;
+        texcoordsOut[startVertex + 4] = texTopRight;
+        texcoordsOut[startVertex + 5] = texBottomRight;
     } else {
         // quads
-        m_vertices[idx] = bottomLeft;       // bottom-left
-        m_vertices[idx + 1] = topLeft;      // top-left
-        m_vertices[idx + 2] = topRight;     // top-right
-        m_vertices[idx + 3] = bottomRight;  // bottom-right
+        vertsOut[startVertex] = bottomLeft;       // bottom-left
+        vertsOut[startVertex + 1] = topLeft;      // top-left
+        vertsOut[startVertex + 2] = topRight;     // top-right
+        vertsOut[startVertex + 3] = bottomRight;  // bottom-right
 
-        m_texcoords[idx] = texBottomLeft;
-        m_texcoords[idx + 1] = texTopLeft;
-        m_texcoords[idx + 2] = texTopRight;
-        m_texcoords[idx + 3] = texBottomRight;
+        texcoordsOut[startVertex] = texBottomLeft;
+        texcoordsOut[startVertex + 1] = texTopLeft;
+        texcoordsOut[startVertex + 2] = texTopRight;
+        texcoordsOut[startVertex + 3] = texBottomRight;
     }
-    vertexCount += VERTS_PER_VAO;
+    return startVertex + VERTS_PER_VAO;
 }
 
-void McFontImpl::buildStringGeometry(const UString &text, size_t &vertexCount) {
+void McFontImpl::buildStringGeometry(const UString &text, std::vector<vec3> &vertsOut, std::vector<vec2> &texcoordsOut,
+                                     size_t maxGlyphs, size_t startVertex, std::vector<const GLYPH_METRICS *> *gmOut) {
     float advanceX = 0.0f;
-    const int maxGlyphs =
-        std::min(text.length(), (int)((double)(m_vertices.size() - vertexCount) / (double)VERTS_PER_VAO));
 
     for(int i = 0; i < maxGlyphs; i++) {
         const GLYPH_METRICS &gm = getGlyphMetrics(text[i]);
-        buildGlyphGeometry(gm, vec3(), advanceX, vertexCount);
+
+        startVertex = buildGlyphGeometry(vertsOut, texcoordsOut, gm, advanceX, startVertex);
         advanceX += gm.advance_x;
 
         // mark dynamic slot as recently used (if this character is in a dynamic slot)
         markSlotUsed(text[i]);
+
+        // add glyph metrics to out parameter
+        if(gmOut != nullptr) {
+            (*gmOut)[i] = &gm;
+        }
     }
 
     // reload atlas if new glyphs were added to dynamic slots
@@ -1131,6 +1262,8 @@ void McFontImpl::buildStringGeometry(const UString &text, size_t &vertexCount) {
         m_textureAtlas->getAtlasImage()->reload();
         m_bAtlasNeedsReload = false;
     }
+
+    return;
 }
 
 std::unique_ptr<Channel[]> McFontImpl::unpackMonoBitmap(const FT_Bitmap &bitmap) {
@@ -1153,9 +1286,14 @@ std::unique_ptr<Channel[]> McFontImpl::unpackMonoBitmap(const FT_Bitmap &bitmap)
     return result;
 }
 
-// helper to set font size on any face for this font instance
+// helper to set font size on any face
 void McFontImpl::setFaceSize(FT_Face face) {
-    FT_Set_Char_Size(face, (FT_F26Dot6)(m_iFontSize * 64L), (FT_F26Dot6)(m_iFontSize * 64L), m_iFontDPI, m_iFontDPI);
+    if(s_lastSizedFace.face != face || s_lastSizedFace.size != m_iFontSize || s_lastSizedFace.dpi != m_iFontDPI) {
+        s_lastSizedFace = {.face = face, .size = m_iFontSize, .dpi = m_iFontDPI};
+
+        FT_Set_Char_Size(face, (FT_F26Dot6)(m_iFontSize * 64L), (FT_F26Dot6)(m_iFontSize * 64L), m_iFontDPI,
+                         m_iFontDPI);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
