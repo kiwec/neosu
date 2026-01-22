@@ -1081,7 +1081,7 @@ AC_SUBST([SOUNDTOUCH_VERSION], [b8e2a5f3f04483691962ab1a36ffa166abdcd675])
 AC_SUBST([SOUNDTOUCH_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([MIMALLOC_VERSION], [v3.2.7])
 AC_SUBST([MIMALLOC_PREFIX],[$DEPS_PREFIX])
-AC_SUBST([GLM_VERSION], [1.0.2])
+AC_SUBST([GLM_VERSION], [1.0.3])
 
 # pre-built, used for soloud
 # NOTE: the links are not stable across architectures, so this is more of a symbolic version than anything

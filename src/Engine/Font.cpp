@@ -119,7 +119,7 @@ struct McFontImpl final {
     };
 
     std::vector<char16_t> m_vInitialGlyphs;
-    Hash::flat::map<char16_t, GLYPH_METRICS> m_mGlyphMetrics;
+    std::unordered_map<char16_t, GLYPH_METRICS> m_mGlyphMetrics;
 
     std::unique_ptr<VertexArrayObject> m_vao;
     TextBatch m_batchQueue;
@@ -141,9 +141,9 @@ struct McFontImpl final {
     int m_dynamicRegionY;      // Y coordinate where dynamic region starts
     int m_slotsPerRow;         // number of slots per row in dynamic region
     std::vector<DynamicSlot> m_dynamicSlots;
-    Hash::flat::map<char16_t, int> m_dynamicSlotMap;  // character -> slot index for O(1) lookup
-    uint64_t m_currentTime;                           // for LRU tracking
-    bool m_bAtlasNeedsReload;                         // flag to batch atlas reloads
+    std::unordered_map<char16_t, int> m_dynamicSlotMap;  // character -> slot index for O(1) lookup
+    uint64_t m_currentTime;                              // for LRU tracking
+    bool m_bAtlasNeedsReload;                            // flag to batch atlas reloads
 
     // face size tracking to avoid redundant setFaceSize calls
     FT_Face m_lastSizedFace;
@@ -601,8 +601,7 @@ std::vector<UString> McFontImpl::wrap(const UString &text, f64 max_width) const 
 
 const McFontImpl::GLYPH_METRICS &McFontImpl::getGlyphMetrics(char16_t ch) const {
     FT_Face existingFace = nullptr;
-    auto it = m_mGlyphMetrics.find(ch);
-    if(it != m_mGlyphMetrics.end()) {
+    if(const auto &it = m_mGlyphMetrics.find(ch); it != m_mGlyphMetrics.end()) {
         if(it->second.inAtlas) return it->second;
         existingFace = it->second.face;
     }
@@ -613,8 +612,7 @@ const McFontImpl::GLYPH_METRICS &McFontImpl::getGlyphMetrics(char16_t ch) const 
     }
 
     // fallback to unknown character glyph
-    it = m_mGlyphMetrics.find(UNKNOWN_CHAR);
-    if(it != m_mGlyphMetrics.end()) return it->second;
+    if(const auto &it = m_mGlyphMetrics.find(UNKNOWN_CHAR); it != m_mGlyphMetrics.end()) return it->second;
 
     debugLog("Font Error: Missing default backup glyph (UNKNOWN_CHAR)?");
     return m_errorGlyph;
@@ -721,7 +719,7 @@ int McFontImpl::allocateDynamicSlot(char16_t ch) {
         m_dynamicSlotMap.erase(dynamicLRUSlot.character);
 
         // mark evicted glyph as no longer in atlas, but preserve metrics for fast re-rendering
-        auto it = m_mGlyphMetrics.find(dynamicLRUSlot.character);
+        const auto &it = m_mGlyphMetrics.find(dynamicLRUSlot.character);
         if(it != m_mGlyphMetrics.end()) {
             it->second.inAtlas = false;
         }
@@ -736,7 +734,7 @@ int McFontImpl::allocateDynamicSlot(char16_t ch) {
 }
 
 void McFontImpl::markSlotUsed(char16_t ch) {
-    auto it = m_dynamicSlotMap.find(ch);
+    const auto &it = m_dynamicSlotMap.find(ch);
     if(it != m_dynamicSlotMap.end()) {
         m_currentTime++;
         m_dynamicSlots[it->second].lastUsed = m_currentTime;
@@ -960,7 +958,7 @@ bool McFontImpl::initializeAtlas() {
 
     // mark all initial glyphs as in atlas (including zero-size glyphs like space)
     for(char16_t ch : m_vInitialGlyphs) {
-        auto it = m_mGlyphMetrics.find(ch);
+        const auto &it = m_mGlyphMetrics.find(ch);
         if(it != m_mGlyphMetrics.end()) {
             it->second.inAtlas = true;
         }

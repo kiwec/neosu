@@ -992,7 +992,7 @@ void ModSelector::updateExperimentalLayout() {
     this->experimentalContainer->setSizeX(experimentalMaxWidth + 25 * dpiScale /*, yCounter*/);
     this->experimentalContainer->setPosY(-1);
     this->experimentalContainer->setScrollSizeToContent(1 * dpiScale);
-    this->experimentalContainer->container->update_pos();
+    this->experimentalContainer->container.update_pos();
     this->experimentalContainer->setVisible(!BanchoState::is_in_a_multi_room());
 }
 
@@ -1079,7 +1079,7 @@ CBaseUILabel *ModSelector::addExperimentalLabel(const UString &text) {
     label->setWidthToContent(0);
     label->setDrawBackground(false);
     label->setDrawFrame(false);
-    this->experimentalContainer->container->addBaseUIElement(label);
+    this->experimentalContainer->container.addBaseUIElement(label);
 
     EXPERIMENTAL_MOD em;
     em.element = label;
@@ -1097,7 +1097,7 @@ UICheckbox *ModSelector::addExperimentalCheckbox(const UString &text, const UStr
         checkbox->setChecked(cvar->getBool());
         checkbox->setChangeCallback(SA::MakeDelegate<&ModSelector::onCheckboxChange>(this));
     }
-    this->experimentalContainer->container->addBaseUIElement(checkbox);
+    this->experimentalContainer->container.addBaseUIElement(checkbox);
 
     EXPERIMENTAL_MOD em;
     em.element = checkbox;

@@ -96,6 +96,41 @@ inline bool isInt(float f) { return (f == static_cast<float>(static_cast<int>(f)
 #define MC_ASSUME(expr) __assume(expr)
 #endif
 
+#ifdef _WIN32
+#ifdef _MSC_VER
+#pragma execution_character_set("utf-8")  // msvc wrangling
+#endif
+// fix including win32 headers without Windows.h
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
+    !defined(_ARM_) && !defined(_ARM64_) && !defined(_ARM64EC_) && defined(_M_IX86)
+#define _X86_
+#if !defined(_CHPE_X86_ARM64_) && defined(_M_HYBRID)
+#define _CHPE_X86_ARM64_
+#endif
+#endif
+
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
+    !defined(_ARM_) && !defined(_ARM64_) && (defined(_M_AMD64) || defined(_M_ARM64EC))
+#define _AMD64_
+#endif
+
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
+    !defined(_ARM_) && !defined(_ARM64_) && !defined(_ARM64EC_) && defined(_M_ARM)
+#define _ARM_
+#endif
+
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
+    !defined(_ARM_) && !defined(_ARM64_) && !defined(_ARM64EC_) && defined(_M_ARM64)
+#define _ARM64_
+#endif
+
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_ARM_) && \
+    !defined(_ARM64_) && !defined(_ARM64EC_) && defined(_M_ARM64EC)
+#define _ARM64EC_
+#endif
+
+#endif
+
 namespace Env {
 template <typename T>
 constexpr bool always_false_v = false;

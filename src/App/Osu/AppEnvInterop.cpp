@@ -411,7 +411,7 @@ void OsuEnvInterop::setup_system_integrations() {
         debugLog("Failed to register neosu as .osr format handler. Error: {}", err);
         return;
     }
-    RegSetValueExW(osr_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)TEXT(""), sizeof(TEXT("")));
+    RegSetValueEx(osr_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)TEXT(""), sizeof(TEXT("")));
     RegCloseKey(osr_key);
 
     // Register neosu as .osz handler

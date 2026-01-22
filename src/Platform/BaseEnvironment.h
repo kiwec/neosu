@@ -239,34 +239,18 @@ using Env::REND;
 #if !(defined(MCENGINE_PLATFORM_WINDOWS) || defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || \
       defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__))
 
-#define fubar_abort_ abort
+#if defined(__has_builtin) && __has_builtin(__builtin_debugtrap)
+#define fubar_abort_ [] [[gnu::always_inline]] [[noreturn]] () { __builtin_debugtrap(); ::abort(); }
+#else
+extern int raise(int sig);
+#define fubar_abort_ [] [[gnu::always_inline]] [[noreturn]] () { raise(5 /* SIGTRAP */); ::abort(); }
+#endif
+
 #define fubar_abort() fubar_abort_()
 
 typedef void* HWND;
 
 #else  // Windows build
-
-#if defined(_MSC_VER)
-#pragma execution_character_set("utf-8")  // msvc wrangling
-
-#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
-    !defined(_ARM_) && !defined(_ARM64_) && defined(_M_IX86)
-#define _X86_
-#endif
-#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
-    !defined(_ARM_) && !defined(_ARM64_) && defined(_M_AMD64)
-#define _AMD64_
-#endif
-#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
-    !defined(_ARM_) && !defined(_ARM64_) && defined(_M_ARM)
-#define _ARM_
-#endif
-#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && \
-    !defined(_ARM_) && !defined(_ARM64_) && defined(_M_ARM64)
-#define _ARM64_
-#endif
-
-#endif
 
 #include "WinDebloatDefs.h"
 
@@ -290,11 +274,7 @@ typedef void* HWND;
 #define strncasecmp _strnicmp
 #endif
 
-#define fubar_abort_     \
-    [] [[noreturn]] () { \
-        __debugbreak();  \
-        abort();         \
-    }
+#define fubar_abort_ [] [[noreturn]] () { __debugbreak(); ::abort(); }
 
 #define fubar_abort() fubar_abort_()
 

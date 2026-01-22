@@ -83,9 +83,9 @@ class AsyncResourceLoader final {
     bool bMaxLoadsResetPending{false};
 
     // thread idle configuration
-    static constexpr std::chrono::milliseconds IDLE_GRACE_PERIOD{1000};  // 1 sec
-    static constexpr std::chrono::milliseconds IDLE_TIMEOUT{15000};      // 15 sec
-    std::chrono::steady_clock::time_point lastCleanupTime;
+    static constexpr uint64_t IDLE_GRACE_PERIOD{1000};  // 1 sec
+    static constexpr uint64_t IDLE_TIMEOUT{15000};      // 15 sec
+    uint64_t lastCleanupTime;
 
     // thread pool
     Hash::flat::map<size_t, std::unique_ptr<LoaderThread>> threadpool;  // index to thread

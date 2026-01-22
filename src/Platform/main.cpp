@@ -7,27 +7,48 @@
 #define MAIN_FUNC SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 #define SDL_MAIN_USE_CALLBACKS  // this enables the use of SDL_AppInit/AppEvent/AppIterate instead of a traditional
                                 // mainloop, needed for wasm (works on desktop too, but it's not necessary)
-#include <SDL3/SDL_main.h>
-#include <SDL3/SDL_hints.h>
-#include <SDL3/SDL_process.h>
-namespace {
-void setcwdexe(const std::string & /*unused*/) {}
-}  // namespace
 #else
+#define MAIN_FUNC int main(int argc, char *argv[])
+#endif
+
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_process.h>
-#define MAIN_FUNC int main(int argc, char *argv[])
+
+#include "CrashHandler.h"
+#include "Profiler.h"
+#include "UString.h"
+
+#if defined(_WIN32)
+#include "WinDebloatDefs.h"
+#include <consoleapi2.h>  // for SetConsoleOutputCP
+#include <processenv.h>   // for GetCommandLine
+#endif
+
 #include <filesystem>
 
-#include "UString.h"
+#if defined(__SSE__) || (defined(_M_IX86_FP) && (_M_IX86_FP > 0))
+#ifndef _MSC_VER
+#include <xmmintrin.h>
+#endif
+#define SET_FPU_DAZ_FTZ _mm_setcsr(_mm_getcsr() | 0x8040);
+#else
+#define SET_FPU_DAZ_FTZ
+#endif
+
+#ifdef WITH_LIVEPP
+#include "LPP_API_x64_CPP.h"
+#endif
+
+#include "environment_private.h"
+#include "DiffCalcTool.h"
 
 namespace {
 void setcwdexe(const std::string &exePathStr) noexcept {
     // Fix path in case user is running it from the wrong folder.
     // We only do this if MCENGINE_DATA_DIR is set to its default value, since if it's changed,
     // the packager clearly wants the executable in a different location.
-    if constexpr(!(MCENGINE_DATA_DIR[0] == '.' && MCENGINE_DATA_DIR[1] == '/')) {
+    if constexpr(Env::cfg(OS::WASM) || (!(MCENGINE_DATA_DIR[0] == '.' && MCENGINE_DATA_DIR[1] == '/'))) {
         return;
     }
     namespace fs = std::filesystem;
@@ -48,32 +69,6 @@ void setcwdexe(const std::string &exePathStr) noexcept {
     }
 }
 }  // namespace
-#endif
-
-#if defined(_WIN32)
-#include "WinDebloatDefs.h"
-#include <consoleapi2.h>  // for SetConsoleOutputCP
-#include <processenv.h>   // for GetCommandLine
-#endif
-
-#include "CrashHandler.h"
-#include "Profiler.h"
-
-#if defined(__SSE__) || (defined(_M_IX86_FP) && (_M_IX86_FP > 0))
-#ifndef _MSC_VER
-#include <xmmintrin.h>
-#endif
-#define SET_FPU_DAZ_FTZ _mm_setcsr(_mm_getcsr() | 0x8040);
-#else
-#define SET_FPU_DAZ_FTZ
-#endif
-
-#ifdef WITH_LIVEPP
-#include "LPP_API_x64_CPP.h"
-#endif
-
-#include "environment_private.h"
-#include "DiffCalcTool.h"
 
 //*********************************//
 //	SDL CALLBACKS/MAINLOOP BEGINS  //
@@ -129,7 +124,22 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 }
 
 // (update tick) serialized with SDL_AppEvent
-SDL_AppResult SDL_AppIterate(void *appstate) { return static_cast<SDLMain *>(appstate)->iterate(); }
+SDL_AppResult SDL_AppIterate(void *appstate) {
+    // exit sleep/event scope
+    VPROF_EXIT_SCOPE();
+
+    SDL_AppResult ret = static_cast<SDLMain *>(appstate)->iterate();
+
+    // exit previous main scope
+    VPROF_EXIT_SCOPE();
+
+    // re-enter main+events scope
+    g_profCurrentProfile.mainprof();
+    VPROF_ENTER_SCOPE("Main", VPROF_BUDGETGROUP_ROOT);
+    VPROF_ENTER_SCOPE("SDL", VPROF_BUDGETGROUP_BETWEENFRAMES);
+
+    return ret;
+}
 #endif
 
 // actual main/init, called once
@@ -151,7 +161,7 @@ MAIN_FUNC /* int argc, char *argv[] */
 
     const bool diffcalcOnly = argc >= 2 && strncmp(argv[1], "-diffcalc", sizeof("-diffcalc") - 1) == 0;
     if(diffcalcOnly) {
-        return NEOSU_run_diffcalc(argc, argv);
+        return (SDL_AppResult)NEOSU_run_diffcalc(argc, argv);
     }
 
     // if a neosu instance is already running, send it a message then quit
@@ -165,11 +175,9 @@ MAIN_FUNC /* int argc, char *argv[] */
 
     // this sets and caches the path in getPathToSelf, so this must be called here
     const auto &selfpath = Environment::getPathToSelf(argv[0]);
-    if constexpr(!Env::cfg(OS::WASM)) {
-        // set the current working directory to the executable directory, so that relative paths
-        // work as expected
-        setcwdexe(selfpath);
-    }
+    // set the current working directory to the executable directory, so that relative paths
+    // work as expected
+    setcwdexe(selfpath);
 
     // parse args here
 
@@ -250,6 +258,13 @@ MAIN_FUNC /* int argc, char *argv[] */
     }
 
 #if defined(MCENGINE_PLATFORM_WASM) || defined(MCENGINE_FEATURE_MAINCALLBACKS)
+    // need to manually scope profiler nodes in main callbacks,
+    // since we are called from SDL externally
+    // start it here so we can exit/re-enter in each iterate() call afterwards
+    g_profCurrentProfile.mainprof();
+    VPROF_ENTER_SCOPE("Main", VPROF_BUDGETGROUP_ROOT);
+    VPROF_ENTER_SCOPE("SDL", VPROF_BUDGETGROUP_BETWEENFRAMES);
+
     auto *fmain = new SDLMain(arg_map, arg_cmdline);  // need to allocate dynamically
     *appstate = fmain;
     return !fmain ? SDL_APP_FAILURE : fmain->initialize();

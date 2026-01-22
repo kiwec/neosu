@@ -331,9 +331,9 @@ void init(bool create_console) noexcept {
     setvbuf(stderr, nullptr, _IONBF, 0);
 
     // initialize async thread pool before creating any async loggers
-    // queue size: 8192 slots (each ~256 bytes), 1 background thread
+    // queue size: 32768 slots (each ~256 bytes), 1 background thread
     // use overrun_oldest policy for non-blocking behavior
-    spdlog::init_thread_pool(8192, 1, []() -> void { McThread::set_current_thread_name(US_("spd_logger")); });
+    spdlog::init_thread_pool(32768, 1, []() -> void { McThread::set_current_thread_name(US_("spd_logger")); });
 
     // engine console sink handles its own formatting
     auto engine_console_sink{std::make_shared<ConsoleBoxSink>()};

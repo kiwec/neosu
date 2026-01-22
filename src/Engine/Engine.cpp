@@ -243,8 +243,8 @@ void Engine::loadApp() {
 }
 
 void Engine::onPaint() {
-    VPROF_BUDGET("Engine::onPaint", VPROF_BUDGETGROUP_DRAW);
     if(this->bShuttingDown) return;
+    VPROF_BUDGET("Engine::onPaint", VPROF_BUDGETGROUP_DRAW);
 
     this->bDrawing = true;
     {
@@ -281,9 +281,9 @@ void Engine::onPaint() {
 }
 
 void Engine::onUpdate() {
-    VPROF_BUDGET("Engine::onUpdate", VPROF_BUDGETGROUP_UPDATE);
-
     if(this->bShuttingDown) return;
+
+    VPROF_BUDGET("Engine::onUpdate", VPROF_BUDGETGROUP_UPDATE);
 
     {
         VPROF_BUDGET("Timer::update", VPROF_BUDGETGROUP_UPDATE);
@@ -327,15 +327,15 @@ void Engine::onUpdate() {
         }
 
         {
+            VPROF_BUDGET("AnimationHandler::update", VPROF_BUDGETGROUP_UPDATE);
+            anim::update();
+        }
+
+        {
             VPROF_BUDGET("InputDevices::update", VPROF_BUDGETGROUP_UPDATE);
             for(auto *inputDevice : this->inputDevices) {
                 inputDevice->update();
             }
-        }
-
-        {
-            VPROF_BUDGET("AnimationHandler::update", VPROF_BUDGETGROUP_UPDATE);
-            anim::update();
         }
 
         {

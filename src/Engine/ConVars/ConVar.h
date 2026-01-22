@@ -118,53 +118,53 @@ class ConVar {
 
     // callback-only constructors (no value)
     template <typename Callback>
-    explicit ConVar(const char *name, uint8_t flags, Callback callback)
+    explicit ConVar(const char *name, uint8_t flags, Callback &&callback)
         requires cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float> ||
                      cb_invocable<Callback, double>
         : sName(name), sHelpString("") {
-        this->initCallback(flags, callback);
+        this->initCallback(flags, std::forward<Callback>(callback));
         this->addConVar();
     }
 
     template <typename Callback>
-    explicit ConVar(const char *name, uint8_t flags, const char *helpString, Callback callback)
+    explicit ConVar(const char *name, uint8_t flags, const char *helpString, Callback &&callback)
         requires cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float> ||
                      cb_invocable<Callback, double>
         : sName(name), sHelpString(helpString) {
-        this->initCallback(flags, callback);
+        this->initCallback(flags, std::forward<Callback>(callback));
         this->addConVar();
     }
 
     // value constructors handle all types uniformly
     template <typename T>
-    explicit ConVar(const char *name, T defaultValue, uint8_t flags, const char *helpString = "")
+    explicit ConVar(const char *name, T &&defaultValue, uint8_t flags, const char *helpString = "")
         requires(!std::is_same_v<std::decay_t<T>, const char *>)
         : sName(name), sHelpString(helpString) {
-        this->initValue(defaultValue, flags, nullptr);
+        this->initValue(std::forward<T>(defaultValue), flags, nullptr);
         this->addConVar();
     }
 
     template <typename T, typename Callback>
-    explicit ConVar(const char *name, T defaultValue, uint8_t flags, const char *helpString, Callback callback)
+    explicit ConVar(const char *name, T &&defaultValue, uint8_t flags, const char *helpString, Callback &&callback)
         requires(!std::is_same_v<std::decay_t<T>, const char *>) &&
                     (cb_invocable<Callback> || cb_invocable<Callback, std::string_view> ||
                      cb_invocable<Callback, float> || cb_invocable<Callback, double> ||
                      cb_invocable<Callback, std::string_view, std::string_view> ||
                      cb_invocable<Callback, float, float> || cb_invocable<Callback, double, double>)
         : sName(name), sHelpString(helpString) {
-        this->initValue(defaultValue, flags, callback);
+        this->initValue(std::forward<T>(defaultValue), flags, std::forward<Callback>(callback));
         this->addConVar();
     }
 
     template <typename T, typename Callback>
-    explicit ConVar(const char *name, T defaultValue, uint8_t flags, Callback callback)
+    explicit ConVar(const char *name, T &&defaultValue, uint8_t flags, Callback &&callback)
         requires(!std::is_same_v<std::decay_t<T>, const char *>) &&
                     (cb_invocable<Callback> || cb_invocable<Callback, std::string_view> ||
                      cb_invocable<Callback, float> || cb_invocable<Callback, double> ||
                      cb_invocable<Callback, std::string_view, std::string_view> ||
                      cb_invocable<Callback, float, float> || cb_invocable<Callback, double, double>)
         : sName(name), sHelpString("") {
-        this->initValue(defaultValue, flags, callback);
+        this->initValue(std::forward<T>(defaultValue), flags, std::forward<Callback>(callback));
         this->addConVar();
     }
 
@@ -177,22 +177,22 @@ class ConVar {
 
     template <typename Callback>
     explicit ConVar(const char *name, std::string_view defaultValue, uint8_t flags, const char *helpString,
-                    Callback callback)
+                    Callback &&callback)
         requires(cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float> ||
                  cb_invocable<Callback, double> || cb_invocable<Callback, std::string_view, std::string_view> ||
                  cb_invocable<Callback, float, float> || cb_invocable<Callback, double, double>)
         : sName(name), sHelpString(helpString) {
-        this->initValue(defaultValue, flags, callback);
+        this->initValue(defaultValue, flags, std::forward<Callback>(callback));
         this->addConVar();
     }
 
     template <typename Callback>
-    explicit ConVar(const char *name, std::string_view defaultValue, uint8_t flags, Callback callback)
+    explicit ConVar(const char *name, std::string_view defaultValue, uint8_t flags, Callback &&callback)
         requires(cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float> ||
                  cb_invocable<Callback, double> || cb_invocable<Callback, std::string_view, std::string_view> ||
                  cb_invocable<Callback, float, float> || cb_invocable<Callback, double, double>)
         : sName(name), sHelpString("") {
-        this->initValue(defaultValue, flags, callback);
+        this->initValue(defaultValue, flags, std::forward<Callback>(callback));
         this->addConVar();
     }
 
@@ -346,27 +346,27 @@ class ConVar {
    private:
     // unified init for callback-only convars
     template <typename Callback>
-    void initCallback(uint8_t flags, Callback callback) {
+    void initCallback(uint8_t flags, Callback &&callback) {
         this->iFlags = flags | cv::NOSAVE;
 
         if constexpr(cb_invocable<Callback>) {
-            this->callback.template emplace<VoidCB>(callback);
+            this->callback.template emplace<VoidCB>(std::forward<Callback>(callback));
             this->type = CONVAR_TYPE::STRING;
         } else if constexpr(cb_invocable<Callback, std::string_view>) {
-            this->callback.template emplace<StringCB>(callback);
+            this->callback.template emplace<StringCB>(std::forward<Callback>(callback));
             this->type = CONVAR_TYPE::STRING;
         } else if constexpr(cb_invocable<Callback, float>) {
-            this->callback.template emplace<FloatCB>(callback);
+            this->callback.template emplace<FloatCB>(std::forward<Callback>(callback));
             this->type = CONVAR_TYPE::INT;
         } else if constexpr(cb_invocable<Callback, double>) {
-            this->callback.template emplace<DoubleCB>(callback);
+            this->callback.template emplace<DoubleCB>(std::forward<Callback>(callback));
             this->type = CONVAR_TYPE::INT;
         }
     }
 
     // unified init for value convars
     template <typename T, typename Callback>
-    void initValue(const T &defaultValue, uint8_t flags, Callback callback) {
+    void initValue(T &&defaultValue, uint8_t flags, Callback &&callback) {
         this->bCanHaveValue = true;
         this->iFlags = flags;
         this->type = getTypeFor<T>();
@@ -376,10 +376,10 @@ class ConVar {
                      !std::is_same_v<std::decay_t<T>, UString> && !std::is_same_v<std::decay_t<T>, std::string_view> &&
                      !std::is_same_v<std::decay_t<T>, const char *>) {
             // T is double-like
-            this->setDefaultDouble(static_cast<double>(defaultValue));
+            this->setDefaultDouble(static_cast<double>(std::forward<T>(defaultValue)));
         } else {
             // T is string-like
-            this->setDefaultString(defaultValue);
+            this->setDefaultString(std::forward<T>(defaultValue));
         }
 
         this->sClientValue = this->sDefaultValue;
@@ -393,19 +393,19 @@ class ConVar {
         // set callback if provided
         if constexpr(!std::is_same_v<Callback, std::nullptr_t>) {
             if constexpr(cb_invocable<Callback>)
-                this->callback.template emplace<VoidCB>(callback);
+                this->callback.template emplace<VoidCB>(std::forward<Callback>(callback));
             else if constexpr(cb_invocable<Callback, std::string_view>)
-                this->callback.template emplace<StringCB>(callback);
+                this->callback.template emplace<StringCB>(std::forward<Callback>(callback));
             else if constexpr(cb_invocable<Callback, float>)
-                this->callback.template emplace<FloatCB>(callback);
+                this->callback.template emplace<FloatCB>(std::forward<Callback>(callback));
             else if constexpr(cb_invocable<Callback, double>)
-                this->callback.template emplace<DoubleCB>(callback);
+                this->callback.template emplace<DoubleCB>(std::forward<Callback>(callback));
             else if constexpr(cb_invocable<Callback, std::string_view, std::string_view>)
-                this->changeCallback.template emplace<StringChangeCB>(callback);
+                this->changeCallback.template emplace<StringChangeCB>(std::forward<Callback>(callback));
             else if constexpr(cb_invocable<Callback, float, float>)
-                this->changeCallback.template emplace<FloatChangeCB>(callback);
+                this->changeCallback.template emplace<FloatChangeCB>(std::forward<Callback>(callback));
             else if constexpr(cb_invocable<Callback, double, double>)
-                this->changeCallback.template emplace<DoubleChangeCB>(callback);
+                this->changeCallback.template emplace<DoubleChangeCB>(std::forward<Callback>(callback));
         }
     }
 

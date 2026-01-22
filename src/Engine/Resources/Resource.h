@@ -39,7 +39,7 @@ class Resource {
 
    protected:
     Resource(Type resType);
-    Resource(Type resType, std::string filepath);
+    Resource(Type resType, std::string filepath, bool doFilesystemExistenceCheck = true);
 
    public:
     Resource() = delete;

@@ -479,7 +479,7 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
     this->scoreBrowser->bHorizontalClipping = false;
     this->scoreBrowserScoresStillLoadingElement = new ScoresStillLoadingElement("Loading...");
     this->scoreBrowserNoRecordsSetElement = new NoRecordsSetElement("No records set!");
-    this->scoreBrowser->container->addBaseUIElement(this->scoreBrowserNoRecordsSetElement);
+    this->scoreBrowser->container.addBaseUIElement(this->scoreBrowserNoRecordsSetElement);
 
     // NOTE: we don't add localBestContainer to the screen; we draw and update it manually so that
     //       it can be drawn under skins which overlay the scores list.
@@ -618,7 +618,7 @@ void SongBrowser::draw() {
     this->localBestContainer->draw();
 
     if(cv::debug_osu.getBool()) {
-        this->scoreBrowser->container->draw_debug();
+        this->scoreBrowser->container.draw_debug();
     }
 
     // draw strain graph of currently selected beatmap
@@ -1876,7 +1876,7 @@ void SongBrowser::rebuildSongButtons() {
     for(auto &visibleSongButton : this->visibleSongButtons) {
         CarouselButton *button = visibleSongButton;
 
-        if(!(button->isSelected() && button->isHiddenIfSelected())) this->carousel->container->addBaseUIElement(button);
+        if(!(button->isSelected() && button->isHiddenIfSelected())) this->carousel->container.addBaseUIElement(button);
 
         button->resetAnimations();
 
@@ -1921,14 +1921,14 @@ void SongBrowser::rebuildSongButtons() {
                         for(auto *child : button2->getChildren()) {
                             if(child->isSearchMatch()) {
                                 addedSingleChild = true;
-                                this->carousel->container->addBaseUIElement(child);
+                                this->carousel->container.addBaseUIElement(child);
 
                                 child->resetAnimations();
                                 break;  // only one visible child
                             }
                         }
                     } else {
-                        this->carousel->container->addBaseUIElement(button2);
+                        this->carousel->container.addBaseUIElement(button2);
                     }
                 }
 
@@ -1941,7 +1941,7 @@ void SongBrowser::rebuildSongButtons() {
                         if(this->bInSearch && !button3->isSearchMatch()) continue;
 
                         if(!(button3->isSelected() && button3->isHiddenIfSelected()))
-                            this->carousel->container->addBaseUIElement(button3);
+                            this->carousel->container.addBaseUIElement(button3);
 
                         button3->resetAnimations();
                     }
@@ -1959,7 +1959,7 @@ void SongBrowser::updateSongButtonLayout() {
     // themselves
 
     // all elements must be CarouselButtons, at least
-    const auto &elements{this->carousel->container->getElements<CarouselButton>()};
+    const auto &elements{this->carousel->container.getElements<CarouselButton>()};
 
     int yCounter = this->carousel->getSize().y / 4;
     if(elements.size() <= 1) yCounter = this->carousel->getSize().y / 2;
@@ -2484,7 +2484,7 @@ void SongBrowser::updateScoreBrowserLayout() {
         }
     }
 
-    const std::vector<CBaseUIElement *> &elements = this->scoreBrowser->container->getElements();
+    const std::vector<CBaseUIElement *> &elements = this->scoreBrowser->container.getElements();
     for(size_t i = 0; i < elements.size(); i++) {
         CBaseUIElement *scoreButton = elements[i];
         scoreButton->setSize(this->scoreBrowser->getSize().x, scoreHeight);
@@ -2504,7 +2504,7 @@ void SongBrowser::updateScoreBrowserLayout() {
             this->scoreBrowser->getSize().x / 2 - this->scoreBrowserScoresStillLoadingElement->getSize().x / 2, 45);
     }
     this->localBestContainer->update_pos();
-    this->scoreBrowser->container->update_pos();
+    this->scoreBrowser->container.update_pos();
     this->scoreBrowser->setScrollSizeToContent();
 }
 
@@ -2618,7 +2618,7 @@ void SongBrowser::rebuildScoreButtons() {
         //             just leaving it like that for now...
         CBaseUIElement *toAdd = validBeatmap && is_online ? this->scoreBrowserScoresStillLoadingElement
                                                           : this->scoreBrowserNoRecordsSetElement;
-        this->scoreBrowser->container->addBaseUIElement(toAdd,
+        this->scoreBrowser->container.addBaseUIElement(toAdd,
                                                         this->scoreBrowserScoresStillLoadingElement->getRelPos());
     } else {
         // build
@@ -2632,7 +2632,7 @@ void SongBrowser::rebuildScoreButtons() {
         // add
         for(int i = 0; i < numScores; i++) {
             scoreButtons[i]->setIndex(i + 1);
-            this->scoreBrowser->container->addBaseUIElement(scoreButtons[i]);
+            this->scoreBrowser->container.addBaseUIElement(scoreButtons[i]);
         }
 
         // reset
@@ -3560,7 +3560,7 @@ void SongBrowser::selectSongButton(CarouselButton *songButton) {
 
 void SongBrowser::selectRandomBeatmap() {
     // filter songbuttons or independent diffs
-    const auto &elements{this->carousel->container->getElements<CarouselButton>()};
+    const auto &elements{this->carousel->container.getElements<CarouselButton>()};
 
     std::vector<SongButton *> songButtons;
     for(auto element : elements) {
@@ -3594,7 +3594,7 @@ void SongBrowser::selectPreviousRandomBeatmap() {
                                                       // we don't switch to ourself)
 
         // filter songbuttons
-        const auto &elements{this->carousel->container->getElements<CarouselButton>()};
+        const auto &elements{this->carousel->container.getElements<CarouselButton>()};
 
         std::vector<SongButton *> songButtons;
         for(auto *element : elements) {
@@ -3635,7 +3635,7 @@ void SongBrowser::selectPreviousRandomBeatmap() {
 }
 
 void SongBrowser::playSelectedDifficulty() {
-    const auto &elements{this->carousel->container->getElements<CarouselButton>()};
+    const auto &elements{this->carousel->container.getElements<CarouselButton>()};
 
     for(auto *element : elements) {
         if(auto *songDifficultyButton = element->as<SongDifficultyButton>();

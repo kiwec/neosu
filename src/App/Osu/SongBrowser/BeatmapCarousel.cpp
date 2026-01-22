@@ -40,7 +40,7 @@ void BeatmapCarousel::update(CBaseUIEventCtx &c) {
 
                 bool isMouseInsideAnySongButton = false;
                 {
-                    const std::vector<CarouselButton *> &buttons = this->container->getElements<CarouselButton>();
+                    const std::vector<CarouselButton *> &buttons = this->container.getElements<CarouselButton>();
                     for(auto *button : buttons) {
                         if(button->isMouseInside()) {
                             isMouseInsideAnySongButton = true;
@@ -78,7 +78,7 @@ void BeatmapCarousel::update(CBaseUIEventCtx &c) {
         return;
     }
 
-    const auto &elements = this->container->getElements();
+    const auto &elements = this->container.getElements();
     if(elements.empty()) {
         return;
     }
@@ -108,14 +108,14 @@ bool BeatmapCarousel::isMouseInside() {
     return CBaseUIScrollView::isMouseInside() && !g_songbrowser->contextMenu->isMouseInside();
 }
 
-void BeatmapCarousel::onKeyUp(KeyboardEvent & /*e*/) { /*this->container->onKeyUp(e);*/ ; }
+void BeatmapCarousel::onKeyUp(KeyboardEvent & /*e*/) { /*this->container.onKeyUp(e);*/ ; }
 
 // don't consume keys, we are not a keyboard listener, but called from SongBrowser::onKeyDown manually
 void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
-    /*this->container->onKeyDown(e);*/
+    /*this->container.onKeyDown(e);*/
 
     // all elements must be CarouselButtons, at least
-    const auto &elements{this->container->getElements<CarouselButton>()};
+    const auto &elements{this->container.getElements<CarouselButton>()};
 
     // selection move
     if(!keyboard->isAltDown() && key == KEY_DOWN) {
@@ -263,4 +263,4 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
         g_songbrowser->playSelectedDifficulty();
 }
 
-void BeatmapCarousel::onChar(KeyboardEvent & /*e*/) { /*this->container->onChar(e);*/ ; }
+void BeatmapCarousel::onChar(KeyboardEvent & /*e*/) { /*this->container.onChar(e);*/ ; }

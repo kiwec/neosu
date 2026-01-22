@@ -195,7 +195,7 @@ void CarouselButton::updateLayoutEx() {
 
     this->setRelPosX(offsetX);
     this->setRelPosY(this->fTargetRelPosY + this->getSize().y * 0.125f * this->fHoverMoveAwayAnimation);
-    this->setPos(g_carousel->container->getPos() + this->getRelPos());
+    this->setPos(g_carousel->container.getPos() + this->getRelPos());
 }
 
 CarouselButton *CarouselButton::setVisible(bool visible) {
@@ -259,7 +259,7 @@ void CarouselButton::onMouseInside() {
     anim::moveQuadOut(&this->fHoverOffsetAnimation, 1.0f, 1.0f * (1.0f - this->fHoverOffsetAnimation), true);
 
     // all elements must be CarouselButtons, at least
-    const auto &elements{g_carousel->container->getElements<CarouselButton>()};
+    const auto &elements{g_carousel->container.getElements<CarouselButton>()};
 
     // move the rest of the buttons away from hovered-over one
     bool foundCenter = false;
@@ -281,7 +281,7 @@ void CarouselButton::onMouseOutside() {
     // only reset all other elements' state if we still should do so (possible frame delay of onMouseOutside coming
     // together with the next element already getting onMouseInside!)
     if(this->moveAwayState == MOVE_AWAY_STATE::MOVE_CENTER) {
-        const auto &elements{g_carousel->container->getElements<CarouselButton>()};
+        const auto &elements{g_carousel->container.getElements<CarouselButton>()};
         for(auto *element : elements) {
             element->setMoveAwayState(MOVE_AWAY_STATE::MOVE_CENTER);
         }
@@ -291,6 +291,7 @@ void CarouselButton::onMouseOutside() {
 void CarouselButton::setTargetRelPosY(float targetRelPosY) {
     this->fTargetRelPosY = targetRelPosY;
     this->setRelPosY(this->fTargetRelPosY);
+    this->setPos(g_carousel->container.getPos() + this->getRelPos());
 }
 
 vec2 CarouselButton::getActualOffset() const {

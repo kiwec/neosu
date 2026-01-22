@@ -11,42 +11,37 @@
 #include <algorithm>
 #include <utility>
 
-using namespace std::chrono_literals;
-namespace chrono = std::chrono;
-
 //==================================
 // LOADER THREAD
 //==================================
 class AsyncResourceLoader::LoaderThread final {
    public:
-    size_t thread_index;
-    std::atomic<chrono::steady_clock::time_point> last_active;
+    static inline AsyncResourceLoader *loader_ptr{nullptr};
 
-    LoaderThread(AsyncResourceLoader *const loader, size_t index) noexcept
-        : thread_index(index),
-          last_active(chrono::steady_clock::now()),
-          loader_ptr(loader),
-          thread([this](const Sync::stop_token &stoken) { this->worker_loop(stoken); }) {}
+    size_t thread_index;
+    std::atomic<uint64_t> last_active;
+
+    LoaderThread(size_t index) noexcept
+        : thread_index(index), last_active(Timing::getTicksMS()), thread(worker_loop, this) {}
 
     [[nodiscard]] bool isReady() const noexcept { return this->thread.joinable(); }
 
     [[nodiscard]] bool isIdleTooLong() const noexcept {
-        auto lastActive = this->last_active.load(std::memory_order_acquire);
-        auto now = chrono::steady_clock::now();
-        return chrono::duration_cast<chrono::milliseconds>(now - lastActive) > IDLE_TIMEOUT;
+        const uint64_t lastActive = this->last_active.load(std::memory_order_relaxed);
+        const uint64_t now = Timing::getTicksMS();
+        return now - lastActive > IDLE_TIMEOUT;
     }
 
    private:
-    AsyncResourceLoader *const loader_ptr;
     Sync::jthread thread;
 
-    void worker_loop(const Sync::stop_token &stoken) noexcept {
-        this->loader_ptr->iActiveThreadCount.fetch_add(1, std::memory_order_relaxed);
+    static void worker_loop(const Sync::stop_token &stoken, LoaderThread *this_) noexcept {
+        loader_ptr->iActiveThreadCount.fetch_add(1, std::memory_order_relaxed);
 
-        logIfCV(debug_rm, "Thread #{} started", this->thread_index);
+        logIfCV(debug_rm, "Thread #{} started", this_->thread_index);
 
         const UString loaderThreadName{
-            fmt::format("res_ldr_thr{}", (this->thread_index % this->loader_ptr->iMaxThreads) + 1)};
+            fmt::format("res_ldr_thr{}", (this_->thread_index % loader_ptr->iMaxThreads) + 1)};
         McThread::set_current_thread_name(loaderThreadName);
         McThread::set_current_thread_prio(
             McThread::Priority::NORMAL);  // reset priority (don't inherit from main thread)
@@ -54,15 +49,15 @@ class AsyncResourceLoader::LoaderThread final {
         while(!stoken.stop_requested()) {
             const bool debug = cv::debug_rm.getBool();
 
-            auto work = this->loader_ptr->getNextPendingWork();
+            auto work = loader_ptr->getNextPendingWork();
             if(!work) {
                 // yield in case we're sharing a logical CPU, like on a single-core system
                 Timing::sleepMS(1);
 
-                Sync::unique_lock lock(this->loader_ptr->workAvailableMutex);
+                Sync::unique_lock lock(loader_ptr->workAvailableMutex);
 
                 // wait indefinitely until work is available or stop is requested
-                this->loader_ptr->workAvailable.wait(lock, stoken, [loader = this->loader_ptr]() {
+                loader_ptr->workAvailable.wait(lock, stoken, [loader = loader_ptr]() {
                     return loader->iActiveWorkCount.load(std::memory_order_acquire) > 0;
                 });
 
@@ -70,7 +65,7 @@ class AsyncResourceLoader::LoaderThread final {
             }
 
             // notify that this thread completed work
-            this->last_active.store(chrono::steady_clock::now(), std::memory_order_release);
+            this_->last_active.store(Timing::getTicksMS(), std::memory_order_release);
 
             Resource *resource = work->resource;
             const bool interrupted = resource->isInterrupted();
@@ -79,10 +74,10 @@ class AsyncResourceLoader::LoaderThread final {
             if(debug) {
                 debugName = resource->getDebugIdentifier();
                 if(interrupted) {
-                    debugLog("Thread #{} skipping (interrupted) workID {} {:s}", this->thread_index, work->workId,
+                    debugLog("Thread #{} skipping (interrupted) workID {} {:s}", this_->thread_index, work->workId,
                              debugName);
                 } else {
-                    debugLog("Thread #{} loading workID {} {:s}", this->thread_index, work->workId, debugName);
+                    debugLog("Thread #{} loading workID {} {:s}", this_->thread_index, work->workId, debugName);
                 }
             }
 
@@ -93,20 +88,20 @@ class AsyncResourceLoader::LoaderThread final {
 
                 resource->loadAsync();
 
-                logIf(debug, "Thread #{} finished async loading {:s}", this->thread_index, debugName);
+                logIf(debug, "Thread #{} finished async loading {:s}", this_->thread_index, debugName);
 
                 work->state.store(WorkState::ASYNC_COMPLETE, std::memory_order_release);
             }
 
-            this->loader_ptr->markWorkAsyncComplete(std::move(work));
+            loader_ptr->markWorkAsyncComplete(std::move(work));
 
             // yield again before loop
             Timing::sleepMS(0);
         }
 
-        this->loader_ptr->iActiveThreadCount.fetch_sub(1, std::memory_order_acq_rel);
+        loader_ptr->iActiveThreadCount.fetch_sub(1, std::memory_order_acq_rel);
 
-        logIfCV(debug_rm, "Thread #{} exiting", this->thread_index);
+        logIfCV(debug_rm, "Thread #{} exiting", this_->thread_index);
     }
 };
 
@@ -117,18 +112,25 @@ class AsyncResourceLoader::LoaderThread final {
 AsyncResourceLoader::AsyncResourceLoader()
     : iMaxThreads(std::clamp<size_t>(McThread::get_logical_cpu_count() - 1, 1, HARD_THREADCOUNT_LIMIT)),
       iLoadsPerUpdate(static_cast<size_t>(std::ceil(static_cast<double>(this->iMaxThreads) * (1. / 4.)))),
-      lastCleanupTime(chrono::steady_clock::now()) {
-    // pre-create at least a single thread for better startup responsiveness
+      lastCleanupTime(Timing::getTicksMS()) {
+    // init loader threads parent ref
+    LoaderThread::loader_ptr = this;
+
+    // sanity lock
     Sync::scoped_lock lock(this->threadsMutex);
 
-    const size_t idx = this->iTotalThreadsCreated.fetch_add(1, std::memory_order_relaxed);
-    auto loaderThread = std::make_unique<LoaderThread>(this, idx);
+    // pre-create the maximum amount of threads for better startup responsiveness
+    for(size_t i = 0; i < this->iMaxThreads; ++i) {
+        const size_t idx = this->iTotalThreadsCreated.fetch_add(1, std::memory_order_relaxed);
+        auto loaderThread = std::make_unique<LoaderThread>(idx);
 
-    if(!loaderThread->isReady()) {
-        engine->showMessageError("AsyncResourceLoader Error", "Couldn't create core thread!");
-    } else {
-        logIfCV(debug_rm, "Created initial thread");
-        this->threadpool[idx] = std::move(loaderThread);
+        if(!loaderThread->isReady()) {
+            engine->showMessageErrorFatal("Resource Manager Error", "Couldn't create core loader threads!");
+            fubar_abort();  // there is no point in continuing even an inch further
+        } else {
+            logIfCV(debug_rm, "Created initial thread {}", idx);
+            this->threadpool[idx] = std::move(loaderThread);
+        }
     }
 }
 
@@ -327,7 +329,7 @@ void AsyncResourceLoader::ensureThreadAvailable() {
             const bool debug = cv::debug_rm.getBool();
 
             const size_t idx = this->iTotalThreadsCreated.fetch_add(1, std::memory_order_relaxed);
-            auto loaderThread = std::make_unique<LoaderThread>(this, idx);
+            auto loaderThread = std::make_unique<LoaderThread>(idx);
 
             if(!loaderThread->isReady()) {
                 logIf(debug, "W: Couldn't create dynamic thread!");
@@ -344,8 +346,8 @@ void AsyncResourceLoader::cleanupIdleThreads() {
     if(this->threadpool.size() <= MIN_NUM_THREADS) return;
 
     // only run cleanup periodically to avoid overhead
-    auto now = chrono::steady_clock::now();
-    if(chrono::duration_cast<chrono::milliseconds>(now - this->lastCleanupTime) < IDLE_GRACE_PERIOD) {
+    const uint64_t now = Timing::getTicksMS();
+    if(now - this->lastCleanupTime < IDLE_GRACE_PERIOD) {
         return;
     }
     this->lastCleanupTime = now;

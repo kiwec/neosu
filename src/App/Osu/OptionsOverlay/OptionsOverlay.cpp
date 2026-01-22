@@ -1744,7 +1744,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     //**************************************************************************************************************************//
 
     // the context menu gets added last (drawn on top of everything)
-    this->options->container->addBaseUIElement(this->contextMenu);
+    this->options->container.addBaseUIElement(this->contextMenu);
 
     // HACKHACK: force current value update
     if(this->sliderQualitySlider != nullptr)
@@ -1884,7 +1884,7 @@ void OptionsOverlayImpl::update(CBaseUIEventCtx &c) {
 
     if(contextMenuVisible) {
         // eyes are bleeding...
-        for(auto e : this->options->container->getElements()) {
+        for(auto e : this->options->container.getElements()) {
             if(e == this->contextMenu) continue;
             e->stealFocus();
         }
@@ -2447,11 +2447,11 @@ void OptionsOverlayImpl::updateLayout() {
         {
             // reset button
             if(this->elemContainers[i]->resetButton != nullptr)
-                this->options->container->addBaseUIElement(this->elemContainers[i]->resetButton.get());
+                this->options->container.addBaseUIElement(this->elemContainers[i]->resetButton.get());
 
             // (sub-)elements
             for(auto &element : this->elemContainers[i]->baseElems) {
-                this->options->container->addBaseUIElement(element.get());
+                this->options->container.addBaseUIElement(element.get());
             }
         }
 
@@ -2658,15 +2658,15 @@ void OptionsOverlayImpl::updateLayout() {
         }
     }
     this->spacer->setPosY(yCounter);
-    this->options->container->addBaseUIElement(this->spacer);
+    this->options->container.addBaseUIElement(this->spacer);
 
     this->options->setScrollSizeToContent();
     if(!enableHorizontalScrolling) this->options->scrollToLeft();
     this->options->setHorizontalScrolling(enableHorizontalScrolling);
 
-    this->options->container->addBaseUIElement(this->contextMenu);
+    this->options->container.addBaseUIElement(this->contextMenu);
 
-    this->options->container->update_pos();
+    this->options->container.update_pos();
 
     // TODO: wrong? look at button borders when hovering... ew...
     f32 sidebarHeight = this->categories->getSize().y - parent->backButton->getSize().y;
@@ -2678,7 +2678,7 @@ void OptionsOverlayImpl::updateLayout() {
         category->setRelPosY(categoryPaddingTopBottom + categoryHeight * i);
         category->setSize(this->categories->getSize().x - 1, categoryHeight);
     }
-    this->categories->container->update_pos();
+    this->categories->container.update_pos();
     this->categories->setScrollSizeToContent();
 
     parent->update_pos();
@@ -3665,7 +3665,7 @@ CBaseUILabel *OptionsOverlayImpl::addSection(const UString &text) {
     label->setTextJustification(TEXT_JUSTIFICATION::RIGHT);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->container->addBaseUIElement(label);
+    this->options->container.addBaseUIElement(label);
 
     auto e = std::make_unique<OptionsElement>(SECT);
     e->baseElems.emplace_back(label);
@@ -3681,7 +3681,7 @@ CBaseUILabel *OptionsOverlayImpl::addSubSection(const UString &text, UString sea
     label->setSizeToContent(0, 0);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->container->addBaseUIElement(label);
+    this->options->container.addBaseUIElement(label);
 
     auto e = std::make_unique<OptionsElement>(SUBSECT);
     e->baseElems.emplace_back(label);
@@ -3697,7 +3697,7 @@ CBaseUILabel *OptionsOverlayImpl::addLabel(const UString &text) {
     label->setSizeToContent(0, 0);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->container->addBaseUIElement(label);
+    this->options->container.addBaseUIElement(label);
 
     auto e = std::make_unique<OptionsElement>(LABEL);
     e->baseElems.emplace_back(label);
@@ -3711,7 +3711,7 @@ UIButton *OptionsOverlayImpl::addButton(const UString &text) {
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, text, text);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
-    this->options->container->addBaseUIElement(button);
+    this->options->container.addBaseUIElement(button);
 
     auto e = std::make_unique<OptionsElement>(BTN);
     e->baseElems.emplace_back(button);
@@ -3725,12 +3725,12 @@ OptionsElement *OptionsOverlayImpl::addButton(const UString &text, const UString
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, text, text);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
-    this->options->container->addBaseUIElement(button);
+    this->options->container.addBaseUIElement(button);
 
     auto *label = new CBaseUILabel(0, 0, this->options->getSize().x, 50, labelText, labelText);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->container->addBaseUIElement(label);
+    this->options->container.addBaseUIElement(label);
 
     auto e = std::make_unique<OptionsElement>(BTN);
     if(withResetButton) {
@@ -3749,12 +3749,12 @@ OptionsElement *OptionsOverlayImpl::addButtonButton(const UString &text1, const 
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, text1, text1);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
-    this->options->container->addBaseUIElement(button);
+    this->options->container.addBaseUIElement(button);
 
     auto *button2 = new UIButton(0, 0, this->options->getSize().x, 50, text2, text2);
     button2->setColor(0xff0c7c99);
     button2->setUseDefaultSkin();
-    this->options->container->addBaseUIElement(button2);
+    this->options->container.addBaseUIElement(button2);
 
     auto e = std::make_unique<OptionsElement>(BTN);
     e->baseElems.emplace_back(button);
@@ -3771,17 +3771,17 @@ OptionsElement *OptionsOverlayImpl::addButtonButtonLabel(const UString &text1, c
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, text1, text1);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
-    this->options->container->addBaseUIElement(button);
+    this->options->container.addBaseUIElement(button);
 
     auto *button2 = new UIButton(0, 0, this->options->getSize().x, 50, text2, text2);
     button2->setColor(0xff0c7c99);
     button2->setUseDefaultSkin();
-    this->options->container->addBaseUIElement(button2);
+    this->options->container.addBaseUIElement(button2);
 
     auto *label = new CBaseUILabel(0, 0, this->options->getSize().x, 50, labelText, labelText);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->container->addBaseUIElement(label);
+    this->options->container.addBaseUIElement(label);
 
     auto e = std::make_unique<OptionsElement>(BTN);
     if(withResetButton) {
@@ -3806,18 +3806,18 @@ KeyBindButton *OptionsOverlayImpl::addKeyBindButton(const UString &text, ConVar 
     unbindButton->setUseDefaultSkin();
     unbindButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onKeyUnbindButtonPressed>(this));
     /// unbindButton->setFont(osu->getFontIcons());
-    this->options->container->addBaseUIElement(unbindButton);
+    this->options->container.addBaseUIElement(unbindButton);
 
     auto *bindButton = new KeyBindButton(0, 0, this->options->getSize().x, 50, text, text);
     bindButton->setColor(0xff0c7c99);
     bindButton->setUseDefaultSkin();
     bindButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onKeyBindingButtonPressed>(this));
-    this->options->container->addBaseUIElement(bindButton);
+    this->options->container.addBaseUIElement(bindButton);
 
     auto *label = new OptionsMenuKeyBindLabel(0, 0, this->options->getSize().x, 50, "", "", cvar, bindButton);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->container->addBaseUIElement(label);
+    this->options->container.addBaseUIElement(label);
 
     auto e = std::make_unique<OptionsElement>(BINDBTN);
     e->baseElems.emplace_back(unbindButton);
@@ -3849,7 +3849,7 @@ CBaseUICheckbox *OptionsOverlayImpl::addCheckbox(const UString &text, const UStr
         checkbox->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onCheckboxChange>(this));
     }
 
-    this->options->container->addBaseUIElement(checkbox);
+    this->options->container.addBaseUIElement(checkbox);
 
     auto e = std::make_unique<OptionsElement>(CBX);
     if(cvar != nullptr) {
@@ -3869,7 +3869,7 @@ OptionsElement *OptionsOverlayImpl::addButtonCheckbox(const UString &buttontext,
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, buttontext, buttontext);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
-    this->options->container->addBaseUIElement(button);
+    this->options->container.addBaseUIElement(button);
 
     auto *checkbox =
         new UICheckbox(button->getSize().x, 0, this->options->getSize().x - button->getSize().x, 50, "", "");
@@ -3877,7 +3877,7 @@ OptionsElement *OptionsOverlayImpl::addButtonCheckbox(const UString &buttontext,
     checkbox->setWidthToContent(0);
     checkbox->setDrawFrame(false);
     checkbox->setDrawBackground(false);
-    this->options->container->addBaseUIElement(checkbox);
+    this->options->container.addBaseUIElement(checkbox);
 
     auto e = std::make_unique<OptionsElement>(CBX_BTN);
     e->baseElems.emplace_back(button);
@@ -3899,7 +3899,7 @@ UISlider *OptionsOverlayImpl::addSlider(const UString &text, float min, float ma
         slider->setValue(cvar->getFloat(), false);
         slider->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChange>(this));
     }
-    this->options->container->addBaseUIElement(slider);
+    this->options->container.addBaseUIElement(slider);
 
     auto *label1 = new CBaseUILabel(0, 0, this->options->getSize().x, 50, text, text);
     label1->setDrawFrame(false);
@@ -3907,14 +3907,14 @@ UISlider *OptionsOverlayImpl::addSlider(const UString &text, float min, float ma
     label1->setWidthToContent();
     if(label1Width > 1) label1->setSizeX(label1Width);
     label1->setRelSizeX(label1->getSize().x);
-    this->options->container->addBaseUIElement(label1);
+    this->options->container.addBaseUIElement(label1);
 
     auto *label2 = new CBaseUILabel(0, 0, this->options->getSize().x, 50, "", "8.81");
     label2->setDrawFrame(false);
     label2->setDrawBackground(false);
     label2->setWidthToContent();
     label2->setRelSizeX(label2->getSize().x);
-    this->options->container->addBaseUIElement(label2);
+    this->options->container.addBaseUIElement(label2);
 
     auto e = std::make_unique<OptionsElement>(SLDR);
     if(cvar != nullptr) {
@@ -3941,7 +3941,7 @@ UISlider *OptionsOverlayImpl::addSlider(const UString &text, float min, float ma
 CBaseUITextbox *OptionsOverlayImpl::addTextbox(UString text, ConVar *cvar) {
     auto *textbox = new CBaseUITextbox(0, 0, this->options->getSize().x, 40, "");
     textbox->setText(std::move(text));
-    this->options->container->addBaseUIElement(textbox);
+    this->options->container.addBaseUIElement(textbox);
 
     auto e = std::make_unique<OptionsElement>(TBX);
     e->baseElems.emplace_back(textbox);
@@ -3955,7 +3955,7 @@ CBaseUITextbox *OptionsOverlayImpl::addTextbox(UString text, ConVar *cvar) {
 CBaseUITextbox *OptionsOverlayImpl::addTextbox(UString text, const UString &labelText, ConVar *cvar) {
     auto *textbox = new CBaseUITextbox(0, 0, this->options->getSize().x, 40, "");
     textbox->setText(std::move(text));
-    this->options->container->addBaseUIElement(textbox);
+    this->options->container.addBaseUIElement(textbox);
 
     auto *label = new CBaseUILabel(0, 0, this->options->getSize().x, 35, labelText, labelText);
     label->setDrawFrame(false);
@@ -3963,7 +3963,7 @@ CBaseUITextbox *OptionsOverlayImpl::addTextbox(UString text, const UString &labe
     label->setTextColor(rgb(200, 200, 200));
     label->setWidthToContent();
     label->setScale(0.9f);
-    this->options->container->addBaseUIElement(label);
+    this->options->container.addBaseUIElement(label);
 
     auto e = std::make_unique<OptionsElement>(TBX);
     e->baseElems.emplace_back(label);
@@ -3978,7 +3978,7 @@ CBaseUITextbox *OptionsOverlayImpl::addTextbox(UString text, const UString &labe
 
 SkinPreviewElement *OptionsOverlayImpl::addSkinPreview() {
     auto *skinPreview = new SkinPreviewElement(0, 0, 0, 200, "skincirclenumberhitresultpreview");
-    this->options->container->addBaseUIElement(skinPreview);
+    this->options->container.addBaseUIElement(skinPreview);
 
     auto e = std::make_unique<OptionsElement>(SKNPRVW);
     e->baseElems.emplace_back(skinPreview);
@@ -3990,7 +3990,7 @@ SkinPreviewElement *OptionsOverlayImpl::addSkinPreview() {
 
 SliderPreviewElement *OptionsOverlayImpl::addSliderPreview() {
     auto *sliderPreview = new SliderPreviewElement(0, 0, 0, 200, "skinsliderpreview");
-    this->options->container->addBaseUIElement(sliderPreview);
+    this->options->container.addBaseUIElement(sliderPreview);
 
     auto e = std::make_unique<OptionsElement>(SLDRPRVW);
     e->baseElems.emplace_back(sliderPreview);
@@ -4008,7 +4008,7 @@ CategoryButton *OptionsOverlayImpl::addCategory(CBaseUIElement *section, char16_
     button->setDrawBackground(false);
     button->setDrawFrame(false);
     button->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onCategoryClicked>(this));
-    this->categories->container->addBaseUIElement(button);
+    this->categories->container.addBaseUIElement(button);
     this->categoryButtons.push_back(button);
 
     return button;

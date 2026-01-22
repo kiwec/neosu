@@ -48,6 +48,11 @@ class Mouse final : public InputDevice {
     [[nodiscard]] constexpr forceinline vec2 getScale() const { return this->vScale; }
     [[nodiscard]] constexpr forceinline float getSensitivity() const { return this->fSensitivity; }
 
+    // TODO: this interface/design causes jank at low FPS:
+    //   it's not unlikely that a click and release occurs inside the same frame,
+    //   and UI elements explicitly check for isLeftDown->!isLeftDown across a minimum of 2 frames
+    //   to detect if a click occurred
+
     // button state accessors
     [[nodiscard]] constexpr forceinline bool isLeftDown() const {
         return flags::has<MouseButtonFlags::MF_LEFT>(this->buttonsHeldMask);

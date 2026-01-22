@@ -28,14 +28,10 @@ u32 layeredScrollsHandledInFrame{0};
 using ScrollContainer = CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer;
 }  // namespace
 
-// this is kind of a hack to avoid iterating over a bunch of not-visible elements
-struct ScrollContainer::VisibleSet : public std::unordered_set<CBaseUIElement *> {};
-
 CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer::CBaseUIScrollViewContainer(float Xpos, float Ypos,
                                                                                              float Xsize, float Ysize,
                                                                                              UString name)
-    : CBaseUIContainer(Xpos, Ypos, Xsize, Ysize, std::move(name)),
-      vVisibleElements(std::make_unique<ScrollContainer::VisibleSet>()) {}
+    : CBaseUIContainer(Xpos, Ypos, Xsize, Ysize, std::move(name)) {}
 
 CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer::~CBaseUIScrollViewContainer() = default;
 
@@ -46,7 +42,7 @@ void ScrollContainer::freeElements() {
 
     this->invalidateUpdate = true;
 
-    if(this->vVisibleElements) this->vVisibleElements->clear();
+    this->vVisibleElements.clear();
     CBaseUIContainer::freeElements();
 }
 
@@ -57,22 +53,18 @@ void ScrollContainer::invalidate() {
 
     this->invalidateUpdate = true;
 
-    if(this->vVisibleElements) this->vVisibleElements->clear();
+    this->vVisibleElements.clear();
     CBaseUIContainer::invalidate();
 }
 
 void ScrollContainer::update(CBaseUIEventCtx &c) {
-    if(!this->vVisibleElements) {
-        CBaseUIContainer::update(c);
-        return;
-    }
     // intentionally not calling parent
     CBaseUIElement::update(c);
     if(!this->bVisible) return;
 
     this->invalidateUpdate = false;
 
-    for(auto *e : *this->vVisibleElements) {
+    for(auto *e : this->vVisibleElements) {
         e->update(c);
         if(this->invalidateUpdate) {
             // iterators have been invalidated!
@@ -85,12 +77,11 @@ void ScrollContainer::update(CBaseUIEventCtx &c) {
 }
 
 void ScrollContainer::draw() {
-    if(!this->vVisibleElements) return;
     if(!this->bVisible) return;
 
     this->inIllegalToInvalidateIteration = true;
 
-    for(auto *e : *this->vVisibleElements) {
+    for(auto *e : this->vVisibleElements) {
         // check actual screen visibility since we clipped "lazily"
         // shouldn't be too expensive since we're no longer iterating over hundreds of thousands of elements here
         if(e->isVisibleOnScreen()) {
@@ -104,12 +95,11 @@ void ScrollContainer::draw() {
 }
 
 bool ScrollContainer::isBusy() {
-    if(!this->vVisibleElements) return false;
     if(!this->bVisible) return false;
 
     this->inIllegalToInvalidateIteration = true;
 
-    for(auto *e : *this->vVisibleElements) {
+    for(auto *e : this->vVisibleElements) {
         // programmer error (don't do this in isBusy(), ever)
         assert(!this->invalidateUpdate);
         if(e->isBusy()) {
@@ -123,8 +113,7 @@ bool ScrollContainer::isBusy() {
 }
 
 CBaseUIScrollView::CBaseUIScrollView(f32 xPos, f32 yPos, f32 xSize, f32 ySize, const UString &name)
-    : CBaseUIElement(xPos, yPos, xSize, ySize, name),
-      container(std::make_unique<CBaseUIScrollViewContainer>(xPos, yPos, xSize, ySize, name)) {
+    : CBaseUIElement(xPos, yPos, xSize, ySize, name), container(xPos, yPos, xSize, ySize, name) {
     this->grabs_clicks = true;
 
     this->iScrollResistance = cv::ui_scrollview_resistance.getInt();  // TODO: dpi handling
@@ -133,12 +122,12 @@ CBaseUIScrollView::CBaseUIScrollView(f32 xPos, f32 yPos, f32 xSize, f32 ySize, c
 CBaseUIScrollView::~CBaseUIScrollView() { this->freeElements(); }
 
 void CBaseUIScrollView::invalidate() {
-    this->container->invalidate();
+    this->container.invalidate();
     this->bClippingDirty = true;
 }
 
 void CBaseUIScrollView::freeElements() {
-    this->container->freeElements();
+    this->container.freeElements();
 
     this->bClippingDirty = true;
 
@@ -155,7 +144,7 @@ void CBaseUIScrollView::freeElements() {
     this->vScrollPos.x = this->vScrollPos.y = 0;
     this->vVelocity.x = this->vVelocity.y = 0;
 
-    this->container->setPos(this->getPos());  // TODO: wtf is this doing here
+    this->container.setPos(this->getPos());  // TODO: wtf is this doing here
 }
 
 void CBaseUIScrollView::draw() {
@@ -187,7 +176,7 @@ void CBaseUIScrollView::draw() {
         g->pushClipRect(clip_rect);
     }
 
-    this->container->draw();
+    this->container.draw();
 
     if(this->bDrawScrollbars) {
         // vertical
@@ -229,12 +218,13 @@ void CBaseUIScrollView::draw() {
 void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
     if(!this->isVisible()) return;
 
-    this->container->update(c);
+    const bool wasContainerBusyBeforeUpdate = this->container.isBusy();
+
+    this->container.update(c);
     CBaseUIElement::update(c);
 
     const dvec2 curMousePos = mouse->getPos();
 
-    const bool wasContainerBusyBeforeUpdate = this->container->isBusy();
     if(this->bBusy) {
         const dvec2 deltaToAdd = (curMousePos - this->vMouseBackup2);
         // debugLog("+ ({})", deltaToAdd);
@@ -261,14 +251,14 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
             diff = std::abs(curMousePos.y - this->vMouseBackup3.y);
 
         // if we are above our resistance, try to steal the focus and enable scrolling for us
-        if(this->container->isActive() && diff > this->iScrollResistance && !this->container->isBusy())
-            this->container->stealFocus();
+        if(this->container.isActive() && diff > this->iScrollResistance && !this->container.isBusy())
+            this->container.stealFocus();
 
         // handle scrollbar scrolling start
         if(this->verticalScrollbar.contains(curMousePos) && !this->bScrollbarScrolling && !this->bScrolling) {
             // NOTE: scrollbar dragging always force steals focus
             if(!wasContainerBusyBeforeUpdate) {
-                this->container->stealFocus();
+                this->container.stealFocus();
 
                 this->vMouseBackup.y = curMousePos.y - this->verticalScrollbar.getMaxY();
                 this->bScrollbarScrolling = true;
@@ -277,15 +267,15 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
         } else if(this->horizontalScrollbar.contains(curMousePos) && !this->bScrollbarScrolling && !this->bScrolling) {
             // NOTE: scrollbar dragging always force steals focus
             if(!wasContainerBusyBeforeUpdate) {
-                this->container->stealFocus();
+                this->container.stealFocus();
 
                 this->vMouseBackup.x = curMousePos.x - this->horizontalScrollbar.getMaxX();
                 this->bScrollbarScrolling = true;
                 this->bScrollbarIsVerticalScrolling = false;
             }
-        } else if(!this->bScrolling && !this->bScrollbarScrolling && !this->container->isBusy() &&
-                  !this->container->isActive()) {
-            if(!this->container->isBusy()) {
+        } else if(!this->bScrolling && !this->bScrollbarScrolling && !this->container.isBusy() &&
+                  !this->container.isActive()) {
+            if(!this->container.isBusy()) {
                 // if we have successfully stolen the focus or the container is no longer busy, start scrolling
                 this->bScrollbarIsVerticalScrolling = false;
 
@@ -357,7 +347,7 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
         if(this->bHorizontalScrolling)
             this->vScrollPos.x = this->vScrollPosBackup.x + (curMousePos.x - this->vMouseBackup.x);
 
-        this->container->setPos(vec::round(dvec2{this->getPos()} + this->vScrollPos));
+        this->container.setPos(vec::round(dvec2{this->getPos()} + this->vScrollPos));
     } else  // no longer scrolling, smooth the remaining velocity
     {
         this->vKineticAverage = {0., 0.};
@@ -441,7 +431,7 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
     if(animating) {
         this->bClippingDirty = true;
         // debugLog("hit first condition, frame: {}", engine->getFrameCount());
-        this->container->setPos(vec::round(dvec2{this->getPos()} + this->vScrollPos));
+        this->container.setPos(vec::round(dvec2{this->getPos()} + this->vScrollPos));
     }
 
     // update scrollbars
@@ -453,8 +443,8 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
 
     // HACKHACK: if an animation was started and ended before any setpos could get fired, manually update the position
     if(const dvec2 roundedPos = vec::round(dvec2{this->getPos()} + this->vScrollPos);
-       roundedPos != vec::round(dvec2{this->container->getPos()})) {
-        this->container->setPos(roundedPos);
+       roundedPos != vec::round(dvec2{this->container.getPos()})) {
+        this->container.setPos(roundedPos);
         this->bClippingDirty = true;
         // debugLog("hit third condition, frame: {}", engine->getFrameCount());
         this->updateScrollbars();
@@ -463,15 +453,15 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
     if(this->bClippingDirty) this->updateClipping();
 }
 
-void CBaseUIScrollView::onKeyUp(KeyboardEvent &e) { this->container->onKeyUp(e); }
+void CBaseUIScrollView::onKeyUp(KeyboardEvent &e) { this->container.onKeyUp(e); }
 
-void CBaseUIScrollView::onKeyDown(KeyboardEvent &e) { this->container->onKeyDown(e); }
+void CBaseUIScrollView::onKeyDown(KeyboardEvent &e) { this->container.onKeyDown(e); }
 
-void CBaseUIScrollView::onChar(KeyboardEvent &e) { this->container->onChar(e); }
+void CBaseUIScrollView::onChar(KeyboardEvent &e) { this->container.onChar(e); }
 
 void CBaseUIScrollView::scrollY(int delta, bool animated) {
     if(!this->bVerticalScrolling || delta == 0 || this->bScrolling || this->getSize().y >= this->vScrollSize.y ||
-       this->container->isBusy())
+       this->container.isBusy())
         return;
 
     const bool allowOverscrollBounce = cv::ui_scrollview_mousewheel_overscrollbounce.getBool();
@@ -521,7 +511,7 @@ void CBaseUIScrollView::scrollY(int delta, bool animated) {
 
 void CBaseUIScrollView::scrollX(int delta, bool animated) {
     if(!this->bHorizontalScrolling || delta == 0 || this->bScrolling || this->getSize().x >= this->vScrollSize.x ||
-       this->container->isBusy())
+       this->container.isBusy())
         return;
 
     // TODO: fix all of this shit with the code from scrollY() above
@@ -604,7 +594,7 @@ void CBaseUIScrollView::scrollToXInt(int scrollPosX, bool animated, bool slow) {
 }
 
 void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int /*xOffset*/, int yOffset, bool animated) {
-    const std::vector<CBaseUIElement *> &elements = this->container->getElements();
+    const std::vector<CBaseUIElement *> &elements = this->container.getElements();
     if(const auto &elemit = std::ranges::find(elements, element); elemit != elements.end()) {
         this->scrollToY(-(*elemit)->getRelPos().y + yOffset, animated);
     }
@@ -614,11 +604,7 @@ void CBaseUIScrollView::updateClipping() {
     u32 numChangedElements = 0;
     //u32 numVisElements = 0;
 
-    // weird nested constructor order makes this possible to be null briefly somehow idk
-    auto *visibleElements = this->container->vVisibleElements.get();
-    if(!visibleElements) return;
-
-    const std::vector<CBaseUIElement *> &elements = this->container->getElements();
+    const std::vector<CBaseUIElement *> &elements = this->container.getElements();
 
     // poor man's PVS
     // this makes us a bit less strict about which elements are "visible", but it shouldn't be too significant
@@ -639,10 +625,10 @@ void CBaseUIScrollView::updateClipping() {
     this->previousClippingTotalElements = elements.size();
 
     const bool useCache = this->bVerticalScrolling &&                                              //
-                          visibleElements->size() > 2 &&                                           // sanity checks
+                          this->container.vVisibleElements.size() > 2 &&                           // sanity checks
                           elements.size() > 0 &&                                                   //
                           prevVisibleSize > 0 &&                                                   //
-                          prevVisibleSize == visibleElements->size() &&                            //
+                          prevVisibleSize == this->container.vVisibleElements.size() &&            //
                           prevTotalSize == elements.size() &&                                      //
                           !(2.f * this->getSize().y >= -this->vScrollPos.y ||                      // overscroll, top
                             2.f * this->getSize().y >= this->vScrollPos.y + this->vScrollSize.y);  // overscroll, bottom
@@ -651,7 +637,7 @@ void CBaseUIScrollView::updateClipping() {
     bool foundDifferent = !useCache;
 
     if(useCache) {
-        for(auto *e : *visibleElements) {
+        for(auto *e : this->container.vVisibleElements) {
             const McRect &eRect = e->getRect();
             const bool eVisible = e->isVisible();
             if(!eVisible || !expandedMe.intersects(eRect)) {
@@ -683,14 +669,14 @@ void CBaseUIScrollView::updateClipping() {
             }
 
             if(nowVisible) {
-                visibleElements->insert(e);
+                this->container.vVisibleElements.insert(e);
             } else {
-                visibleElements->erase(e);
+                this->container.vVisibleElements.erase(e);
             }
         }
     }
 
-    this->previousClippingVisibleElements = visibleElements->size();
+    this->previousClippingVisibleElements = this->container.vVisibleElements.size();
 
     if(!numChangedElements) {
         //debugLog("got final visible elements {} total {}", numVisElements, elements.size());
@@ -754,7 +740,7 @@ CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border) {
 
     this->vScrollSize = {0., 0.};
 
-    const std::vector<CBaseUIElement *> &elements = this->container->getElements();
+    const std::vector<CBaseUIElement *> &elements = this->container.getElements();
     for(auto *e : elements) {
         const f64 x = e->getRelPos().x + e->getSize().x;
         const f64 y = e->getRelPos().y + e->getSize().y;
@@ -766,7 +752,7 @@ CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border) {
     this->vScrollSize.x += border;
     this->vScrollSize.y += border;
 
-    this->container->setSize(this->vScrollSize);
+    this->container.setSize(this->vScrollSize);
 
     // TODO: duplicate code, ref onResized(), but can't call onResized() due to possible endless recursion if
     // setScrollSizeToContent() within onResized() HACKHACK: shit code
@@ -798,7 +784,7 @@ void CBaseUIScrollView::scrollToBottom() { this->scrollToY(-this->vScrollSize.y)
 
 void CBaseUIScrollView::scrollToTop() { this->scrollToY(0); }
 
-void CBaseUIScrollView::onMouseDownOutside(bool /*left*/, bool /*right*/) { this->container->stealFocus(); }
+void CBaseUIScrollView::onMouseDownOutside(bool /*left*/, bool /*right*/) { this->container.stealFocus(); }
 
 void CBaseUIScrollView::onMouseDownInside(bool /*left*/, bool /*right*/) {
     this->bBusy = true;
@@ -816,12 +802,12 @@ void CBaseUIScrollView::onFocusStolen() {
     this->bBusy = false;
 
     // forward focus steal to container
-    this->container->stealFocus();
+    this->container.stealFocus();
 }
 
 void CBaseUIScrollView::onEnabled() {
     this->bClippingDirty = true;
-    this->container->setEnabled(true);
+    this->container.setEnabled(true);
 }
 
 void CBaseUIScrollView::onDisabled() {
@@ -830,13 +816,13 @@ void CBaseUIScrollView::onDisabled() {
     this->bScrollbarScrolling = false;
     this->bBusy = false;
 
-    this->container->setEnabled(false);
+    this->container.setEnabled(false);
 }
 
 void CBaseUIScrollView::onResized() {
     this->bClippingDirty = true;
 
-    this->container->setSize(this->vScrollSize);
+    this->container.setSize(this->vScrollSize);
 
     // TODO: duplicate code
     // HACKHACK: shit code
@@ -851,7 +837,7 @@ void CBaseUIScrollView::onResized() {
 void CBaseUIScrollView::onMoved() {
     this->bClippingDirty = true;
 
-    this->container->setPos(dvec2{this->getPos()} + this->vScrollPos);
+    this->container.setPos(dvec2{this->getPos()} + this->vScrollPos);
 
     this->vMouseBackup2 = mouse->getPos();  // to avoid spastic movement after we are moved
 
@@ -859,5 +845,5 @@ void CBaseUIScrollView::onMoved() {
 }
 
 bool CBaseUIScrollView::isBusy() {
-    return (this->container->isBusy() || this->bScrolling || this->bBusy) && this->isVisible();
+    return (this->container.isBusy() || this->bScrolling || this->bBusy) && this->isVisible();
 }

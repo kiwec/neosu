@@ -581,6 +581,8 @@ void VisualProfiler::update(CBaseUIEventCtx &c) {
                 group.color = 0xffffffff;
             else if(strcmp(group.name, VPROF_BUDGETGROUP_SLEEP) == 0)
                 group.color = 0xff5555bb;
+            else if(strcmp(group.name, VPROF_BUDGETGROUP_BETWEENFRAMES) == 0)
+                group.color = 0xff7777bb;
             else if(strcmp(group.name, VPROF_BUDGETGROUP_EVENTS) == 0)
                 group.color = 0xffffff00;
             else if(strcmp(group.name, VPROF_BUDGETGROUP_UPDATE) == 0)
@@ -706,7 +708,7 @@ void VisualProfiler::decrementInfoBladeDisplayMode() {
 
 void VisualProfiler::addInfoBladeEngineTextLine(const UString &text) {
     if(!cv::vprof.getBool() || !this->bVisible ||
-       cv::vprof_display_mode.getInt() != (int)INFO_BLADE_DISPLAY_MODE::ENGINE_INFO)
+       cv::vprof_display_mode.getVal<INFO_BLADE_DISPLAY_MODE>() != INFO_BLADE_DISPLAY_MODE::ENGINE_INFO)
         return;
 
     this->engineTextLines.push_back(text);
@@ -714,7 +716,7 @@ void VisualProfiler::addInfoBladeEngineTextLine(const UString &text) {
 
 void VisualProfiler::addInfoBladeAppTextLine(const UString &text) {
     if(!cv::vprof.getBool() || !this->bVisible ||
-       cv::vprof_display_mode.getInt() != (int)INFO_BLADE_DISPLAY_MODE::APP_INFO)
+       cv::vprof_display_mode.getVal<INFO_BLADE_DISPLAY_MODE>() != INFO_BLADE_DISPLAY_MODE::APP_INFO)
         return;
 
     this->appTextLines.push_back(text);

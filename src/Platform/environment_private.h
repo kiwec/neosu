@@ -61,4 +61,7 @@ class SDLMain final : public Environment {
 
     friend class GPUDriverConfigurator;
     std::unique_ptr<GPUDriverConfigurator> m_gpuConfigurator;
+
+    // for profiling with main callbacks
+    bool m_bInIterate{false};
 };

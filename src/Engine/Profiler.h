@@ -16,12 +16,13 @@
     }                     \
     while(0)
 
-#define VPROF_ENTER_SCOPE(name) g_profCurrentProfile.enterScope(name, VPROF_BUDGETGROUP_ROOT)
+#define VPROF_ENTER_SCOPE(name, group) g_profCurrentProfile.enterScope(name, group)
 #define VPROF_EXIT_SCOPE() g_profCurrentProfile.exitScope()
 
 #define VPROF_BUDGETGROUP_ROOT "Root"
 #define VPROF_BUDGETGROUP_SLEEP "Sleep"
 #define VPROF_BUDGETGROUP_EVENTS "Events"
+#define VPROF_BUDGETGROUP_BETWEENFRAMES "BetweenFrames"
 #define VPROF_BUDGETGROUP_UPDATE "Update"
 #define VPROF_BUDGETGROUP_DRAW "Draw"
 #define VPROF_BUDGETGROUP_DRAW_SWAPBUFFERS "SwapBuffers"
@@ -49,13 +50,13 @@
             lti__ = 0;                                                       \
             auto current_max__ = std::ranges::max(lasttms__);                \
             if(current_max__ > overall_max__) overall_max__ = current_max__; \
-            logRaw("\n\tTIME FOR: " #__VA_ARGS__);                   \
+            logRaw("\n\tTIME FOR: " #__VA_ARGS__);                           \
             logRaw("\tmax overall: {:.8f}" \
 			         "\n\taverage: {:.4f} min: {:.4f} max: {:.4f}" \
 			         "\n\tpast " MC_STRINGIZE(__amt__) " times:" \
 			                                           "\n\t[ {:.4f} ]", \
 			         overall_max__, std::reduce(std::execution::unseq, lasttms__.begin(), lasttms__.end(), 0.0) / ((uint32_t)__amt__), std::ranges::min(lasttms__), \
-			         current_max__, fmt::join(lasttms__, ", "));                       \
+			         current_max__, fmt::join(lasttms__, ", "));                                 \
         }                                                                    \
     } while(false);
 #define VPROF_MAX_NUM_BUDGETGROUPS 128

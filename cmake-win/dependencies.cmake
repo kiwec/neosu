@@ -63,9 +63,9 @@ set(SPDLOG_URL "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VER
 set(SPDLOG_HASH "SHA512=8df117055d19ff21c9c9951881c7bdf27cc0866ea3a4aa0614b2c3939cedceab94ac9abaa63dc4312b51562b27d708cb2f014c68c603fd1c1051d3ed5c1c3087")
 set_download_name("spdlog" "${SPDLOG_VERSION}" "${SPDLOG_URL}")
 
-set(GLM_VERSION "1.0.2")
+set(GLM_VERSION "1.0.3")
 set(GLM_URL "https://github.com/g-truc/glm/archive/refs/tags/${GLM_VERSION}.tar.gz")
-set(GLM_HASH "SHA512=e66e4f192f6579128198c47ed20442dda13c741f371b447722b7449200f05785e1b69386a465febf97f33b437f6eb69b3fb282e1e9eabf6261eb7b57998cd68c")
+set(GLM_HASH "SHA512=0a490f0c79cd4a8ba54f37358f8917cef961dab9e61417c84ae0959c61bc860e5b83f4fb7f27169fb3d08eef1d84131bddde23d60876922310205c901b1273aa")
 set_download_name("glm" "${GLM_VERSION}" "${GLM_URL}")
 
 set(LZMA_VERSION "5.8.2")

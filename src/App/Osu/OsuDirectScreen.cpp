@@ -457,7 +457,7 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
 
         f32 y = LISTING_MARGIN;
         // We only put OnlineMapListings into the container of this->results
-        for(auto* listing : this->results->container->getElements<OnlineMapListing>()) {
+        for(auto* listing : this->results->container.getElements<OnlineMapListing>()) {
             listing->setRelPos(LISTING_MARGIN, y);
             listing->setSize(results_width - 2 * LISTING_MARGIN, 75.f * scale);
             y += listing->getSize().y + LISTING_MARGIN;
@@ -466,7 +466,7 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
             listing->onResolutionChange(newResolution);
         }
         this->results->setScrollSizeToContent();
-        this->results->container->update_pos();  // sigh...
+        this->results->container.update_pos();  // sigh...
     }
 
     const f32 spinner_size = (40.f * scale);
@@ -492,7 +492,7 @@ void OsuDirectScreen::reset() {
 void OsuDirectScreen::search(std::string_view query) {
     if(this->loading) return;
 
-    const i32 offset = this->results->container->getElements().size();
+    const i32 offset = this->results->container.getElements().size();
     const i32 filter = cv::direct_ranking_status_filter.getInt();
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     std::string url = fmt::format("{}osu.{}/web/osu-search.php?m=0&r={}&q={}&p={}", scheme, BanchoState::endpoint,
@@ -545,7 +545,7 @@ void OsuDirectScreen::search(std::string_view query) {
                     const auto meta = Downloader::parse_beatmapset_metadata(set_lines[i]);
                     if(meta.set_id == 0) continue;
 
-                    this->results->container->addBaseUIElement(new OnlineMapListing(this, meta));
+                    this->results->container.addBaseUIElement(new OnlineMapListing(this, meta));
                 }
 
                 this->onResolutionChange(osu->getVirtScreenSize());

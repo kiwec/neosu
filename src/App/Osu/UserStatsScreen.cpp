@@ -72,7 +72,7 @@ void UserStatsScreen::onBack() { ui->setScreen(ui->getSongBrowser()); }
 
 void UserStatsScreen::rebuildScoreButtons() {
     // hard reset (delete)
-    m_scores->container->freeElements();
+    m_scores->container.freeElements();
     m_scoreButtons.clear();
 
     this->m_userCard->setID(BanchoState::get_uid());
@@ -108,7 +108,7 @@ void UserStatsScreen::rebuildScoreButtons() {
         }));
 
         m_scoreButtons.push_back(button);
-        m_scores->container->addBaseUIElement(button);
+        m_scores->container.addBaseUIElement(button);
     }
 
     updateLayout();
@@ -136,7 +136,7 @@ void UserStatsScreen::updateLayout() {
         m_scoreButtons[i]->setSize(scoreButtonWidth - 2, scoreButtonHeight);
         m_scoreButtons[i]->setRelPos(margin, margin + i * (scoreButtonHeight + padding));
     }
-    m_scores->container->update_pos();
+    m_scores->container.update_pos();
 
     m_scores->setScrollSizeToContent();
 

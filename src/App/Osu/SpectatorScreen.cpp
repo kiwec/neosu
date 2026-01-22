@@ -132,13 +132,13 @@ SpectatorScreen::SpectatorScreen() {
     this->addBaseUIElement(this->background);
 
     INIT_LABEL(this->spectating, "Spectating", true);
-    this->background->container->addBaseUIElement(this->spectating);
+    this->background->container.addBaseUIElement(this->spectating);
 
     this->userCard = new UserCard(0);
-    this->background->container->addBaseUIElement(this->userCard);
+    this->background->container.addBaseUIElement(this->userCard);
 
     INIT_LABEL(this->status, "...", false);
-    this->background->container->addBaseUIElement(this->status);
+    this->background->container.addBaseUIElement(this->status);
 
     this->stop_btn = new UIButton(0, 0, 190, 40, "stop_spec_btn", "Stop spectating");
     this->stop_btn->grabs_clicks = true;

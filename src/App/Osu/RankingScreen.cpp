@@ -171,28 +171,28 @@ RankingScreen::RankingScreen() : ScreenBackable() {
     this->rankingPanel = new UIRankingScreenRankingPanel();
     this->rankingPanel->setDrawBackground(false);
     this->rankingPanel->setDrawFrame(false);
-    this->rankings->container->addBaseUIElement(this->rankingPanel);
+    this->rankings->container.addBaseUIElement(this->rankingPanel);
 
     this->rankingGrade = new CBaseUIImage(osu->getSkin()->i_ranking_a->getName(), 0, 0, 0, 0, "");
     this->rankingGrade->setDrawBackground(false);
     this->rankingGrade->setDrawFrame(false);
-    this->rankings->container->addBaseUIElement(this->rankingGrade);
+    this->rankings->container.addBaseUIElement(this->rankingGrade);
 
     this->rankingBottom = new RankingScreenBottomElement();
-    this->rankings->container->addBaseUIElement(this->rankingBottom);
+    this->rankings->container.addBaseUIElement(this->rankingBottom);
 
     this->rankingIndex = new RankingScreenIndexLabel();
     this->rankingIndex->setDrawFrame(false);
     this->rankingIndex->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
     this->rankingIndex->setTextColor(0xffffcb21);
-    this->rankings->container->addBaseUIElement(this->rankingIndex);
+    this->rankings->container.addBaseUIElement(this->rankingIndex);
 
     this->retry_btn = new UIButton(0, 0, 0, 0, "", "Retry");
     this->retry_btn->setClickCallback(SA::MakeDelegate<&RankingScreen::onRetryClicked>(this));
-    this->rankings->container->addBaseUIElement(this->retry_btn);
+    this->rankings->container.addBaseUIElement(this->retry_btn);
     this->watch_btn = new UIButton(0, 0, 0, 0, "", "Watch replay");
     this->watch_btn->setClickCallback(SA::MakeDelegate<&RankingScreen::onWatchClicked>(this));
-    this->rankings->container->addBaseUIElement(this->watch_btn);
+    this->rankings->container.addBaseUIElement(this->watch_btn);
 
     this->setGrade(ScoreGrade::D);
     this->setIndex(0);  // TEMP
@@ -568,7 +568,7 @@ void RankingScreen::updateLayout() {
     this->setGrade(this->grade);
 
     this->update_pos();
-    this->rankings->container->update_pos();
+    this->rankings->container.update_pos();
     this->rankings->setScrollSizeToContent(0);
 }
 

@@ -5,6 +5,7 @@
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_process.h>
 #include <SDL3/SDL_properties.h>
+#include "Timing.h"
 
 #define SDL_h_
 
@@ -168,7 +169,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             std::min(logBuf.size(), static_cast<size_t>(SDL_GetEventDescription(event, logBuf.data(), logBuf.size())));
         if(logsz > 0) {
             logRaw("[handleEvent] frame: {}; event: {}"_cf, m_engine->getFrameCount(),
-                           std::string_view{logBuf.data(), logsz});
+                   std::string_view{logBuf.data(), logsz});
         }
     }
 
@@ -356,7 +357,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     break;
 
                 case SDL_EVENT_WINDOW_EXPOSED: {
-                    if constexpr(Env::cfg(OS::WINDOWS) && !Env::cfg(FEAT::MAINCB)) {
+                    if constexpr(Env::cfg(OS::WINDOWS)) {
                         if(event->window.data1 == 1 /* live resize event */ && !winMinimized() &&
                            !m_bRestoreFullscreen) {
                             m_engine->requestResolutionChange(getWindowSize());

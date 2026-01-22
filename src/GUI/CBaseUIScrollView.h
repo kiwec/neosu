@@ -4,6 +4,7 @@
 
 #include "CBaseUIContainer.h"
 #include <memory>
+#include <unordered_set>
 
 class CBaseUIScrollView : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUIScrollView)
@@ -139,17 +140,16 @@ class CBaseUIScrollView : public CBaseUIElement {
        private:
         friend class CBaseUIScrollView;
 
-        struct VisibleSet;  // avoiding transitive includes
-
         // these elements must correspond to items in the superclass' vElements container!
-        std::unique_ptr<VisibleSet> vVisibleElements{nullptr};
+        // this is kind of a hack to avoid iterating over a bunch of not-visible elements
+        std::unordered_set<CBaseUIElement *>  vVisibleElements;
 
         // we need to break out of update() if the container we're iterating through has been cleared
         bool invalidateUpdate{false};
         bool inIllegalToInvalidateIteration{false};  // for debug
     };
 
-    std::unique_ptr<CBaseUIScrollViewContainer> container;
+    CBaseUIScrollViewContainer container;
 
    protected:
     void onMoved() override;

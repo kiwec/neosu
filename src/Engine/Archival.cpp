@@ -495,7 +495,7 @@ bool Archive::Writer::addData(const std::string& archivePath, const u8* data, si
     }
 
     PendingEntry entry;
-    entry.archivePath = normalizedPath;
+    entry.archivePath = std::move(normalizedPath);
     entry.data.assign(data, data + size);
     entry.isDirectory = false;
 
@@ -520,7 +520,7 @@ bool Archive::Writer::addData(const std::string& archivePath, std::vector<u8>&& 
     }
 
     PendingEntry entry;
-    entry.archivePath = normalizedPath;
+    entry.archivePath = std::move(normalizedPath);
     entry.data = std::move(data);
     entry.isDirectory = false;
 

@@ -39,9 +39,15 @@ ProfilerProfile::ProfilerProfile(bool manualStartViaMain) : root("Root", VPROF_B
     // create all groups in predefined order
     this->groupNameToID(
         VPROF_BUDGETGROUP_ROOT);  // NOTE: the root group must always be the first group to be created here
-    this->groupNameToID(VPROF_BUDGETGROUP_SLEEP);
-    this->groupNameToID(VPROF_BUDGETGROUP_EVENTS);
+    if constexpr(Env::cfg(FEAT::MAINCB)) {
+        this->groupNameToID(VPROF_BUDGETGROUP_BETWEENFRAMES);
+    } else {
+        // cannot (easily) be measured separately with main callbacks
+        this->groupNameToID(VPROF_BUDGETGROUP_SLEEP);
+        this->groupNameToID(VPROF_BUDGETGROUP_EVENTS);
+    }
     this->groupNameToID(VPROF_BUDGETGROUP_UPDATE);
+
     this->groupNameToID(VPROF_BUDGETGROUP_DRAW);
     this->groupNameToID(VPROF_BUDGETGROUP_DRAW_SWAPBUFFERS);
 }

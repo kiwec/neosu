@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <sys/stat.h>
 
-#define WANT_SPINSORT
+#define WANT_PDQSORT
 #include "Sorting.h"
 
 #define BEATMAP_MAX_NUM_HITOBJECTS cv::beatmap_max_num_hitobjects.getVal<u32>()
@@ -38,14 +38,14 @@
 #define SLIDER_MAX_TICKS cv::slider_max_ticks.getInt()
 #define STARS_STACKING cv::stars_stacking.getBool()
 
-#define SPINSORT_RANGE srt::spinsort
+#define PDQSORT_RANGE srt::pdqsort
 
 #else
 
 #include <print>
 #define debugLog(...) std::println(__VA_ARGS__)
 
-#define SPINSORT_RANGE std::ranges::sort
+#define PDQSORT_RANGE std::ranges::sort
 
 enum class HitObjectType : uint8_t {
     CIRCLE,
@@ -790,7 +790,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
 
     if(!tempTimingpoints.empty()) {
         // sort timingpoints by time
-        if(tempTimingpoints.size() > 1) SPINSORT_RANGE(tempTimingpoints, timingPointSortComparator);
+        if(tempTimingpoints.size() > 1) PDQSORT_RANGE(tempTimingpoints, timingPointSortComparator);
         c.timingpoints = std::move(tempTimingpoints);
     }
 
@@ -946,7 +946,7 @@ DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
 
         // 5) sort scoringTimes from earliest to latest
         if(s.scoringTimesForStarCalc.size() > 1) {
-            SPINSORT_RANGE(s.scoringTimesForStarCalc, sliderScoringTimeComparator);
+            PDQSORT_RANGE(s.scoringTimesForStarCalc, sliderScoringTimeComparator);
         }
     }
 
@@ -1050,7 +1050,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
             return false;  // equivalent
         };
 
-        SPINSORT_RANGE(result.diffobjects, diffHitObjectSortComparator);
+        PDQSORT_RANGE(result.diffobjects, diffHitObjectSortComparator);
     }
 
     if(dead.stop_requested()) {
@@ -1521,7 +1521,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
     if(this->timingpoints.size() > 0) {
         // sort timingpoints by time
         if(this->timingpoints.size() > 1) {
-            SPINSORT_RANGE(this->timingpoints, timingPointSortComparator);
+            PDQSORT_RANGE(this->timingpoints, timingPointSortComparator);
         }
 
         if(this->iMostCommonBPM <= 0) {
@@ -1658,7 +1658,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
             +[](const std::unique_ptr<HitObject> &a, const std::unique_ptr<HitObject> &b) -> bool {
             return BeatmapInterface::sortHitObjectByStartTimeComp(a.get(), b.get());
         };
-        SPINSORT_RANGE(result.hitobjects, hobjsorter);
+        PDQSORT_RANGE(result.hitobjects, hobjsorter);
     }
 
     // update beatmap length stat

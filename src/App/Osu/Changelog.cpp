@@ -866,7 +866,7 @@ void Changelog::addAllChangelogs(std::vector<CHANGELOG> &&logtexts) {
         changelog.title->setDrawBackground(false);
         changelog.title->setDrawFrame(false);
 
-        this->scrollView->container->addBaseUIElement(changelog.title);
+        this->scrollView->container.addBaseUIElement(changelog.title);
 
         // changes
         for(auto &&changeText : changelogs[i].changes) {
@@ -881,7 +881,7 @@ void Changelog::addAllChangelogs(std::vector<CHANGELOG> &&logtexts) {
 
             changelog.changes.push_back(change);
 
-            this->scrollView->container->addBaseUIElement(change);
+            this->scrollView->container.addBaseUIElement(change);
         }
 
         this->changelogs.push_back(changelog);

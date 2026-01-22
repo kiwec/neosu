@@ -110,7 +110,7 @@ bool UIModList::isVisible() { return !!*this->flags; }
         element->onResized();                                   \
         element->setSizeToContent(x_padding, y_padding);        \
         element->setPos(10.f * osu->getUIScale(), settings_y);  \
-        this->settings->container->addBaseUIElement(element);   \
+        this->settings->container.addBaseUIElement(element);   \
         settings_y += element->getSize().y;                     \
     } while(0)
 
@@ -124,7 +124,7 @@ bool UIModList::isVisible() { return !!*this->flags; }
         button->setSizeToContent(button_padding, button_padding);                             \
         button->setPos(label->getSize().x + 20.f * osu->getUIScale(),                         \
                        label->getPos().y + (label->getSize().y - button->getSize().y) / 2.f); \
-        this->settings->container->addBaseUIElement(button);                                  \
+        this->settings->container.addBaseUIElement(button);                                  \
     } while(0)
 
 #define PAD(x)                               \
@@ -272,7 +272,7 @@ void RoomScreen::draw() {
 
     // Update avatar visibility status
     const McRect slotlist_rect = this->slotlist->getRect();
-    for(auto *elm : this->slotlist->container->getElements()) {
+    for(auto *elm : this->slotlist->container.getElements()) {
         if(elm->getName() == US_("avatar")) {
             auto *avatar = static_cast<UIAvatar *>(elm);
             avatar->on_screen = slotlist_rect.intersects(avatar->getRect());
@@ -513,7 +513,7 @@ void RoomScreen::updateLayout(vec2 newResolution) {
 
             const f32 SLOT_HEIGHT = 40.f * dpiScale;
             auto avatar = new UIAvatar(slot.player_id, 10.f * dpiScale, y_total, SLOT_HEIGHT, SLOT_HEIGHT);
-            this->slotlist->container->addBaseUIElement(avatar);
+            this->slotlist->container.addBaseUIElement(avatar);
 
             auto user_box = new UIUserLabel(slot.player_id, username);
             user_box->setFont(this->lfont);
@@ -521,12 +521,12 @@ void RoomScreen::updateLayout(vec2 newResolution) {
             user_box->setTextColor(color);
             user_box->setSizeToContent();
             user_box->setSize(user_box->getSize().x, SLOT_HEIGHT);
-            this->slotlist->container->addBaseUIElement(user_box);
+            this->slotlist->container.addBaseUIElement(user_box);
 
             auto user_mods = new UIModList(&slot.mods);
             user_mods->setPos(user_box->getPos().x + user_box->getSize().x + 30.f * dpiScale, y_total);
             user_mods->setSize(350.f * dpiScale, SLOT_HEIGHT);
-            this->slotlist->container->addBaseUIElement(user_mods);
+            this->slotlist->container.addBaseUIElement(user_mods);
 
             y_total += SLOT_HEIGHT + 5.f * dpiScale;
         }

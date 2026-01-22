@@ -22,7 +22,7 @@ namespace {
 class MapBGImagePathLoader final : public Resource {
     NOCOPY_NOMOVE(MapBGImagePathLoader)
    public:
-    MapBGImagePathLoader(const std::string &filePath) : Resource(APPDEFINED, filePath) {}
+    MapBGImagePathLoader(std::string filePath) : Resource(APPDEFINED) { this->sFilePath = std::move(filePath); }
     ~MapBGImagePathLoader() override { destroy(); }
 
     [[nodiscard]] inline const std::string &getParsedBGFileName() const { return this->parsed_bg_filename; }
@@ -424,6 +424,7 @@ u32 BGImageHandlerImpl::getMaxEvictions() const {
 #endif
 
 #include <cassert>
+#include <utility>
 
 namespace {
 void MapBGImagePathLoader::initAsync() {

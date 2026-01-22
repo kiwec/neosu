@@ -174,7 +174,7 @@ void UIContextMenu::begin(int minWidth, bool bigStyle) {
     //   begin() deletes the object the callback is currently being called from
     // - so, instead, we just keep a list of things to delete whenever we get to the next update() tick
     {
-        const std::vector<CBaseUIElement *> &oldElementsWeCanNotDeleteYet = this->container->getElements();
+        const std::vector<CBaseUIElement *> &oldElementsWeCanNotDeleteYet = this->container.getElements();
         this->selfDeletionCrashWorkaroundScheduledElementDeleteHack.insert(
             this->selfDeletionCrashWorkaroundScheduledElementDeleteHack.end(), oldElementsWeCanNotDeleteYet.begin(),
             oldElementsWeCanNotDeleteYet.end());
@@ -200,7 +200,7 @@ UIContextMenuButton *UIContextMenu::addButtonJustified(const UString &text, TEXT
         button->setDrawFrame(false);
         button->setDrawBackground(false);
     }
-    this->container->addBaseUIElement(button);
+    this->container.addBaseUIElement(button);
 
     if(button->getSize().x + 2 * margin > this->iWidthCounter) {
         this->iWidthCounter = button->getSize().x + 2 * margin;
@@ -225,7 +225,7 @@ UIContextMenuTextbox *UIContextMenu::addTextbox(const UString &text, int id) {
 
         textbox->setActive(true);
     }
-    this->container->addBaseUIElement(textbox);
+    this->container.addBaseUIElement(textbox);
 
     this->iYCounter += buttonHeight;
     this->setSizeY(this->iYCounter + 2 * margin);
@@ -251,7 +251,7 @@ void UIContextMenu::end(bool invertAnimation, EndStyle style) {
 
     const int margin = 9 * Osu::getUIScale();
 
-    const std::vector<CBaseUIElement *> &elements = this->container->getElements();
+    const std::vector<CBaseUIElement *> &elements = this->container.getElements();
     if(elements.empty()) return;
 
     for(auto *element : elements) {
