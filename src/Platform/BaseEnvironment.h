@@ -240,10 +240,22 @@ using Env::REND;
       defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__))
 
 #if defined(__has_builtin) && __has_builtin(__builtin_debugtrap)
-#define fubar_abort_ [] [[gnu::always_inline]] [[noreturn]] () { __builtin_debugtrap(); ::abort(); }
+#define fubar_abort_                            \
+    [] [[gnu::always_inline]] [[noreturn]] () { \
+        __builtin_debugtrap();                  \
+        ::abort();                              \
+    }
 #else
-extern int raise(int sig);
-#define fubar_abort_ [] [[gnu::always_inline]] [[noreturn]] () { raise(5 /* SIGTRAP */); ::abort(); }
+#ifndef MCENGINE_PLATFORM_WASM
+extern "C" int raise(int sig);
+#define fubar_abort_                            \
+    [] [[gnu::always_inline]] [[noreturn]] () { \
+        ::raise(5 /* SIGTRAP */);               \
+        ::abort();                              \
+    }
+#else
+#define fubar_abort_ [] [[gnu::always_inline]] [[noreturn]] () { ::abort(); }
+#endif
 #endif
 
 #define fubar_abort() fubar_abort_()
@@ -274,7 +286,11 @@ typedef void* HWND;
 #define strncasecmp _strnicmp
 #endif
 
-#define fubar_abort_ [] [[noreturn]] () { __debugbreak(); ::abort(); }
+#define fubar_abort_     \
+    [] [[noreturn]] () { \
+        __debugbreak();  \
+        ::abort();       \
+    }
 
 #define fubar_abort() fubar_abort_()
 
