@@ -32,8 +32,6 @@ void BeatmapCarousel::update(CBaseUIEventCtx &c) {
         return;
     }
 
-    this->container->update_pos();  // necessary due to constant animations
-
     // handle right click absolute scrolling
     if(c.propagate_clicks) {
         if(mouse->isRightDown() && !g_songbrowser->contextMenu->isMouseInside()) {

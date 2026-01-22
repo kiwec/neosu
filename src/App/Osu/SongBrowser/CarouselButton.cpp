@@ -195,6 +195,7 @@ void CarouselButton::updateLayoutEx() {
 
     this->setRelPosX(offsetX);
     this->setRelPosY(this->fTargetRelPosY + this->getSize().y * 0.125f * this->fHoverMoveAwayAnimation);
+    this->setPos(g_carousel->container->getPos() + this->getRelPos());
 }
 
 CarouselButton *CarouselButton::setVisible(bool visible) {
