@@ -271,6 +271,11 @@ void DirectX11Image::bind(unsigned int textureUnit) const {
     // backup
     // HACKHACK: slow af
     {
+        // release previous backup if unbind() was never called
+        if(this->prevShaderResourceView != nullptr) {
+            this->prevShaderResourceView->Release();
+            this->prevShaderResourceView = nullptr;
+        }
         context->PSGetShaderResources(textureUnit, 1, &this->prevShaderResourceView);
     }
 
