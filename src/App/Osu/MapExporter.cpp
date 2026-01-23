@@ -136,7 +136,7 @@ struct Exporter final {
                     if(this->isInterrupted()) return finish();
                     std::string current = temppath;
                     using enum File::FILETYPE;
-                    if(auto type = File::existsCaseInsensitive(current); type != File::FILETYPE::FOLDER) {
+                    if(auto type = File::existsCaseInsensitive(current); type != FOLDER) {
                         debugLog("requested folder {} {} for export, skipping.", current,
                                  type == FILE ? "is a file" : "does not exist");
                     } else {
@@ -266,7 +266,7 @@ struct Exporter final {
                     }
                 } else if(single_archive) {
                     this->queue_notification(fmt::format("Failed to export folders to {}{}", export_folder_sub,
-                                                         Archive::getExtSuffix(Archive::Format::SEVENZIP_DEFLATE)),
+                                                         Archive::getExtSuffix(Archive::Format::ZIP)),
                                              false);
                 }
 

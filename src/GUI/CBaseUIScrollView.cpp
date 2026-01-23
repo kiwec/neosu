@@ -169,10 +169,10 @@ void CBaseUIScrollView::draw() {
 
     // draw elements & scrollbars
     if(this->bHorizontalClipping || this->bVerticalClipping) {
-        auto clip_rect = McRect(this->bHorizontalClipping ? this->getPos().x + 1 : 0,
-                                this->bVerticalClipping ? this->getPos().y + 2 : 0,
-                                this->bHorizontalClipping ? this->getSize().x - 1 : engine->getScreenWidth(),
-                                this->bVerticalClipping ? this->getSize().y - 1 : engine->getScreenHeight());
+        auto clip_rect = McRect(this->bHorizontalClipping ? this->getPos().x : 0,
+                                this->bVerticalClipping ? this->getPos().y : 0,
+                                this->bHorizontalClipping ? this->getSize().x : engine->getScreenWidth(),
+                                this->bVerticalClipping ? this->getSize().y : engine->getScreenHeight());
         g->pushClipRect(clip_rect);
     }
 
