@@ -1,6 +1,6 @@
 # neosu
 
-![Linux build](https://github.com/kiwec/neosu/actions/workflows/linux-multiarch.yml/badge.svg) ![Windows build](https://github.com/kiwec/neosu/actions/workflows/win-multiarch.yml/badge.svg) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/kiwec/neosu)
+![Linux x86 builds](https://github.com/kiwec/neosu/actions/workflows/linux-multiarch.yml/badge.svg) [![linux-aarch64](https://github.com/kiwec/neosu/actions/workflows/linux-aarch64.yaml/badge.svg)](https://github.com/kiwec/neosu/actions/workflows/linux-aarch64.yaml) ![Windows build](https://github.com/kiwec/neosu/actions/workflows/win-multiarch.yml/badge.svg) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/kiwec/neosu)
 
 This is a third-party fork of McKay's [McOsu](https://store.steampowered.com/app/607260/McOsu/).
 
