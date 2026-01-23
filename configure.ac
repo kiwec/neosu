@@ -375,7 +375,7 @@ AS_IF([test "x$enable_asan" = "xyes" || test "x$enable_tsan" = "xyes"], [
     CXXFLAGS="${CXXFLAGS}${sanitizer_string}"
     CFLAGS="${CFLAGS}${sanitizer_string}"
     LDFLAGS="${LDFLAGS}${sanitizer_string}" # apparently it also needs to be specified as a linker flag...?
-    
+
     AS_IF([test -z "$LLVMMINGW" && test "x$enable_clang" = "xyes"],[
         CFLAGS="$CFLAGS -fsanitize-address-use-after-scope -fsanitize-address-use-after-return=always"
         CXXFLAGS="$CXXFLAGS -fsanitize-address-use-after-scope -fsanitize-address-use-after-return=always"
@@ -800,8 +800,8 @@ AS_IF([test "x$enable_debug" = "xyes"], [
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -D_DEBUG"
     AS_IF([test -z "$CLANG"], [
         NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -Wcast-align -Wpacked-not-aligned"
-        CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
-        CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG"
+        # CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
+        # CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG"
     ])
     AC_SUBST([ENABLE_DEBUG])
     AS_IF([test "x$enable_strip" != "xyes"], [enable_strip=no]) # disable stripping unless its explicitly requested for debug (why tho?)

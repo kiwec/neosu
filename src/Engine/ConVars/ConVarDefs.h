@@ -170,7 +170,7 @@ CONVAR(debug_ui, false, CLIENT, CFUNC(CBaseUIDebug::onDumpElemsChangeCallback));
 CONVAR(debug_env, false, CLIENT);
 CONVAR(debug_font, false, CLIENT);
 CONVAR(debug_file, false, CLIENT);
-CONVAR(debug_image, false, CLIENT | NOLOAD | NOSAVE);
+CONVAR(debug_image, false, CLIENT | NOSAVE);
 CONVAR(debug_mouse, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(debug_rm, false, CLIENT);
 CONVAR(debug_rt, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,

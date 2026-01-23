@@ -143,7 +143,7 @@ bool DirectX11Interface::init() {
                                        FEATURE_LEVELS11_1.data(), FEATURE_LEVELS11_1.size(), D3D11_SDK_VERSION,
                                        &this->device, nullptr, &this->deviceContext);
 
-    if(hr == E_INVALIDARG) {  // try without 11_1
+    if(!SUCCEEDED(hr)) {  // try without 11_1
         hr = s_d3dCreateDeviceFunc(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
                                    FEATURE_LEVELS11_1.data() + 1, FEATURE_LEVELS11_1.size() - 1, D3D11_SDK_VERSION,
                                    &this->device, nullptr, &this->deviceContext);
@@ -339,13 +339,13 @@ void DirectX11Interface::beginScene() {
         vprof->addInfoBladeEngineTextLine(fmt::format("Active Shaders: {}", numActiveShaders));
         vprof->addInfoBladeEngineTextLine(
             fmt::format("shader[{}]: shaderTexturedGeneric: {}c", shaderCounter++,
-                            (int)this->shaderTexturedGeneric->getStatsNumConstantBufferUploadsPerFrame()));
+                        (int)this->shaderTexturedGeneric->getStatsNumConstantBufferUploadsPerFrame()));
         for(const Resource *shader : resourceManager->getShaders()) {
             const auto *dx11Shader = static_cast<const DirectX11Shader *>(shader);
             if(dx11Shader->getStatsNumConstantBufferUploadsPerFrameEngineFrameCount() == (engine->getFrameCount() - 1))
                 vprof->addInfoBladeEngineTextLine(
                     fmt::format("shader[{}]: {}: {}c", shaderCounter++, shader->getName().c_str(),
-                                    (int)dx11Shader->getStatsNumConstantBufferUploadsPerFrame()));
+                                (int)dx11Shader->getStatsNumConstantBufferUploadsPerFrame()));
         }
     }
 }
@@ -1544,17 +1544,16 @@ void DirectX11Interface::onFramecountNumChanged(const float newValue) {
 
 dynutils::lib_obj *DirectX11Interface::s_d3d11Handle{nullptr};
 
-#ifdef MCENGINE_PLATFORM_LINUX  // we link directly to libdxvk-d3d11.so
-D3D11CreateDevice_t *DirectX11Interface::s_d3dCreateDeviceFunc{D3D11CreateDevice};
-#else
 D3D11CreateDevice_t *DirectX11Interface::s_d3dCreateDeviceFunc{nullptr};
-#endif
 
 bool DirectX11Interface::loadLibs() {
     if(s_d3dCreateDeviceFunc != nullptr) return true;  // already initialized
-    s_d3d11Handle = dynutils::load_lib("d3d11");
+
+    constexpr const char *lib_name = Env::cfg(OS::LINUX) ? "libdxvk_d3d11.so" : "d3d11.dll";
+
+    s_d3d11Handle = dynutils::load_lib(lib_name);
     if(!s_d3d11Handle) {
-        debugLog("DirectX11Interface: Failed to load d3d11.dll: {}", dynutils::get_error());
+        debugLog("DirectX11Interface: Failed to load {}: {}", lib_name, dynutils::get_error());
         return false;
     }
 

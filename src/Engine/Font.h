@@ -63,7 +63,7 @@ class McFont final : public Resource {
 
    private:
     friend struct McFontImpl;
-    StaticPImpl<McFontImpl, 640> pImpl;
+    StaticPImpl<McFontImpl, 768> pImpl;
 };
 
 #endif

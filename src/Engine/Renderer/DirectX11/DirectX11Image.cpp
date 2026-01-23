@@ -16,7 +16,7 @@
 #include "DirectX11Interface.h"
 
 DirectX11Image::DirectX11Image(std::string filepath, bool mipmapped, bool keepInSystemMemory)
-    : Image(std::move(filepath), mipmapped, keepInSystemMemory) {
+    : Image(std::move(filepath), mipmapped, keepInSystemMemory), samplerDesc() {
     this->texture = nullptr;
     this->shaderResourceView = nullptr;
     this->samplerState = nullptr;
@@ -28,7 +28,7 @@ DirectX11Image::DirectX11Image(std::string filepath, bool mipmapped, bool keepIn
 }
 
 DirectX11Image::DirectX11Image(int width, int height, bool mipmapped, bool keepInSystemMemory)
-    : Image(width, height, mipmapped, keepInSystemMemory) {
+    : Image(width, height, mipmapped, keepInSystemMemory), samplerDesc() {
     this->texture = nullptr;
     this->shaderResourceView = nullptr;
     this->samplerState = nullptr;
@@ -42,12 +42,26 @@ DirectX11Image::DirectX11Image(int width, int height, bool mipmapped, bool keepI
 DirectX11Image::~DirectX11Image() {
     this->destroy();
     this->deleteDX();
+
+    if(this->samplerState != nullptr) {
+        this->samplerState->Release();
+        this->samplerState = nullptr;
+    }
+
     this->rawImage.clear();
 }
 
 void DirectX11Image::init() {
-    if((this->texture != nullptr && !this->bKeepInSystemMemory) || !this->isAsyncReady())
+    if((this->texture != nullptr && !this->bKeepInSystemMemory) || !this->isAsyncReady()) {
+        if(cv::debug_image.getBool()) {
+            debugLog(
+                "we are already loaded, bReady: {} createdImage: {} texture: {:p} bKeepInSystemMemory: {} bAsyncReady: "
+                "{}",
+                this->isReady(), this->bCreatedImage, fmt::ptr(this->texture), this->bKeepInSystemMemory,
+                this->isAsyncReady());
+        }
         return;  // only load if we are not already loaded
+    }
 
     HRESULT hr;
 
@@ -107,7 +121,25 @@ void DirectX11Image::init() {
                 return;
             }
         } else {
-            // TODO: Map(), upload this->rawImage, Unmap()
+            // re-upload data to existing dynamic texture via Map/Unmap
+            D3D11_MAPPED_SUBRESOURCE mapped;
+            hr = context->Map(this->texture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+            if(SUCCEEDED(hr)) {
+                const UINT srcRowPitch = static_cast<UINT>(this->iWidth * Image::NUM_CHANNELS * sizeof(unsigned char));
+                if(mapped.RowPitch == srcRowPitch) {
+                    memcpy(mapped.pData, this->rawImage.data(), this->totalBytes());
+                } else {
+                    // copy row by row if pitch differs
+                    for(int y = 0; y < this->iHeight; y++) {
+                        memcpy(static_cast<u8*>(mapped.pData) + y * mapped.RowPitch,
+                               this->rawImage.data() + y * srcRowPitch, srcRowPitch);
+                    }
+                }
+                context->Unmap(this->texture, 0);
+            } else {
+                debugLog("DirectX Image Error: Couldn't Map() texture for update ({}, {:x}) on file {:s}!", hr, hr,
+                         this->sFilePath);
+            }
         }
     }
 
@@ -210,10 +242,9 @@ void DirectX11Image::initAsync() {
 }
 
 void DirectX11Image::destroy() {
-    // FIXME: avoid needing to reupload everything from scratch for dynamic font atlas image reloads
-    // like opengl does it
-    this->deleteDX();
+    // don't delete the texture if we're keeping it in memory, for reloads
     if(!this->bKeepInSystemMemory) {
+        this->deleteDX();
         this->rawImage.clear();
     }
 }

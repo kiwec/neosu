@@ -36,8 +36,17 @@ namespace dynutils {
 using lib_obj = struct lib_obj;
 }
 
-using D3D11CreateDevice_t = HRESULT WINAPI(IDXGIAdapter *, D3D_DRIVER_TYPE, HMODULE, UINT, const D3D_FEATURE_LEVEL *,
-                                           UINT, UINT, ID3D11Device **, D3D_FEATURE_LEVEL *, ID3D11DeviceContext **);
+// calling convention handling
+// libdxvk-native's header is wrong, it's __stdcall internally
+#ifdef _WIN32
+#define D3D11_CALL WINAPI
+#else
+#define D3D11_CALL __stdcall
+#endif
+
+using D3D11CreateDevice_t = HRESULT D3D11_CALL(IDXGIAdapter *, D3D_DRIVER_TYPE, HMODULE, UINT,
+                                               const D3D_FEATURE_LEVEL *, UINT, UINT, ID3D11Device **,
+                                               D3D_FEATURE_LEVEL *, ID3D11DeviceContext **);
 
 class DirectX11Interface final : public Graphics {
     NOCOPY_NOMOVE(DirectX11Interface)
@@ -65,8 +74,8 @@ class DirectX11Interface final : public Graphics {
 
     // 2d primitive drawing
     void drawPixel(int x, int y) override;
-    [[deprecated("not implemented")]] void drawPixels(int x, int y, int width, int height,
-                                                      DrawPixelsType type, const void *pixels) override;
+    [[deprecated("not implemented")]] void drawPixels(int x, int y, int width, int height, DrawPixelsType type,
+                                                      const void *pixels) override;
     void drawLinef(float x1, float y1, float x2, float y2) final;
     void drawRectf(const RectOptions &opt) final;
     void fillRectf(float x, float y, float width, float height) final;
@@ -143,8 +152,7 @@ class DirectX11Interface final : public Graphics {
     // factory
     Image *createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) override;
     Image *createImage(int width, int height, bool mipmapped, bool keepInSystemMemory) override;
-    RenderTarget *createRenderTarget(int x, int y, int width, int height,
-                                     MultisampleType multiSampleType) override;
+    RenderTarget *createRenderTarget(int x, int y, int width, int height, MultisampleType multiSampleType) override;
     Shader *createShaderFromFile(std::string vertexShaderFilePath, std::string fragmentShaderFilePath) override;
     Shader *createShaderFromSource(std::string vertexShader, std::string fragmentShader) override;
     VertexArrayObject *createVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage,
