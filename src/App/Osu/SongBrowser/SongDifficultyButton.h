@@ -24,6 +24,9 @@ class SongDifficultyButton final : public SongButton {
 
     void resetAnimations() override;
 
+    inline void maybeUpdateGrade() {
+        if(this->bUpdateGradeScheduled) return this->updateGrade();
+    }
     void updateGrade() override;
 
     [[nodiscard]] Color getInactiveBackgroundColor() const override;

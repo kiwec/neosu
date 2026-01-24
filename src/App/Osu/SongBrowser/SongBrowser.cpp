@@ -3208,6 +3208,15 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
     this->curSortMethod = sortMethod.value_or(this->curSortMethod);
 
     if(this->bSongButtonsNeedSorting || sortingChanged) {
+        // lazy update grade
+        if(this->curSortMethod == SortType::RANKACHIEVED) {
+            for(SongButton *songButton : this->parentButtons) {
+                for(SongDifficultyButton *diffButton :
+                    reinterpret_cast<const std::vector<SongDifficultyButton *> &>(songButton->getChildren())) {
+                    diffButton->maybeUpdateGrade();
+                }
+            }
+        }
         // the master button list should be sorted for all groupings
         srt::pdqsort(this->parentButtons, SORTING_METHODS[this->curSortMethod].comparator);
         this->bSongButtonsNeedSorting = false;
@@ -3484,6 +3493,7 @@ void SongBrowser::onCollectionButtonContextMenu(CollectionButton *collectionButt
             this->selectionPreviousCollectionButton = nullptr;
 
             // update UI
+            this->bSongButtonsNeedSorting = true;
             this->rebuildAfterGroupOrSortChange(GroupType::COLLECTIONS);
         }
     } else if(id == 3) {  // rename collection
@@ -3648,31 +3658,30 @@ void SongBrowser::playSelectedDifficulty() {
 void SongBrowser::recreateCollectionsButtons() {
     // reset
     {
-        this->selectionPreviousCollectionButton = nullptr;
-        this->collectionButtons.clear();
-
         // sanity
         if(this->curGroup == GroupType::COLLECTIONS) {
             this->carousel->invalidate();
             this->visibleSongButtons.clear();
         }
+
+        this->selectionPreviousCollectionButton = nullptr;
+        this->collectionButtons.clear();
     }
 
     Timer t;
     t.start();
 
     for(const auto &collection : Collections::get_loaded()) {
-        const auto &maps = collection.get_maps();
-        if(maps.empty()) continue;
+        const auto &coll_maps = collection.get_maps();
+        if(coll_maps.empty()) continue;
 
         std::vector<SongButton *> folder;
-        std::vector<u32> matched_sets;
+        Hash::flat::set<u32> matched_sets;
+        std::vector<SongDifficultyButton *> matching_diffs;
 
-        for(const auto &map : maps) {
-            auto it = this->hashToDiffButton->find(map);
+        for(const auto &map_hash : coll_maps) {
+            auto it = this->hashToDiffButton->find(map_hash);
             if(it == this->hashToDiffButton->end()) continue;
-
-            std::vector<SongDifficultyButton *> matching_diffs;
 
             SongDifficultyButton *diff_btn = it->second;
 
@@ -3680,20 +3689,18 @@ void SongBrowser::recreateCollectionsButtons() {
             SongButton *parent = diff_btn->getParentSongButton();
             const std::vector<SongDifficultyButton *> &diff_btn_group = diff_btn->getSiblingsAndSelf();
 
+            matching_diffs.clear();
+
             // filter to only diffs in this collection
-            for(SongDifficultyButton *sbc : diff_btn_group | std::views::filter([&maps](const auto &child) {
-                                                return std::ranges::contains(maps,
-                                                                             child->getDatabaseBeatmap()->getMD5());
-                                            })) {
-                matching_diffs.push_back(sbc);
+            for(SongDifficultyButton *sbc : diff_btn_group) {
+                if(coll_maps.contains(sbc->getDatabaseBeatmap()->getMD5())) {
+                    matching_diffs.push_back(sbc);
+                }
             }
 
             const i32 set_id = diff_btn->getDatabaseBeatmap()->getSetID();
 
-            if(!std::ranges::contains(matched_sets, set_id)) {
-                // Mark set as processed so we don't add the diffs from the same set twice
-                matched_sets.push_back(set_id);
-            } else {
+            if(auto [_, inserted] = matched_sets.insert(set_id); !inserted) {
                 // We already added the maps from this set to the collection!
                 continue;
             }

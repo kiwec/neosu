@@ -35,11 +35,19 @@ CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer::CBaseUIScrollV
 
 CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer::~CBaseUIScrollViewContainer() = default;
 
-void ScrollContainer::freeElements() {
-    if(this->inIllegalToInvalidateIteration) {
-        fubar_abort();  // for debugging, so you get an actual backtrace
-    }
+CBaseUIContainer *ScrollContainer::removeBaseUIElement(CBaseUIElement *element) {
+    this->invalidateUpdate = true;
+    this->vVisibleElements.erase(element);
+    return CBaseUIContainer::removeBaseUIElement(element);
+}
 
+CBaseUIContainer *ScrollContainer::deleteBaseUIElement(CBaseUIElement *element) {
+    this->invalidateUpdate = true;
+    this->vVisibleElements.erase(element);
+    return CBaseUIContainer::removeBaseUIElement(element);
+}
+
+void ScrollContainer::freeElements() {
     this->invalidateUpdate = true;
 
     this->vVisibleElements.clear();
@@ -47,10 +55,6 @@ void ScrollContainer::freeElements() {
 }
 
 void ScrollContainer::invalidate() {
-    if(this->inIllegalToInvalidateIteration) {
-        fubar_abort();
-    }
-
     this->invalidateUpdate = true;
 
     this->vVisibleElements.clear();
@@ -65,12 +69,12 @@ void ScrollContainer::update(CBaseUIEventCtx &c) {
     this->invalidateUpdate = false;
 
     for(auto *e : this->vVisibleElements) {
-        e->update(c);
         if(this->invalidateUpdate) {
             // iterators have been invalidated!
             // try again next time.
             break;
         }
+        e->update(c);
     }
 
     this->invalidateUpdate = false;
@@ -78,8 +82,6 @@ void ScrollContainer::update(CBaseUIEventCtx &c) {
 
 void ScrollContainer::draw() {
     if(!this->bVisible) return;
-
-    this->inIllegalToInvalidateIteration = true;
 
     for(auto *e : this->vVisibleElements) {
         // check actual screen visibility since we clipped "lazily"
@@ -90,25 +92,20 @@ void ScrollContainer::draw() {
         // programmer error (don't do this in draw(), ever)
         assert(!this->invalidateUpdate);
     }
-
-    this->inIllegalToInvalidateIteration = false;
 }
 
 bool ScrollContainer::isBusy() {
     if(!this->bVisible) return false;
 
-    this->inIllegalToInvalidateIteration = true;
-
     for(auto *e : this->vVisibleElements) {
-        // programmer error (don't do this in isBusy(), ever)
-        assert(!this->invalidateUpdate);
+        if(this->invalidateUpdate) {
+            return false;
+        }
         if(e->isBusy()) {
-            this->inIllegalToInvalidateIteration = false;
             return true;
         }
     }
 
-    this->inIllegalToInvalidateIteration = false;
     return false;
 }
 
@@ -169,10 +166,10 @@ void CBaseUIScrollView::draw() {
 
     // draw elements & scrollbars
     if(this->bHorizontalClipping || this->bVerticalClipping) {
-        auto clip_rect = McRect(this->bHorizontalClipping ? this->getPos().x : 0,
-                                this->bVerticalClipping ? this->getPos().y : 0,
-                                this->bHorizontalClipping ? this->getSize().x : engine->getScreenWidth(),
-                                this->bVerticalClipping ? this->getSize().y : engine->getScreenHeight());
+        auto clip_rect =
+            McRect(this->bHorizontalClipping ? this->getPos().x : 0, this->bVerticalClipping ? this->getPos().y : 0,
+                   this->bHorizontalClipping ? this->getSize().x : engine->getScreenWidth(),
+                   this->bVerticalClipping ? this->getSize().y : engine->getScreenHeight());
         g->pushClipRect(clip_rect);
     }
 

@@ -31,27 +31,25 @@ bool delete_collection(std::string_view collection_name) {
 
 void Collection::add_map(const MD5Hash& map_hash) {
     // remove from deleted maps
-    std::erase_if(this->deleted_maps,
-                  [&map_hash](const auto& deleted_hash) -> bool { return map_hash == deleted_hash; });
+    this->deleted_maps.erase(map_hash);
 
     // add to neosu maps
-    if(!std::ranges::contains(this->neosu_maps, map_hash)) {
-        this->neosu_maps.push_back(map_hash);
-    }
+    this->neosu_maps.insert(map_hash);
 
     // add to maps (TODO: what's the difference...?)
-    if(!std::ranges::contains(this->maps, map_hash)) {
-        this->maps.push_back(map_hash);
-    }
+    this->maps.insert(map_hash);
 }
 
 void Collection::remove_map(const MD5Hash& map_hash) {
-    std::erase_if(this->maps, [&map_hash](const auto& contained_hash) -> bool { return map_hash == contained_hash; });
-    std::erase_if(this->neosu_maps,
-                  [&map_hash](const auto& contained_hash) -> bool { return map_hash == contained_hash; });
+    // remove from maps (@spec: i just havent tried to understand the logic but im sure theres a reason for this vs neosu_maps)
+    this->maps.erase(map_hash);
 
-    if(std::ranges::contains(this->peppy_maps, map_hash)) {
-        this->deleted_maps.push_back(map_hash);
+    // remove from neosu maps
+    this->neosu_maps.erase(map_hash);
+
+    // add to deleted maps
+    if(this->peppy_maps.contains(map_hash)) {
+        this->deleted_maps.insert(map_hash);
     }
 }
 
@@ -119,8 +117,8 @@ bool load_peppy(std::string_view peppy_collections_path) {
             MD5Hash map_hash;
             (void)peppy_collections.read_hash(map_hash);  // TODO: validate
 
-            collection.maps.push_back(map_hash);
-            collection.peppy_maps.push_back(map_hash);
+            collection.maps.insert(map_hash);
+            collection.peppy_maps.insert(map_hash);
         }
 
         u32 progress_bytes = db->bytes_processed + peppy_collections.total_pos;
@@ -163,10 +161,8 @@ bool load_mcneosu(std::string_view neosu_collections_path) {
             MD5Hash map_hash;
             (void)neosu_collections.read_hash(map_hash);  // TODO: validate
 
-            std::erase_if(collection.maps,
-                          [&map_hash](const auto& contained_hash) -> bool { return map_hash == contained_hash; });
-
-            collection.deleted_maps.push_back(map_hash);
+            collection.maps.erase(map_hash);
+            collection.deleted_maps.insert(map_hash);
         }
 
         u32 nb_maps = neosu_collections.read<u32>();
@@ -178,11 +174,8 @@ bool load_mcneosu(std::string_view neosu_collections_path) {
             MD5Hash map_hash;
             (void)neosu_collections.read_hash(map_hash);  // TODO: validate
 
-            if(!std::ranges::contains(collection.maps, map_hash)) {
-                collection.maps.push_back(map_hash);
-            }
-
-            collection.neosu_maps.push_back(map_hash);
+            collection.maps.insert(map_hash);
+            collection.neosu_maps.insert(map_hash);
         }
 
         u32 progress_bytes = db->bytes_processed + neosu_collections.total_pos;

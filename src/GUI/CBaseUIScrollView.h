@@ -101,7 +101,9 @@ class CBaseUIScrollView : public CBaseUIElement {
     [[nodiscard]] inline dvec2 getScrollSize() const { return this->vScrollSize; }
     [[nodiscard]] inline dvec2 getVelocity() const { return (this->vScrollPos - this->vVelocity); }
 
-    [[nodiscard]] inline bool isAtBottom() const { return (this->getSize().y - this->vScrollPos.y) >= this->vScrollSize.y; }
+    [[nodiscard]] inline bool isAtBottom() const {
+        return (this->getSize().y - this->vScrollPos.y) >= this->vScrollSize.y;
+    }
     [[nodiscard]] inline bool isScrolling() const { return this->bScrolling; }
     bool isBusy() override;
 
@@ -125,9 +127,8 @@ class CBaseUIScrollView : public CBaseUIElement {
         CBaseUIScrollViewContainer() = delete;
         ~CBaseUIScrollViewContainer() override;
 
-        // delete these so that vVisibleElements can't go out of sync
-        CBaseUIContainer *removeBaseUIElement(CBaseUIElement *element) = delete;
-        CBaseUIContainer *deleteBaseUIElement(CBaseUIElement *element) = delete;
+        CBaseUIContainer *removeBaseUIElement(CBaseUIElement *element);
+        CBaseUIContainer *deleteBaseUIElement(CBaseUIElement *element);
 
         void freeElements() override;
         void invalidate() override;
@@ -142,11 +143,10 @@ class CBaseUIScrollView : public CBaseUIElement {
 
         // these elements must correspond to items in the superclass' vElements container!
         // this is kind of a hack to avoid iterating over a bunch of not-visible elements
-        std::unordered_set<CBaseUIElement *>  vVisibleElements;
+        std::unordered_set<CBaseUIElement *> vVisibleElements;
 
-        // we need to break out of update() if the container we're iterating through has been cleared
+        // we need to break out of certain iteration loops (e.g. update()) if the container we're iterating through has been cleared
         bool invalidateUpdate{false};
-        bool inIllegalToInvalidateIteration{false};  // for debug
     };
 
     CBaseUIScrollViewContainer container;

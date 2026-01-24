@@ -24,11 +24,11 @@ bool save_collections();
 
 class Collection {
     std::string name;
-    std::vector<MD5Hash> maps;
+    Hash::flat::set<MD5Hash> maps;
 
-    std::vector<MD5Hash> neosu_maps;
-    std::vector<MD5Hash> peppy_maps;
-    std::vector<MD5Hash> deleted_maps;
+    Hash::flat::set<MD5Hash> neosu_maps;
+    Hash::flat::set<MD5Hash> peppy_maps;
+    Hash::flat::set<MD5Hash> deleted_maps;
 
     friend bool delete_collection(std::string_view collection_name);
     friend Collection &get_or_create_collection(std::string_view name);
@@ -41,7 +41,7 @@ class Collection {
 
    public:
     [[nodiscard]] inline const std::string &get_name() const { return this->name; }
-    [[nodiscard]] inline const std::vector<MD5Hash> &get_maps() const { return this->maps; }
+    [[nodiscard]] inline const Hash::flat::set<MD5Hash> &get_maps() const { return this->maps; }
 
     void add_map(const MD5Hash &map_hash);
     void remove_map(const MD5Hash &map_hash);

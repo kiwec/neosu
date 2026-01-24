@@ -35,13 +35,15 @@ SongDifficultyButton::SongDifficultyButton(float xPos, float yPos, float xSize, 
 
     this->fOffsetPercentAnim = 0.f;
 
-    this->bUpdateGradeScheduled = true;
-
     // settings
     this->setHideIfSelected(false);
+    this->bUpdateGradeScheduled = true;
+
+    if(g_songbrowser->curSortMethod == SongBrowser::SortType::RANKACHIEVED) {
+        this->updateGrade();
+    }
 
     this->updateLayoutEx();
-    this->updateGrade();
 }
 
 SongDifficultyButton::~SongDifficultyButton() { anim::deleteExistingAnimation(&this->fOffsetPercentAnim); }
@@ -177,7 +179,6 @@ void SongDifficultyButton::update(CBaseUIEventCtx& c) {
     this->setOffsetPercent(std::lerp(0.0f, 0.075f, this->fOffsetPercentAnim));
 
     if(this->bUpdateGradeScheduled) {
-        this->bUpdateGradeScheduled = false;
         this->updateGrade();
     }
 }
@@ -232,6 +233,7 @@ void SongDifficultyButton::updateGrade() {
     if(!cv::scores_enabled.getBool()) {
         return;
     }
+    this->bUpdateGradeScheduled = false;
 
     Sync::shared_lock lock(db->scores_mtx);
     const auto& dbScoreIt = db->getScores().find(this->databaseBeatmap->getMD5());
