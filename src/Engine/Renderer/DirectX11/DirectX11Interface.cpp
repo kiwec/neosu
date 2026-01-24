@@ -750,14 +750,14 @@ void DirectX11Interface::drawImage(const Image *image, AnchorPoint anchor, float
     }
 }
 
-void DirectX11Interface::drawString(McFont *font, const UString &text) {
+void DirectX11Interface::drawString(McFont *font, const UString &text, std::optional<TextShadow> shadow = std::nullopt) {
     if(font == nullptr || text.length() < 1 || !font->isReady()) return;
 
     this->updateTransform();
 
     this->setTexturing(true);  // enable texturing
 
-    font->drawString(text);
+    font->drawString(text, shadow);
 }
 
 void DirectX11Interface::drawVAO(VertexArrayObject *vao) {

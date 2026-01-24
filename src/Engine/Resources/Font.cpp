@@ -112,19 +112,6 @@ struct McFontImpl final {
         bool inAtlas;  // whether UV coordinates are valid (glyph is rendered in atlas)
     };
 
-    struct BatchEntry {
-        UString text;
-        vec3 pos{0.f};
-        Color color;
-    };
-
-    struct TextBatch {
-        size_t totalVerts{0};
-        size_t usedEntries{0};
-        std::vector<Color> colorBuffer;
-        std::vector<BatchEntry> entryList;
-    };
-
     // texture atlas dynamic slot management
     struct DynamicSlot {
         int x, y;            // position in atlas
@@ -169,10 +156,6 @@ struct McFontImpl final {
     std::unordered_map<char16_t, std::unique_ptr<GLYPH_METRICS>> m_mGlyphMetrics;
 
     std::unique_ptr<VertexArrayObject> m_vao;
-    TextBatch m_batchQueue;
-
-    std::vector<vec3> m_vBatchDrawVerts;
-    std::vector<vec2> m_vBatchDrawTexcoords;
 
     std::unique_ptr<TextureAtlas> m_textureAtlas{nullptr};
 
@@ -198,7 +181,6 @@ struct McFontImpl final {
     uint64_t m_currentAtlasTime;                         // for LRU tracking
     bool m_bAtlasNeedsReload;                            // flag to batch atlas reloads
 
-    bool m_bBatchActive;
     bool m_bFreeTypeInitialized;
     bool m_bAntialiasing;
     bool m_bHeightManuallySet{false};
@@ -219,11 +201,7 @@ struct McFontImpl final {
     void destroy();
 
     // Main string drawing functions
-    void drawString(const UString &text);
-
-    void beginBatch();
-    void addToBatch(const UString &text, const vec3 &pos, Color color = 0xffffffff);
-    void flushBatch();
+    void drawString(const UString &text, std::optional<TextShadow> shadow = std::nullopt);
 
     // Setters
     inline void setSize(int fontSize) { m_iFontSize = fontSize; }
@@ -323,12 +301,9 @@ int McFont::getSize() const { return pImpl->getSize(); }
 int McFont::getDPI() const { return pImpl->getDPI(); }
 float McFont::getHeight() const { return pImpl->getHeight(); }
 
-void McFont::drawString(const UString &text) { return pImpl->drawString(text); }
-void McFont::beginBatch() { return pImpl->beginBatch(); }
-void McFont::addToBatch(const UString &text, const vec3 &pos, Color color) {
-    return pImpl->addToBatch(text, pos, color);
+void McFont::drawString(const UString &text, std::optional<TextShadow> shadow) {
+    return pImpl->drawString(text, shadow);
 }
-void McFont::flushBatch() { return pImpl->flushBatch(); }
 
 float McFont::getGlyphWidth(char16_t character) const { return pImpl->getGlyphWidth(character); }
 float McFont::getGlyphHeight(char16_t character) const { return pImpl->getGlyphHeight(character); }
@@ -371,9 +346,6 @@ void McFontImpl::constructor(const char16_t *characters, size_t numCharacters, i
     m_bAntialiasing = antialiasing;
     m_iFontDPI = fontDPI;
     m_fHeight = 1.0f;
-    m_bBatchActive = false;
-    m_batchQueue.totalVerts = 0;
-    m_batchQueue.usedEntries = 0;
 
     // per-instance freetype initialization state
     m_ftFace = nullptr;
@@ -471,7 +443,7 @@ void McFontImpl::destroy() {
     m_bAtlasNeedsReload = false;
 }
 
-void McFontImpl::drawString(const UString &text) {
+void McFontImpl::drawString(const UString &text, std::optional<TextShadow> shadow) {
     if(!m_parent->isReady()) return;
 
     if(text.length() == 0 || text.length() > cv::r_drawstring_max_string_length.getInt()) return;
@@ -537,6 +509,20 @@ void McFontImpl::drawString(const UString &text) {
     m_vao->setTexcoords(buffer.getTexcoords());
 
     m_textureAtlas->getAtlasImage()->bind();
+
+    if(const auto &shadOpt = shadow; shadOpt.has_value() && shadOpt->col_shadow.A() > 0) {
+        const auto &shadowConf = *shadOpt;
+        const int px = shadowConf.offs_px;
+
+        g->translate(px, px);
+        g->setColor(shadowConf.col_shadow);
+
+        g->drawVAO(m_vao.get());
+
+        g->translate(-px, -px);
+        g->setColor(shadowConf.col_text);
+    }
+
     g->drawVAO(m_vao.get());
 
     if(cv::r_debug_drawstring_unbind.getBool()) m_textureAtlas->getAtlasImage()->unbind();
@@ -544,78 +530,6 @@ void McFontImpl::drawString(const UString &text) {
     if(!useCache) {
         buffer.clear();
     }
-}
-
-void McFontImpl::beginBatch() {
-    m_bBatchActive = true;
-    m_batchQueue.totalVerts = 0;
-    m_batchQueue.usedEntries = 0;  // don't clear/reallocate, reuse the entries instead
-}
-
-void McFontImpl::addToBatch(const UString &text, const vec3 &pos, Color color) {
-    size_t verts{};
-    if(!m_bBatchActive || (verts = text.length() * VERTS_PER_VAO) == 0) return;
-    m_batchQueue.totalVerts += verts;
-
-    if(m_batchQueue.usedEntries < m_batchQueue.entryList.size()) {
-        // reuse existing entry
-        BatchEntry &entry = m_batchQueue.entryList[m_batchQueue.usedEntries];
-        entry.text = text;
-        entry.pos = pos;
-        entry.color = color;
-    } else {
-        // need to add new entry
-        m_batchQueue.entryList.push_back({text, pos, color});
-    }
-    m_batchQueue.usedEntries++;
-}
-
-void McFontImpl::flushBatch() {
-    if(!m_bBatchActive || !m_batchQueue.totalVerts) {
-        m_bBatchActive = false;
-        return;
-    }
-
-    m_batchQueue.colorBuffer.clear();
-    m_batchQueue.colorBuffer.reserve(m_batchQueue.totalVerts);
-
-    m_vBatchDrawVerts.resize(m_batchQueue.totalVerts);
-    m_vBatchDrawTexcoords.resize(m_batchQueue.totalVerts);
-
-    m_vao->clear();
-    m_vao->reserve(m_batchQueue.totalVerts);
-
-    size_t currentVertex = 0;
-    for(size_t i = 0; i < m_batchQueue.usedEntries; i++) {
-        const auto &entry = m_batchQueue.entryList[i];
-        const size_t stringStart = currentVertex;
-
-        const int maxGlyphs = std::min(entry.text.length(),
-                                       (int)((double)(m_batchQueue.totalVerts - stringStart) / (double)VERTS_PER_VAO));
-        buildStringGeometry(entry.text, m_vBatchDrawVerts, m_vBatchDrawTexcoords, maxGlyphs, stringStart);
-
-        currentVertex += VERTS_PER_VAO * maxGlyphs;
-
-        for(size_t j = stringStart; j < currentVertex; j++) {
-            m_vBatchDrawVerts[j] += entry.pos;
-            m_batchQueue.colorBuffer.push_back(entry.color);
-        }
-    }
-
-    m_vao->setVertices(m_vBatchDrawVerts);
-    m_vao->setTexcoords(m_vBatchDrawTexcoords);
-    m_vao->setColors(m_batchQueue.colorBuffer);
-
-    m_textureAtlas->getAtlasImage()->bind();
-
-    g->drawVAO(m_vao.get());
-
-    if(cv::r_debug_drawstring_unbind.getBool()) m_textureAtlas->getAtlasImage()->unbind();
-
-    m_bBatchActive = false;
-
-    m_vBatchDrawVerts.clear();
-    m_vBatchDrawTexcoords.clear();
 }
 
 float McFontImpl::getGlyphWidth(char16_t character) const {

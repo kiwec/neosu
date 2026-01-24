@@ -15,16 +15,29 @@
 #include "Color.h"
 
 #include <vector>
+#include <optional>
 
+class Graphics;
+class OpenGLInterface;
+class OpenGLES32Interface;
+class DirectX11Interface;
+struct TextShadow;
 class UString;
 
 struct McFontImpl;
 class McFont final : public Resource {
     NOCOPY_NOMOVE(McFont)
+   private:
+    friend Graphics;
+    friend OpenGLInterface;
+    friend OpenGLES32Interface;
+    friend DirectX11Interface;
+    void drawString(const UString &text, std::optional<TextShadow> shadow);
+
    public:
     McFont(std::string filepath, int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
-    McFont(std::string filepath, const char16_t* characters, size_t numCharacters, int fontSize = 16, bool antialiasing = true,
-           int fontDPI = 96);
+    McFont(std::string filepath, const char16_t *characters, size_t numCharacters, int fontSize = 16,
+           bool antialiasing = true, int fontDPI = 96);
     ~McFont() override;
 
     // called once on engine startup
@@ -32,11 +45,6 @@ class McFont final : public Resource {
 
     // called on engine shutdown to clean up freetype/shared fallback fonts
     static void cleanupSharedResources();
-
-    void drawString(const UString &text);
-    void beginBatch();
-    void addToBatch(const UString &text, const vec3 &pos, Color color = 0xffffffff);
-    void flushBatch();
 
     void setSize(int fontSize);
     void setDPI(int dpi);

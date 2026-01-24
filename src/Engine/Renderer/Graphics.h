@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include <array>
+#include <optional>
 
 class ConVar;
 class UString;
@@ -20,6 +21,13 @@ class McFont;
 class Shader;
 class RenderTarget;
 class VertexArrayObject;
+
+// shadow offset pixels to the bottom right
+struct TextShadow {
+    Color col_text{rgb(255, 255, 255)};
+    Color col_shadow{rgb(0, 0, 0)};
+    int offs_px{1}; // not scaled to display DPI
+};
 
 enum class AnchorPoint : uint8_t {
     CENTER,        // Default - image centered on x,y
@@ -163,7 +171,7 @@ class Graphics {
     // 2d resource drawing
     virtual void drawImage(const Image *image, AnchorPoint anchor = AnchorPoint::CENTER, float edgeSoftness = 0.0f,
                            McRect clipRect = {}) = 0;
-    virtual void drawString(McFont *font, const UString &text) = 0;
+    virtual void drawString(McFont *font, const UString &text, std::optional<TextShadow> shadow = std::nullopt) = 0;
 
     // 3d type drawing
     virtual void drawVAO(VertexArrayObject *vao) = 0;

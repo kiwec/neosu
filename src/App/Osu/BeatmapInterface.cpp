@@ -173,11 +173,10 @@ void BeatmapInterface::drawDebug() {
                                         : -(i32)((f32)(offscreenPixels + dbgfontheight) *
                                                  (this->getMousePos().y / (f32)osu->getVirtScreenHeight()));
     const i32 xOffset = 5;
-    const i32 shadowOffset = 1;
 
-    debugFont->beginBatch();
+    g->pushTransform();
+    g->translate(xOffset, yOffset + dbgfontheight);
 
-    i32 currentY = dbgfontheight;
     for(const DatabaseBeatmap::TIMINGPOINT &t : alltp) {
         // TODO: draw current TIMING_INFO in green (not timingpoint)
         // next to (to the right) the closest timingpoint with an offset < (this->iCurMusicPos + cv::timingpoints_offset.getInt())
@@ -185,19 +184,13 @@ void BeatmapInterface::drawDebug() {
         const UString curtpString = fmt::format("{},{},{},{},{},{},{}", (i32)t.offset, t.msPerBeat, t.sampleSet,
                                                 t.sampleIndex, t.volume, (i32)t.uninherited, (i32)t.kiai);
 
-        // shadow
-        const vec3 shadowPos{xOffset + shadowOffset, yOffset + currentY + shadowOffset, 0.25f};
-        debugFont->addToBatch(curtpString, shadowPos, shadowColor);
-
-        // text
-        const vec3 textPos{xOffset, yOffset + currentY, 0.325f};
-        debugFont->addToBatch(curtpString, textPos, textColor);
+        g->drawString(debugFont, curtpString,
+                      TextShadow{.col_text = textColor, .col_shadow = shadowColor, .offs_px = 1});
 
         // spacing for next
-        currentY += dbgfontheight;
+        g->translate(0, dbgfontheight);
     }
-
-    debugFont->flushBatch();
+    g->popTransform();
 }
 
 void BeatmapInterface::drawBackground() {

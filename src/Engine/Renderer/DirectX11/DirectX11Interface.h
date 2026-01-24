@@ -90,7 +90,7 @@ class DirectX11Interface final : public Graphics {
     // 2d resource drawing
     void drawImage(const Image *image, AnchorPoint anchor = AnchorPoint::CENTER, float edgeSoftness = 0.0f,
                    McRect clipRect = {}) final;
-    void drawString(McFont *font, const UString &text) override;
+    void drawString(McFont *font, const UString &text, std::optional<TextShadow> shadow = std::nullopt) override;
 
     // 3d type drawing
     void drawVAO(VertexArrayObject *vao) override;

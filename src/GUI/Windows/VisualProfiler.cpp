@@ -110,8 +110,7 @@ VisualProfiler::VisualProfiler() : CBaseUIElement(0, 0, 0, 0, "") {
 
     this->font = engine->getDefaultFont();
     this->fontConsole = resourceManager->getFont("FONT_CONSOLE");
-    this->lineVao =
-        resourceManager->createVertexArrayObject(DrawPrimitive::LINES, DrawUsageType::DYNAMIC, true);
+    this->lineVao = resourceManager->createVertexArrayObject(DrawPrimitive::LINES, DrawUsageType::DYNAMIC, true);
 
     this->bScheduledForceRebuildLineVao = false;
     this->bRequiresAltShiftKeysToFreeze = false;
@@ -299,12 +298,14 @@ void VisualProfiler::draw() {
                         const int leftTrans = engine->getScreenWidth() - largestLineWidth;
                         g->translate(leftTrans, 0);
                         if(!this->textLines[i].textLeftAligned.isEmpty())
-                            drawStringWithShadow(textFont, this->textLines[i].textLeftAligned, textColor);
+                            g->drawString(textFont, this->textLines[i].textLeftAligned,
+                                          TextShadow{.col_text = textColor, .offs_px = 1 * env->getDPIScale()});
 
                         const int rightTrans =
                             (engine->getScreenWidth() - (this->textLines[i].widthRight * textScale)) - leftTrans;
                         g->translate(rightTrans, 0);
-                        drawStringWithShadow(textFont, this->textLines[i].textRightAligned, textColor);
+                        g->drawString(textFont, this->textLines[i].textRightAligned,
+                                      TextShadow{.col_text = textColor, .offs_px = 1 * env->getDPIScale()});
                     }
                     g->popTransform();
                 }
@@ -438,11 +439,11 @@ void VisualProfiler::draw() {
             g->pushTransform();
             {
                 g->translate((int)(xPos + margin), (int)(yPos + this->font->getHeight() + margin));
-                drawStringWithShadow(this->font, fmt::format("{:g} ms"_cf, cv::vprof_graph_range_max.getFloat()),
-                                     0xffffffff);
+                g->drawString(this->font, fmt::format("{:g} ms"_cf, cv::vprof_graph_range_max.getFloat()),
+                              TextShadow{});
 
                 g->translate(0, (int)(height - this->font->getHeight() - 2 * margin));
-                drawStringWithShadow(this->font, "0 ms", 0xffffffff);
+                g->drawString(this->font, "0 ms", TextShadow{});
             }
             g->popTransform();
 
@@ -456,7 +457,8 @@ void VisualProfiler::draw() {
                 for(size_t i = 1; i < this->groups.size(); i++) {
                     const int stringWidth = (int)(this->font->getStringWidth(this->groups[i].name));
                     g->translate(-stringWidth, 0);
-                    drawStringWithShadow(this->font, this->groups[i].name, this->groups[i].color);
+                    g->drawString(this->font, this->groups[i].name,
+                                  TextShadow{.col_text = this->groups[i].color, .offs_px = 1 * env->getDPIScale()});
                     g->translate(stringWidth, (int)(-this->font->getHeight() - padding));
                 }
             }
@@ -473,31 +475,14 @@ void VisualProfiler::draw() {
                     g->pushTransform();
                     {
                         g->translate((int)(xPos + margin), (int)(yPos - 2 * margin));
-                        /// drawStringWithShadow(fmt::format("[{:s}] = {:g} ms", this->spike.node.node->getName(),
-                        /// m_spike.timeLastFrame * 1000.0), this->groups[m_spike.node.node->getGroupID()].color);
+                        /// g->drawString(fmt::format("[{:s}] = {:g} ms", this->spike.node.node->getName(),
+                        /// m_spike.timeLastFrame * 1000.0), TextShadow{.textColor = this->groups[m_spike.node.node->getGroupID()].color});
                         g->drawString(this->font,
                                       fmt::format("Spike = {:g} ms"_cf, this->spike.timeLastFrame * 1000.0));
                     }
                     g->popTransform();
                 }
             }
-        }
-    }
-}
-
-void VisualProfiler::drawStringWithShadow(McFont *font, const UString &string, Color color) {
-    if(font == nullptr) return;
-
-    const int shadowOffset = 1 * env->getDPIScale();
-
-    g->translate(shadowOffset, shadowOffset);
-    {
-        g->setColor(0xff000000);
-        g->drawString(font, string);
-        g->translate(-shadowOffset, -shadowOffset);
-        {
-            g->setColor(color);
-            g->drawString(font, string);
         }
     }
 }

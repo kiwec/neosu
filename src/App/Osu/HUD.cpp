@@ -58,8 +58,7 @@ HUD::HUD() : UIScreen() {
 
     cv::cursor_trail_max_size.setCallback(SA::MakeDelegate<&HUD::onCursorTrailMaxChange>(this));
 
-    this->cursorTrailVAO.reset(
-        g->createVertexArrayObject(DrawPrimitive::QUADS, DrawUsageType::DYNAMIC, false));
+    this->cursorTrailVAO.reset(g->createVertexArrayObject(DrawPrimitive::QUADS, DrawUsageType::DYNAMIC, false));
 
     this->fCurFps = 60.0f;
     this->fCurFpsSmooth = 60.0f;
@@ -644,22 +643,7 @@ void HUD::drawFps() {
     static const int runtimeConfigHeight = (int)(engine->getConsoleFont()->getHeight() * 1.25f);
     const int belowPadding = this->shouldDrawRuntimeInfo() ? runtimeConfigHeight : 0;
 
-    // shadow
-    g->setColor(0xff000000);
-    g->pushTransform();
-    {
-        g->translate(osu->getVirtScreenWidth() - font->getStringWidth(fpsString) - margin + shadowOffset,
-                     osu->getVirtScreenHeight() - margin - font->getHeight() - margin + shadowOffset - belowPadding);
-        g->drawString(font, fpsString);
-    }
-    g->popTransform();
-    g->pushTransform();
-    {
-        g->translate(osu->getVirtScreenWidth() - font->getStringWidth(msString) - margin + shadowOffset,
-                     osu->getVirtScreenHeight() - margin + shadowOffset - belowPadding);
-        g->drawString(font, msString);
-    }
-    g->popTransform();
+    const vec2 screenSize = osu->getVirtScreenSize();
 
     // top
 
@@ -672,35 +656,37 @@ void HUD::drawFps() {
 
     g->pushTransform();
     {
+        Color fpsColor;
         if(fps >= yellow_refresh_rate)
-            g->setColor(0xffffffff);
+            fpsColor = 0xffffffff;
         else if(fps >= red_refresh_rate)
-            g->setColor(0xffdddd00);
+            fpsColor = 0xffdddd00;
         else {
             const float pulse = std::abs(std::sin(engine->getTime() * 4));
-            g->setColor(argb(1.0f, 1.0f, 0.26f * pulse, 0.26f * pulse));
+            fpsColor = argb(1.0f, 1.0f, 0.26f * pulse, 0.26f * pulse);
         }
 
-        g->translate(osu->getVirtScreenWidth() - font->getStringWidth(fpsString) - margin,
-                     osu->getVirtScreenHeight() - margin - font->getHeight() - margin - belowPadding);
-        g->drawString(font, fpsString);
+        g->translate(screenSize.x - font->getStringWidth(fpsString) - margin,
+                     screenSize.y - margin - font->getHeight() - margin - belowPadding);
+        g->drawString(font, fpsString, TextShadow{.col_text = fpsColor, .offs_px = shadowOffset});
     }
     g->popTransform();
 
     g->pushTransform();
     {
+        Color msColor;
+
         if(old_worst_frametime <= yellow_refresh_time) {
-            g->setColor(0xffffffff);
+            msColor = 0xffffffff;
         } else if(old_worst_frametime <= red_refresh_time) {
-            g->setColor(0xffdddd00);
+            msColor = 0xffdddd00;
         } else {
             const float pulse = std::abs(std::sin(engine->getTime() * 4));
-            g->setColor(argb(1.0f, 1.0f, 0.26f * pulse, 0.26f * pulse));
+            msColor = argb(1.0f, 1.0f, 0.26f * pulse, 0.26f * pulse);
         }
 
-        g->translate(osu->getVirtScreenWidth() - font->getStringWidth(msString) - margin,
-                     osu->getVirtScreenHeight() - margin - belowPadding);
-        g->drawString(font, msString);
+        g->translate(screenSize.x - font->getStringWidth(msString) - margin, screenSize.y - margin - belowPadding);
+        g->drawString(font, msString, TextShadow{.col_text = msColor, .offs_px = shadowOffset});
     }
     g->popTransform();
 }
@@ -1776,12 +1762,10 @@ void HUD::drawStatistics(HUDStats s) const {
     }
 
     const float offsetScale = Osu::getImageScale(vec2(1.0f, 1.0f), 1.0f);
-    const float yDelta = (font->getHeight() + flatYDelta) * cv::hud_statistics_spacing_scale.getFloat();
+    const float yDelta = ((font->getHeight() + flatYDelta) * scale) * cv::hud_statistics_spacing_scale.getFloat();
 
     static constexpr Color shadowColor = rgb(0, 0, 0);
     static constexpr Color textColor = rgb(255, 255, 255);
-
-    font->beginBatch();
 
     g->pushTransform();
     {
@@ -1789,18 +1773,14 @@ void HUD::drawStatistics(HUDStats s) const {
         g->translate(cv::hud_statistics_offset_x.getInt(),
                      (int)(font->getHeight() * scale) + (cv::hud_statistics_offset_y.getInt() * offsetScale));
 
-        float currentY = 0;
-
-        auto addStatistic = [font, yDelta, &currentY](const UString &text, float xOffset, float yOffset) {
+        auto addStatistic = [font, yDelta](const UString &text, float xOffset, float yOffset) {
             if(text.length() < 1) return;
 
-            const vec3 shadowPos(xOffset, currentY + yOffset, 0.25f);
-            font->addToBatch(text, shadowPos, shadowColor);
+            g->translate(xOffset, yOffset);
 
-            const vec3 textPos(xOffset - 1, currentY + yOffset - 1, 0.325f);
-            font->addToBatch(text, textPos, textColor);
+            g->drawString(font, text, TextShadow{.col_text = textColor, .col_shadow = shadowColor, .offs_px = 1});
 
-            currentY += yDelta;
+            g->translate((-xOffset), (-yOffset) + yDelta);
         };
 
         if(cv::draw_statistics_pp.getBool())
@@ -1885,7 +1865,6 @@ void HUD::drawStatistics(HUDStats s) const {
             addStatistic(fmt::format("-{:d}ms +{:d}ms"_cf, std::abs(s.hitdeltaMin), s.hitdeltaMax),
                          cv::hud_statistics_hitdelta_offset_x.getInt(), cv::hud_statistics_hitdelta_offset_y.getInt());
     }
-    font->flushBatch();
     g->popTransform();
 }
 
@@ -2630,22 +2609,11 @@ void HUD::drawRuntimeInfo() {
     static const int infoStringWidth = font->getStringWidth(infoString);
     static const int fontHeight = font->getHeight();
 
-    const int shadowOffset = 1;
-
     g->pushTransform();
     {
-        // shadow
-        g->setColor(rgba(0, 0, 0, 100));
-
-        g->translate(osu->getVirtScreenWidth() - infoStringWidth + shadowOffset,
-                     osu->getVirtScreenHeight() - fontHeight + shadowOffset + 6);
-        g->drawString(font, infoString);
-
-        // text
-        g->setColor(rgba(255, 255, 255, 100));
-
-        g->translate(-shadowOffset, -shadowOffset);
-        g->drawString(font, infoString);
+        g->translate(osu->getVirtScreenWidth() - infoStringWidth, osu->getVirtScreenHeight() - fontHeight + 6);
+        g->drawString(font, infoString,
+                      TextShadow{.col_text = argb(100, 255, 255, 255), .col_shadow = argb(100, 0, 0, 0)});
     }
     g->popTransform();
 }

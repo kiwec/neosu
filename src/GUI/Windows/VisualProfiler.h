@@ -85,8 +85,6 @@ class VisualProfiler : public CBaseUIElement {
     static void addTextLine(const UString &textLeft, const UString &textRight, McFont *font,
                             std::vector<TEXT_LINE> &textLines);
 
-    static void drawStringWithShadow(McFont *font, const UString &string, Color color);
-
     int iPrevVaoWidth;
     int iPrevVaoHeight;
     int iPrevVaoGroups;

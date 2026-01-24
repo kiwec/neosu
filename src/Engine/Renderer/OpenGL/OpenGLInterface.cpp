@@ -423,7 +423,7 @@ void OpenGLInterface::drawImage(const Image *image, AnchorPoint anchor, float ed
     }
 }
 
-void OpenGLInterface::drawString(McFont *font, const UString &text) {
+void OpenGLInterface::drawString(McFont *font, const UString &text, std::optional<TextShadow> shadow) {
     if(font == nullptr || text.length() < 1 || !font->isReady()) return;
 
     updateTransform();
@@ -435,7 +435,7 @@ void OpenGLInterface::drawString(McFont *font, const UString &text) {
         glFlush();
     }
 
-    font->drawString(text);
+    font->drawString(text, shadow);
 }
 
 void OpenGLInterface::drawVAO(VertexArrayObject *vao) {

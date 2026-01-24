@@ -424,7 +424,9 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
     }
 
     // position update during scrolling
-    const bool animating = anim::isAnimating(&this->vScrollPos.y) || anim::isAnimating(&this->vScrollPos.x);
+    const bool animating =
+        vec::round(dvec2{this->getPos()} + this->vScrollPos) != vec::round(dvec2{this->container.getPos()}) &&
+        (anim::isAnimating(&this->vScrollPos.y) || anim::isAnimating(&this->vScrollPos.x));
     if(animating) {
         this->bClippingDirty = true;
         // debugLog("hit first condition, frame: {}", engine->getFrameCount());
