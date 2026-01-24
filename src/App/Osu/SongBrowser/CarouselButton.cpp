@@ -39,7 +39,7 @@ CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize,
     this->bHideIfSelected = false;
 
     this->fTargetRelPosY = yPos;
-    this->fScale = 1.0f;
+    this->fBgImageScale = 1.0f;
     this->fOffsetPercent = 0.0f;
     this->fHoverOffsetAnimation = 0.0f;
     this->fCenterOffsetAnimation = 0.0f;
@@ -93,9 +93,9 @@ void CarouselButton::drawMenuButtonBackground() {
     g->setColor(this->bSelected ? this->getActiveBackgroundColor() : this->getInactiveBackgroundColor());
     g->pushTransform();
     {
-        g->scale(this->fScale, this->fScale);
-        g->translate(this->getPos().x + this->getSize().x / 2, this->getPos().y + this->getSize().y / 2);
-        g->drawImage(osu->getSkin()->i_menu_button_bg);
+        g->scale(this->fBgImageScale, this->fBgImageScale);
+        g->translate(this->getPos().x - 3.f, this->getPos().y + this->getSize().y / 2);
+        g->drawImage(osu->getSkin()->i_menu_button_bg, AnchorPoint::LEFT);
     }
     g->popTransform();
 }
@@ -128,13 +128,10 @@ bool CarouselButton::isMouseInside() {
 }
 
 void CarouselButton::updateLayoutEx() {
-    const float uiScale = cv::ui_scale.getFloat();
-
-    Image *menuButtonBackground = osu->getSkin()->i_menu_button_bg;
     {
-        const vec2 minimumSize = vec2(699.0f, 103.0f) * (osu->getSkin()->i_menu_button_bg.scale());
-        const float minimumScale = Osu::getImageScaleToFitResolution(menuButtonBackground, minimumSize);
-        this->fScale = Osu::getImageScale(menuButtonBackground->getSize() * minimumScale, 64.0f) * uiScale;
+        // complete BS
+        // it seems that osu also doesn't scale these images in any way
+        this->fBgImageScale = baseScale + 0.05f * cv::ui_scale.getFloat();
     }
 
     if(this->bVisible)  // lag prevention (animationHandler overflow)
@@ -164,8 +161,7 @@ void CarouselButton::updateLayoutEx() {
             anim::moveQuadOut(&this->fCenterOffsetVelocityAnimation, centerOffsetVelocityAnimationTarget, 1.25f, true);
     }
 
-    this->setSize((int)(menuButtonBackground->getWidth() * this->fScale),
-                  (int)(menuButtonBackground->getHeight() * this->fScale));
+    this->setSize(vec::ceil(baseSize * baseScale) * cv::ui_scale.getFloat());
 
     const float percentCenterOffsetAnimation = 0.035f;
     const float percentVelocityOffsetAnimation = 0.35f;
@@ -176,10 +172,11 @@ void CarouselButton::updateLayoutEx() {
     float minOffset = g_carousel->getSize().x * (percentCenterOffsetAnimation + percentHoverOffsetAnimation);
     {
         // also respect the width of the button image: push to the right until the edge of the button image can never be
-        // visible even if all animations are fully active the 0.85f here heuristically pushes the buttons a bit further
+        // visible even if all animations are fully active the 0.925f here heuristically pushes the buttons a bit further
         // to the right than would be necessary, to make animations work better on lower resolutions (would otherwise
         // hit the left edge too early)
-        const float buttonWidthCompensation = std::max(g_carousel->getSize().x - this->getActualSize().x * 0.85f, 0.0f);
+        const float buttonWidthCompensation =
+            std::max(g_carousel->getSize().x - this->getActualSize().x * 0.925f, 0.0f);
         minOffset += buttonWidthCompensation;
     }
 
@@ -192,7 +189,7 @@ void CarouselButton::updateLayoutEx() {
     offsetX = std::clamp<float>(
         offsetX, 0.0f,
         g_carousel->getSize().x -
-            this->getActualSize().x * 0.15f);  // WARNING: hardcoded to match 0.85f above for buttonWidthCompensation
+            this->getActualSize().x * 0.075f);  // WARNING: hardcoded to match 0.925f above for buttonWidthCompensation
 
     this->setRelPosX(offsetX);
     this->setRelPosY(this->fTargetRelPosY + this->getSize().y * 0.125f * this->fHoverMoveAwayAnimation);
@@ -292,15 +289,10 @@ void CarouselButton::onMouseOutside() {
 void CarouselButton::setTargetRelPosY(float targetRelPosY) {
     this->fTargetRelPosY = targetRelPosY;
     this->setRelPosY(this->fTargetRelPosY);
-    this->setPos(g_carousel->container.getPos() + this->getRelPos());
 }
 
 vec2 CarouselButton::getActualOffset() const {
-    const float hd2xMultiplier = osu->getSkin()->i_menu_button_bg.scale();
-    const float correctedMarginPixelsY =
-        (2 * marginPixelsY + osu->getSkin()->i_menu_button_bg->getHeight() / hd2xMultiplier - 103.0f) / 2.0f;
-    return vec2((int)(marginPixelsX * this->fScale * hd2xMultiplier),
-                (int)(correctedMarginPixelsY * this->fScale * hd2xMultiplier));
+    return vec2((int)(marginPixelsX), (int)(marginPixelsY)) * cv::ui_scale.getFloat();
 }
 
 void CarouselButton::setMoveAwayState(CarouselButton::MOVE_AWAY_STATE moveAwayState, bool animate) {

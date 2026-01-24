@@ -120,6 +120,9 @@ class CarouselButton : public CBaseUIButton {
 
     static constexpr const int marginPixelsX{9};
     static constexpr const int marginPixelsY{9};
+    static constexpr const vec2 baseSize{699.0f, 103.0f};
+    static constexpr const float baseScale{1.15f};
+
     static float lastHoverSoundTime;
 
     McFont *fontBold;
@@ -127,7 +130,7 @@ class CarouselButton : public CBaseUIButton {
     std::vector<SongButton *> children;
 
     float fTargetRelPosY;
-    float fScale;
+    float fBgImageScale;
     float fOffsetPercent;
     float fHoverOffsetAnimation;
     float fHoverMoveAwayAnimation;

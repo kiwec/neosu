@@ -141,7 +141,7 @@ void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
         Osu::getImageScaleToFillResolution(image, vec2(size.y * thumbnailYRatio, size.y)) * 1.05f;
 
     vec2 centerOffset = vec2((size.y * thumbnailYRatio) / 2.0f, size.y / 2.0f);
-    McRect clipRect = McRect(pos.x - 2, pos.y + 1, (size.y * thumbnailYRatio) + 5, size.y + 2);
+    McRect clipRect = McRect(pos.x - 2, pos.y + 1, (size.y * thumbnailYRatio) + 5, size.y);
 
     g->setColor(argb(alpha, 1.f, 1.f, 1.f));
     g->pushTransform();
