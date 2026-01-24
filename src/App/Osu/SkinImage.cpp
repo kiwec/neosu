@@ -300,8 +300,8 @@ void SkinImage::draw(vec2 pos, float scale, float brightness, bool animated) con
             const float width = realWidth * this->fDrawClipWidthPercent;
             const float height = realHeight;
 
-            const float x = -realWidth / 2;
-            const float y = -realHeight / 2;
+            const float x = -realWidth / 2.f;
+            const float y = -realHeight / 2.f;
 
             VertexArrayObject vao(DrawPrimitive::QUADS);
 
@@ -351,8 +351,8 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightn
             const float width = realWidth * this->fDrawClipWidthPercent;
             const float height = realHeight;
 
-            const float x = -realWidth / 2;
-            const float y = -realHeight / 2;
+            const float x = -realWidth / 2.f;
+            const float y = -realHeight / 2.f;
 
             VertexArrayObject vao(DrawPrimitive::QUADS);
 

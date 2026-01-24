@@ -131,7 +131,8 @@ void CarouselButton::updateLayoutEx() {
     {
         // complete BS
         // it seems that osu also doesn't scale these images in any way
-        this->fBgImageScale = baseScale + 0.05f * cv::ui_scale.getFloat();
+        this->fBgImageScale =
+            (baseScale + 0.05f * cv::ui_scale.getFloat()) / (osu->getSkin()->i_menu_button_bg.scale());
     }
 
     if(this->bVisible)  // lag prevention (animationHandler overflow)
