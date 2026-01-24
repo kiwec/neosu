@@ -12,7 +12,7 @@ struct CBaseUIEventCtx;
 // Standard input handling logic won't work, as buttons can overlap.
 
 namespace BottomBar {
-enum Button : i8 { NONE = -1, MODE = 0, MODS = 1, RANDOM = 2, OPTIONS = 3 };
+enum Button : u8 { MODE = 0, MODS = 1, RANDOM = 2, OPTIONS = 3, BTN_MAX = 4, BTN_NONE = BTN_MAX };
 
 void update_export_progress(float progress, std::string entry_being_processed, const std::string &collection);
 inline void update_export_progress_cb(float progress, std::string entry_being_processed) {

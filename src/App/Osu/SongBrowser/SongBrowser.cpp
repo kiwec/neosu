@@ -87,9 +87,9 @@ f32 SongBrowser::getUIScale() {
 
 // Because we draw skin elements 'manually' to enforce the correct scaling,
 // this helper function automatically adjusts for 2x image resolution.
-f32 SongBrowser::getSkinScale(SkinImage *img) { return SongBrowser::getUIScale() * (img->is_2x ? 0.5f : 1.f); }
+f32 SongBrowser::getSkinScale(const SkinImage *img) { return SongBrowser::getUIScale() * (img->is_2x ? 0.5f : 1.f); }
 
-vec2 SongBrowser::getSkinDimensions(SkinImage *img) {
+vec2 SongBrowser::getSkinDimensions(const SkinImage *img) {
     return img->getImageSizeForCurrentFrame() * SongBrowser::getSkinScale(img);
 }
 
@@ -2618,8 +2618,7 @@ void SongBrowser::rebuildScoreButtons() {
         //             just leaving it like that for now...
         CBaseUIElement *toAdd = validBeatmap && is_online ? this->scoreBrowserScoresStillLoadingElement
                                                           : this->scoreBrowserNoRecordsSetElement;
-        this->scoreBrowser->container.addBaseUIElement(toAdd,
-                                                        this->scoreBrowserScoresStillLoadingElement->getRelPos());
+        this->scoreBrowser->container.addBaseUIElement(toAdd, this->scoreBrowserScoresStillLoadingElement->getRelPos());
     } else {
         // build
         std::vector<ScoreButton *> scoreButtons;
