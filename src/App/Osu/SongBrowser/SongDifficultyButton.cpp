@@ -17,6 +17,7 @@
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "LegacyReplay.h"
+#include "Graphics.h"
 #include "Osu.h"
 #include "Skin.h"
 #include "SoundEngine.h"

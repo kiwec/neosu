@@ -19,6 +19,7 @@
 #include "Mouse.h"
 #include "NotificationOverlay.h"
 #include "OptionsOverlay.h"
+#include "Graphics.h"
 #include "Osu.h"
 #include "Font.h"
 #include "ResourceManager.h"

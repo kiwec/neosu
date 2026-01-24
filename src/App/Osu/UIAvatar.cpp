@@ -7,6 +7,7 @@
 #include "Environment.h"
 #include "Osu.h"
 #include "UI.h"
+#include "Graphics.h"
 #include "UIUserContextMenu.h"
 #include "MakeDelegateWrapper.h"
 

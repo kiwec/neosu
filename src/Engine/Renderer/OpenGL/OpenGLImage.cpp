@@ -77,7 +77,7 @@ void OpenGLImage::init() {
         }
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->rawImage.getX(), this->rawImage.getY(), 0, GL_RGBA,
-                     GL_UNSIGNED_BYTE, this->rawImage.data());
+                     GL_UNSIGNED_BYTE, this->rawImage.get());
         if(this->bMipmapped) {
             // cap mipmap levels at 32px minimum dimension to avoid excessive generation cost
             // we're not going to care about huge images looking good when downscaled to webpage icon size

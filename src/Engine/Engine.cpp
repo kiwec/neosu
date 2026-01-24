@@ -10,6 +10,7 @@
 #include "AnimationHandler.h"
 #include "CBaseUIContainer.h"
 #include "ConVar.h"
+#include "Graphics.h"
 #include "ConsoleBox.h"
 #include "DirectoryWatcher.h"
 #include "DiscordInterface.h"

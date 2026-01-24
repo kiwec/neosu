@@ -160,7 +160,7 @@ class MainMenu final : public UIScreen, public MouseListener {
         ~SongsFolderEnumerator() override = default;
 
         [[nodiscard]] inline const std::vector<std::string> &getEntries() const { return this->entries; }
-        [[nodiscard]] inline std::string getFolderPath() const { return this->folderPath; }
+        [[nodiscard]] inline std::string getFolderPath() const { return this->osuSongsFolderPath; }
         void rebuild();
 
        protected:
@@ -170,7 +170,7 @@ class MainMenu final : public UIScreen, public MouseListener {
 
        private:
         std::vector<std::string> entries{};
-        std::string folderPath{""};
+        std::string osuSongsFolderPath{""};
     };
 
     SongsFolderEnumerator songs_enumerator;

@@ -104,26 +104,24 @@ neosu_SOURCES = \
 	src/Binary/misc_bin.cpp \
 	src/Binary/shaders.cpp \
 	src/Engine/AnimationHandler.cpp \
-	src/Engine/Archival.cpp \
-	src/Engine/AsyncIOHandler.cpp \
-	src/Engine/ByteBufferedFile.cpp \
-	src/Engine/Camera.cpp \
 	src/Engine/ConVars/ConVar.cpp \
 	src/Engine/ConVars/ConVarHandler.cpp \
-	src/Engine/Console.cpp \
-	src/Engine/DirectoryWatcher.cpp \
+	src/Engine/ConVars/Console.cpp \
 	src/Engine/DiscordInterface.cpp \
 	src/Engine/Engine.cpp \
 	src/Engine/FPSLimiter.cpp \
-	src/Engine/File.cpp \
-	src/Engine/Font.cpp \
-	src/Engine/Image.cpp \
+	src/Engine/File/Archival.cpp \
+	src/Engine/File/AsyncIOHandler.cpp \
+	src/Engine/File/ByteBufferedFile.cpp \
+	src/Engine/File/DirectoryWatcher.cpp \
+	src/Engine/File/File.cpp \
 	src/Engine/Input/KeyBindings.cpp \
 	src/Engine/Input/Keyboard.cpp \
 	src/Engine/Input/Mouse.cpp \
 	src/Engine/Logging.cpp \
 	src/Engine/NetworkHandler.cpp \
 	src/Engine/Profiler.cpp \
+	src/Engine/Renderer/Camera.cpp \
 	src/Engine/Renderer/DirectX11/DirectX11Image.cpp \
 	src/Engine/Renderer/DirectX11/DirectX11Interface.cpp \
 	src/Engine/Renderer/DirectX11/DirectX11RenderTarget.cpp \
@@ -144,9 +142,12 @@ neosu_SOURCES = \
 	src/Engine/Renderer/RenderTarget.cpp \
 	src/Engine/Renderer/Shader.cpp \
 	src/Engine/Renderer/VertexArrayObject.cpp \
-	src/Engine/Resources/AsyncResourceLoader.cpp \
+	src/Engine/Resources/Font.cpp \
+	src/Engine/Resources/Image.cpp \
 	src/Engine/Resources/Resource.cpp \
-	src/Engine/Resources/ResourceManager.cpp \
+	src/Engine/Resources/ResourceManager/AsyncResourceLoader.cpp \
+	src/Engine/Resources/ResourceManager/ResourceManager.cpp \
+	src/Engine/Resources/TextureAtlas.cpp \
 	src/Engine/Sound/BASS/BassManager.cpp \
 	src/Engine/Sound/BASS/BassSound.cpp \
 	src/Engine/Sound/BASS/BassSoundEngine.cpp \
@@ -157,7 +158,6 @@ neosu_SOURCES = \
 	src/Engine/Sound/Sound.cpp \
 	src/Engine/Sound/SoundEngine.cpp \
 	src/Engine/SysMon.cpp \
-	src/Engine/TextureAtlas.cpp \
 	src/Engine/Thread.cpp \
 	src/Engine/Timing.cpp \
 	src/GUI/CBaseUIButton.cpp \

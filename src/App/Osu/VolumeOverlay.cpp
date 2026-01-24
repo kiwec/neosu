@@ -14,6 +14,7 @@
 #include "Mouse.h"
 #include "OptionsOverlay.h"
 #include "Osu.h"
+#include "Graphics.h"
 #include "MakeDelegateWrapper.h"
 #include "PauseOverlay.h"
 #include "RankingScreen.h"

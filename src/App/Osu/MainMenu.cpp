@@ -84,7 +84,7 @@ class MainMenu::MainButton final : public CBaseUIButton {
     MainButton(MainMenu *parent, float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)), mm_ptr(parent) {}
 
-    bool isMouseInside() override { return CBaseUIButton::isMouseInside() && !this->mm_ptr->cube->isMouseInside(); }
+    bool isMouseInside() override { return this->isEnabled() && CBaseUIButton::isMouseInside() && !this->mm_ptr->cube->isMouseInside(); }
 
     void onMouseDownInside(bool left = true, bool right = false) override {
         if(this->mm_ptr->cube->isMouseInside()) return;
@@ -1675,7 +1675,7 @@ void PauseButton::draw() {
 };
 
 MainMenu::SongsFolderEnumerator::SongsFolderEnumerator() : Resource(APPDEFINED) {
-    this->folderPath = Database::getOsuSongsFolder();
+    this->osuSongsFolderPath = Database::getOsuSongsFolder();
 
     resourceManager->requestNextLoadAsync();
     resourceManager->loadResource(this);
@@ -1686,15 +1686,15 @@ void MainMenu::SongsFolderEnumerator::rebuild() {
     this->setReady(false);
 
     // update folder path
-    this->folderPath = Database::getOsuSongsFolder();
+    this->osuSongsFolderPath = Database::getOsuSongsFolder();
 
     resourceManager->reloadResource(this, true);
 }
 
 void MainMenu::SongsFolderEnumerator::initAsync() {
-    if(env->directoryExists(this->folderPath)) {
-        auto peppy_mapsets = env->getFoldersInFolder(this->folderPath);
-        auto trimmed_folder = this->folderPath;
+    if(env->directoryExists(this->osuSongsFolderPath)) {
+        auto peppy_mapsets = env->getFoldersInFolder(this->osuSongsFolderPath);
+        auto trimmed_folder = this->osuSongsFolderPath;
         if(trimmed_folder.back() == '/' || trimmed_folder.back() == '\\') trimmed_folder.pop_back();
         for(const auto &mapset : peppy_mapsets) {
             this->entries.push_back(fmt::format("{}/{}/", trimmed_folder, mapset));

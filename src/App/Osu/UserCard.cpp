@@ -12,6 +12,7 @@
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
 #include "UI.h"
+#include "Graphics.h"
 #include "UIAvatar.h"
 #include "UIUserContextMenu.h"
 #include "UserStatsScreen.h"

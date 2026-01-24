@@ -8,6 +8,7 @@
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "Font.h"
+#include "Graphics.h"
 #include "Image.h"
 
 UIVolumeSlider::Resources UIVolumeSlider::imageResources{};  // shared

@@ -7,6 +7,13 @@
 
 #include "Image.h"
 
+#include "Engine.h"
+#include "Environment.h"
+#include "File.h"
+#include "Logging.h"
+#include "ConVar.h"
+#include "Graphics.h"
+
 #include <png.h>
 #include <turbojpeg.h>
 #include <zlib.h>
@@ -33,12 +40,6 @@
 
 #include "stb_image.h"
 /* ==== end stb_image config ==== */
-
-#include "Engine.h"
-#include "Environment.h"
-#include "File.h"
-#include "Logging.h"
-#include "ConVar.h"
 
 // (workaround unnecessary in latest zlib-ng versions, so i guess it was a zlib-ng issue)
 #if defined(ZLIBNG_VERNUM) && ZLIBNG_VERNUM < 0x020205F0L
@@ -98,9 +99,9 @@ void pngReadFromMemory(png_structp png_ptr, png_bytep outBytes, png_size_t byteC
 }
 }  // namespace
 
-Image::DECODE_RESULT Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+ImageDecodeResult Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
     garbage_zlib();
-    using enum DECODE_RESULT;
+    using enum ImageDecodeResult;
 
     pngErrorManager err;
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, &err, pngErrorExit, pngWarning);
@@ -184,7 +185,7 @@ Image::DECODE_RESULT Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inD
 
     auto row_pointers = std::make_unique_for_overwrite<png_bytep[]>(outHeight);
     for(sSz y = 0; y < outHeight; y++) {
-        row_pointers[y] = &this->rawImage.data()[y * outWidth * Image::NUM_CHANNELS];
+        row_pointers[y] = &this->rawImage.get()[y * outWidth * Image::NUM_CHANNELS];
     }
 
     png_read_image(png_ptr, row_pointers.get());
@@ -193,8 +194,8 @@ Image::DECODE_RESULT Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inD
     return SUCCESS;
 }
 
-Image::DECODE_RESULT Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
-    using enum DECODE_RESULT;
+ImageDecodeResult Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+    using enum ImageDecodeResult;
     // decode jpeg
     tjhandle tjInstance = tj3Init(TJINIT_DECOMPRESS);
     if(!tjInstance) {
@@ -234,7 +235,7 @@ Image::DECODE_RESULT Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]> &in
 
     // always convert to RGBA for consistency with PNG
     // decompress directly to RGBA
-    if(tj3Decompress8(tjInstance, inData.get(), size, this->rawImage.data(), 0, TJPF_RGBA) < 0) {
+    if(tj3Decompress8(tjInstance, inData.get(), size, this->rawImage.get(), 0, TJPF_RGBA) < 0) {
         debugLog("Image Error: tj3Decompress8 failed: {:s}", tj3GetErrorStr(tjInstance));
         tj3Destroy(tjInstance);
         return FAIL;
@@ -244,8 +245,8 @@ Image::DECODE_RESULT Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]> &in
     return SUCCESS;
 }
 
-Image::DECODE_RESULT Image::decodeSTBFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
-    using enum DECODE_RESULT;
+ImageDecodeResult Image::decodeSTBFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+    using enum ImageDecodeResult;
 
     // use stbi_info to validate dimensions before decoding
     i32 outWidth, outHeight, channels;
@@ -388,7 +389,7 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
 }
 
 bool Image::loadRawImage() {
-    bool alreadyLoaded = !!this->rawImage.data() && this->totalBytes() >= 4;
+    bool alreadyLoaded = !!this->rawImage.get() && this->totalBytes() >= 4;
 
     auto exit = [this]() -> bool {
         // if we were interrupted, it's not a load error
@@ -459,7 +460,7 @@ bool Image::loadRawImage() {
             }
         }
 
-        DECODE_RESULT res = DECODE_RESULT::FAIL;
+        ImageDecodeResult res = ImageDecodeResult::FAIL;
 
         // try format-specific decoder first if format is recognized
         if(isPNG) {
@@ -469,12 +470,12 @@ bool Image::loadRawImage() {
         }
 
         // early exit on interruption
-        if(res == DECODE_RESULT::INTERRUPTED) {
+        if(res == ImageDecodeResult::INTERRUPTED) {
             return exit();
         }
 
         // fallback to stb_image if primary decoder failed or format was unrecognized
-        if(res == DECODE_RESULT::FAIL) {
+        if(res == ImageDecodeResult::FAIL) {
             if(isPNG || isJPEG) {
                 debugLog("Image Warning: Primary decoder failed for {:s}, trying fallback...", this->sFilePath);
             }
@@ -482,8 +483,8 @@ bool Image::loadRawImage() {
         }
 
         // final result check
-        if(res != DECODE_RESULT::SUCCESS) {
-            if(res == DECODE_RESULT::FAIL) {
+        if(res != ImageDecodeResult::SUCCESS) {
+            if(res == ImageDecodeResult::FAIL) {
                 debugLog("Image Error: Could not decode image file {:s}", this->sFilePath);
             }
             return exit();
@@ -502,7 +503,7 @@ bool Image::loadRawImage() {
     }
 
     // sanity check and one more cancellation point
-    if(this->isInterrupted() || !this->rawImage.data() || this->rawImage.getNumBytes() < 4) {
+    if(this->isInterrupted() || !this->rawImage.get() || this->rawImage.getNumBytes() < 4) {
         return exit();
     }
 
@@ -561,7 +562,7 @@ void Image::setPixels(const std::vector<u8> &pixels) {
     assert(this->totalBytes() == static_cast<u64>(this->iWidth) * this->iHeight * NUM_CHANNELS &&
            "width and height are somehow out of sync with raw image");
 
-    std::memcpy(this->rawImage.data(), pixels.data(), this->totalBytes());
+    std::memcpy(this->rawImage.get(), pixels.data(), this->totalBytes());
     if(!this->bCreatedImage) {
         // recompute alpha channel visibility here (TODO: remove if slow)
         this->bLoadedImageEntirelyTransparent = isRawImageCompletelyTransparent();
@@ -584,10 +585,10 @@ bool Image::canHaveTransparency(const std::unique_ptr<u8[]> &data, u64 size) {
 }
 
 bool Image::isRawImageCompletelyTransparent() const {
-    if(!this->rawImage.data() || this->totalBytes() == 0) return false;
+    if(!this->rawImage.get() || this->totalBytes() == 0) return false;
 
     const i64 alphaOffset = 3;
-    const i64 totalPixels = static_cast<i64>(this->rawImage.getArea());
+    const i64 totalPixels = static_cast<i64>(this->rawImage.getNumPixels());
 
     for(i64 i = 0; i < totalPixels; ++i) {
         if(this->isInterrupted())  // cancellation point

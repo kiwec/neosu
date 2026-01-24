@@ -13,6 +13,7 @@
 #include "OsuConVars.h"
 #include "Environment.h"
 #include "Engine.h"
+#include "Graphics.h"
 #include "Mouse.h"
 #include "Osu.h"
 #include "Skin.h"

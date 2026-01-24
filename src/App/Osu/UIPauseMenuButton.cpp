@@ -9,6 +9,7 @@
 #include "Skin.h"
 #include "SoundEngine.h"
 #include "Environment.h"
+#include "Graphics.h"
 
 UIPauseMenuButton::UIPauseMenuButton(ImageSkinMember imageMember, float xPos, float yPos, float xSize, float ySize,
                                      UString name)

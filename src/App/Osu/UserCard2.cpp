@@ -8,6 +8,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "UI.h"
 #include "Osu.h"
+#include "Graphics.h"
 #include "UIAvatar.h"
 #include "UIUserContextMenu.h"
 #include "Font.h"

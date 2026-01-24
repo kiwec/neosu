@@ -16,6 +16,7 @@
 #include "Mouse.h"
 #include "Osu.h"
 #include "Skin.h"
+#include "Graphics.h"
 #include "UIContextMenu.h"
 
 using namespace neosu::sbr;

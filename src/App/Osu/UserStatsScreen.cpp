@@ -12,6 +12,7 @@
 #include "ModSelector.h"
 #include "OptionsOverlay.h"
 #include "Osu.h"
+#include "Graphics.h"
 #include "Replay.h"
 #include "Skin.h"
 #include "SongBrowser/ScoreButton.h"

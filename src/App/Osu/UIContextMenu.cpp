@@ -11,6 +11,7 @@
 #include "Engine.h"
 #include "KeyBindings.h"
 #include "Mouse.h"
+#include "Graphics.h"
 #include "Osu.h"
 #include "Skin.h"
 #include "SoundEngine.h"

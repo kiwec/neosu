@@ -13,6 +13,7 @@
 #include "MakeDelegateWrapper.h"
 #include "Environment.h"
 #include "Hashing.h"
+#include "Graphics.h"
 
 #include "Skin.h"
 

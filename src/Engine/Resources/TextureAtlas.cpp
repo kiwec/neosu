@@ -7,6 +7,7 @@
 #include "ResourceManager.h"
 #include "Logging.h"
 #include "Image.h"
+#include "Graphics.h"
 
 #define WANT_PDQSORT
 #include "Sorting.h"

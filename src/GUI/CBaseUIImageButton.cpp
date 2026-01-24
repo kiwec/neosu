@@ -6,6 +6,7 @@
 #include "Engine.h"
 #include "ResourceManager.h"
 #include "Image.h"
+#include "Graphics.h"
 
 CBaseUIImageButton::CBaseUIImageButton(std::string imageResourceName, float xPos, float yPos, float xSize, float ySize,
                                        UString name)

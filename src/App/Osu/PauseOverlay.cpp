@@ -22,6 +22,7 @@
 #include "RichPresence.h"
 #include "Skin.h"
 #include "SoundEngine.h"
+#include "Graphics.h"
 #include "UI.h"
 #include "UIPauseMenuButton.h"
 

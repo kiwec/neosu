@@ -9,6 +9,7 @@
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "SoundEngine.h"
+#include "Graphics.h"
 #include "TooltipOverlay.h"
 #include "UI.h"
 #include "Font.h"
