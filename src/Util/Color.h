@@ -55,7 +55,7 @@ struct Color {
     constexpr Color(A a, R r, G g, B b)
         requires Colors::Numeric<A> && Colors::Numeric<R> && Colors::Numeric<G> && Colors::Numeric<B> &&
                      (!Colors::all_compatible_v<A, R, G, B>)
-    = delete("parameters should have compatible types");
+    = delete;/* ("parameters should have compatible types"); */
 
     operator u32() const { return v; }
 
