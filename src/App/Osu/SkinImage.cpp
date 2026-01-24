@@ -269,7 +269,7 @@ void SkinImage::drawBrightQuad(VertexArrayObject* vao, float brightness) const {
     const Color brightColor = argb(brightness, 1.f, 1.f, 1.f);
 
     g->setBlending(true);
-    g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
+    g->setBlendMode(DrawBlendMode::ADDITIVE);
 
     vao->setColors(std::vector<Color>(4, brightColor));
 
@@ -303,7 +303,7 @@ void SkinImage::draw(vec2 pos, float scale, float brightness, bool animated) con
             const float x = -realWidth / 2;
             const float y = -realHeight / 2;
 
-            VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+            VertexArrayObject vao(DrawPrimitive::QUADS);
 
             vao.addVertex(x, y);
             vao.addTexcoord(0, 0);
@@ -354,7 +354,7 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightn
             const float x = -realWidth / 2;
             const float y = -realHeight / 2;
 
-            VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+            VertexArrayObject vao(DrawPrimitive::QUADS);
 
             vao.addVertex(x, y);
             vao.addTexcoord(0, 0);

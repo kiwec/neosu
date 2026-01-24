@@ -632,7 +632,7 @@ void MainMenu::drawMainButton() {
         inset = (1.0f - 0.5f * this->fMainMenuAnimFriendPercent);
         osu->getAAFrameBuffer()->enable();
 
-        g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
+        g->setBlendMode(DrawBlendMode::PREMUL_ALPHA);
 
         // avoid ugly aliasing with rotation
         g->setAntialiasing(true);
@@ -797,7 +797,7 @@ void MainMenu::drawMainButton() {
         g->setDepthBuffer(false);
         g->setAntialiasing(false);
 
-        g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+        g->setBlendMode(DrawBlendMode::ALPHA);
 
         osu->getAAFrameBuffer()->disable();
         osu->getAAFrameBuffer()->draw(0, 0);

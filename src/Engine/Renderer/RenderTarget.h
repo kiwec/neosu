@@ -11,7 +11,7 @@ class RenderTarget : public Resource {
     NOCOPY_NOMOVE(RenderTarget)
    public:
     RenderTarget(int x, int y, int width, int height,
-                 MultisampleType multiSampleType = MultisampleType::MULTISAMPLE_0X);
+                 MultisampleType multiSampleType = MultisampleType::X0);
     ~RenderTarget() override;
 
     virtual void draw(int x, int y);
@@ -49,7 +49,7 @@ class RenderTarget : public Resource {
 
     [[nodiscard]] inline bool isMultiSampled() const {
         if constexpr(Env::cfg(OS::WASM)) return false;
-        return this->multiSampleType != MultisampleType::MULTISAMPLE_0X;
+        return this->multiSampleType != MultisampleType::X0;
     }
 
     RenderTarget *asRenderTarget() final { return this; }

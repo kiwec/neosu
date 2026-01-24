@@ -99,7 +99,7 @@ void ModFPoSu::draw() {
             {
                 // axis lines at (0, 0, 0)
                 if(cv::fposu_noclip.getBool()) {
-                    static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_LINES);
+                    static VertexArrayObject vao(DrawPrimitive::LINES);
                     vao.clear();
                     {
                         vec3 pos = vec3(0, 0, 0);
@@ -170,7 +170,7 @@ void ModFPoSu::draw() {
 
             if(isTransparent) {
                 g->setBlending(true);
-                g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_COLOR);
+                g->setBlendMode(DrawBlendMode::PREMUL_COLOR);
             }
 
             Matrix4 worldMatrix = this->modelMatrix;
@@ -185,7 +185,7 @@ void ModFPoSu::draw() {
                 osu->getPlayfieldBuffer()->unbind();
             }
 
-            if(isTransparent) g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+            if(isTransparent) g->setBlendMode(DrawBlendMode::ALPHA);
 
             // (no setBlending(false), since we are already at the end)
         }
@@ -765,7 +765,7 @@ vec3 ModFPoSu::normalFromTriangle(vec3 p1, vec3 p2, vec3 p3) {
 ModFPoSu3DModel::ModFPoSu3DModel(const UString &objFilePathOrContents, Image *texture, bool source) {
     this->texture = texture;
 
-    this->vao = resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLES);
+    this->vao = resourceManager->createVertexArrayObject(DrawPrimitive::TRIANGLES);
 
     // load
     {

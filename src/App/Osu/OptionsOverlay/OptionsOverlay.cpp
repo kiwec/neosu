@@ -1775,7 +1775,7 @@ void OptionsOverlayImpl::draw() {
     if(isAnimating) {
         osu->getSliderFrameBuffer()->enable();
 
-        g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
+        g->setBlendMode(DrawBlendMode::PREMUL_ALPHA);
     }
 
     const bool isPlayingBeatmap = osu->isInPlayMode();
@@ -1827,7 +1827,7 @@ void OptionsOverlayImpl::draw() {
         // HACKHACK:
         if(!parent->bVisible) parent->backButton->draw();
 
-        g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+        g->setBlendMode(DrawBlendMode::ALPHA);
 
         osu->getSliderFrameBuffer()->disable();
 

@@ -22,12 +22,6 @@
 enum class TextureFilterMode : u8;
 enum class TextureWrapMode : u8;
 
-enum class ImageDecodeResult : u8 {
-    SUCCESS,
-    FAIL,
-    INTERRUPTED,
-};
-
 class Image : public Resource {
    public:
     static void saveToImage(const u8 *data, i32 width, i32 height, u8 channels, std::string filepath);
@@ -150,6 +144,12 @@ class Image : public Resource {
     bool bLoadedImageEntirelyTransparent{false};
 
    private:
+    enum class ImageDecodeResult : u8 {
+        SUCCESS,
+        FAIL,
+        INTERRUPTED,
+    };
+
     [[nodiscard]] bool isRawImageCompletelyTransparent() const;
     static bool canHaveTransparency(const std::unique_ptr<u8[]> &data, u64 size);
 

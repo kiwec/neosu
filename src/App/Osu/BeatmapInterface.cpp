@@ -2210,7 +2210,7 @@ void BeatmapInterface::drawHitObjects() {
 
             this->mafhamActiveRenderTarget->enable();
             {
-                g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
+                g->setBlendMode(DrawBlendMode::PREMUL_ALPHA);
                 {
                     int chunkCounter = 0;
                     for(int i = this->hitobjectsSortedByEndTime.size() - 1 - this->iMafhamHitObjectRenderIndex; i >= 0;
@@ -2245,7 +2245,7 @@ void BeatmapInterface::drawHitObjects() {
                         this->iMafhamActiveRenderHitObjectIndex = i;
                     }
                 }
-                g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+                g->setBlendMode(DrawBlendMode::ALPHA);
             }
             this->mafhamActiveRenderTarget->disable();
 
@@ -2267,11 +2267,11 @@ void BeatmapInterface::drawHitObjects() {
 
         // draw scene buffer
         if(shouldDrawBuffer) {
-            g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_COLOR);
+            g->setBlendMode(DrawBlendMode::PREMUL_COLOR);
             {
                 this->mafhamFinishedRenderTarget->draw(0, 0);
             }
-            g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+            g->setBlendMode(DrawBlendMode::ALPHA);
         }
 
         // draw followpoints

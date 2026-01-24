@@ -152,25 +152,25 @@ int SDLGLInterface::getVRAMRemaining() {
 }
 
 std::unordered_map<DrawPrimitive, int> SDLGLInterface::primitiveToOpenGLMap = {
-    {DrawPrimitive::PRIMITIVE_LINES, GL_LINES},
-    {DrawPrimitive::PRIMITIVE_LINE_STRIP, GL_LINE_STRIP},
-    {DrawPrimitive::PRIMITIVE_TRIANGLES, GL_TRIANGLES},
-    {DrawPrimitive::PRIMITIVE_TRIANGLE_FAN, GL_TRIANGLE_FAN},
-    {DrawPrimitive::PRIMITIVE_TRIANGLE_STRIP, GL_TRIANGLE_STRIP},
-    {DrawPrimitive::PRIMITIVE_QUADS, Env::cfg(REND::GLES32) ? 0 : GL_QUADS},
+    {DrawPrimitive::LINES, GL_LINES},
+    {DrawPrimitive::LINE_STRIP, GL_LINE_STRIP},
+    {DrawPrimitive::TRIANGLES, GL_TRIANGLES},
+    {DrawPrimitive::TRIANGLE_FAN, GL_TRIANGLE_FAN},
+    {DrawPrimitive::TRIANGLE_STRIP, GL_TRIANGLE_STRIP},
+    {DrawPrimitive::QUADS, Env::cfg(REND::GLES32) ? 0 : GL_QUADS},
 };
 
 std::unordered_map<DrawCompareFunc, int> SDLGLInterface::compareFuncToOpenGLMap = {
-    {DrawCompareFunc::COMPARE_FUNC_NEVER, GL_NEVER},         {DrawCompareFunc::COMPARE_FUNC_LESS, GL_LESS},
-    {DrawCompareFunc::COMPARE_FUNC_EQUAL, GL_EQUAL},         {DrawCompareFunc::COMPARE_FUNC_LESSEQUAL, GL_LEQUAL},
-    {DrawCompareFunc::COMPARE_FUNC_GREATER, GL_GREATER},     {DrawCompareFunc::COMPARE_FUNC_NOTEQUAL, GL_NOTEQUAL},
-    {DrawCompareFunc::COMPARE_FUNC_GREATEREQUAL, GL_GEQUAL}, {DrawCompareFunc::COMPARE_FUNC_ALWAYS, GL_ALWAYS},
+    {DrawCompareFunc::NEVER, GL_NEVER},         {DrawCompareFunc::LESS, GL_LESS},
+    {DrawCompareFunc::EQUAL, GL_EQUAL},         {DrawCompareFunc::LESSEQUAL, GL_LEQUAL},
+    {DrawCompareFunc::GREATER, GL_GREATER},     {DrawCompareFunc::NOTEQUAL, GL_NOTEQUAL},
+    {DrawCompareFunc::GREATEREQUAL, GL_GEQUAL}, {DrawCompareFunc::ALWAYS, GL_ALWAYS},
 };
 
 std::unordered_map<DrawUsageType, unsigned int> SDLGLInterface::usageToOpenGLMap = {
-    {DrawUsageType::USAGE_STATIC, GL_STATIC_DRAW},
-    {DrawUsageType::USAGE_DYNAMIC, GL_DYNAMIC_DRAW},
-    {DrawUsageType::USAGE_STREAM, GL_STREAM_DRAW},
+    {DrawUsageType::STATIC, GL_STATIC_DRAW},
+    {DrawUsageType::DYNAMIC, GL_DYNAMIC_DRAW},
+    {DrawUsageType::STREAM, GL_STREAM_DRAW},
 };
 
 void SDLGLInterface::dumpGLContextInfo() {

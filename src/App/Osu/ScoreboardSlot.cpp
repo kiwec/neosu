@@ -32,7 +32,7 @@ void ScoreboardSlot::draw() {
 
     g->pushTransform();
 
-    g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
+    g->setBlendMode(DrawBlendMode::PREMUL_ALPHA);
 
     McFont *font_normal = osu->getSongBrowserFont();
     McFont *font_bold = osu->getSongBrowserFontBold();
@@ -202,7 +202,7 @@ void ScoreboardSlot::draw() {
         g->popTransform();
     }
 
-    g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+    g->setBlendMode(DrawBlendMode::ALPHA);
 
     g->popTransform();
 }

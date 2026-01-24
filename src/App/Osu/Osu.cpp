@@ -238,7 +238,7 @@ Osu::Osu()
     this->sliderFrameBuffer =
         resourceManager->createRenderTarget(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
     this->AAFrameBuffer = resourceManager->createRenderTarget(
-        0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight(), MultisampleType::MULTISAMPLE_4X);
+        0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight(), MultisampleType::X4);
     this->frameBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
@@ -1368,7 +1368,7 @@ void Osu::rebuildRenderTargets() {
         this->playfieldBuffer->rebuild(0, 0, 64, 64);
 
     this->sliderFrameBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight(),
-                                     MultisampleType::MULTISAMPLE_0X);
+                                     MultisampleType::X0);
 
     this->AAFrameBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
 

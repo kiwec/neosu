@@ -407,11 +407,11 @@ void checkUpdateVars(float hitcircleDiameter) {
     }
 
     // build vaos
-    if(s_UNIT_CIRCLE_VAO == nullptr) s_UNIT_CIRCLE_VAO = new VertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLE_FAN);
+    if(s_UNIT_CIRCLE_VAO == nullptr) s_UNIT_CIRCLE_VAO = new VertexArrayObject(DrawPrimitive::TRIANGLE_FAN);
     if(s_UNIT_CIRCLE_VAO_BAKED == nullptr)
-        s_UNIT_CIRCLE_VAO_BAKED = resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLE_FAN);
+        s_UNIT_CIRCLE_VAO_BAKED = resourceManager->createVertexArrayObject(DrawPrimitive::TRIANGLE_FAN);
     if(s_UNIT_CIRCLE_VAO_TRIANGLES == nullptr)
-        s_UNIT_CIRCLE_VAO_TRIANGLES = new VertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLES);
+        s_UNIT_CIRCLE_VAO_TRIANGLES = new VertexArrayObject(DrawPrimitive::TRIANGLES);
 
     // (re-)generate master circle mesh (centered) if the size changed
     // dynamic mods like minimize or wobble have to use the legacy renderer anyway, since the slider shape may change
@@ -541,7 +541,7 @@ void drawDebugLegacy(const std::vector<vec2> &points, float hitcircleDiameter, C
             for(int i = drawFromIndex; i < drawUpToIndex; i++) {
                 const vec2 point = points[i] * circleImageScaleInv;
 
-                static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+                static VertexArrayObject vao(DrawPrimitive::QUADS);
                 vao.clear();
                 {
                     vao.addTexcoord(0, 0);

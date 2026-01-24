@@ -111,7 +111,7 @@ VisualProfiler::VisualProfiler() : CBaseUIElement(0, 0, 0, 0, "") {
     this->font = engine->getDefaultFont();
     this->fontConsole = resourceManager->getFont("FONT_CONSOLE");
     this->lineVao =
-        resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_LINES, DrawUsageType::USAGE_DYNAMIC, true);
+        resourceManager->createVertexArrayObject(DrawPrimitive::LINES, DrawUsageType::DYNAMIC, true);
 
     this->bScheduledForceRebuildLineVao = false;
     this->bRequiresAltShiftKeysToFreeze = false;

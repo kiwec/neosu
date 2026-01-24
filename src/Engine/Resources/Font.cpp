@@ -343,8 +343,8 @@ std::vector<UString> McFont::wrap(const UString &text, f64 max_width) const { re
 McFontImpl::McFontImpl(McFont *parent, int fontSize, bool antialiasing, int fontDPI)
     : m_parent(parent),
       m_vao(g->createVertexArrayObject(
-          (Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::PRIMITIVE_TRIANGLES : DrawPrimitive::PRIMITIVE_QUADS),
-          DrawUsageType::USAGE_DYNAMIC, false)) {
+          (Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::TRIANGLES : DrawPrimitive::QUADS),
+          DrawUsageType::DYNAMIC, false)) {
     std::vector<char16_t> characters;
     characters.reserve(96);  // reserve space for basic ASCII, load the rest as needed
     for(int i = 32; i < 128; i++) {
@@ -358,8 +358,8 @@ McFontImpl::McFontImpl(McFont *parent, const char16_t *characters, size_t numCha
                        bool antialiasing, int fontDPI)
     : m_parent(parent),
       m_vao(g->createVertexArrayObject(
-          (Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::PRIMITIVE_TRIANGLES : DrawPrimitive::PRIMITIVE_QUADS),
-          DrawUsageType::USAGE_DYNAMIC, false)) {
+          (Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::TRIANGLES : DrawPrimitive::QUADS),
+          DrawUsageType::DYNAMIC, false)) {
     // don't try to find fallbacks if we had an explicitly-passed character set on construction
     m_bTryFindFallbacks = false;
     constructor(characters, numCharacters, fontSize, antialiasing, fontDPI);

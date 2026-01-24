@@ -28,10 +28,10 @@ void TextureAtlas::init() {
     resourceManager->loadResource(this->atlasImage.get());
 
     if(!this->bFiltered) {
-        this->atlasImage->setFilterMode(TextureFilterMode::FILTER_MODE_NONE);
+        this->atlasImage->setFilterMode(TextureFilterMode::NONE);
     } else {
         // sanity (this is default)
-        this->atlasImage->setFilterMode(TextureFilterMode::FILTER_MODE_LINEAR);
+        this->atlasImage->setFilterMode(TextureFilterMode::LINEAR);
     }
 
     this->setReady(true);

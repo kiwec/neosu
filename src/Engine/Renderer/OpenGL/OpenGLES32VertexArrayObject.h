@@ -18,8 +18,8 @@ class OpenGLES32VertexArrayObject final : public VertexArrayObject {
     NOCOPY_NOMOVE(OpenGLES32VertexArrayObject)
    public:
     friend class OpenGLES32Interface;
-    OpenGLES32VertexArrayObject(DrawPrimitive primitive = DrawPrimitive::PRIMITIVE_TRIANGLES,
-                                DrawUsageType usage = DrawUsageType::USAGE_STATIC, bool keepInSystemMemory = false);
+    OpenGLES32VertexArrayObject(DrawPrimitive primitive = DrawPrimitive::TRIANGLES,
+                                DrawUsageType usage = DrawUsageType::STATIC, bool keepInSystemMemory = false);
     ~OpenGLES32VertexArrayObject() override { destroy(); }
 
     void draw() override;

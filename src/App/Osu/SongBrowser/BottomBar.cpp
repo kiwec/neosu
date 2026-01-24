@@ -213,12 +213,12 @@ void draw() {
     const SkinImage* mos_img = skin->i_mode_osu_small;
     if(mos_img != nullptr) {
         f32 mos_scale = SongBrowser::getSkinScale(mos_img);
-        g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
+        g->setBlendMode(DrawBlendMode::ADDITIVE);
         g->setColor(0xffffffff);
         mos_img->drawRaw(vec2(btns[MODE].rect.getX() + (btns[MODS].rect.getX() - btns[MODE].rect.getX()) / 2.f,
                               screen_size.y - SongBrowser::getUIScale(56.f)),
                          mos_scale, AnchorPoint::CENTER);
-        g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+        g->setBlendMode(DrawBlendMode::ALPHA);
     }
 
     // background task busy notification

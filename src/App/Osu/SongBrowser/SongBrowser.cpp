@@ -607,10 +607,10 @@ void SongBrowser::draw() {
             g->setAlpha(0.1f);
         }
 
-        g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
+        g->setBlendMode(DrawBlendMode::ADDITIVE);
         osu->getSkin()->i_mode_osu->drawRaw(vec2(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2),
                                             mode_osu_scale, AnchorPoint::CENTER);
-        g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+        g->setBlendMode(DrawBlendMode::ALPHA);
     }
 
     // draw score browser

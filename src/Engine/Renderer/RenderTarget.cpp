@@ -8,9 +8,9 @@
 
 RenderTarget::RenderTarget(int x, int y, int width, int height, MultisampleType multiSampleType)
     : Resource(RENDERTARGET),
-      vao1(g->createVertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLES, DrawUsageType::USAGE_STATIC,
+      vao1(g->createVertexArrayObject(DrawPrimitive::TRIANGLES, DrawUsageType::STATIC,
                                       false)),
-      vao2(g->createVertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLES, DrawUsageType::USAGE_STATIC,
+      vao2(g->createVertexArrayObject(DrawPrimitive::TRIANGLES, DrawUsageType::STATIC,
                                       false)),
       vPos(vec2{x, y}),
       vSize(width, height),

@@ -101,7 +101,7 @@ void DirectX11Image::init() {
         if(this->texture == nullptr) {
             // initData
             {
-                initData.pSysMem = (void*)this->rawImage.data();
+                initData.pSysMem = (void*)this->rawImage.get();
                 initData.SysMemPitch = static_cast<UINT>(this->iWidth * Image::NUM_CHANNELS * sizeof(unsigned char));
                 initData.SysMemSlicePitch = 0;
             }
@@ -127,12 +127,12 @@ void DirectX11Image::init() {
             if(SUCCEEDED(hr)) {
                 const UINT srcRowPitch = static_cast<UINT>(this->iWidth * Image::NUM_CHANNELS * sizeof(unsigned char));
                 if(mapped.RowPitch == srcRowPitch) {
-                    memcpy(mapped.pData, this->rawImage.data(), this->totalBytes());
+                    memcpy(mapped.pData, this->rawImage.get(), this->totalBytes());
                 } else {
                     // copy row by row if pitch differs
                     for(int y = 0; y < this->iHeight; y++) {
                         memcpy(static_cast<u8*>(mapped.pData) + y * mapped.RowPitch,
-                               this->rawImage.data() + y * srcRowPitch, srcRowPitch);
+                               this->rawImage.get() + y * srcRowPitch, srcRowPitch);
                     }
                 }
                 context->Unmap(this->texture, 0);
@@ -207,9 +207,9 @@ void DirectX11Image::init() {
         // customize sampler
         // NOTE: this concatenates into one single actual createOrUpdateSampler() call below because we are not this->bReady yet here on purpose
         {
-            if(this->filterMode != TextureFilterMode::FILTER_MODE_LINEAR) setFilterMode(this->filterMode);
+            if(this->filterMode != TextureFilterMode::LINEAR) setFilterMode(this->filterMode);
 
-            if(this->wrapMode != TextureWrapMode::WRAP_MODE_CLAMP) setWrapMode(this->wrapMode);
+            if(this->wrapMode != TextureWrapMode::CLAMP) setWrapMode(this->wrapMode);
         }
 
         // actually create the (customized) sampler now
@@ -309,13 +309,13 @@ void DirectX11Image::setFilterMode(TextureFilterMode filterMode) {
     Image::setFilterMode(filterMode);
 
     switch(filterMode) {
-        case TextureFilterMode::FILTER_MODE_NONE:
+        case TextureFilterMode::NONE:
             this->samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
             break;
-        case TextureFilterMode::FILTER_MODE_LINEAR:
+        case TextureFilterMode::LINEAR:
             this->samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
             break;
-        case TextureFilterMode::FILTER_MODE_MIPMAP:
+        case TextureFilterMode::MIPMAP:
             this->samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
             break;
     }
@@ -331,12 +331,12 @@ void DirectX11Image::setWrapMode(TextureWrapMode wrapMode) {
     Image::setWrapMode(wrapMode);
 
     switch(wrapMode) {
-        case TextureWrapMode::WRAP_MODE_CLAMP:
+        case TextureWrapMode::CLAMP:
             this->samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
             this->samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
             this->samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
             break;
-        case TextureWrapMode::WRAP_MODE_REPEAT:
+        case TextureWrapMode::REPEAT:
             this->samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
             this->samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
             this->samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;

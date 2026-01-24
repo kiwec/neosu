@@ -33,49 +33,27 @@ enum class AnchorPoint : uint8_t {
     RIGHT          // x,y at middle right
 };
 
-enum class DrawPrimitive : uint8_t {
-    PRIMITIVE_LINES,
-    PRIMITIVE_LINE_STRIP,
-    PRIMITIVE_TRIANGLES,
-    PRIMITIVE_TRIANGLE_FAN,
-    PRIMITIVE_TRIANGLE_STRIP,
-    PRIMITIVE_QUADS
-};
+enum class DrawPrimitive : uint8_t { LINES, LINE_STRIP, TRIANGLES, TRIANGLE_FAN, TRIANGLE_STRIP, QUADS };
 
-enum class DrawUsageType : uint8_t { USAGE_STATIC, USAGE_DYNAMIC, USAGE_STREAM };
+enum class DrawUsageType : uint8_t { STATIC, DYNAMIC, STREAM };
 
-enum class DrawPixelsType : uint8_t { DRAWPIXELS_UBYTE, DRAWPIXELS_FLOAT };
+enum class DrawPixelsType : uint8_t { UBYTE, FLOAT };
 
-enum class MultisampleType : uint8_t {
-    MULTISAMPLE_0X,
-    MULTISAMPLE_2X,
-    MULTISAMPLE_4X,
-    MULTISAMPLE_8X,
-    MULTISAMPLE_16X
-};
+enum class MultisampleType : uint8_t { X0, X2, X4, X8, X16 };
 
-enum class TextureWrapMode : uint8_t { WRAP_MODE_CLAMP, WRAP_MODE_REPEAT };
+enum class TextureWrapMode : uint8_t { CLAMP, REPEAT };
 
-enum class TextureFilterMode : uint8_t { FILTER_MODE_NONE, FILTER_MODE_LINEAR, FILTER_MODE_MIPMAP };
+enum class TextureFilterMode : uint8_t { NONE, LINEAR, MIPMAP };
 
 enum class DrawBlendMode : uint8_t {
-    BLEND_MODE_ALPHA,         // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) (default)
-    BLEND_MODE_ADDITIVE,      // glBlendFunc(GL_SRC_ALPHA, GL_ONE)
-    BLEND_MODE_PREMUL_ALPHA,  // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
-                              // GL_ONE_MINUS_SRC_ALPHA)
-    BLEND_MODE_PREMUL_COLOR   // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+    ALPHA,         // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) (default)
+    ADDITIVE,      // glBlendFunc(GL_SRC_ALPHA, GL_ONE)
+    PREMUL_ALPHA,  // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
+                   // GL_ONE_MINUS_SRC_ALPHA)
+    PREMUL_COLOR   // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
 };
 
-enum class DrawCompareFunc : uint8_t {
-    COMPARE_FUNC_NEVER,
-    COMPARE_FUNC_LESS,
-    COMPARE_FUNC_EQUAL,
-    COMPARE_FUNC_LESSEQUAL,
-    COMPARE_FUNC_GREATER,
-    COMPARE_FUNC_NOTEQUAL,
-    COMPARE_FUNC_GREATEREQUAL,
-    COMPARE_FUNC_ALWAYS
-};
+enum class DrawCompareFunc : uint8_t { NEVER, LESS, EQUAL, LESSEQUAL, GREATER, NOTEQUAL, GREATEREQUAL, ALWAYS };
 
 class Graphics {
     NOCOPY_NOMOVE(Graphics)
@@ -316,7 +294,7 @@ class Graphics {
     vec3 v3dSceneOffset{0.f};
 
     // info
-    DrawBlendMode currentBlendMode{DrawBlendMode::BLEND_MODE_ALPHA};
+    DrawBlendMode currentBlendMode{DrawBlendMode::ALPHA};
     bool bBlendingEnabled{true};
     bool bTransformUpToDate;
     bool bIs3dScene;

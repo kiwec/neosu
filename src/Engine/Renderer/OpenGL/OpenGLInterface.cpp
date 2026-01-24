@@ -115,11 +115,9 @@ void OpenGLInterface::setColor(Color color) {
     glColor4ub(this->color.R(), this->color.G(), this->color.B(), this->color.A());
 }
 
-void OpenGLInterface::drawPixels(int x, int y, int width, int height, DrawPixelsType type,
-                                 const void *pixels) {
+void OpenGLInterface::drawPixels(int x, int y, int width, int height, DrawPixelsType type, const void *pixels) {
     glRasterPos2i(x, y + height);  // '+height' because of opengl bottom left origin, but engine top left origin
-    glDrawPixels(width, height, GL_RGBA,
-                 (type == DrawPixelsType::DRAWPIXELS_UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
+    glDrawPixels(width, height, GL_RGBA, (type == DrawPixelsType::UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
 }
 
 void OpenGLInterface::drawPixel(int x, int y) {
@@ -446,8 +444,8 @@ void OpenGLInterface::drawVAO(VertexArrayObject *vao) {
     updateTransform();
 
     // HACKHACK: disable texturing for special primitives, also for untextured vaos
-    if(vao->getPrimitive() == DrawPrimitive::PRIMITIVE_LINES ||
-       vao->getPrimitive() == DrawPrimitive::PRIMITIVE_LINE_STRIP || !vao->hasTexcoords())
+    if(vao->getPrimitive() == DrawPrimitive::LINES || vao->getPrimitive() == DrawPrimitive::LINE_STRIP ||
+       !vao->hasTexcoords())
         glDisable(GL_TEXTURE_2D);
 
     // if baked, then we can directly draw the buffer
@@ -651,16 +649,16 @@ void OpenGLInterface::setBlendMode(DrawBlendMode blendMode) {
     Graphics::setBlendMode(blendMode);
 
     switch(blendMode) {
-        case DrawBlendMode::BLEND_MODE_ALPHA:
+        case DrawBlendMode::ALPHA:
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             break;
-        case DrawBlendMode::BLEND_MODE_ADDITIVE:
+        case DrawBlendMode::ADDITIVE:
             glBlendFunc(GL_SRC_ALPHA, GL_ONE);
             break;
-        case DrawBlendMode::BLEND_MODE_PREMUL_ALPHA:
+        case DrawBlendMode::PREMUL_ALPHA:
             glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
-        case DrawBlendMode::BLEND_MODE_PREMUL_COLOR:
+        case DrawBlendMode::PREMUL_COLOR:
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
     }
@@ -724,26 +722,22 @@ std::vector<u8> OpenGLInterface::getScreenshot(bool withAlpha) {
     const GLenum glFormat = withAlpha ? GL_RGBA : GL_RGB;
 
     // take screenshot
-    u8 *pixels = new u8[numElements];
+    result.resize(numElements);
     glFinish();
     for(sSz y = 0; y < height; y++)  // flip it while reading
     {
-        glReadPixels(0, (height - (y + 1)), width, 1, glFormat, GL_UNSIGNED_BYTE, &(pixels[y * width * numChannels]));
+        glReadPixels(0, (height - (y + 1)), width, 1, glFormat, GL_UNSIGNED_BYTE, &(result[y * width * numChannels]));
     }
 
     // fix alpha channel (set all pixels to fully opaque)
     // TODO: allow proper transparent screenshots
     if(withAlpha) {
         for(u32 i = 3; i < numElements; i += numChannels) {
-            pixels[i] = 255;
+            result[i] = 255;
         }
     }
 
     // copy to vector
-    result.resize(numElements);
-    result.assign(pixels, pixels + numElements);
-    delete[] pixels;
-
     return result;
 }
 

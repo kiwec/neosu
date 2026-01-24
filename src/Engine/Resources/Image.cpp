@@ -99,7 +99,7 @@ void pngReadFromMemory(png_structp png_ptr, png_bytep outBytes, png_size_t byteC
 }
 }  // namespace
 
-ImageDecodeResult Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+Image::ImageDecodeResult Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
     garbage_zlib();
     using enum ImageDecodeResult;
 
@@ -194,7 +194,7 @@ ImageDecodeResult Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inData
     return SUCCESS;
 }
 
-ImageDecodeResult Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+Image::ImageDecodeResult Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
     using enum ImageDecodeResult;
     // decode jpeg
     tjhandle tjInstance = tj3Init(TJINIT_DECOMPRESS);
@@ -245,7 +245,7 @@ ImageDecodeResult Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]> &inDat
     return SUCCESS;
 }
 
-ImageDecodeResult Image::decodeSTBFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+Image::ImageDecodeResult Image::decodeSTBFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
     using enum ImageDecodeResult;
 
     // use stbi_info to validate dimensions before decoding
@@ -348,8 +348,8 @@ Image::Image(std::string filepath, bool mipmapped, bool keepInSystemMemory) : Re
     this->bKeepInSystemMemory = keepInSystemMemory;
 
     this->type = Image::TYPE::TYPE_PNG;
-    this->filterMode = mipmapped ? TextureFilterMode::FILTER_MODE_MIPMAP : TextureFilterMode::FILTER_MODE_LINEAR;
-    this->wrapMode = TextureWrapMode::WRAP_MODE_CLAMP;
+    this->filterMode = mipmapped ? TextureFilterMode::MIPMAP : TextureFilterMode::LINEAR;
+    this->wrapMode = TextureWrapMode::CLAMP;
     this->iWidth = 1;
     this->iHeight = 1;
 
@@ -361,8 +361,8 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
     this->bKeepInSystemMemory = keepInSystemMemory;
 
     this->type = Image::TYPE::TYPE_RGBA;
-    this->filterMode = mipmapped ? TextureFilterMode::FILTER_MODE_MIPMAP : TextureFilterMode::FILTER_MODE_LINEAR;
-    this->wrapMode = TextureWrapMode::WRAP_MODE_CLAMP;
+    this->filterMode = mipmapped ? TextureFilterMode::MIPMAP : TextureFilterMode::LINEAR;
+    this->wrapMode = TextureWrapMode::CLAMP;
     this->iWidth = std::min(16384, width);  // sanity
     this->iHeight = std::min(16384, height);
 

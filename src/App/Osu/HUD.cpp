@@ -59,7 +59,7 @@ HUD::HUD() : UIScreen() {
     cv::cursor_trail_max_size.setCallback(SA::MakeDelegate<&HUD::onCursorTrailMaxChange>(this));
 
     this->cursorTrailVAO.reset(
-        g->createVertexArrayObject(DrawPrimitive::PRIMITIVE_QUADS, DrawUsageType::USAGE_DYNAMIC, false));
+        g->createVertexArrayObject(DrawPrimitive::QUADS, DrawUsageType::DYNAMIC, false));
 
     this->fCurFps = 60.0f;
     this->fCurFpsSmooth = 60.0f;
@@ -517,12 +517,12 @@ void HUD::drawCursorTrailInt(Shader *trailShader, CursorTrail &trail, vec2 pos, 
 
                 trailImage->bind();
                 {
-                    g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
+                    g->setBlendMode(DrawBlendMode::ADDITIVE);
                     {
                         g->setColor(0xffffffff);
                         g->drawVAO(this->cursorTrailVAO.get());
                     }
-                    g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+                    g->setBlendMode(DrawBlendMode::ALPHA);
                 }
                 trailImage->unbind();
             }
@@ -573,7 +573,7 @@ void HUD::drawCursorRipples() {
     const float fadeDuration = std::max(
         cv::cursor_ripple_duration.getFloat() - cv::cursor_ripple_anim_start_fadeout_delay.getFloat(), 0.0001f);
 
-    if(cv::cursor_ripple_additive.getBool()) g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
+    if(cv::cursor_ripple_additive.getBool()) g->setBlendMode(DrawBlendMode::ADDITIVE);
 
     g->setColor(argb(255, std::clamp<int>(cv::cursor_ripple_tint_r.getInt(), 0, 255),
                      std::clamp<int>(cv::cursor_ripple_tint_g.getInt(), 0, 255),
@@ -598,7 +598,7 @@ void HUD::drawCursorRipples() {
     }
     cursorRipple->unbind();
 
-    if(cv::cursor_ripple_additive.getBool()) g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+    if(cv::cursor_ripple_additive.getBool()) g->setBlendMode(DrawBlendMode::ALPHA);
 }
 
 void HUD::drawFps() {
@@ -728,7 +728,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
 
         // top
         {
-            static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+            static VertexArrayObject vao(DrawPrimitive::QUADS);
             vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft);
@@ -745,7 +745,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
 
         // left
         {
-            static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+            static VertexArrayObject vao(DrawPrimitive::QUADS);
             vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft);
@@ -762,7 +762,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
 
         // right
         {
-            static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+            static VertexArrayObject vao(DrawPrimitive::QUADS);
             vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft + vec2(playfieldBorderSize.x + 2 * borderSize, 0));
@@ -781,7 +781,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
 
         // bottom
         {
-            static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+            static VertexArrayObject vao(DrawPrimitive::QUADS);
             vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft + vec2(borderSize, playfieldBorderSize.y + borderSize));
@@ -1592,7 +1592,7 @@ void HUD::drawHitErrorBarInt(float hitWindow300, float hitWindow100, float hitWi
 
     // draw hit errors
     {
-        if(cv::hud_hiterrorbar_entry_additive.getBool()) g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
+        if(cv::hud_hiterrorbar_entry_additive.getBool()) g->setBlendMode(DrawBlendMode::ADDITIVE);
 
         const bool modMing3012 = cv::mod_ming3012.getBool();
         const float hitFadeDuration = cv::hud_hiterrorbar_entry_hit_fade_time.getFloat();
@@ -1627,7 +1627,7 @@ void HUD::drawHitErrorBarInt(float hitWindow300, float hitWindow100, float hitWi
                         (entryHeight * missHeightMultiplier));
         }
 
-        if(cv::hud_hiterrorbar_entry_additive.getBool()) g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
+        if(cv::hud_hiterrorbar_entry_additive.getBool()) g->setBlendMode(DrawBlendMode::ALPHA);
     }
 
     // white center line

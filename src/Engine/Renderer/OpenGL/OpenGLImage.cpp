@@ -95,11 +95,11 @@ void OpenGLImage::init() {
 
     this->setReady(true);
 
-    if(this->filterMode != TextureFilterMode::FILTER_MODE_LINEAR) {
+    if(this->filterMode != TextureFilterMode::LINEAR) {
         setFilterMode(this->filterMode);
     }
 
-    if(this->wrapMode != TextureWrapMode::WRAP_MODE_CLAMP) {
+    if(this->wrapMode != TextureWrapMode::CLAMP) {
         setWrapMode(this->wrapMode);
     }
 }
@@ -175,15 +175,15 @@ void OpenGLImage::setFilterMode(TextureFilterMode filterMode) {
     bind();
     {
         switch(filterMode) {
-            case TextureFilterMode::FILTER_MODE_NONE:
+            case TextureFilterMode::NONE:
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 break;
-            case TextureFilterMode::FILTER_MODE_LINEAR:
+            case TextureFilterMode::LINEAR:
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 break;
-            case TextureFilterMode::FILTER_MODE_MIPMAP:
+            case TextureFilterMode::MIPMAP:
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 break;
@@ -199,12 +199,12 @@ void OpenGLImage::setWrapMode(TextureWrapMode wrapMode) {
     bind();
     {
         switch(wrapMode) {
-            case TextureWrapMode::WRAP_MODE_CLAMP:  // NOTE: there is also GL_CLAMP, which works a bit differently
+            case TextureWrapMode::CLAMP:  // NOTE: there is also GL_CLAMP, which works a bit differently
                                                     // concerning the border color
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 break;
-            case TextureWrapMode::WRAP_MODE_REPEAT:
+            case TextureWrapMode::REPEAT:
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 break;

@@ -472,7 +472,7 @@ void DirectX11Interface::drawLinef(float x1, float y1, float x2, float y2) {
 
     this->setTexturing(false);  // disable texturing
 
-    static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_LINES);
+    static VertexArrayObject vao(DrawPrimitive::LINES);
     {
         vao.clear();
 
@@ -554,7 +554,7 @@ void DirectX11Interface::fillRectf(float x, float y, float width, float height) 
 
     this->setTexturing(false);  // disable texturing
 
-    static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+    static VertexArrayObject vao(DrawPrimitive::QUADS);
     {
         vao.clear();
 
@@ -572,7 +572,7 @@ void DirectX11Interface::fillGradient(int x, int y, int width, int height, Color
 
     this->setTexturing(false);  // disable texturing
 
-    static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+    static VertexArrayObject vao(DrawPrimitive::QUADS);
     {
         vao.clear();
 
@@ -593,7 +593,7 @@ void DirectX11Interface::drawQuad(int x, int y, int width, int height) {
 
     this->setTexturing(true);  // enable texturing
 
-    static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+    static VertexArrayObject vao(DrawPrimitive::QUADS);
     {
         vao.clear();
 
@@ -615,7 +615,7 @@ void DirectX11Interface::drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRight,
 
     this->setTexturing(false);  // disable texturing
 
-    static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+    static VertexArrayObject vao(DrawPrimitive::QUADS);
     {
         vao.clear();
 
@@ -718,7 +718,7 @@ void DirectX11Interface::drawImage(const Image *image, AnchorPoint anchor, float
         this->smoothClipShader->setUniformMatrix4fv("mvp", this->MP);
     }
 
-    static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+    static VertexArrayObject vao(DrawPrimitive::QUADS);
     {
         vao.clear();
 
@@ -804,11 +804,11 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
     const size_t maxColorIndex = (colors.size() > 0 ? colors.size() - 1 : 0);
 
     DrawPrimitive primitive = vao->getPrimitive();
-    if(primitive == DrawPrimitive::PRIMITIVE_QUADS) {
+    if(primitive == DrawPrimitive::QUADS) {
         finalVertices.clear();
         finalTexcoords.clear();
         finalColors.clear();
-        primitive = DrawPrimitive::PRIMITIVE_TRIANGLES;
+        primitive = DrawPrimitive::TRIANGLES;
 
         if(vertices.size() > 3) {
             for(size_t i = 0; i < vertices.size(); i += 4) {
@@ -845,11 +845,11 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
                 }
             }
         }
-    } else if(primitive == DrawPrimitive::PRIMITIVE_TRIANGLE_FAN) {
+    } else if(primitive == DrawPrimitive::TRIANGLE_FAN) {
         finalVertices.clear();
         finalTexcoords.clear();
         finalColors.clear();
-        primitive = DrawPrimitive::PRIMITIVE_TRIANGLES;
+        primitive = DrawPrimitive::TRIANGLES;
 
         if(vertices.size() > 2) {
             for(size_t i = 2; i < vertices.size(); i++) {
@@ -1016,7 +1016,7 @@ void DirectX11Interface::setBlendMode(DrawBlendMode blendMode) {
 
     auto &blendDescRT0 = this->blendDesc.RenderTarget[0];
     switch(blendMode) {
-        case DrawBlendMode::BLEND_MODE_ALPHA: {
+        case DrawBlendMode::ALPHA: {
             blendDescRT0.SrcBlend = D3D11_BLEND_SRC_ALPHA;
             blendDescRT0.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
             blendDescRT0.BlendOp = D3D11_BLEND_OP_ADD;
@@ -1026,7 +1026,7 @@ void DirectX11Interface::setBlendMode(DrawBlendMode blendMode) {
             blendDescRT0.BlendOpAlpha = D3D11_BLEND_OP_ADD;
         } break;
 
-        case DrawBlendMode::BLEND_MODE_ADDITIVE: {
+        case DrawBlendMode::ADDITIVE: {
             blendDescRT0.SrcBlend = D3D11_BLEND_SRC_ALPHA;
             blendDescRT0.DestBlend = D3D11_BLEND_ONE;
             blendDescRT0.BlendOp = D3D11_BLEND_OP_ADD;
@@ -1036,7 +1036,7 @@ void DirectX11Interface::setBlendMode(DrawBlendMode blendMode) {
             blendDescRT0.BlendOpAlpha = D3D11_BLEND_OP_ADD;
         } break;
 
-        case DrawBlendMode::BLEND_MODE_PREMUL_ALPHA: {
+        case DrawBlendMode::PREMUL_ALPHA: {
             blendDescRT0.SrcBlend = D3D11_BLEND_SRC_ALPHA;
             blendDescRT0.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
             blendDescRT0.BlendOp = D3D11_BLEND_OP_ADD;
@@ -1046,7 +1046,7 @@ void DirectX11Interface::setBlendMode(DrawBlendMode blendMode) {
             blendDescRT0.BlendOpAlpha = D3D11_BLEND_OP_ADD;
         } break;
 
-        case DrawBlendMode::BLEND_MODE_PREMUL_COLOR: {
+        case DrawBlendMode::PREMUL_COLOR: {
             blendDescRT0.SrcBlend = D3D11_BLEND_ONE;
             blendDescRT0.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
             blendDescRT0.BlendOp = D3D11_BLEND_OP_ADD;
@@ -1408,17 +1408,17 @@ void DirectX11Interface::onTransformUpdate() {
 
 int DirectX11Interface::primitiveToDirectX(DrawPrimitive primitive) {
     switch(primitive) {
-        case DrawPrimitive::PRIMITIVE_LINES:
+        case DrawPrimitive::LINES:
             return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
-        case DrawPrimitive::PRIMITIVE_LINE_STRIP:
+        case DrawPrimitive::LINE_STRIP:
             return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
-        case DrawPrimitive::PRIMITIVE_TRIANGLES:
+        case DrawPrimitive::TRIANGLES:
             return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-        case DrawPrimitive::PRIMITIVE_TRIANGLE_FAN:  // NOTE: not available! -------------------
+        case DrawPrimitive::TRIANGLE_FAN:  // NOTE: not available! -------------------
             return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
-        case DrawPrimitive::PRIMITIVE_TRIANGLE_STRIP:
+        case DrawPrimitive::TRIANGLE_STRIP:
             return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-        case DrawPrimitive::PRIMITIVE_QUADS:  // NOTE: not available! -------------------
+        case DrawPrimitive::QUADS:  // NOTE: not available! -------------------
             return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
     }
 

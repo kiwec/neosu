@@ -241,7 +241,7 @@ void OpenGLES32Interface::setAlpha(float alpha) { setColor(rgba(m_color.Rf(), m_
 void OpenGLES32Interface::drawLinef(float x1, float y1, float x2, float y2) {
     this->updateTransform();
 
-    VertexArrayObject vao(DrawPrimitive::PRIMITIVE_LINES);
+    VertexArrayObject vao(DrawPrimitive::LINES);
     {
         vao.addVertex(x1, y1);
         vao.addVertex(x2, y2);
@@ -317,7 +317,7 @@ void OpenGLES32Interface::drawRectf(const RectOptions &opts) {
 void OpenGLES32Interface::fillRectf(float x, float y, float width, float height) {
     updateTransform();
 
-    VertexArrayObject vao(DrawPrimitive::PRIMITIVE_TRIANGLE_STRIP);
+    VertexArrayObject vao(DrawPrimitive::TRIANGLE_STRIP);
     vao.addVertex(x, y);
     vao.addVertex(x, y + height);
     vao.addVertex(x + width, y);
@@ -329,7 +329,7 @@ void OpenGLES32Interface::fillGradient(int x, int y, int width, int height, Colo
                                        Color bottomLeftColor, Color bottomRightColor) {
     updateTransform();
 
-    VertexArrayObject vao(DrawPrimitive::PRIMITIVE_TRIANGLE_STRIP);
+    VertexArrayObject vao(DrawPrimitive::TRIANGLE_STRIP);
     vao.addVertex(x, y);
     vao.addColor(topLeftColor);
     vao.addVertex(x, y + height);
@@ -344,7 +344,7 @@ void OpenGLES32Interface::fillGradient(int x, int y, int width, int height, Colo
 void OpenGLES32Interface::drawQuad(int x, int y, int width, int height) {
     updateTransform();
 
-    VertexArrayObject vao(DrawPrimitive::PRIMITIVE_TRIANGLE_STRIP);
+    VertexArrayObject vao(DrawPrimitive::TRIANGLE_STRIP);
     vao.addVertex(x, y);
     vao.addTexcoord(0, 0);
     vao.addVertex(x, y + height);
@@ -360,7 +360,7 @@ void OpenGLES32Interface::drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRight
                                    Color topRightColor, Color bottomRightColor, Color bottomLeftColor) {
     updateTransform();
 
-    VertexArrayObject vao(DrawPrimitive::PRIMITIVE_TRIANGLE_STRIP);
+    VertexArrayObject vao(DrawPrimitive::TRIANGLE_STRIP);
     vao.addVertex(topLeft.x, topLeft.y);
     vao.addColor(topLeftColor);
     vao.addTexcoord(0, 0);
@@ -456,7 +456,7 @@ void OpenGLES32Interface::drawImage(const Image *image, AnchorPoint anchor, floa
         this->smoothClipShader->setUniformMatrix4fv("mvp", this->MP);
     }
 
-    VertexArrayObject vao(DrawPrimitive::PRIMITIVE_TRIANGLE_STRIP);
+    VertexArrayObject vao(DrawPrimitive::TRIANGLE_STRIP);
     vao.addVertex(x, y);
     vao.addTexcoord(0, 0);
     vao.addVertex(x, y + height);
@@ -577,11 +577,11 @@ void OpenGLES32Interface::drawVAO(VertexArrayObject *vao) {
     int maxColorIndex = colors.size() - 1;
 
     DrawPrimitive primitive = vao->getPrimitive();
-    if(primitive == DrawPrimitive::PRIMITIVE_QUADS) {
+    if(primitive == DrawPrimitive::QUADS) {
         finalVertices.clear();
         finalTexcoords.clear();
         finalColors.clear();
-        primitive = DrawPrimitive::PRIMITIVE_TRIANGLES;
+        primitive = DrawPrimitive::TRIANGLES;
 
         if(vertices.size() > 3) {
             for(size_t i = 0; i < vertices.size(); i += 4) {
@@ -799,16 +799,16 @@ void OpenGLES32Interface::setBlendMode(DrawBlendMode blendMode) {
     Graphics::setBlendMode(blendMode);
 
     switch(blendMode) {
-        case DrawBlendMode::BLEND_MODE_ALPHA:
+        case DrawBlendMode::ALPHA:
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             break;
-        case DrawBlendMode::BLEND_MODE_ADDITIVE:
+        case DrawBlendMode::ADDITIVE:
             glBlendFunc(GL_SRC_ALPHA, GL_ONE);
             break;
-        case DrawBlendMode::BLEND_MODE_PREMUL_ALPHA:
+        case DrawBlendMode::PREMUL_ALPHA:
             glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
-        case DrawBlendMode::BLEND_MODE_PREMUL_COLOR:
+        case DrawBlendMode::PREMUL_COLOR:
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
     }

@@ -29,9 +29,9 @@
 #include <stack>
 #include <utility>
 
-static_assert(MultisampleType{0} == MultisampleType::MULTISAMPLE_0X);
-static_assert(DrawPrimitive{2} == DrawPrimitive::PRIMITIVE_TRIANGLES);
-static_assert(DrawUsageType{0} == DrawUsageType::USAGE_STATIC);
+static_assert(MultisampleType{0} == MultisampleType::X0);
+static_assert(DrawPrimitive{2} == DrawPrimitive::TRIANGLES);
+static_assert(DrawUsageType{0} == DrawUsageType::STATIC);
 
 struct ResourceManagerImpl final {
     NOCOPY_NOMOVE(ResourceManagerImpl)

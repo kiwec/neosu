@@ -99,10 +99,10 @@ void DirectX11VertexArrayObject::init() {
         }
         const size_t maxColorIndex = (finalColors.size() > 0 ? finalColors.size() - 1 : 0);
 
-        if(this->primitive == DrawPrimitive::PRIMITIVE_QUADS) {
+        if(this->primitive == DrawPrimitive::QUADS) {
             finalTexcoords.clear();
             finalColors.clear();
-            this->convertedPrimitive = DrawPrimitive::PRIMITIVE_TRIANGLES;
+            this->convertedPrimitive = DrawPrimitive::TRIANGLES;
 
             if(this->vertices.size() > 3) {
                 for(size_t i = 0; i < this->vertices.size(); i += 4) {
@@ -139,11 +139,11 @@ void DirectX11VertexArrayObject::init() {
                     }
                 }
             }
-        } else if(this->primitive == DrawPrimitive::PRIMITIVE_TRIANGLE_FAN) {
+        } else if(this->primitive == DrawPrimitive::TRIANGLE_FAN) {
             finalVertices.clear();
             finalTexcoords.clear();
             finalColors.clear();
-            this->convertedPrimitive = DrawPrimitive::PRIMITIVE_TRIANGLES;
+            this->convertedPrimitive = DrawPrimitive::TRIANGLES;
 
             if(this->vertices.size() > 2) {
                 for(size_t i = 2; i < this->vertices.size(); i++) {
@@ -302,17 +302,17 @@ void DirectX11VertexArrayObject::draw() {
 
 int DirectX11VertexArrayObject::primitiveToDirectX(DrawPrimitive primitive) {
     switch(primitive) {
-        case DrawPrimitive::PRIMITIVE_LINES:
+        case DrawPrimitive::LINES:
             return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
-        case DrawPrimitive::PRIMITIVE_LINE_STRIP:
+        case DrawPrimitive::LINE_STRIP:
             return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
-        case DrawPrimitive::PRIMITIVE_TRIANGLES:
+        case DrawPrimitive::TRIANGLES:
             return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-        case DrawPrimitive::PRIMITIVE_TRIANGLE_FAN:  // NOTE: not available! -------------------
+        case DrawPrimitive::TRIANGLE_FAN:  // NOTE: not available! -------------------
             return D3D_PRIMITIVE_TOPOLOGY::D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-        case DrawPrimitive::PRIMITIVE_TRIANGLE_STRIP:
+        case DrawPrimitive::TRIANGLE_STRIP:
             return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-        case DrawPrimitive::PRIMITIVE_QUADS:  // NOTE: not available! -------------------
+        case DrawPrimitive::QUADS:  // NOTE: not available! -------------------
             return D3D_PRIMITIVE_TOPOLOGY::D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     }
 
@@ -321,12 +321,12 @@ int DirectX11VertexArrayObject::primitiveToDirectX(DrawPrimitive primitive) {
 
 int DirectX11VertexArrayObject::usageToDirectX(DrawUsageType usage) {
     switch(usage) {
-        case DrawUsageType::USAGE_STATIC:
+        case DrawUsageType::STATIC:
             return D3D11_USAGE_IMMUTABLE;
         // NOTE: this fallthrough is intentional.
         // no performance benefits found so far with DYNAMIC, since D3D11_MAP_WRITE_NO_OVERWRITE has very limited use cases
-        case DrawUsageType::USAGE_DYNAMIC:
-        case DrawUsageType::USAGE_STREAM:
+        case DrawUsageType::DYNAMIC:
+        case DrawUsageType::STREAM:
             return D3D11_USAGE_DEFAULT;
     }
 

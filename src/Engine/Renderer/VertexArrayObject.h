@@ -8,8 +8,8 @@
 class VertexArrayObject : public Resource {
     NOCOPY_NOMOVE(VertexArrayObject)
    public:
-    VertexArrayObject(DrawPrimitive primitive = DrawPrimitive::PRIMITIVE_TRIANGLES,
-                      DrawUsageType usage = DrawUsageType::USAGE_STATIC, bool keepInSystemMemory = false);
+    VertexArrayObject(DrawPrimitive primitive = DrawPrimitive::TRIANGLES,
+                      DrawUsageType usage = DrawUsageType::STATIC, bool keepInSystemMemory = false);
     ~VertexArrayObject() override = default;
 
     void clear();
