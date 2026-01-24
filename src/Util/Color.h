@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 
 using Channel = u8;
 namespace Colors {
@@ -35,20 +36,31 @@ constexpr Channel to_byte(Numeric auto value) {
 }
 }  // namespace Colors
 
-// argb colors
+// argb colors (TODO: non-argb)
 struct Color {
     u32 v;
 
-    constexpr Color() : v(0) {}
-    constexpr Color(u32 val) : v(val) {}
+    constexpr Color() : v{0} {}
+    constexpr Color(i32 val) : v{static_cast<u32>(val)} {}
+    constexpr Color(u32 val) : v{val} {}
 
-    constexpr Color(Channel alpha, Channel red, Channel green, Channel blue) {
-        v = (static_cast<u32>(alpha) << 24) | (static_cast<u32>(red) << 16) | (static_cast<u32>(green) << 8) |
-            static_cast<u32>(blue);
-    }
+    template <typename A, typename R, typename G, typename B>
+    constexpr Color(A a, R r, G g, B b)
+        requires Colors::Numeric<A> && Colors::Numeric<R> && Colors::Numeric<G> && Colors::Numeric<B> &&
+                 Colors::all_compatible_v<A, R, G, B>
+        : v{(static_cast<u32>(Colors::to_byte(a)) << 24) | (static_cast<u32>(Colors::to_byte(r)) << 16) |
+            (static_cast<u32>(Colors::to_byte(g)) << 8) | static_cast<u32>(Colors::to_byte(b))} {}
+
+    template <typename A, typename R, typename G, typename B>
+    constexpr Color(A a, R r, G g, B b)
+        requires Colors::Numeric<A> && Colors::Numeric<R> && Colors::Numeric<G> && Colors::Numeric<B> &&
+                     (!Colors::all_compatible_v<A, R, G, B>)
+    = delete("parameters should have compatible types");
+
+    operator u32() const { return v; }
 
     // clang-format off
-	// channel accessors (couldn't make the union work, unfortunate)
+	// channel accessors
 	[[nodiscard]] constexpr Channel A() const { return static_cast<Channel>((v >> 24) & 0xFF); }
 	[[nodiscard]] constexpr Channel R() const { return static_cast<Channel>((v >> 16) & 0xFF); }
 	[[nodiscard]] constexpr Channel G() const { return static_cast<Channel>((v >> 8) & 0xFF); }
@@ -73,69 +85,34 @@ struct Color {
 	template <typename T = Channel>
 	constexpr Color &setB(T b) { *this = ((*this & 0xFFFFFF00) | (Colors::to_byte(b) << 0)); return *this; }
 
-	constexpr Color& operator&=(u32 val) { v &= val; return *this; }
-	constexpr Color& operator|=(u32 val) { v |= val; return *this; }
-	constexpr Color& operator^=(u32 val) { v ^= val; return *this; }
-	constexpr Color& operator<<=(int shift) { v <<= shift; return *this; }
-	constexpr Color& operator>>=(int shift) { v >>= shift; return *this; }
-
-	constexpr Color& operator&=(const Color& other) { v &= other.v; return *this; }
-	constexpr Color& operator|=(const Color& other) { v |= other.v; return *this; }
-	constexpr Color& operator^=(const Color& other) { v ^= other.v; return *this; }
     // clang-format on
-
-    operator u32() const { return v; }
 };
 
 // main conversion func
 template <typename A, typename R, typename G, typename B>
-constexpr Color argb(A a, R r, G g, B b)
-    requires Colors::Numeric<A> && Colors::Numeric<R> && Colors::Numeric<G> && Colors::Numeric<B> &&
-             Colors::all_compatible_v<A, R, G, B>
-{
-    return Color(Colors::to_byte(a), Colors::to_byte(r), Colors::to_byte(g), Colors::to_byte(b));
-}
-
-template <typename A, typename R, typename G, typename B>
-[[deprecated("parameters should have compatible types")]]
-constexpr Color argb(A a, R r, G g, B b)
-    requires Colors::Numeric<A> && Colors::Numeric<R> && Colors::Numeric<G> && Colors::Numeric<B> &&
-             (!Colors::all_compatible_v<A, R, G, B>)
-{
-    return Color(Colors::to_byte(a), Colors::to_byte(r), Colors::to_byte(g), Colors::to_byte(b));
+constexpr Color argb(A a, R r, G g, B b) {
+    return Color{a, r, g, b};
 }
 
 // convenience
 template <typename R, typename G, typename B, typename A>
-constexpr Color rgba(R r, G g, B b, A a)
-    requires Colors::Numeric<R> && Colors::Numeric<G> && Colors::Numeric<B> && Colors::Numeric<A> &&
-             Colors::all_compatible_v<R, G, B, A>
-{
-    return argb(a, r, g, b);
+constexpr Color rgba(R r, G g, B b, A a) {
+    return Color{a, r, g, b};
 }
 
-constexpr Color argb(Color rgbacol) { return argb(rgbacol.B(), rgbacol.A(), rgbacol.R(), rgbacol.G()); }
+constexpr Color argb(Color rgbacol) { return Color{rgbacol.B(), rgbacol.A(), rgbacol.R(), rgbacol.G()}; }
 
 // for opengl
-constexpr Color rgba(Color argbcol) { return argb(argbcol.R(), argbcol.G(), argbcol.B(), argbcol.A()); }
+constexpr Color rgba(Color argbcol) { return Color{argbcol.R(), argbcol.G(), argbcol.B(), argbcol.A()}; }
 
 // for opengl
-constexpr Color abgr(Color argbcol) { return argb(argbcol.A(), argbcol.B(), argbcol.G(), argbcol.R()); }
-
-template <typename R, typename G, typename B, typename A>
-[[deprecated("parameters should have compatible types")]]
-constexpr Color rgba(R r, G g, B b, A a)
-    requires Colors::Numeric<R> && Colors::Numeric<G> && Colors::Numeric<B> && Colors::Numeric<A> &&
-             (!Colors::all_compatible_v<R, G, B, A>)
-{
-    return argb(a, r, g, b);
-}
+constexpr Color abgr(Color argbcol) { return Color{argbcol.A(), argbcol.B(), argbcol.G(), argbcol.R()}; }
 
 template <typename R, typename G, typename B>
 constexpr Color rgb(R r, G g, B b)
     requires Colors::Numeric<R> && Colors::Numeric<G> && Colors::Numeric<B> && Colors::all_compatible_v<R, G, B, R>
 {
-    return Color(255, Colors::to_byte(r), Colors::to_byte(g), Colors::to_byte(b));
+    return {255, Colors::to_byte(r), Colors::to_byte(g), Colors::to_byte(b)};
 }
 
 template <typename R, typename G, typename B>
@@ -143,18 +120,15 @@ template <typename R, typename G, typename B>
 constexpr Color rgb(R r, G g, B b)
     requires Colors::Numeric<R> && Colors::Numeric<G> && Colors::Numeric<B> && (!Colors::all_compatible_v<R, G, B, R>)
 {
-    return Color(255, Colors::to_byte(r), Colors::to_byte(g), Colors::to_byte(b));
+    return {255, Colors::to_byte(r), Colors::to_byte(g), Colors::to_byte(b)};
 }
 
 namespace Colors {
-constexpr Color brighten(Color color, float factor) {
+constexpr Color scale(Color color, float factor) {
     return argb(color.Af(), color.Rf() * factor, color.Gf() * factor, color.Bf() * factor);
 }
 
-constexpr Color invert(Color color) {
-    return {static_cast<Channel>((color.v >> 24) & 0xFF), static_cast<Channel>(255 - ((color.v >> 16) & 0xFF)),
-            static_cast<Channel>(255 - ((color.v >> 8) & 0xFF)), static_cast<Channel>(255 - (color.v & 0xFF))};
-}
+constexpr Color invert(Color color) { return {color.A(), 255 - color.R(), 255 - color.G(), 255 - color.B()}; }
 
 constexpr Color multiply(Color color1, Color color2) {
     return rgb(color1.Rf() * color2.Rf(), color1.Gf() * color2.Gf(), color1.Bf() * color2.Bf());
@@ -170,12 +144,6 @@ constexpr Color subtract(Color color1, Color color2) {
                std::clamp(color1.Bf() - color2.Bf(), 0.0f, 1.0f));
 }
 
-constexpr Color scale(Color color, float multiplier) {
-    return {static_cast<Channel>((color.v >> 24) & 0xFF),
-            static_cast<Channel>(static_cast<float>((color.v >> 16) & 0xFF) * multiplier),
-            static_cast<Channel>(static_cast<float>((color.v >> 8) & 0xFF) * multiplier),
-            static_cast<Channel>(static_cast<float>(color.v & 0xFF) * multiplier)};
-}
 }  // namespace Colors
 
 #endif

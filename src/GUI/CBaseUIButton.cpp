@@ -103,12 +103,14 @@ void CBaseUIButton::drawText() {
 }
 
 void CBaseUIButton::drawHoverRect(int distance) {
-    g->drawLine(this->getPos().x, this->getPos().y - distance, this->getPos().x + this->getSize().x + 1, this->getPos().y - distance);
-    g->drawLine(this->getPos().x, this->getPos().y + this->getSize().y + distance, this->getPos().x + this->getSize().x + 1,
-                this->getPos().y + this->getSize().y + distance);
-    g->drawLine(this->getPos().x - distance, this->getPos().y, this->getPos().x - distance, this->getPos().y + this->getSize().y + 1);
-    g->drawLine(this->getPos().x + this->getSize().x + distance, this->getPos().y, this->getPos().x + this->getSize().x + distance,
+    g->drawLine(this->getPos().x, this->getPos().y - distance, this->getPos().x + this->getSize().x + 1,
+                this->getPos().y - distance);
+    g->drawLine(this->getPos().x, this->getPos().y + this->getSize().y + distance,
+                this->getPos().x + this->getSize().x + 1, this->getPos().y + this->getSize().y + distance);
+    g->drawLine(this->getPos().x - distance, this->getPos().y, this->getPos().x - distance,
                 this->getPos().y + this->getSize().y + 1);
+    g->drawLine(this->getPos().x + this->getSize().x + distance, this->getPos().y,
+                this->getPos().x + this->getSize().x + distance, this->getPos().y + this->getSize().y + 1);
 }
 
 void CBaseUIButton::onMouseUpInside(bool left, bool right) { this->onClicked(left, right); }

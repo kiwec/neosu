@@ -33,8 +33,7 @@ class CBaseUIImage : public CBaseUIElement {
         return this;
     }
     CBaseUIImage *setAlpha(float alpha) {
-        this->color &= 0x00ffffff;
-        this->color |= ((int)(255.0f * alpha)) << 24;
+        this->color.setA(alpha);
         return this;
     }
     CBaseUIImage *setBackgroundColor(Color backgroundColor) {

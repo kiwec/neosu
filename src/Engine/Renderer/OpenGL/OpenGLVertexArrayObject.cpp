@@ -12,8 +12,7 @@
 #include "ConVar.h"
 #include "Logging.h"
 
-OpenGLVertexArrayObject::OpenGLVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage,
-                                                 bool keepInSystemMemory)
+OpenGLVertexArrayObject::OpenGLVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage, bool keepInSystemMemory)
     : VertexArrayObject(primitive, usage, keepInSystemMemory) {
     this->iVertexBuffer = 0;
     this->iTexcoordBuffer = 0;

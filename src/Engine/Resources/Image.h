@@ -151,11 +151,11 @@ class Image : public Resource {
     };
 
     [[nodiscard]] bool isRawImageCompletelyTransparent() const;
-    static bool canHaveTransparency(const std::unique_ptr<u8[]> &data, u64 size);
+    static bool canHaveTransparency(const u8 *data, u64 size);
 
-    ImageDecodeResult decodeJPEGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size);
-    ImageDecodeResult decodePNGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size);
-    ImageDecodeResult decodeSTBFromMemory(const std::unique_ptr<u8[]> &inData, u64 size);
+    ImageDecodeResult decodeJPEGFromMemory(const u8 *inData, u64 size);
+    ImageDecodeResult decodePNGFromMemory(const u8 *inData, u64 size);
+    ImageDecodeResult decodeSTBFromMemory(const u8 *inData, u64 size);
 };
 
 #endif

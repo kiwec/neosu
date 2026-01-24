@@ -33,7 +33,7 @@ void UIButton::draw() {
         auto color = this->is_loading ? rgba(0x33, 0x33, 0x33, 0xff) : this->color;
 
         float brightness = 1.f + (this->fHoverAnim * 0.2f);
-        color = Colors::brighten(color, brightness);
+        color = Colors::scale(color, brightness);
 
         g->setColor(color);
     }

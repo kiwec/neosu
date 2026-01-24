@@ -439,10 +439,10 @@ void DirectX11Interface::setColor(Color color) {
 }
 
 void DirectX11Interface::setAlpha(float alpha) {
-    this->color &= 0x00ffffff;
-    this->color |= ((int)(255.0f * alpha)) << 24;
+    Color newColor = this->color;
+    newColor.setA(alpha);
 
-    this->setColor(this->color);
+    this->setColor(newColor);
 }
 
 void DirectX11Interface::drawPixel(int x, int y) {

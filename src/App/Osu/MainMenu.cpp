@@ -83,8 +83,9 @@ class MainMenu::MainButton final : public CBaseUIButton {
    public:
     MainButton(MainMenu *parent, float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)), mm_ptr(parent) {}
-
-    bool isMouseInside() override { return this->isEnabled() && CBaseUIButton::isMouseInside() && !this->mm_ptr->cube->isMouseInside(); }
+    bool isMouseInside() override {
+        return this->isEnabled() && CBaseUIButton::isMouseInside() && !this->mm_ptr->cube->isMouseInside();
+    }
 
     void onMouseDownInside(bool left = true, bool right = false) override {
         if(this->mm_ptr->cube->isMouseInside()) return;

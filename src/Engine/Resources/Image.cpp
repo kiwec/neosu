@@ -99,7 +99,7 @@ void pngReadFromMemory(png_structp png_ptr, png_bytep outBytes, png_size_t byteC
 }
 }  // namespace
 
-Image::ImageDecodeResult Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+Image::ImageDecodeResult Image::decodePNGFromMemory(const u8 *inData, u64 size) {
     garbage_zlib();
     using enum ImageDecodeResult;
 
@@ -123,7 +123,7 @@ Image::ImageDecodeResult Image::decodePNGFromMemory(const std::unique_ptr<u8[]> 
     }
 
     // Set up memory reading
-    pngMemoryReader reader{.pdata = inData.get(), .size = size, .offset = 0};
+    pngMemoryReader reader{.pdata = inData, .size = size, .offset = 0};
 
     png_set_read_fn(png_ptr, &reader, pngReadFromMemory);
 
@@ -194,7 +194,7 @@ Image::ImageDecodeResult Image::decodePNGFromMemory(const std::unique_ptr<u8[]> 
     return SUCCESS;
 }
 
-Image::ImageDecodeResult Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+Image::ImageDecodeResult Image::decodeJPEGFromMemory(const u8 *inData, u64 size) {
     using enum ImageDecodeResult;
     // decode jpeg
     tjhandle tjInstance = tj3Init(TJINIT_DECOMPRESS);
@@ -203,7 +203,7 @@ Image::ImageDecodeResult Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]>
         return FAIL;
     }
 
-    if(tj3DecompressHeader(tjInstance, inData.get(), size) < 0) {
+    if(tj3DecompressHeader(tjInstance, inData, size) < 0) {
         debugLog("Image Error: tj3DecompressHeader failed: {:s}", tj3GetErrorStr(tjInstance));
         tj3Destroy(tjInstance);
         return FAIL;
@@ -235,7 +235,7 @@ Image::ImageDecodeResult Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]>
 
     // always convert to RGBA for consistency with PNG
     // decompress directly to RGBA
-    if(tj3Decompress8(tjInstance, inData.get(), size, this->rawImage.get(), 0, TJPF_RGBA) < 0) {
+    if(tj3Decompress8(tjInstance, inData, size, this->rawImage.get(), 0, TJPF_RGBA) < 0) {
         debugLog("Image Error: tj3Decompress8 failed: {:s}", tj3GetErrorStr(tjInstance));
         tj3Destroy(tjInstance);
         return FAIL;
@@ -245,12 +245,12 @@ Image::ImageDecodeResult Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]>
     return SUCCESS;
 }
 
-Image::ImageDecodeResult Image::decodeSTBFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+Image::ImageDecodeResult Image::decodeSTBFromMemory(const u8 *inData, u64 size) {
     using enum ImageDecodeResult;
 
     // use stbi_info to validate dimensions before decoding
     i32 outWidth, outHeight, channels;
-    if(!stbi_info_from_memory(inData.get(), static_cast<i32>(size), &outWidth, &outHeight, &channels)) {
+    if(!stbi_info_from_memory(inData, static_cast<i32>(size), &outWidth, &outHeight, &channels)) {
         debugLog("Image Error: stb_image info query failed: {:s}", stbi_failure_reason());
         return FAIL;
     }
@@ -263,8 +263,8 @@ Image::ImageDecodeResult Image::decodeSTBFromMemory(const std::unique_ptr<u8[]> 
     if(this->isInterrupted())  // cancellation point
         return INTERRUPTED;
 
-    u8 *decoded = stbi_load_from_memory(inData.get(), static_cast<i32>(size), &outWidth, &outHeight, &channels,
-                                        Image::NUM_CHANNELS);
+    u8 *decoded =
+        stbi_load_from_memory(inData, static_cast<i32>(size), &outWidth, &outHeight, &channels, Image::NUM_CHANNELS);
 
     if(!decoded) {
         debugLog("Image Error: stb_image failed: {:s}", stbi_failure_reason());
@@ -464,9 +464,9 @@ bool Image::loadRawImage() {
 
         // try format-specific decoder first if format is recognized
         if(isPNG) {
-            res = decodePNGFromMemory(fileBuffer, fileSize);
+            res = decodePNGFromMemory(fileBuffer.get(), fileSize);
         } else if(isJPEG) {
-            res = decodeJPEGFromMemory(fileBuffer, fileSize);
+            res = decodeJPEGFromMemory(fileBuffer.get(), fileSize);
         }
 
         // early exit on interruption
@@ -479,7 +479,7 @@ bool Image::loadRawImage() {
             if(isPNG || isJPEG) {
                 debugLog("Image Warning: Primary decoder failed for {:s}, trying fallback...", this->sFilePath);
             }
-            res = decodeSTBFromMemory(fileBuffer, fileSize);
+            res = decodeSTBFromMemory(fileBuffer.get(), fileSize);
         }
 
         // final result check
@@ -490,7 +490,7 @@ bool Image::loadRawImage() {
             return exit();
         }
 
-        if((this->type == Image::TYPE::TYPE_PNG) && canHaveTransparency(fileBuffer, fileSize) &&
+        if((this->type == Image::TYPE::TYPE_PNG) && canHaveTransparency(fileBuffer.get(), fileSize) &&
            isRawImageCompletelyTransparent()) {
             if(!this->isInterrupted()) {
                 debugLog("Image: Ignoring empty transparent image {:s}", this->sFilePath);
@@ -570,14 +570,14 @@ void Image::setPixels(const std::vector<u8> &pixels) {
 }
 
 // internal
-bool Image::canHaveTransparency(const std::unique_ptr<u8[]> &data, u64 size) {
+bool Image::canHaveTransparency(const u8 *data, u64 size) {
     if(size < 33)  // not enough data for IHDR, so just assume true
         return true;
 
     // PNG IHDR chunk starts at offset 16 (8 bytes signature + 8 bytes chunk header)
     // color type is at offset 25 (16 + 4 width + 4 height + 1 bit depth)
     if(size > 25) {
-        u8 colorType = data.get()[25];
+        u8 colorType = data[25];
         return colorType != 2;  // RGB without alpha
     }
 
