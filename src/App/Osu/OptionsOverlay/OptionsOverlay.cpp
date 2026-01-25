@@ -4052,11 +4052,11 @@ void OptionsOverlayImpl::save() {
         std::vector<std::string> read_lines;
         if(read_data.empty()) {
             if(Environment::fileExists(cfg_name)) {
-                debugLog("WARNING: read no data from previous osu.cfg!\n");
+                debugLog("WARNING: read no data from previous osu.cfg!");
                 // back it up just in case
                 std::string backup_name = fmt::format("{}.{:%F}.bak", cfg_name, fmt::gmtime(std::time(nullptr)));
                 if(File::copy(cfg_name, backup_name)) {
-                    debugLog("backed up {} -> {}\n", cfg_name, backup_name);
+                    debugLog("backed up {} -> {}", cfg_name, backup_name);
                 }
             }
         } else {

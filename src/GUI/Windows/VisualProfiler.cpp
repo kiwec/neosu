@@ -146,6 +146,8 @@ void VisualProfiler::draw() {
                     addTextLine(fmt::format("NativeRes: {:d} x {:d}"_cf, (int)env->getNativeScreenSize().x,
                                             (int)env->getNativeScreenSize().y),
                                 textFont, this->textLines);
+                    addTextLine(fmt::format("Env Pixel Density: {:f}"_cf, env->getPixelDensity()), textFont,
+                                this->textLines);
                     addTextLine(fmt::format("Env DPI Scale: {:f}"_cf, env->getDPIScale()), textFont, this->textLines);
                     addTextLine(fmt::format("Env DPI: {:d}"_cf, (int)env->getDPI()), textFont, this->textLines);
                     addTextLine(fmt::format("Renderer: {:s}"_cf, g->getName()), textFont, this->textLines);  //
@@ -457,8 +459,9 @@ void VisualProfiler::draw() {
                 for(size_t i = 1; i < this->groups.size(); i++) {
                     const int stringWidth = (int)(this->font->getStringWidth(this->groups[i].name));
                     g->translate(-stringWidth, 0);
-                    g->drawString(this->font, this->groups[i].name,
-                                  TextShadow{.col_text = this->groups[i].color, .offs_px = (int)(1 * env->getDPIScale())});
+                    g->drawString(
+                        this->font, this->groups[i].name,
+                        TextShadow{.col_text = this->groups[i].color, .offs_px = (int)(1 * env->getDPIScale())});
                     g->translate(stringWidth, (int)(-this->font->getHeight() - padding));
                 }
             }

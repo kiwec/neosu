@@ -24,6 +24,7 @@
 #include "Engine.h"
 #include "File.h"
 #include "Font.h"
+#include "RuntimePlatform.h"
 #include "Sound.h"
 #include "Environment.h"
 #include "GameRules.h"
@@ -216,7 +217,7 @@ Osu::Osu()
                 normalized = oldString;
             } else {
                 // if it was empty, reset it to some sane default
-                normalized = env->getUserDataPath();
+                normalized = Osu::getDefaultFallbackOsuFolder();
             }
         }
         cv::osu_folder.setValue(normalized, false);
@@ -237,8 +238,8 @@ Osu::Osu()
     this->playfieldBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
     this->sliderFrameBuffer =
         resourceManager->createRenderTarget(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
-    this->AAFrameBuffer = resourceManager->createRenderTarget(
-        0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight(), MultisampleType::X4);
+    this->AAFrameBuffer = resourceManager->createRenderTarget(0, 0, this->getVirtScreenWidth(),
+                                                              this->getVirtScreenHeight(), MultisampleType::X4);
     this->frameBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
@@ -261,7 +262,7 @@ Osu::Osu()
     Console::execConfigFile("override");  // used for quickfixing live builds without redeploying/recompiling
 
     // if we don't have an osu.cfg, import
-    if(!Environment::fileExists(MCENGINE_CFG_PATH "/osu.cfg")) {
+    if(!Environment::fileExists(NEOSU_CFG_PATH "/osu.cfg")) {
         PeppyImporter::import_settings_from_osu_stable();
     }
 
@@ -406,8 +407,10 @@ Osu::Osu()
     }
 
     // don't allow empty osu_folder if it's still empty at this point
-    if (cv::osu_folder.getString().empty()) {
-        cv::osu_folder.setValue(env->getUserDataPath());
+    if(cv::osu_folder.getString().empty()) {
+        const std::string fallback = this->getDefaultFallbackOsuFolder();
+        debugLog("using fallback/default osu! folder: {}", fallback);
+        cv::osu_folder.setValue(fallback);
     }
 
     env->setCursorVisible(!this->internalRect.contains(mouse->getPos()));
@@ -429,6 +432,7 @@ Osu::~Osu() {
     VolNormalization::shutdown();
     BANCHO::Net::cleanup_networking();
 
+    this->bUILoaded = false;
     this->ui_memb.reset();  // destroy ui layers
     ui = nullptr;
     db.reset();  // shutdown db
@@ -1580,7 +1584,8 @@ void Osu::onSkinChange(std::string_view newSkinName) {
     if(env->directoryExists(neosuSkinFolder)) {
         this->skinScheduledToLoad = new Skin(newSkinName, neosuSkinFolder, false);
     } else {
-        std::string ppySkinFolder{fmt::format("{}/{}/{}/",cv::osu_folder.getString(), cv::osu_folder_sub_skins.getString(), newSkinName)};
+        std::string ppySkinFolder{
+            fmt::format("{}/{}/{}/", cv::osu_folder.getString(), cv::osu_folder_sub_skins.getString(), newSkinName)};
         File::normalizeSlashes(ppySkinFolder, '\\', '/');
         this->skinScheduledToLoad = new Skin(newSkinName, ppySkinFolder, false);
     }
@@ -1931,4 +1936,66 @@ void Osu::setupAudio() {
         // only after init so config files don't restart it over and over again
         soundEngine->allowInternalCallbacks();
     }
+}
+
+// guaranteed to never return an empty string
+std::string Osu::getDefaultFallbackOsuFolder() {
+    // default fallback return value
+    std::string folderRet = env->getUserDataPath();
+    // directory to look for osu in
+    std::string toplevelDir;
+
+    // non-windows, or windows in wine (try to find default osu-winello install folder)
+    if(!Env::cfg(OS::WINDOWS) || (RuntimePlatform::current() & RuntimePlatform::WIN_WINE)) {
+        const bool isWine = (RuntimePlatform::current() & RuntimePlatform::WIN_WINE);
+
+        // try $XDG_DATA_HOME/
+        toplevelDir = Environment::getEnvVariable("XDG_DATA_HOME");
+        if(toplevelDir.empty() && isWine) {
+            toplevelDir = Environment::getEnvVariable("WINE_HOST_XDG_DATA_HOME");
+        }
+        if(toplevelDir.empty()) {
+            // try ~/.local/share/
+            if(isWine) {
+                toplevelDir = Environment::getEnvVariable("HOME");
+                if(toplevelDir.empty()) {
+                    toplevelDir = Environment::getEnvVariable("WINE_HOST_HOME");
+                }
+                if(!toplevelDir.empty()) {
+                    toplevelDir += "/.local/share/";
+                }
+            } else {
+                // this should be equivalent to ~/.local/share
+                toplevelDir = env->getUserDataPath();
+            }
+        }
+    } else {  // windows, try to find osu install folder manually in the default location (since we didn't find it in the registry)
+        std::string appDataFolder = env->getUserDataPath();
+        if(size_t roamPos = appDataFolder.rfind("Roaming"); roamPos != std::string::npos) {
+            appDataFolder = appDataFolder.substr(0, roamPos);
+            appDataFolder += "Local";
+        }
+        toplevelDir = appDataFolder;
+    }
+
+    if(!toplevelDir.empty()) {
+        File::normalizeSlashes(toplevelDir, '\\', '/');
+        if(!toplevelDir.empty() && !toplevelDir.ends_with('/')) {
+            toplevelDir.push_back('/');
+        }
+        for(std::string_view subdir : {"osu!/", "osu-wine/", "osu-wine/osu!/", "osu/", "osu/osu!/"}) {
+            const std::string checkDir = fmt::format("{}{}", toplevelDir, subdir);
+            if(Environment::directoryExists(checkDir)) {
+                // check for osu!.exe
+                const std::string checkFile = fmt::format("{}{}", checkDir, "osu!.exe");
+                if(Environment::fileExists(checkFile)) {
+                    // found
+                    folderRet = checkDir;
+                    break;
+                }
+            }
+        }
+    }
+
+    return folderRet;
 }

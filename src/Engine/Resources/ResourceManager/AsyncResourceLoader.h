@@ -54,7 +54,7 @@ class AsyncResourceLoader final {
     struct LoadingWork {
         Resource *resource;
         size_t workId;
-        std::atomic<WorkState> state{WorkState::PENDING};
+        WorkState state{WorkState::PENDING};
 
         LoadingWork(Resource *res, size_t id) : resource(res), workId(id) {}
     };

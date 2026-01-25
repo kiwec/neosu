@@ -7,6 +7,7 @@
 #include "Timing.h"
 #include "Logging.h"
 #include "SyncJthread.h"
+#include "Hashing.h"
 
 #include <algorithm>
 #include <utility>
@@ -57,9 +58,8 @@ class AsyncResourceLoader::LoaderThread final {
                 Sync::unique_lock lock(loader_ptr->workAvailableMutex);
 
                 // wait indefinitely until work is available or stop is requested
-                loader_ptr->workAvailable.wait(lock, stoken, [loader = loader_ptr]() {
-                    return loader->iActiveWorkCount.load(std::memory_order_acquire) > 0;
-                });
+                loader_ptr->workAvailable.wait(
+                    lock, stoken, []() { return loader_ptr->iActiveWorkCount.load(std::memory_order_acquire) > 0; });
 
                 continue;
             }
@@ -82,15 +82,15 @@ class AsyncResourceLoader::LoaderThread final {
             }
 
             if(interrupted) {
-                work->state.store(WorkState::ASYNC_INTERRUPTED, std::memory_order_release);
+                work->state = WorkState::ASYNC_INTERRUPTED;
             } else {
-                work->state.store(WorkState::ASYNC_IN_PROGRESS, std::memory_order_release);
+                work->state = WorkState::ASYNC_IN_PROGRESS;
 
                 resource->loadAsync();
 
                 logIf(debug, "Thread #{} finished async loading {:s}", this_->thread_index, debugName);
 
-                work->state.store(WorkState::ASYNC_COMPLETE, std::memory_order_release);
+                work->state = WorkState::ASYNC_COMPLETE;
             }
 
             loader_ptr->markWorkAsyncComplete(std::move(work));
@@ -226,8 +226,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
             this->loadingResourcesSet.erase(rs);
         }
 
-        const bool interrupted =
-            work->state.load(std::memory_order_acquire) == WorkState::ASYNC_INTERRUPTED || rs->isInterrupted();
+        const bool interrupted = (work->state == WorkState::ASYNC_INTERRUPTED) || rs->isInterrupted();
         if(!interrupted) {
             logIf(debug, "Sync init for {:s}", rs->getDebugIdentifier());
             rs->load();
@@ -235,12 +234,11 @@ void AsyncResourceLoader::update(bool lowLatency) {
             logIf(debug, "Skipping sync init for {:s}", rs->getDebugIdentifier());
         }
 
-        work->state.store(WorkState::SYNC_COMPLETE, std::memory_order_release);
+        work->state =
+            WorkState::SYNC_COMPLETE;  // this is currently pointless since work is destroyed like 5 lines later
 
         this->iActiveWorkCount.fetch_sub(1, std::memory_order_acq_rel);
         if(!interrupted) numProcessed++;
-
-        // work will be automatically destroyed when unique_ptr goes out of scope
     }
 
     // process async destroy queue
@@ -264,6 +262,12 @@ void AsyncResourceLoader::update(bool lowLatency) {
                     resourcesReadyForDestroy.push_back(current);
                 }  // don't delete it otherwise, just remove it from the destroy queue (our job of blocking on it to finish is done)
                 this->asyncDestroyQueue.erase(this->asyncDestroyQueue.begin() + i);
+
+                if(resourcesReadyForDestroy.size() >= amountToProcess) {
+                    // also respect amount to process per update here, break early if we'd try to destroy more than
+                    // that many resources
+                    break;
+                }
                 i--;
             }
         }
@@ -292,7 +296,7 @@ void AsyncResourceLoader::reloadResources(const std::vector<Resource *> &resourc
 
     logIf(debug, "Async reloading {} resources", resources.size());
 
-    std::vector<Resource *> resourcesToReload;
+    Hash::flat::set<Resource *> resourcesToReload;
     for(Resource *rs : resources) {
         if(rs == nullptr) continue;
 
@@ -301,8 +305,13 @@ void AsyncResourceLoader::reloadResources(const std::vector<Resource *> &resourc
         bool isBeingLoaded = isLoadingResource(rs);
 
         if(!isBeingLoaded) {
-            rs->release();
-            resourcesToReload.push_back(rs);
+            // possibly overly-paranoid sanity check to remove any duplicates
+            // we're already implicitly deduplicating in our loadingResourcesSet but this is more explicit
+            if(const auto &[_, newlyInserted] = resourcesToReload.insert(rs); newlyInserted) {
+                rs->release();
+            } else if(debug) {
+                debugLog("W: skipping duplicate pending reload");
+            }
         } else if(debug) {
             debugLog("Resource {:s} is currently being loaded, skipping reload", rs->getDebugIdentifier());
         }
@@ -353,7 +362,8 @@ void AsyncResourceLoader::cleanupIdleThreads() {
     this->lastCleanupTime = now;
 
     // don't cleanup if we still have work
-    if(this->iActiveWorkCount.load(std::memory_order_acquire) > 0) return;
+    // TODO: does this make things better or worse in reality?
+    // if(this->iActiveWorkCount.load(std::memory_order_acquire) > 0) return;
 
     Sync::scoped_lock lock(this->threadsMutex);
 

@@ -337,6 +337,8 @@ class Osu final : public App, public MouseListener {
     friend class BeatmapInterface;
     bool bIsPlayingASelectedBeatmap{false};
 
+    [[nodiscard]] static std::string getDefaultFallbackOsuFolder();
+
     // internal audio setup
     void setupAudio();
     void audioRestartCallbackBefore();
