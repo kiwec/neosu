@@ -2362,21 +2362,22 @@ void SongBrowser::updateLayout() {
     const int topbarLeftButtonMargin = 5 * dpiScale;
     const int topbarLeftButtonHeight = 30 * dpiScale;
     const int topbarLeftButtonWidth = 55 * dpiScale;
-    this->webButton->onResized();  // HACKHACK: framework bug (should update string metrics on setSize())
-    this->webButton->setSize(topbarLeftButtonWidth, topbarLeftButtonHeight);
-    this->webButton->setRelPos(this->topbarLeft->getSize().x - (topbarLeftButtonMargin + topbarLeftButtonWidth),
-                               this->topbarLeft->getSize().y - this->webButton->getSize().y);
 
     const int dropdowns_width =
         this->topbarLeft->getSize().x - 3 * topbarLeftButtonMargin - (topbarLeftButtonWidth + topbarLeftButtonMargin);
-    const int dropdowns_y = this->topbarLeft->getSize().y - this->sortScoresDropdown->getSize().y;
+    const int dropdowns_y = this->topbarLeft->getSize().y - topbarLeftButtonHeight;
 
-    this->filterScoresDropdown->onResized();  // HACKHACK: framework bug (should update string metrics on setSize())
+    this->webButton->setSize(topbarLeftButtonWidth, topbarLeftButtonHeight);
+    this->webButton->onResized();  // HACKHACK: framework bug (should update string metrics on setSize())
+    this->webButton->setRelPos(this->topbarLeft->getSize().x - (topbarLeftButtonMargin + topbarLeftButtonWidth),
+                               dropdowns_y);
+
     this->filterScoresDropdown->setSize(dropdowns_width / 2, topbarLeftButtonHeight);
+    this->filterScoresDropdown->onResized();  // HACKHACK: framework bug (should update string metrics on setSize())
     this->filterScoresDropdown->setRelPos(topbarLeftButtonMargin, dropdowns_y);
 
-    this->sortScoresDropdown->onResized();  // HACKHACK: framework bug (should update string metrics on setSize())
     this->sortScoresDropdown->setSize(dropdowns_width / 2, topbarLeftButtonHeight);
+    this->sortScoresDropdown->onResized();  // HACKHACK: framework bug (should update string metrics on setSize())
     this->sortScoresDropdown->setRelPos(topbarLeftButtonMargin + (dropdowns_width / 2), dropdowns_y);
 
     this->topbarLeft->update_pos();
@@ -2394,7 +2395,7 @@ void SongBrowser::updateLayout() {
     this->sortLabel->onResized();  // HACKHACK: framework bug (should update string metrics on setSizeToContent())
     this->sortLabel->setSizeToContent(-1, 0);
     this->sortLabel->setRelPos(this->sortButton->getRelPos().x - (this->sortLabel->getSize().x - 5.f),
-                               this->sortButton->getRelPos().y - (this->sortButton->getSize().y / 4.f));
+                               this->sortButton->getRelPos().y - (this->sortButton->getSize().y / 6.f));
 
     this->groupButton->setSize(this->sortButton->getSize());
     this->groupButton->setRelPos(
@@ -2404,7 +2405,7 @@ void SongBrowser::updateLayout() {
     this->groupLabel->onResized();  // HACKHACK: framework bug (should update string metrics on setSizeToContent())
     this->groupLabel->setSizeToContent(-1, 0);
     this->groupLabel->setRelPos(this->groupButton->getRelPos().x - (this->groupLabel->getSize().x - 10.f),
-                                this->groupButton->getRelPos().y - (this->groupButton->getSize().y / 4.f));
+                                this->groupButton->getRelPos().y - (this->groupButton->getSize().y / 6.f));
 
     // "hardcoded" group buttons
     const float group_margin = 10.f * dpiScale;

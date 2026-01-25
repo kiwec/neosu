@@ -32,7 +32,6 @@ CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize,
     this->setHandleRightMouse(true);
 
     this->font = osu->getSongBrowserFont();
-    this->fontBold = osu->getSongBrowserFontBold();
 
     this->bVisible = false;
     this->bSelected = false;

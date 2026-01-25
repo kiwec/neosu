@@ -77,9 +77,10 @@ void SongDifficultyButton::draw() {
     this->drawSubTitle(!isIndependentDiff ? 0.2f : 1.0f);
 
     // draw diff name
+    McFont* fontBold = osu->getSongBrowserFontBold();
     const float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
     const float subTitleScale = (size.y * this->fSubTitleScale) / this->font->getHeight();
-    const float diffScale = (size.y * this->fDiffScale) / this->fontBold->getHeight();
+    const float diffScale = (size.y * this->fDiffScale) / fontBold->getHeight();
     g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
     g->pushTransform();
     {
@@ -87,8 +88,8 @@ void SongDifficultyButton::draw() {
         g->translate(pos.x + this->fTextOffset,
                      pos.y + size.y * this->fTextMarginScale + this->font->getHeight() * titleScale +
                          size.y * this->fTextSpacingScale + this->font->getHeight() * subTitleScale * 0.85f +
-                         size.y * this->fTextSpacingScale + this->fontBold->getHeight() * diffScale * 0.8f);
-        g->drawString(this->fontBold, this->databaseBeatmap->getDifficultyName());
+                         size.y * this->fTextSpacingScale + fontBold->getHeight() * diffScale * 0.8f);
+        g->drawString(fontBold, this->databaseBeatmap->getDifficultyName());
     }
     g->popTransform();
 

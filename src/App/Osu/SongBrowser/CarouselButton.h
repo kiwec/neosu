@@ -125,8 +125,6 @@ class CarouselButton : public CBaseUIButton {
 
     static float lastHoverSoundTime;
 
-    McFont *fontBold;
-
     std::vector<SongButton *> children;
 
     float fTargetRelPosY;
@@ -139,10 +137,10 @@ class CarouselButton : public CBaseUIButton {
 
     std::atomic<bool> bIsSearchMatch;
 
-    bool bHideIfSelected;
-    bool bSelected;
-    bool bChildrenNeedSorting{true};
-    bool bWasAnimationEverStarted{false};
+    bool bHideIfSelected : 1;
+    bool bSelected : 1;
+    bool bChildrenNeedSorting : 1 {true};
+    bool bWasAnimationEverStarted : 1 {false};
 
-    MOVE_AWAY_STATE moveAwayState;
+    MOVE_AWAY_STATE moveAwayState : 2;
 };
