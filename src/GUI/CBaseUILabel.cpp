@@ -49,13 +49,22 @@ void CBaseUILabel::drawText() {
 
         // g->pushClipRect(McRect(this->getPos(), this->getSize()));
 
-        g->setColor(this->textColor);
         g->pushTransform();
         {
             g->scale(this->fScale, this->fScale);  // XXX: not sure if scaling respects text justification
             g->translate((i32)(this->getPos().x + xPosAdd),
                          (i32)(this->getPos().y + this->getSize().y / 2.f + this->fStringHeight / 2.f));
-            g->drawString(this->font, this->sText);
+            if(this->bDrawTextShadow) {
+                const i32 shadowOffset =
+                    (i32)std::round(1.0f * ((f32)this->font->getDPI() / 96.0f));  // NOTE: "abusing" font dpi
+
+                g->drawString(
+                    this->font, this->sText,
+                    TextShadow{.col_text = this->textColor, .col_shadow = this->shadowColor, .offs_px = shadowOffset});
+            } else {
+                g->setColor(this->textColor);
+                g->drawString(this->font, this->sText);
+            }
         }
         g->popTransform();
 
@@ -63,7 +72,7 @@ void CBaseUILabel::drawText() {
     }
 }
 
-void CBaseUILabel::update(CBaseUIEventCtx &c) { CBaseUIElement::update(c); }
+void CBaseUILabel::update(CBaseUIEventCtx& c) { CBaseUIElement::update(c); }
 
 void CBaseUILabel::updateStringMetrics() {
     if(this->font != nullptr) {

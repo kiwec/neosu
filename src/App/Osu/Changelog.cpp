@@ -37,12 +37,15 @@ Changelog::Changelog() : ScreenBackable() {
     v42_00.changes = {
         R"(- Added Song Browser right click->Export Collection and Export Beatmapset)",
         R"(  - Note that all of the difficulties from the beatmapset in a collection will be archived, not just the difficulty in the collection itself.)",
+        R"(- Fixed carousel buttons' menu-button-background image being incorrectly scaled)",
         R"(- Added Linux ARM64 releases)",
         R"(- Added asio_freq convar to allow custom sample rates on BASSASIO)",
         R"(- SoLoud fixes/improvements:)",
         R"(  - Improved audio offset behavior to better match BASS (fixed desync when changing rates))",
         R"(  - Optimized rate changing to help with audio crackling on lower-end setups or small buffer sizes)",
+        R"(- Fixed more font-related issues)",
         R"(- Fix crashing when trying to enter song browser with an empty osu! folder)",
+        R"(- Fix crashing when deleting entire collections)",
     };
     changelogs.push_back(v42_00);
 

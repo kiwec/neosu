@@ -267,7 +267,7 @@ struct McFontImpl final {
 
     // returns final vertices ready to be drawn in the out parameter
     void buildStringGeometry(const UString &text, std::vector<vec3> &vertsOut, std::vector<vec2> &texcoordsOut,
-                             size_t maxGlyphs, size_t startVertex, std::vector<const GLYPH_METRICS *> *gmOut = nullptr);
+                             size_t maxGlyphs, std::vector<const GLYPH_METRICS *> &gmOut);
 
     static std::unique_ptr<Channel[]> unpackMonoBitmap(const FT_Bitmap &bitmap);
 
@@ -492,7 +492,7 @@ void McFontImpl::drawString(const UString &text, std::optional<TextShadow> shado
 
         buffer.resize(totalVerts, maxGlyphs);
 
-        buildStringGeometry(text, buffer.getVerts(), buffer.getTexcoords(), maxGlyphs, 0, &buffer.getMetrics());
+        buildStringGeometry(text, buffer.getVerts(), buffer.getTexcoords(), maxGlyphs, buffer.getMetrics());
     }
 
     // if(stringToCacheIndex(buffer.string) % 32 == 0) {
@@ -1155,8 +1155,9 @@ size_t McFontImpl::buildGlyphGeometry(std::vector<vec3> &vertsOut, std::vector<v
 }
 
 void McFontImpl::buildStringGeometry(const UString &text, std::vector<vec3> &vertsOut, std::vector<vec2> &texcoordsOut,
-                                     size_t maxGlyphs, size_t startVertex, std::vector<const GLYPH_METRICS *> *gmOut) {
+                                     size_t maxGlyphs, std::vector<const GLYPH_METRICS *> &gmOut) {
     float advanceX = 0.0f;
+    size_t startVertex = 0;
 
     for(int i = 0; i < maxGlyphs; i++) {
         const GLYPH_METRICS &gm = getGlyphMetrics(text[i]);
@@ -1168,9 +1169,7 @@ void McFontImpl::buildStringGeometry(const UString &text, std::vector<vec3> &ver
         markSlotUsed(text[i]);
 
         // add glyph metrics to out parameter
-        if(gmOut != nullptr) {
-            (*gmOut)[i] = &gm;
-        }
+        gmOut[i] = &gm;
     }
 
     // reload atlas if new glyphs were added to dynamic slots

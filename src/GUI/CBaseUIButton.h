@@ -10,6 +10,7 @@
 
 class McFont;
 
+// TODO: why does this have to basically duplicate all of CBaseUILabel
 class CBaseUIButton : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUIButton)
    public:

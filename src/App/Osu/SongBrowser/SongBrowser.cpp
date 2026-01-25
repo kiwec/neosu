@@ -417,11 +417,17 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
     this->topbarLeft->addBaseUIElement(this->webButton);
 
     // build topbar right
-    this->topbarRight = new CBaseUIContainer(0, 0, 0, 0, "");
+    this->topbarRight = new CBaseUIContainer(0, 0, 0, 0, US_("SongBrowser::topbarRight"));
     {
-        this->groupLabel = new CBaseUILabel(0, 0, 0, 0, "", "Group:");
-        this->groupLabel->setSizeToContent(3);
-        this->groupLabel->setDrawFrame(false);
+        this->groupLabel = (new CBaseUILabel(0, 0, 0, 0, US_("SongBrowser::groupLabel"), ""))
+                               ->setFont(osu->getSongBrowserFont())
+                               ->setScale(0.75f)
+                               ->setTextColor(rgba(200, 200, 255, 255))
+                               ->setDrawTextShadow(true)
+                               ->setDrawBackground(false)
+                               ->setDrawFrame(false)
+                               ->setText(US_("Group:"))  // setting text later so string metrics get applied...
+                               ->setSizeToContent(-1, 0);
         this->groupLabel->grabs_clicks = true;
         this->topbarRight->addBaseUIElement(this->groupLabel);
 
@@ -430,9 +436,15 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
         this->groupButton->grabs_clicks = true;
         this->topbarRight->addBaseUIElement(this->groupButton);
 
-        this->sortLabel = new CBaseUILabel(0, 0, 0, 0, "", "Sort:");
-        this->sortLabel->setSizeToContent(3);
-        this->sortLabel->setDrawFrame(false);
+        this->sortLabel = (new CBaseUILabel(0, 0, 0, 0, US_("SongBrowser::sortLabel"), ""))
+                              ->setFont(osu->getSongBrowserFont())
+                              ->setScale(0.75f)
+                              ->setTextColor(rgba(225, 255, 225, 255))
+                              ->setDrawTextShadow(true)
+                              ->setDrawBackground(false)
+                              ->setDrawFrame(false)
+                              ->setText(US_("Sort:"))
+                              ->setSizeToContent(-1, 0);
         this->sortLabel->grabs_clicks = true;
         this->topbarRight->addBaseUIElement(this->sortLabel);
 
@@ -2374,39 +2386,41 @@ void SongBrowser::updateLayout() {
     this->topbarRight->setSize(osu->getVirtScreenWidth() - this->topbarRight->getPos().x,
                                SongBrowser::getUIScale(80.f));
 
-    float btn_margin = 10.f * dpiScale;
-    this->sortButton->setSize(200.f * dpiScale, 30.f * dpiScale);
-    this->sortButton->setRelPos(this->topbarRight->getSize().x - (this->sortButton->getSize().x + btn_margin),
-                                btn_margin);
+    // horizontal positioning by DPI makes no sense here if we want them to ever have a chance of lining up with skin elements
+    this->sortButton->setSize(200.f, 30.f * dpiScale);
+    this->sortButton->setRelPos((this->topbarRight->getSize() * (5.f / 6.f)).x - (this->sortButton->getSize().x / 2.f),
+                                std::max(0.f, this->topbarRight->getSize().y - (2 * (30.f * dpiScale) + 10.f)));
 
     this->sortLabel->onResized();  // HACKHACK: framework bug (should update string metrics on setSizeToContent())
-    this->sortLabel->setSizeToContent(3 * dpiScale);
-    this->sortLabel->setRelPos(this->sortButton->getRelPos().x - (this->sortLabel->getSize().x + btn_margin),
-                               (this->sortLabel->getSize().y + btn_margin) / 2.f);
+    this->sortLabel->setSizeToContent(-1, 0);
+    this->sortLabel->setRelPos(this->sortButton->getRelPos().x - (this->sortLabel->getSize().x - 5.f),
+                               this->sortButton->getRelPos().y - (this->sortButton->getSize().y / 4.f));
 
     this->groupButton->setSize(this->sortButton->getSize());
     this->groupButton->setRelPos(
-        this->sortLabel->getRelPos().x - (this->sortButton->getSize().x + 30.f * dpiScale + btn_margin), btn_margin);
+        (this->topbarRight->getSize().x * (5.25f / 12.f)) - (this->groupButton->getSize().x / 2.f),
+        this->sortButton->getRelPos().y);
 
     this->groupLabel->onResized();  // HACKHACK: framework bug (should update string metrics on setSizeToContent())
-    this->groupLabel->setSizeToContent(3 * dpiScale);
-    this->groupLabel->setRelPos(this->groupButton->getRelPos().x - (this->groupLabel->getSize().x + btn_margin),
-                                (this->groupLabel->getSize().y + btn_margin) / 2.f);
+    this->groupLabel->setSizeToContent(-1, 0);
+    this->groupLabel->setRelPos(this->groupButton->getRelPos().x - (this->groupLabel->getSize().x - 10.f),
+                                this->groupButton->getRelPos().y - (this->groupButton->getSize().y / 4.f));
 
     // "hardcoded" group buttons
+    const float group_margin = 10.f * dpiScale;
     const i32 group_btn_width =
-        std::clamp<i32>((this->topbarRight->getSize().x - 2 * btn_margin) / 4, 0, 200 * dpiScale);
+        std::clamp<i32>((this->topbarRight->getSize().x - 2 * group_margin) / 4, 0, 200 * dpiScale);
     this->groupByCollectionBtn->setSize(group_btn_width, 30 * dpiScale);
-    this->groupByCollectionBtn->setRelPos(this->topbarRight->getSize().x - (btn_margin + (4 * group_btn_width)),
+    this->groupByCollectionBtn->setRelPos(this->topbarRight->getSize().x - (group_margin + (4 * group_btn_width)),
                                           this->topbarRight->getSize().y - 30 * dpiScale);
     this->groupByArtistBtn->setSize(group_btn_width, 30 * dpiScale);
-    this->groupByArtistBtn->setRelPos(this->topbarRight->getSize().x - (btn_margin + (3 * group_btn_width)),
+    this->groupByArtistBtn->setRelPos(this->topbarRight->getSize().x - (group_margin + (3 * group_btn_width)),
                                       this->topbarRight->getSize().y - 30 * dpiScale);
     this->groupByDifficultyBtn->setSize(group_btn_width, 30 * dpiScale);
-    this->groupByDifficultyBtn->setRelPos(this->topbarRight->getSize().x - (btn_margin + (2 * group_btn_width)),
+    this->groupByDifficultyBtn->setRelPos(this->topbarRight->getSize().x - (group_margin + (2 * group_btn_width)),
                                           this->topbarRight->getSize().y - 30 * dpiScale);
     this->groupByNothingBtn->setSize(group_btn_width, 30 * dpiScale);
-    this->groupByNothingBtn->setRelPos(this->topbarRight->getSize().x - (btn_margin + (1 * group_btn_width)),
+    this->groupByNothingBtn->setRelPos(this->topbarRight->getSize().x - (group_margin + (1 * group_btn_width)),
                                        this->topbarRight->getSize().y - 30 * dpiScale);
 
     this->topbarRight->update_pos();

@@ -26,7 +26,10 @@ class CBaseUILabel : public CBaseUIElement {
         this->bDrawBackground = drawBackground;
         return this;
     }
-
+    CBaseUILabel *setDrawTextShadow(bool drawTextShadow) {
+        this->bDrawTextShadow = drawTextShadow;
+        return this;
+    }
     CBaseUILabel *setFrameColor(Color frameColor) {
         this->frameColor = frameColor;
         return this;
@@ -39,7 +42,10 @@ class CBaseUILabel : public CBaseUIElement {
         this->textColor = textColor;
         return this;
     }
-
+    CBaseUILabel *setShadowColor(Color shadowColor) {
+        this->shadowColor = shadowColor;
+        return this;
+    }
     CBaseUILabel *setText(const UString &text) {
         this->sText = text;
         this->updateStringMetrics();
@@ -91,10 +97,15 @@ class CBaseUILabel : public CBaseUIElement {
     Color frameColor{0xffffffff};
     Color backgroundColor{0xff000000};
     Color textColor{0xffffffff};
+    Color shadowColor{0xff000000};
 
     TEXT_JUSTIFICATION textJustification{TEXT_JUSTIFICATION::LEFT};
     float fScale{1.f};
 
     bool bDrawFrame{true};
     bool bDrawBackground{true};
+
+    // TODO: this should probably be enabled by default,
+    // but need to look over everything to make sure we're not double-drawing shadows
+    bool bDrawTextShadow{false};
 };
