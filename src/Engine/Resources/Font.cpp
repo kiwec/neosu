@@ -703,7 +703,6 @@ bool McFontImpl::loadGlyphDynamic(char16_t ch, FT_Face existingFace) {
         const DynamicSlot &slot = m_dynamicSlots[slotIndex];
 
         const int maxSlotContent = getDynSlotSize() - 2 * TextureAtlas::ATLAS_PADDING;
-        debugLog("DPIBasedDynamicSlotSize: {}", getDynSlotSize());
         if(bitmap.width > maxSlotContent || bitmap.rows > maxSlotContent) {
             if(cv::r_debug_font_unicode.getBool()) {
                 debugLog("Font Info: Clipping oversized glyph {} ({}x{}) to fit dynamic slot ({}x{})", debugstr,
