@@ -64,6 +64,10 @@ class McFont final : public Resource {
     McFont *asFont() override { return this; }
     [[nodiscard]] const McFont *asFont() const override { return this; }
 
+    // debug convar
+    void drawDebug() const;
+    bool m_bDebugDrawAtlas{false};
+
    protected:
     void init() override;
     void initAsync() override;

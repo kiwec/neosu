@@ -268,6 +268,11 @@ void Engine::onPaint() {
             for(auto *inputDevice : this->inputDevices) {
                 inputDevice->draw();
             }
+
+            // debug fonts
+            for(auto *font : resourceManager->getFonts()) {
+                font->drawDebug();
+            }
         }
 
         // end

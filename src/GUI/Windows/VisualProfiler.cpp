@@ -299,13 +299,13 @@ void VisualProfiler::draw() {
                         g->translate(leftTrans, 0);
                         if(!this->textLines[i].textLeftAligned.isEmpty())
                             g->drawString(textFont, this->textLines[i].textLeftAligned,
-                                          TextShadow{.col_text = textColor, .offs_px = 1 * env->getDPIScale()});
+                                          TextShadow{.col_text = textColor, .offs_px = (int)(1 * env->getDPIScale())});
 
                         const int rightTrans =
                             (engine->getScreenWidth() - (this->textLines[i].widthRight * textScale)) - leftTrans;
                         g->translate(rightTrans, 0);
                         g->drawString(textFont, this->textLines[i].textRightAligned,
-                                      TextShadow{.col_text = textColor, .offs_px = 1 * env->getDPIScale()});
+                                      TextShadow{.col_text = textColor, .offs_px = (int)(1 * env->getDPIScale())});
                     }
                     g->popTransform();
                 }
@@ -458,7 +458,7 @@ void VisualProfiler::draw() {
                     const int stringWidth = (int)(this->font->getStringWidth(this->groups[i].name));
                     g->translate(-stringWidth, 0);
                     g->drawString(this->font, this->groups[i].name,
-                                  TextShadow{.col_text = this->groups[i].color, .offs_px = 1 * env->getDPIScale()});
+                                  TextShadow{.col_text = this->groups[i].color, .offs_px = (int)(1 * env->getDPIScale())});
                     g->translate(stringWidth, (int)(-this->font->getHeight() - padding));
                 }
             }

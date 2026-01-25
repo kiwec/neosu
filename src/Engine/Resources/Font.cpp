@@ -12,7 +12,9 @@
 #include "File.h"
 #include "FixedSizeArray.h"
 #include "FontTypeMap.h"
+#include "Mouse.h"
 #include "ResourceManager.h"
+#include "SString.h"
 #include "VertexArrayObject.h"
 #include "TextureAtlas.h"
 #include "Logging.h"
@@ -53,9 +55,6 @@ constexpr const float ATLAS_OCCUPANCY_TARGET{0.75f};  // target atlas occupancy 
 // then dynamically loaded glyphs are placed in the remaining space in fixed-size slots (not packed)
 // this maximizes the amount of fallback glyphs we can have loaded at once for a fixed amount of memory usage
 constexpr float ATLAS_SIZE_MULTIPLIER{4.0f};
-
-// size of each dynamic slot
-constexpr int DYNAMIC_SLOT_SIZE{64};
 
 constexpr const size_t MIN_ATLAS_SIZE{256};
 constexpr const size_t MAX_ATLAS_SIZE{4096};
@@ -274,6 +273,8 @@ struct McFontImpl final {
 
     // helper to set font size on any face for this font instance
     void setFaceSize(FT_Face face);
+
+    [[nodiscard]] inline int getDynSlotSize() const { return 2 * m_iFontSize; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -701,7 +702,8 @@ bool McFontImpl::loadGlyphDynamic(char16_t ch, FT_Face existingFace) {
         int slotIndex = allocateDynamicSlot(ch);
         const DynamicSlot &slot = m_dynamicSlots[slotIndex];
 
-        const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
+        const int maxSlotContent = getDynSlotSize() - 2 * TextureAtlas::ATLAS_PADDING;
+        debugLog("DPIBasedDynamicSlotSize: {}", getDynSlotSize());
         if(bitmap.width > maxSlotContent || bitmap.rows > maxSlotContent) {
             if(cv::r_debug_font_unicode.getBool()) {
                 debugLog("Font Info: Clipping oversized glyph {} ({}x{}) to fit dynamic slot ({}x{})", debugstr,
@@ -782,11 +784,11 @@ void McFontImpl::markSlotUsed(char16_t ch) {
 void McFontImpl::initializeDynamicRegion(int atlasSize) {
     // calculate dynamic region layout
     m_dynamicRegionY = m_staticRegionHeight + TextureAtlas::ATLAS_PADDING;
-    m_slotsPerRow = atlasSize / DYNAMIC_SLOT_SIZE;
+    m_slotsPerRow = atlasSize / getDynSlotSize();
 
     // initialize dynamic slots
     const int dynamicHeight = atlasSize - m_dynamicRegionY;
-    const int slotsPerColumn = dynamicHeight / DYNAMIC_SLOT_SIZE;
+    const int slotsPerColumn = dynamicHeight / getDynSlotSize();
     const int totalSlots = m_slotsPerRow * slotsPerColumn;
 
     m_dynamicSlots.clear();
@@ -795,8 +797,8 @@ void McFontImpl::initializeDynamicRegion(int atlasSize) {
 
     for(int row = 0; row < slotsPerColumn; row++) {
         for(int col = 0; col < m_slotsPerRow; col++) {
-            DynamicSlot slot{.x = col * DYNAMIC_SLOT_SIZE,
-                             .y = m_dynamicRegionY + row * DYNAMIC_SLOT_SIZE,
+            DynamicSlot slot{.x = col * getDynSlotSize(),
+                             .y = m_dynamicRegionY + row * getDynSlotSize(),
                              .character = 0,
                              .lastUsed = 0,
                              .occupied = false};
@@ -806,7 +808,7 @@ void McFontImpl::initializeDynamicRegion(int atlasSize) {
 
     if(cv::r_debug_font_unicode.getBool()) {
         debugLog("Font Info: Initialized dynamic region with {} slots ({}x{} each) starting at y={}", totalSlots,
-                 DYNAMIC_SLOT_SIZE, DYNAMIC_SLOT_SIZE, m_dynamicRegionY);
+                 getDynSlotSize(), getDynSlotSize(), m_dynamicRegionY);
     }
 }
 
@@ -877,7 +879,7 @@ void McFontImpl::renderBitmapToAtlas(char16_t ch, int x, int y, const FT_Bitmap 
     int renderHeight = std::min(static_cast<int>(bitmap.rows), atlasHeight - y);
 
     if(isDynamicSlot) {
-        const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
+        const int maxSlotContent = getDynSlotSize() - 2 * TextureAtlas::ATLAS_PADDING;
         renderWidth = std::min(renderWidth, maxSlotContent);
         renderHeight = std::min(renderHeight, maxSlotContent);
     }
@@ -1317,3 +1319,63 @@ void McFont::cleanupSharedResources() {
         s_sharedFtLibraryInitialized = false;
     }
 }
+
+void McFont::drawDebug() const {
+    if(m_bDebugDrawAtlas) {
+        // debug
+        g->setColor(0xFFFFFFFF);
+        g->pushTransform();
+        {
+            const auto &ta = pImpl->m_textureAtlas;
+            const i32 offscreenPixels = ta->getHeight() - (engine->getScreenHeight() * 0.75);
+            const f32 textYRatio = (f32)(engine->getScreenHeight() * 0.75) / (f32)ta->getHeight();
+
+            const i32 yOffset =
+                textYRatio >= 1
+                    ? 0
+                    : -(i32)((f32)(offscreenPixels) * (mouse->getPos().y / (f32)(engine->getScreenHeight() * 0.75)));
+            const f32 fitWidth = (engine->getScreenWidth() * 0.75) / ta->getWidth();
+
+            g->scale(fitWidth, fitWidth);
+            g->translate(ta->getWidth() / 2.f, (ta->getHeight() / 2.f) + yOffset);
+            g->drawImage(ta->getAtlasImage().get());
+        }
+        g->popTransform();
+    }
+}
+
+namespace cv {
+static ConVar r_debug_draw_font_atlas("r_debug_draw_font_atlas", "",
+                                      CLIENT | NOSAVE | (!Env::cfg(BUILD::DEBUG) ? HIDDEN : 0),
+                                      [](std::string_view atlases) -> void {
+                                          if(!resourceManager) return;
+                                          const auto &fonts = resourceManager->getFonts();
+
+                                          if(atlases.empty()) {
+                                              for(auto *font : fonts) {
+                                                  font->m_bDebugDrawAtlas = false;
+                                              }
+                                              return;
+                                          }
+                                          std::string fontNames;
+                                          for(auto *font : fonts) {
+                                              fontNames += font->getName() + ',';
+                                          }
+                                          logRaw("got font names {}", fontNames);
+
+                                          const auto &csvs = SString::split(atlases, ',');
+                                          for(auto atlas : csvs) {
+                                              if(const auto &it = std::ranges::find_if(
+                                                     fonts,
+                                                     [atlas](const auto &font) {
+                                                         return SString::to_lower(font->getName()) ==
+                                                                SString::to_lower(atlas);
+                                                     });
+
+                                                 it != fonts.end()) {
+                                                  (*it)->m_bDebugDrawAtlas = true;
+                                              }
+                                          }
+                                      });
+
+}  // namespace cv

@@ -132,7 +132,7 @@ void CarouselButton::updateLayoutEx() {
         // complete BS
         // it seems that osu also doesn't scale these images in any way
         this->fBgImageScale =
-            (baseScale + 0.05f * cv::ui_scale.getFloat()) / (osu->getSkin()->i_menu_button_bg.scale());
+            ((baseScale + 0.05f) / (osu->getSkin()->i_menu_button_bg.scale()) * cv::ui_scale.getFloat());
     }
 
     if(this->bVisible)  // lag prevention (animationHandler overflow)
@@ -293,7 +293,7 @@ void CarouselButton::setTargetRelPosY(float targetRelPosY) {
 }
 
 vec2 CarouselButton::getActualOffset() const {
-    return vec2((int)(marginPixelsX), (int)(marginPixelsY)) * cv::ui_scale.getFloat();
+    return vec2((int)(marginPixelsX), (int)(marginPixelsY * cv::ui_scale.getFloat()));
 }
 
 void CarouselButton::setMoveAwayState(CarouselButton::MOVE_AWAY_STATE moveAwayState, bool animate) {
