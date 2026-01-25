@@ -750,7 +750,7 @@ void DirectX11Interface::drawImage(const Image *image, AnchorPoint anchor, float
     }
 }
 
-void DirectX11Interface::drawString(McFont *font, const UString &text, std::optional<TextShadow> shadow = std::nullopt) {
+void DirectX11Interface::drawString(McFont *font, const UString &text, std::optional<TextShadow> shadow) {
     if(font == nullptr || text.length() < 1 || !font->isReady()) return;
 
     this->updateTransform();
