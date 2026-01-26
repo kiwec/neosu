@@ -235,7 +235,7 @@ std::string get_steam_path() {
     return "";
 #else
     // Linux: assume ~/.steam/root
-    // OSX: McOsu not supported there anyway (???)
+    // McOsu isn't on Steam for other platforms, but just return this anyways
     return Environment::getEnvVariable("HOME") + "/.steam/root";
 #endif
 }

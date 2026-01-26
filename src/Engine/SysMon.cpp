@@ -66,6 +66,8 @@ inline VirtualMemoryStats enumerateVirtualMemory() {
     static uint64_t lastQueryMS = 0;
     static VirtualMemoryStats stats = {0, 0, 0};
     if(const uint64_t now = Timing::getTicksMS(); lastQueryMS == 0 || (lastQueryMS + 5000 < now)) {
+        stats = {};
+
         lastQueryMS = now;
 
         MEMORY_BASIC_INFORMATION mbi;
