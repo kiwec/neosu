@@ -341,6 +341,7 @@ void UI::hide() {
     // Close any "temporary" overlays
     this->promptOverlay->setVisible(false);
     this->optionsOverlay->setVisible(false);
+    this->pauseOverlay->setVisible(false);
 }
 
 void UI::show() { this->active_screen->setVisible(true); }
@@ -350,6 +351,17 @@ void UI::setScreen(UIScreen *screen) {
 
     if(screen != this->active_screen && this->active_screen->isVisible()) {
         this->hide();
+    } else {
+        // HACK: close "temporary" overlays unconditionally (we do not set pauseOverlay as the active screen ever)
+        if(screen != this->pauseOverlay && this->pauseOverlay->isVisible()) {
+            this->pauseOverlay->setVisible(false);
+        }
+        if(screen != this->optionsOverlay && this->optionsOverlay->isVisible()) {
+            this->optionsOverlay->setVisible(false);
+        }
+        if(screen != this->promptOverlay && this->promptOverlay->isVisible()) {
+            this->promptOverlay->setVisible(false);
+        }
     }
 
     this->active_screen = screen;
