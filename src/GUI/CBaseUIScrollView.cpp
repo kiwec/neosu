@@ -28,12 +28,10 @@ u32 layeredScrollsHandledInFrame{0};
 using ScrollContainer = CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer;
 }  // namespace
 
-CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer::CBaseUIScrollViewContainer(float Xpos, float Ypos,
-                                                                                             float Xsize, float Ysize,
-                                                                                             UString name)
+ScrollContainer::CBaseUIScrollViewContainer(float Xpos, float Ypos, float Xsize, float Ysize, UString name)
     : CBaseUIContainer(Xpos, Ypos, Xsize, Ysize, std::move(name)) {}
 
-CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer::~CBaseUIScrollViewContainer() = default;
+ScrollContainer::~CBaseUIScrollViewContainer() = default;
 
 CBaseUIContainer *ScrollContainer::removeBaseUIElement(CBaseUIElement *element) {
     this->invalidateUpdate = true;
@@ -51,6 +49,7 @@ void ScrollContainer::freeElements() {
     this->invalidateUpdate = true;
 
     this->vVisibleElements.clear();
+    this->vVisibleElementsToDraw.clear();
     CBaseUIContainer::freeElements();
 }
 
@@ -58,6 +57,7 @@ void ScrollContainer::invalidate() {
     this->invalidateUpdate = true;
 
     this->vVisibleElements.clear();
+    this->vVisibleElementsToDraw.clear();
     CBaseUIContainer::invalidate();
 }
 
@@ -83,12 +83,8 @@ void ScrollContainer::update(CBaseUIEventCtx &c) {
 void ScrollContainer::draw() {
     if(!this->bVisible) return;
 
-    for(auto *e : this->vVisibleElements) {
-        // check actual screen visibility since we clipped "lazily"
-        // shouldn't be too expensive since we're no longer iterating over hundreds of thousands of elements here
-        if(e->isVisibleOnScreen()) {
-            e->draw();
-        }
+    for(auto *e : this->vVisibleElementsToDraw) {
+        e->draw();
         // programmer error (don't do this in draw(), ever)
         assert(!this->invalidateUpdate);
     }
@@ -690,11 +686,35 @@ void CBaseUIScrollView::updateClipping() {
         }
     }
 
-    this->previousClippingVisibleElements = this->container.vVisibleElements.size();
-
     if(!numChangedElements) {
         //debugLog("got final visible elements {} total {}", numVisElements, elements.size());
         this->bClippingDirty = false;
+    }
+
+    this->previousClippingVisibleElements = this->container.vVisibleElements.size();
+
+    {
+        // build list of elements to draw (in order)
+        this->container.vVisibleElementsToDraw.resize(this->previousClippingVisibleElements);
+
+        size_t numAdded = 0;
+        bool drawElemsChanged = false;
+        for(auto *e : this->container.vVisibleElements) {
+            // check actual screen visibility since we clipped "lazily"
+            // shouldn't be too expensive since we're no longer iterating over hundreds of thousands of elements here
+            if(e->isVisibleOnScreen()) {
+                CBaseUIElement *old = this->container.vVisibleElementsToDraw[numAdded];
+                if(!drawElemsChanged && (!old || old != e)) drawElemsChanged = true;
+                this->container.vVisibleElementsToDraw[numAdded++] = e;
+            }
+        }
+        // remove null elements from the end if any
+        this->container.vVisibleElementsToDraw.resize(numAdded);
+
+        // sort by draw order
+        if(drawElemsChanged && this->container.drawOrderCmp) {
+            std::ranges::sort(this->container.vVisibleElementsToDraw, this->container.drawOrderCmp);
+        }
     }
 }
 

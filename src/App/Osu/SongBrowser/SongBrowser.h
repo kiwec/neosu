@@ -162,15 +162,15 @@ class SongBrowser final : public ScreenBackable {
         SHOW_PARENT    // 2+ children or parent selected (show parent+children)
     };
 
-    SetVisibility getSetVisibility(const SongButton *parent) const;
+    [[nodiscard]] SetVisibility getSetVisibility(const SongButton *parent) const;
 
     [[nodiscard]] inline const CollBtnContainer &getCollectionButtons() const { return this->collectionButtons; }
 
     [[nodiscard]] inline bool isInSearch() const { return this->bInSearch; }
     [[nodiscard]] inline bool isRightClickScrolling() const { return this->bSongBrowserRightClickScrolling; }
 
-    inline InfoLabel *getInfoLabel() { return this->songInfo; }
-    SongDifficultyButton *getDiffButtonByHash(const MD5Hash &diff_hash) const;
+    [[nodiscard]] inline InfoLabel *getInfoLabel() const { return this->songInfo; }
+    [[nodiscard]] SongDifficultyButton *getDiffButtonByHash(const MD5Hash &diff_hash) const;
 
     using SORTING_COMPARATOR = bool (*)(const SongButton *a, const SongButton *b);
     struct SORTING_METHOD {

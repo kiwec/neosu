@@ -8,13 +8,7 @@ class SongBrowser;
 class BeatmapCarousel final : public CBaseUIScrollView {
     NOCOPY_NOMOVE(BeatmapCarousel)
    public:
-    BeatmapCarousel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "")
-        : CBaseUIScrollView(xPos, yPos, xSize, ySize, name) {
-        this->setDrawBackground(false);
-        this->setDrawFrame(false);
-        this->setHorizontalScrolling(false);
-        this->setScrollResistance(15);
-    }
+    BeatmapCarousel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "");
     ~BeatmapCarousel() override;
 
     void onKeyUp(KeyboardEvent &e) override;
@@ -34,4 +28,6 @@ class BeatmapCarousel final : public CBaseUIScrollView {
    private:
     // updated at the end of update()
     bool bIsScrollingFast{false};
+
+    static bool songButtonComparator(const CBaseUIElement *a, const CBaseUIElement *b);
 };

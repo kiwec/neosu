@@ -16,6 +16,19 @@
 
 using namespace neosu::sbr;
 
+bool BeatmapCarousel::songButtonComparator(const CBaseUIElement *a, const CBaseUIElement *b) {
+    return a->getRelPos().y < b->getRelPos().y;
+}
+
+BeatmapCarousel::BeatmapCarousel(float xPos, float yPos, float xSize, float ySize, const UString &name)
+    : CBaseUIScrollView(xPos, yPos, xSize, ySize, name) {
+    this->setDrawBackground(false);
+    this->setDrawFrame(false);
+    this->setHorizontalScrolling(false);
+    this->setScrollResistance(15);
+    this->container.setDrawOrderComparatorFunc(BeatmapCarousel::songButtonComparator);
+}
+
 BeatmapCarousel::~BeatmapCarousel() {
     // elements are free'd manually/externally by SongBrowser, so invalidate the container to avoid double-free
     // TODO: factor this out from SongBrowser
