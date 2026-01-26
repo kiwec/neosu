@@ -26,6 +26,12 @@ using jthread = std::jthread;
 #endif
 #endif
 
+// TODO: should probably turn Sync::jthread into McThread since we don't really
+// do anything nsync-specific here
+namespace McThread {
+extern void on_thread_init() noexcept;
+}
+
 typedef struct SDL_Thread SDL_Thread;
 typedef uint64_t SDL_ThreadID;
 
@@ -56,6 +62,8 @@ class sdl_jthread {
             stop_token token;
 
             static int CDECLCALL invoke(void* data) {
+                McThread::on_thread_init();
+
                 auto* ctx = static_cast<thread_context*>(data);
 
                 // invoke with or without stop_token depending on signature
@@ -74,8 +82,8 @@ class sdl_jthread {
         };
 
         // allocate the context/arg wrapper
-        auto* ctx = new thread_context{
-            std::forward<F>(f), std::make_tuple(std::forward<Args>(args)...), m_stop_source.get_token()};
+        auto* ctx = new thread_context{std::forward<F>(f), std::make_tuple(std::forward<Args>(args)...),
+                                       m_stop_source.get_token()};
 
         m_thread = create_thread_internal(ctx, (void*)&thread_context::invoke);
 

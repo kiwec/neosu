@@ -25,7 +25,7 @@ GetThreadDescription_t *pget_thread_desc{nullptr};
 
 thread_local char thread_name_buffer[256];
 
-void try_load_funcs() {
+void try_load_funcs() noexcept {
     static dynutils::lib_obj *kernel32_handle{nullptr};
     static bool load_attempted{false};
     if(!load_attempted) {
@@ -52,9 +52,52 @@ thread_local char thread_name_buffer[256];
 }  // namespace
 #endif
 
+#if defined(__SSE__) || (defined(_M_IX86_FP) && (_M_IX86_FP > 0))
+// check if x86 for sse include
+#include <xmmintrin.h>
+#endif
+
+#include <cfloat>  // for _controlfp
+
+namespace {
+bool on_thread_init_disabled{false};
+}
+
 namespace McThread {
+
+void debug_disable_thread_init_changes() noexcept { on_thread_init_disabled = true; }
+
+void on_thread_init() noexcept {
+    // debug disabled
+    if(on_thread_init_disabled) return;
+
+#ifdef _MCW_DN
+    // flush denormals
+    _controlfp(_DN_FLUSH, _MCW_DN);
+#endif
+
+#if defined(__SSE__) || (defined(_M_IX86_FP) && (_M_IX86_FP > 0))
+    // denorm clear to zero (CTZ) and denorms are zero (DAZ) for x86 sse
+    _mm_setcsr(_mm_getcsr() | 0x8040);
+#elif !(defined(_MSC_VER) && !defined(__clang__))  // idk how to do this with msvc and no inline assembly
+// flush-to-zero for arm
+// arm32
+#if defined(__arm__) || defined(_ARM_)
+    __asm__ __volatile__("vmsr fpscr,%0" ::"r"(1 << 24));
+#endif
+// arm64
+#if defined(_ARM64_) || defined(__aarch64__) || defined(__arm64__)
+    uint64_t fpcr;
+    __asm__ __volatile__("mrs %0, fpcr" : "=r"(fpcr));
+    fpcr |= (1ULL << 24);  // FZ
+    __asm__ __volatile__("msr fpcr, %0" : : "r"(fpcr));
+#endif
+
+#endif  // !(defined(_MSC_VER) && !defined(__clang__))
+}
+
 // WARNING: must be called from within the thread itself! otherwise, the main process name will be changed
-bool set_current_thread_name(const UString &name) {
+bool set_current_thread_name(const UString &name) noexcept {
 #if defined(_WIN32)
     try_load_funcs();
     if(pset_thread_desc) {
@@ -74,7 +117,7 @@ bool set_current_thread_name(const UString &name) {
     return false;
 }
 
-const char *get_current_thread_name() {
+const char *get_current_thread_name() noexcept {
 #if defined(_WIN32)
     try_load_funcs();
     if(pget_thread_desc) {
@@ -100,11 +143,11 @@ const char *get_current_thread_name() {
     return PACKAGE_NAME;
 }
 
-bool is_main_thread() { return SDL_IsMainThread(); }
+bool is_main_thread() noexcept { return SDL_IsMainThread(); }
 
-int get_logical_cpu_count() { return SDL_GetNumLogicalCPUCores(); }
+int get_logical_cpu_count() noexcept { return SDL_GetNumLogicalCPUCores(); }
 
-void set_current_thread_prio(Priority prio) {
+void set_current_thread_prio(Priority prio) noexcept {
     SDL_ThreadPriority sdlprio{};
     const char *priostring;
     if(prio < NORMAL || prio > REALTIME) prio = NORMAL;  // sanity
@@ -142,4 +185,4 @@ void set_current_thread_prio(Priority prio) {
 #endif
 }
 
-};  // namespace McThread
+}  // namespace McThread

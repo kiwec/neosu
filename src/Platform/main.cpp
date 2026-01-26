@@ -18,6 +18,10 @@
 #include "CrashHandler.h"
 #include "Profiler.h"
 #include "UString.h"
+#include "Thread.h"
+#include "DiffCalcTool.h"
+
+#include "environment_private.h"
 
 #if defined(_WIN32)
 #include "WinDebloatDefs.h"
@@ -27,21 +31,9 @@
 
 #include <filesystem>
 
-#if defined(__SSE__) || (defined(_M_IX86_FP) && (_M_IX86_FP > 0))
-#ifndef _MSC_VER
-#include <xmmintrin.h>
-#endif
-#define SET_FPU_DAZ_FTZ _mm_setcsr(_mm_getcsr() | 0x8040);
-#else
-#define SET_FPU_DAZ_FTZ
-#endif
-
 #ifdef WITH_LIVEPP
 #include "LPP_API_x64_CPP.h"
 #endif
-
-#include "environment_private.h"
-#include "DiffCalcTool.h"
 
 namespace {
 void setcwdexe(const std::string &exePathStr) noexcept {
@@ -170,9 +162,6 @@ MAIN_FUNC /* int argc, char *argv[] */
 
     CrashHandler::init();  // initialize minidump handling
 
-    // improve floating point perf in case this isn't already enabled by the compiler
-    SET_FPU_DAZ_FTZ
-
     // this sets and caches the path in getPathToSelf, so this must be called here
     const auto &selfpath = Environment::getPathToSelf(argv[0]);
     // set the current working directory to the executable directory, so that relative paths
@@ -205,6 +194,15 @@ MAIN_FUNC /* int argc, char *argv[] */
         }
         return args;
     }();
+
+    // improve floating point perf in case this isn't already enabled by the compiler
+    // -nofpu to disable (debug)
+    if(arg_map.contains("-nofpu")) {
+        McThread::debug_disable_thread_init_changes();
+    } else {
+        // this is also run at the start of each new thread (since the state is thread-local)
+        McThread::on_thread_init();
+    }
 
     // now set up spdlog logging
     Logger::init(arg_map.contains("-console"));
