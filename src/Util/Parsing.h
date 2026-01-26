@@ -1,5 +1,5 @@
 #pragma once
-// Copyright (c) 2025, kiwec, All rights reserved.
+// Copyright (c) 2025, kiwec, 2025-2026, WH, All rights reserved.
 
 #include <charconv>  // from_chars
 #include <cstring>   // strlen, strncmp

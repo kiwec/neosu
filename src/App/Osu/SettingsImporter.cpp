@@ -1,7 +1,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "SettingsImporter.h"
 
-#include "ACF.h"
+#include "ACFParser.h"
 #include "Console.h"
 #include "Engine.h"
 #include "File.h"
@@ -211,14 +211,13 @@ void update_osu_folder_from_registry() {
     }
 #endif
 }
-}  // namespace
 
 std::string get_steam_path() {
 #ifdef _WIN32
     i32 err;
     HKEY key;
 
-    auto key_path = L"SOFTWARE\\WOW6432Node\\Valve\\Steam";
+    constexpr const wchar_t* key_path{L"SOFTWARE\\WOW6432Node\\Valve\\Steam"};
     err = RegOpenKeyExW(HKEY_LOCAL_MACHINE, key_path, 0, KEY_READ, &key);
     if(err == ERROR_SUCCESS) {
         DWORD dwType = REG_SZ;
@@ -236,7 +235,7 @@ std::string get_steam_path() {
     return "";
 #else
     // Linux: assume ~/.steam/root
-    // OSX: McOsu not supported there anyway
+    // OSX: McOsu not supported there anyway (???)
     return Environment::getEnvVariable("HOME") + "/.steam/root";
 #endif
 }
@@ -244,12 +243,13 @@ std::string get_steam_path() {
 std::string get_mcosu_path() {
     auto steam_path = get_steam_path();
     if(steam_path.empty()) return "";
+    namespace ACF = Parsing::ACF;
 
     // Get all steamapps folders
     std::vector<std::string> steamapps_paths;
 
     File vdfFile(steam_path + "/steamapps/libraryfolders.vdf");
-    auto vdf = ACF::parse(vdfFile.readToString());
+    ACF::Section vdf = ACF::parse(vdfFile.readToString());
 
     auto it = vdf.map.find("libraryfolders");
     if(it == vdf.map.end()) return "";
@@ -258,37 +258,38 @@ std::string get_mcosu_path() {
 
     for(auto [_, variant] : libraryfolders->map) {
         auto* section = std::get_if<ACF::Section>(&variant);
-        auto path = ACF::getValue(section, {"path"});
+        const std::string path = ACF::getValue(section, {"path"});
         if(!path.empty()) {
             steamapps_paths.push_back(path + "/steamapps");
         }
     }
 
     // Find McOsu's app manifest
-    for(auto steamapps : steamapps_paths) {
-        auto appmanifest = steamapps + "/appmanifest_607260.acf";
+    for(const auto& steamapps : steamapps_paths) {
+        std::string appmanifest = steamapps + "/appmanifest_607260.acf";
         if(!env->fileExists(appmanifest)) continue;
 
         File acfFile(appmanifest);
-        auto acf = ACF::parse(acfFile.readToString());
+        ACF::Section acf = ACF::parse(acfFile.readToString());
 
-        auto installdir = ACF::getValue(&acf, {"AppState", "installdir"});
+        const std::string installdir = ACF::getValue(&acf, {"AppState", "installdir"});
         if(installdir.empty()) continue;
 
         // We found it!!!
-        return steamapps + "/common/" + installdir;
+        return fmt::format("{}/common/{}", steamapps, installdir);
     }
 
     return "";
 }
+}  // namespace
 
 bool import_from_mcosu() {
-    auto mcosu_path = get_mcosu_path();
+    const std::string mcosu_path = get_mcosu_path();
     if(mcosu_path.empty()) {
         return false;
     }
 
-    auto cfg_path = mcosu_path + "/cfg/osu.cfg";
+    std::string cfg_path = mcosu_path + "/cfg/osu.cfg";
     if(!env->fileExists(cfg_path)) return false;
 
     // HACK: Temporarily disable some callbacks

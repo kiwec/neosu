@@ -1,14 +1,14 @@
 // Copyright (c) 2026, kiwec, All rights reserved.
-#include "ACF.h"
+#include "ACFParser.h"
 #include "SString.h"
 
 // Not the best API, but it gets the job done... and won't be reused anyway
 // See https://git.kiwec.net/kiwec/cs2-quake-sounds/src/master/steamfiles.py
 
-namespace ACF {
+namespace Parsing::ACF {
 
 // Very naive parser, but at the same time, steam is pretty consistent
-Section parse(std::string file) {
+Section parse(std::string_view file) {
     Section out;
 
     std::vector<Section*> stack;
@@ -16,7 +16,7 @@ Section parse(std::string file) {
 
     std::string key = "undefined";
 
-    auto lines = SString::split(file, '\n');
+    const std::vector<std::string_view> lines = SString::split_newlines(file);
     for(auto line : lines) {
         if(line.find('{') != std::string::npos) {
             // Start of a new section
@@ -70,4 +70,4 @@ std::string getValue(const Section* section, const std::vector<std::string>& key
     return "";
 }
 
-}  // namespace ACF
+}  // namespace Parsing::ACF
