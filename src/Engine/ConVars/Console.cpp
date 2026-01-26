@@ -9,20 +9,27 @@
 #include "File.h"
 #include "Logging.h"
 
-void Console::processCommand(std::string_view command, bool fromFile) {
-    if(command.length() < 1) return;
+bool Console::processCommand(std::string_view command, bool fromFile) {
+    if(command.length() < 1) return false;
 
     // remove whitespace from beginning/end of string
     SString::trim_inplace(command);
 
     // handle multiple commands separated by semicolons
-    if(command.find(';') != std::string::npos && command.find("echo") == std::string::npos) {
+    // TODO: some "commands" (like for user skins) can contain semicolons
+    // as a workaround, avoid reading semicolon-separated commands from files as separate commands
+    if(!fromFile && command.find(';') != std::string::npos && command.find("echo") == std::string::npos) {
+        int unprocessed = 0;
+
         const auto commands = SString::split(command, ';');
         for(const auto &command : commands) {
-            processCommand(command);
+            unprocessed += processCommand(command);
         }
-
-        return;
+        // TODO:
+        // if(unprocessed == 0) {
+        (void)unprocessed;
+        return true;
+        // }
     }
 
     // separate convar name and value
@@ -42,11 +49,11 @@ void Console::processCommand(std::string_view command, bool fromFile) {
     ConVar *var = cvars().getConVarByName(commandName, false);
     if(!var) {
         debugLog("Unknown command: {:s}", commandName);
-        return;
+        return false;
     }
 
     if(fromFile && var->isFlagSet(cv::NOLOAD)) {
-        return;
+        return false;
     }
 
     // set new value (this handles all callbacks internally)
@@ -91,6 +98,8 @@ void Console::processCommand(std::string_view command, bool fromFile) {
 
         if(logMessage.length() > 0 && doLog) debugLog("{:s}", logMessage);
     }
+
+    return true;
 }
 
 void Console::execConfigFile(std::string_view filename_view) {
