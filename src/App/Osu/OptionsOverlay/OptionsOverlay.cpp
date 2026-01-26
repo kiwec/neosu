@@ -44,7 +44,7 @@
 #include "VertexArrayObject.h"
 #include "AnimationHandler.h"
 #include "DiscordInterface.h"
-#include "PeppyImporter.h"
+#include "SettingsImporter.h"
 #include "UICheckbox.h"
 #include "GameRules.h"
 #include "SString.h"
@@ -856,9 +856,27 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     this->addLabel_("3) Copy paste the full path into the textbox:")->setTextColor(0xff666666);
     this->addLabel_("");
     this->osuFolderTextbox = this->addTextbox(cv::osu_folder.getString(), &cv::osu_folder);
-    UIButton *importSettingsButton = this->addButton_("Import settings from osu!stable");
-    importSettingsButton->setClickCallback(
-        SA::MakeDelegate([]() -> void { PeppyImporter::import_settings_from_osu_stable(); }));
+    UIButton *importMcOsuSettingsButton = this->addButton_("Import settings from McOsu");
+    importMcOsuSettingsButton->setClickCallback(SA::MakeDelegate([]() -> void {
+        if(SettingsImporter::import_from_mcosu()) {
+            ui->getNotificationOverlay()->addToast(US_("Successfully imported settings from McOsu."), SUCCESS_TOAST);
+
+        } else {
+            ui->getNotificationOverlay()->addToast(US_("Error: Couldn't find McOsu install directory or config file!"),
+                                                   ERROR_TOAST);
+        }
+    }));
+    UIButton *importPeppySettingsButton = this->addButton_("Import settings from osu!stable");
+    importPeppySettingsButton->setClickCallback(SA::MakeDelegate([]() -> void {
+        if(SettingsImporter::import_from_osu_stable()) {
+            ui->getNotificationOverlay()->addToast(US_("Successfully imported settings from osu!stable."),
+                                                   SUCCESS_TOAST);
+
+        } else {
+            ui->getNotificationOverlay()->addToast(
+                US_("Error: Couldn't find osu!stable install directory or config file!"), ERROR_TOAST);
+        }
+    }));
     this->addSpacer();
     this->addCheckboxTooltip_(
         "Use osu!.db database (read-only)",

@@ -51,7 +51,6 @@ neosu_SOURCES = \
 	src/App/Osu/OsuDirectScreen.cpp \
 	src/App/Osu/OsuKeyBinds.cpp \
 	src/App/Osu/PauseOverlay.cpp \
-	src/App/Osu/PeppyImporter.cpp \
 	src/App/Osu/PromptOverlay.cpp \
 	src/App/Osu/RankingScreen.cpp \
 	src/App/Osu/Replay.cpp \
@@ -59,6 +58,7 @@ neosu_SOURCES = \
 	src/App/Osu/RoomScreen.cpp \
 	src/App/Osu/ScoreboardSlot.cpp \
 	src/App/Osu/ScreenBackable.cpp \
+	src/App/Osu/SettingsImporter.cpp \
 	src/App/Osu/SimulatedBeatmapInterface.cpp \
 	src/App/Osu/Skin.cpp \
 	src/App/Osu/SkinImage.cpp \
@@ -180,6 +180,7 @@ neosu_SOURCES = \
 	src/Platform/RuntimePlatform.cpp \
 	src/Platform/main.cpp \
 	src/Platform/main_impl.cpp \
+	src/Util/ACF.cpp \
 	src/Util/MD5Hash.cpp \
 	src/Util/Quaternion.cpp \
 	src/Util/Rect.cpp \

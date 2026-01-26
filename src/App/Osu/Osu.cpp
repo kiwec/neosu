@@ -44,7 +44,7 @@
 #include "OsuDirectScreen.h"
 #include "Parsing.h"
 #include "PauseOverlay.h"
-#include "PeppyImporter.h"
+#include "SettingsImporter.h"
 #include "Profiler.h"
 #include "PromptOverlay.h"
 #include "RankingScreen.h"
@@ -263,7 +263,8 @@ Osu::Osu()
 
     // if we don't have an osu.cfg, import
     if(!Environment::fileExists(NEOSU_CFG_PATH "/osu.cfg")) {
-        PeppyImporter::import_settings_from_osu_stable();
+        SettingsImporter::import_from_mcosu();
+        SettingsImporter::import_from_osu_stable();
     }
 
     // don't allow empty osu_folder if it's still empty at this point

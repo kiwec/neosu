@@ -1,12 +1,15 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
-#include "PeppyImporter.h"
+#include "SettingsImporter.h"
 
-#include "OsuConVars.h"
+#include "ACF.h"
+#include "Console.h"
 #include "Engine.h"
 #include "File.h"
 #include "KeyBindings.h"
 #include "Database.h"
 #include "OptionsOverlay.h"
+#include "Osu.h"
+#include "OsuConVars.h"
 #include "Environment.h"
 #include "Parsing.h"
 #include "Logging.h"
@@ -17,7 +20,7 @@
 #include <winbase.h>
 #include <winreg.h>
 #endif
-namespace PeppyImporter {
+namespace SettingsImporter {
 namespace {  // static namespace
 void try_set_key(const std::string& key, ConVar* cvar) {
     if(key == "None") {
@@ -210,19 +213,114 @@ void update_osu_folder_from_registry() {
 }
 }  // namespace
 
-void import_settings_from_osu_stable() {
-    if(cv::osu_folder.getString().empty()) {
+std::string get_steam_path() {
+#ifdef _WIN32
+    i32 err;
+    HKEY key;
+
+    auto key_path = L"SOFTWARE\\WOW6432Node\\Valve\\Steam";
+    err = RegOpenKeyExW(HKEY_LOCAL_MACHINE, key_path, 0, KEY_READ, &key);
+    if(err == ERROR_SUCCESS) {
+        DWORD dwType = REG_SZ;
+        WCHAR szPath[MAX_PATH];
+        DWORD dwSize = sizeof(szPath);
+        err = RegQueryValueExW(key, L"InstallPath", NULL, &dwType, (LPBYTE)szPath, &dwSize);
+        RegCloseKey(key);
+        if(err == ERROR_SUCCESS) {
+            UString wPath{szPath};
+            return std::string(wPath.toUtf8());
+        }
+    }
+
+    debugLog("Failed to get Steam path from registry!");
+    return "";
+#else
+    // Linux: assume ~/.steam/root
+    // OSX: McOsu not supported there anyway
+    return Environment::getEnvVariable("HOME") + "/.steam/root";
+#endif
+}
+
+std::string get_mcosu_path() {
+    auto steam_path = get_steam_path();
+    if(steam_path.empty()) return "";
+
+    // Get all steamapps folders
+    std::vector<std::string> steamapps_paths;
+
+    File vdfFile(steam_path + "/steamapps/libraryfolders.vdf");
+    auto vdf = ACF::parse(vdfFile.readToString());
+
+    auto it = vdf.map.find("libraryfolders");
+    if(it == vdf.map.end()) return "";
+    auto* libraryfolders = std::get_if<ACF::Section>(&it->second);
+    if(libraryfolders == nullptr) return "";
+
+    for(auto [_, variant] : libraryfolders->map) {
+        auto* section = std::get_if<ACF::Section>(&variant);
+        auto path = ACF::getValue(section, {"path"});
+        if(!path.empty()) {
+            steamapps_paths.push_back(path + "/steamapps");
+        }
+    }
+
+    // Find McOsu's app manifest
+    for(auto steamapps : steamapps_paths) {
+        auto appmanifest = steamapps + "/appmanifest_607260.acf";
+        if(!env->fileExists(appmanifest)) continue;
+
+        File acfFile(appmanifest);
+        auto acf = ACF::parse(acfFile.readToString());
+
+        auto installdir = ACF::getValue(&acf, {"AppState", "installdir"});
+        if(installdir.empty()) continue;
+
+        // We found it!!!
+        return steamapps + "/common/" + installdir;
+    }
+
+    return "";
+}
+
+bool import_from_mcosu() {
+    auto mcosu_path = get_mcosu_path();
+    if(mcosu_path.empty()) {
+        return false;
+    }
+
+    auto cfg_path = mcosu_path + "/cfg/osu.cfg";
+    if(!env->fileExists(cfg_path)) return false;
+
+    // HACK: Temporarily disable some callbacks
+    // (this one would reload the skin before cv::skin is updated, preventing correct skin from loading)
+    cv::skin_use_skin_hitsounds.setCallback([]() -> void {});
+
+    // "No conversion step?"
+    // Yes, Console::execConfigFile already handles that
+    Console::execConfigFile(cfg_path);
+
+    // HACK: Restore callbacks
+    cv::skin_use_skin_hitsounds.setCallback([]() -> void { osu->reloadSkin(); });
+
+    return true;
+}
+
+bool import_from_osu_stable() {
+    auto osu_folder = cv::osu_folder.getString();
+    if(osu_folder.empty() || !env->directoryExists(osu_folder)) {
         update_osu_folder_from_registry();
+        osu_folder = cv::osu_folder.getString();
     }
 
     const auto& username = env->getUsername();
     if(username.length() == 0) {
         debugLog("Failed to get username; not going to import settings from osu!stable.");
-        return;
+        return false;
     }
 
     std::string cfg_path = fmt::format("{}/osu!.{}.cfg", cv::osu_folder.getString(), username.toUtf8());
     File file(cfg_path);
+    if(!file.canRead()) return false;
 
     std::string str;
     bool b;
@@ -400,5 +498,7 @@ void import_settings_from_osu_stable() {
         else if(Parsing::parse(line, "keyScoreV2", '=', &str))
             try_set_key(str, &cv::MOD_SCOREV2);
     }
+
+    return true;
 }
-}  // namespace PeppyImporter
+}  // namespace SettingsImporter
