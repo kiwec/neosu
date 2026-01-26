@@ -37,6 +37,8 @@ class SongButton : public CarouselButton {
     ScoreGrade grade = ScoreGrade::N;
 
    protected:
+    SongButton *setVisible(bool visible) override;
+
     void onSelected(bool wasSelected, SelOpts opts) override;
     void onRightMouseUpInside() override;
 

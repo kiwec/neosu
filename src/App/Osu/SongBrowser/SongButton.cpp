@@ -269,6 +269,17 @@ void SongButton::updateLayoutEx() {
     }
 }
 
+SongButton *SongButton::setVisible(bool visible) {
+    if(visible) {
+        // update grade on children if necessary
+        for(auto *child : this->childDiffBtns()) {
+            child->maybeUpdateGrade();
+        }
+    }
+    CarouselButton::setVisible(visible);
+    return this;
+}
+
 void SongButton::onSelected(bool wasSelected, SelOpts opts) {
     CarouselButton::onSelected(wasSelected, opts);
 
@@ -279,9 +290,9 @@ void SongButton::onSelected(bool wasSelected, SelOpts opts) {
         g_songbrowser->updateSongButtonLayout();
     }
 
-    // update grade on child
+    // update grade on children if necessary
     for(auto *child : this->childDiffBtns()) {
-        child->updateGrade();
+        child->maybeUpdateGrade();
     }
 
     g_songbrowser->onSelectionChange(this, false);
