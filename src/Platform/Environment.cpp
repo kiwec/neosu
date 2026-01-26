@@ -415,29 +415,29 @@ std::string manualDirectoryFixup(std::string_view input) {
     assert(!input.empty());
 
     auto fsPath = File::getFsPath(input);
-
-#ifdef _MSC_VER
-    // MSVC will fail to convert some utf8 paths and just throw exceptions (aka crash)
-    auto u8ret = fsPath.u8string();
-    std::string ret(u8ret.begin(), u8ret.end());
-#else
-    std::string ret = fsPath.string();
-#endif
-    char endSep = '/';
+    // std::filesystem bogus (will crash if you try to get the wrong type of string from what you constructed it with)
+    UString ret;
+    if constexpr(Env::cfg(OS::WINDOWS)) {
+        ret = fsPath.wstring().c_str();
+    } else {
+        ret = fsPath.string().c_str();
+    }
+    UString endSep{US_("/")};
 
     if constexpr(Env::cfg(OS::WINDOWS)) {
         // for UNC/long paths, make sure we use a backslash as the last separator
-        if(ret.starts_with(R"(\\?\)") || ret.starts_with(R"(\\.\)")) {
-            endSep = '\\';
+        if(ret.startsWith(US_(R"(\\?\)")) || ret.startsWith(US_(R"(\\.\)"))) {
+            endSep = US_("\\");
         }
     }
 
-    if(!ret.ends_with(endSep)) {
-        ret.push_back(endSep);
+    if(!ret.endsWith(endSep)) {
+        ret.append(endSep);
     }
 
-    return ret;
+    return std::string{ret.utf8View()};
 }
+
 }  // namespace
 
 // passthroughs, with some extra validation
