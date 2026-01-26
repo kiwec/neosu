@@ -33,13 +33,15 @@ UString::UString(std::u16string_view str) noexcept {
     updateUtf8();
 }
 
-#if WCHAR_MAX <= 0xFFFF
 UString::UString(std::wstring_view str) noexcept {
     if(str.empty()) return;
+#if WCHAR_MAX <= 0xFFFF
     this->sUnicode.assign(reinterpret_cast<std::u16string_view &>(str));
+#else
+    fromUtf32(reinterpret_cast<const char32_t *>(str.data()), str.length());
+#endif
     updateUtf8();
 }
-#endif
 
 UString::UString(const wchar_t *str) noexcept {
     if(!str) return;

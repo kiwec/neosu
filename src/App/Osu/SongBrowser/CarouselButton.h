@@ -11,39 +11,22 @@ class SongBrowser;
 class SongButton;
 class UIContextMenu;
 
-#define DEF_BUTTON_TYPE(ClassName, TypeID, ParentClass)                 \
-    static constexpr TypeId TYPE_ID = TypeID;                           \
-    [[nodiscard]] TypeId getTypeId() const override { return TYPE_ID; } \
-    [[nodiscard]] bool isTypeOf(TypeId typeId) const override {         \
-        return typeId == TYPE_ID || ParentClass::isTypeOf(typeId);      \
-    }
-
 class CarouselButton : public CBaseUIButton {
     NOCOPY_NOMOVE(CarouselButton)
    public:
-    enum TypeId : uint8_t {
-        CarouselButton_ = 0,
-        CollectionButton_ = 1,
-        SongButton_ = 2,
-        SongDifficultyButton_ = 3,
-    };
-
-    // manual RTTI
-    static constexpr TypeId TYPE_ID = CarouselButton_;
-    [[nodiscard]] virtual TypeId getTypeId() const { return TYPE_ID; }
-    [[nodiscard]] virtual bool isTypeOf(TypeId typeId) const { return typeId == TYPE_ID; }
+    // RTTI helpers (TODO: ugly and slow to use RTTI for such a fundamental thing)
 
     template <typename T>
-    [[nodiscard]] bool isType() const {
-        return isTypeOf(T::TYPE_ID);
+    [[nodiscard]] constexpr forceinline bool isType() const {
+        return !!dynamic_cast<const T *>(this);
     }
     template <typename T>
-    T *as() {
-        return isType<T>() ? static_cast<T *>(this) : nullptr;
+    constexpr forceinline T *as() {
+        return dynamic_cast<T *>(this);
     }
     template <typename T>
-    const T *as() const {
-        return isType<T>() ? static_cast<const T *>(this) : nullptr;
+    constexpr forceinline const T *as() const {
+        return dynamic_cast<const T *>(this);
     }
 
    public:
@@ -89,9 +72,8 @@ class CarouselButton : public CBaseUIButton {
         this->bIsSearchMatch.store(isSearchMatch, std::memory_order_relaxed);
     }
 
-    [[nodiscard]] vec2 getActualOffset() const;
-    [[nodiscard]] inline vec2 getActualSize() const { return this->getSize() - 2.f * this->getActualOffset(); }
-    [[nodiscard]] inline vec2 getActualPos() const { return this->getPos() + this->getActualOffset(); }
+    [[nodiscard]] inline vec2 getActualSize() const { return this->getSize() - 2.f * actualScaledOffsetWithMargin; }
+    [[nodiscard]] inline vec2 getActualPos() const { return this->getPos() + actualScaledOffsetWithMargin; }
     [[nodiscard]] inline std::vector<SongButton *> &getChildren() { return this->children; }
     [[nodiscard]] inline const std::vector<SongButton *> &getChildren() const { return this->children; }
 
@@ -122,6 +104,8 @@ class CarouselButton : public CBaseUIButton {
     static constexpr const int marginPixelsY{9};
     static constexpr const vec2 baseSize{699.0f, 103.0f};
     static constexpr const float baseScale{1.15f};
+
+    static vec2 actualScaledOffsetWithMargin;
 
     static float lastHoverSoundTime;
 

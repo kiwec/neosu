@@ -137,6 +137,7 @@ class CBaseUIScrollView : public CBaseUIElement {
         void draw() override;
 
         bool isBusy() override;
+        bool isActive() override;
 
        private:
         friend class CBaseUIScrollView;

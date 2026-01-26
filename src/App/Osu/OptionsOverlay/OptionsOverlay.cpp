@@ -2050,8 +2050,7 @@ void OptionsOverlayImpl::onKeyDown(KeyboardEvent &e) {
     this->contextMenu->onKeyDown(e);
     if(e.isConsumed()) return;
 
-    // KEY_TAB doesn't work on Linux
-    if(e.getScanCode() == 65056 || e.getScanCode() == KEY_TAB) {
+    if(e.getScanCode() == KEY_TAB) {
         if(this->serverTextbox->isActive()) {
             this->serverTextbox->stealFocus();
             this->nameTextbox->focus();

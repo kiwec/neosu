@@ -109,6 +109,21 @@ bool ScrollContainer::isBusy() {
     return false;
 }
 
+bool ScrollContainer::isActive() {
+    if(!this->bVisible) return false;
+
+    for(auto *e : this->vVisibleElements) {
+        if(this->invalidateUpdate) {
+            return false;
+        }
+        if(e->isActive()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 CBaseUIScrollView::CBaseUIScrollView(f32 xPos, f32 yPos, f32 xSize, f32 ySize, const UString &name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, name), container(xPos, yPos, xSize, ySize, name) {
     this->grabs_clicks = true;

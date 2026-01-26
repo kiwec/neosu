@@ -227,7 +227,7 @@ void SongDifficultyButton::onSelected(bool wasSelected, SelOpts opts) {
 
     g_songbrowser->onSelectionChange(this, true);
     g_songbrowser->onDifficultySelected(this->databaseBeatmap, wasSelected);
-    g_songbrowser->scrollToSongButton(this);
+    g_songbrowser->scrollToSongButton(this, /*alignOnTop=*/false, /*knownVisible=*/true);
 }
 
 void SongDifficultyButton::updateGrade() {

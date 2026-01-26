@@ -6,8 +6,6 @@ class ConVar;
 
 class SongDifficultyButton final : public SongButton {
     NOCOPY_NOMOVE(SongDifficultyButton)
-   public:
-    DEF_BUTTON_TYPE(SongDifficultyButton, SongDifficultyButton_, SongButton)
    private:
     // only allow construction through parent song button (as child)
     friend class SongButton;

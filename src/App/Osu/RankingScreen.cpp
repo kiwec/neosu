@@ -515,7 +515,7 @@ void RankingScreen::setScore(const FinishedScore &newscore) {
 void RankingScreen::updateLayout() {
     ScreenBackable::updateLayout();
 
-    const float uiScale = cv::ui_scale.getFloat();
+    const float uiScale = Osu::getRawUIScale();
 
     this->setSize(osu->getVirtScreenSize());
 
@@ -592,8 +592,8 @@ void RankingScreen::setGrade(ScoreGrade grade) {
     const vec2 hardcodedOsuRankingGradeImageSize = vec2(369, 422) * gradeImage.scale();
     this->rankingGrade->setImage(gradeImage);
 
-    const float uiScale = /*cv::ui_scale.getFloat()*/ 1.0f;  // NOTE: no uiScale for rankingPanel and rankingGrade,
-                                                             // doesn't really work due to legacy layout expectations
+    const float uiScale = /*Osu::getRawUIScale()*/ 1.0f;  // NOTE: no uiScale for rankingPanel and rankingGrade,
+                                                          // doesn't really work due to legacy layout expectations
 
     const float rankingGradeImageScale = Osu::getImageScale(hardcodedOsuRankingGradeImageSize, 230.0f) * uiScale;
     this->rankingGrade->setScale(rankingGradeImageScale, rankingGradeImageScale);
@@ -631,7 +631,7 @@ UString RankingScreen::getPPString() const {
 vec2 RankingScreen::getPPPosRaw() const {
     const UString ppString = this->getPPString();
     float ppStringWidth = osu->getTitleFont()->getStringWidth(ppString);
-    return vec2(this->rankingGrade->getPos().x, cv::ui_scale.getFloat() * 10.f) +
-           vec2(this->rankingGrade->getSize().x / 2 - (ppStringWidth / 2 + cv::ui_scale.getFloat() * 100.f),
+    return vec2(this->rankingGrade->getPos().x, Osu::getRawUIScale() * 10.f) +
+           vec2(this->rankingGrade->getSize().x / 2 - (ppStringWidth / 2 + Osu::getRawUIScale() * 100.f),
                 this->rankings->getRelPosY() + osu->getUIScale(400) + osu->getTitleFont()->getHeight() / 2);
 }

@@ -1639,6 +1639,7 @@ void Osu::onUIScaleChange(float oldValue, float newValue) {
         this->bFontReloadScheduled = true;
         this->last_res_change_req_src |= R_MISC_MANUAL;
     }
+    Osu::rawUIScale = newValue;
 }
 
 void Osu::onUIScaleToDPIChange(float oldValue, float newValue) {
@@ -1829,7 +1830,7 @@ float Osu::getUIScale(float osuSize) {
 }
 
 float Osu::getUIScale() {
-    f32 scale = cv::ui_scale.getFloat();
+    f32 scale = Osu::getRawUIScale();
 
     if(cv::ui_scale_to_dpi.getBool()) {
         if(env->getPixelDensity() >= 1.4f /* maybe make it configurable? idk what retina  */) {

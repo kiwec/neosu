@@ -109,7 +109,11 @@ void SDLGLInterface::endScene() {
     this->syncobj->end();
 }
 
-void SDLGLInterface::setVSync(bool vsync) { SDL_GL_SetSwapInterval(vsync ? 1 : 0); }
+void SDLGLInterface::setVSync(bool vsync) {
+    if(!SDL_GL_SetSwapInterval(vsync ? 1 : 0)) {
+        debugLog("Could not {} vsync: {}", vsync ? "enable" : "disable", SDL_GetError());
+    }
+}
 
 UString SDLGLInterface::getVendor() {
     static const GLubyte *vendor = nullptr;

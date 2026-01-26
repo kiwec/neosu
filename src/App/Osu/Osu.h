@@ -113,6 +113,7 @@ class Osu final : public App, public MouseListener {
     /////////////////////////////////////////////////////
 
     static inline const vec2 osuBaseResolution{640.0f, 480.0f};
+    static inline float rawUIScale{1.f};
 
     static float getImageScaleToFitResolution(const Image *img, vec2 resolution);
     static float getImageScaleToFitResolution(vec2 size, vec2 resolution);
@@ -121,7 +122,8 @@ class Osu final : public App, public MouseListener {
     static float getImageScale(vec2 size, float osuSize);
     static float getImageScale(const Image *img, float osuSize);
     static float getUIScale(float osuSize);
-    static float getUIScale();  // NOTE: includes premultiplied dpi scale!
+    static float getUIScale();                                  // NOTE: includes premultiplied dpi scale!
+    static inline float getRawUIScale() { return rawUIScale; }  // equivalent to cv::ui_scale.getFloat()
 
     void onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src);
 

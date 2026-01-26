@@ -104,8 +104,9 @@ class ModSelectorOverrideSliderLockButton final : public CBaseUICheckbox {
         g->pushTransform();
         {
             g->scale(scale, scale);
-            g->translate(this->getPos().x + this->getSize().x / 2.0f - iconFont->getStringWidth(iconString) * scale / 2.0f,
-                         this->getPos().y + this->getSize().y / 2.0f + (iconFont->getHeight() * scale / 2.0f) * 0.8f);
+            g->translate(
+                this->getPos().x + this->getSize().x / 2.0f - iconFont->getStringWidth(iconString) * scale / 2.0f,
+                this->getPos().y + this->getSize().y / 2.0f + (iconFont->getHeight() * scale / 2.0f) * 0.8f);
             g->drawString(iconFont, iconString);
         }
         g->popTransform();
@@ -782,7 +783,7 @@ void ModSelector::updateLayout() {
     if(this->modButtons.size() < 1 || this->overrideSliders.size() < 1) return;
 
     const float dpiScale = Osu::getUIScale();
-    const float uiScale = cv::ui_scale.getFloat();
+    const float uiScale = Osu::getRawUIScale();
 
     if(!this->isInCompactMode())  // normal layout
     {

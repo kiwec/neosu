@@ -121,7 +121,7 @@ void ChatChannel::add_message(ChatMessage msg) {
         x += name_width;
 
         if(!is_action) {
-            msg.text.insert(0, ": ");
+            msg.text.insert(0, US_(": "));
         }
     }
 
@@ -207,7 +207,7 @@ void ChatChannel::add_message(ChatMessage msg) {
     if(is_action) {
         // Only appending now to prevent this character from being included in a link
         msg.text.append(u'*');
-        msg_text.append(L"*");
+        msg_text.push_back(L'*');
     }
 
     // We're offsetting the first fragment to account for the username + timestamp
@@ -706,8 +706,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
     }
 
     // Ctrl+Tab: Switch channels
-    // KEY_TAB doesn't work on Linux
-    if(keyboard->isControlDown() && (sc == 65056 || sc == KEY_TAB)) {
+    if(keyboard->isControlDown() && (sc == KEY_TAB)) {
         key.consume();
         if(this->selected_channel == nullptr) return;
         int chan_index = this->channels.size();
@@ -734,8 +733,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
     }
 
     // TAB: Complete nickname
-    // KEY_TAB doesn't work on Linux
-    if(sc == 65056 || sc == KEY_TAB) {
+    if(sc == KEY_TAB) {
         key.consume();
 
         auto text = this->input_box->getText();
@@ -757,7 +755,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
 
             // Remove current username, add new username
             // TODO(spec): these should be internal fields, why are we manipulating them directly like this?
-            //             makes it so much more difficulty to refactor things uniformly...
+            //             makes it so much more difficult to refactor things uniformly...
             this->input_box->sText.erase(this->input_box->iCaretPosition - username_len, username_len);
             this->input_box->iCaretPosition -= username_len;
             this->input_box->sText.insert(this->input_box->iCaretPosition, this->tab_completion_match);
@@ -1307,7 +1305,8 @@ void Chat::updateVisibility() {
     bool can_skip = osu->getMapInterface()->isInSkippableSection();
     bool is_spectating = cv::mod_autoplay.getBool() || (cv::mod_autopilot.getBool() && cv::mod_relax.getBool()) ||
                          osu->getMapInterface()->is_watching || BanchoState::spectating;
-    bool is_clicking_circles = osu->isInPlayMode() && !can_skip && !is_spectating && !ui->getPauseOverlay()->isVisible();
+    bool is_clicking_circles =
+        osu->isInPlayMode() && !can_skip && !is_spectating && !ui->getPauseOverlay()->isVisible();
     if(BanchoState::is_playing_a_multi_map() && !osu->getMapInterface()->all_players_loaded) {
         is_clicking_circles = false;
     }
@@ -1362,5 +1361,5 @@ bool Chat::isMouseInChat() {
 void Chat::askWhatChannelToJoin(CBaseUIButton * /*btn*/) {
     // XXX: Could display nicer UI with full channel list (chat_channels in Bancho.cpp)
     ui->getPromptOverlay()->prompt("Type in the channel you want to join (e.g. '#osu'):",
-                                  SA::MakeDelegate<&Chat::join>(this));
+                                   SA::MakeDelegate<&Chat::join>(this));
 }

@@ -1982,8 +1982,8 @@ void SongBrowser::updateSongButtonLayout() {
         const auto *diffButtonPointer = carouselButton->as<SongDifficultyButton>();
 
         // depending on the object type, layout differently
-        const bool isCollectionButton = carouselButton->isType<CollectionButton>();
         const bool isDiffButton = diffButtonPointer != nullptr;
+        const bool isCollectionButton = !isDiffButton && carouselButton->isType<CollectionButton>();
         const bool isIndependentDiffButton = isDiffButton && diffButtonPointer->isIndependentDiffButton();
 
         // give selected items & diffs a bit more spacing, to make them stand out

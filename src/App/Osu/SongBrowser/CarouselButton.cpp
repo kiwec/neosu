@@ -21,9 +21,11 @@
 #include "UI.h"
 #include "UIContextMenu.h"
 
-float CarouselButton::lastHoverSoundTime = 0;
-
 using namespace neosu::sbr;
+
+float CarouselButton::lastHoverSoundTime{0.f};
+vec2 CarouselButton::actualScaledOffsetWithMargin{
+    vec2((int)(marginPixelsX), (int)(marginPixelsY * Osu::getRawUIScale()))};
 
 // Color Button::inactiveDifficultyBackgroundColor = argb(255, 0, 150, 236); // blue
 
@@ -47,6 +49,9 @@ CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize,
 
     this->fHoverMoveAwayAnimation = 0.0f;
     this->moveAwayState = MOVE_AWAY_STATE::MOVE_CENTER;
+
+    actualScaledOffsetWithMargin = vec2((int)(marginPixelsX), (int)(marginPixelsY * Osu::getRawUIScale()));
+    this->rect.setSize(vec::ceil(baseSize * baseScale) * Osu::getRawUIScale());
 }
 
 CarouselButton::~CarouselButton() { this->deleteAnimations(); }
@@ -127,15 +132,17 @@ bool CarouselButton::isMouseInside() {
 }
 
 void CarouselButton::updateLayoutEx() {
+    // these should barely ever change but we have no way to detect that as of now
     {
-        // complete BS
-        // it seems that osu also doesn't scale these images in any way
-        this->fBgImageScale =
-            ((baseScale + 0.05f) / (osu->getSkin()->i_menu_button_bg.scale()) * cv::ui_scale.getFloat());
+        actualScaledOffsetWithMargin.y = (int)(marginPixelsY * Osu::getRawUIScale());
+
+        // complete BS sizing/rounding/etc.
+        // it seems that osu stable also doesn't scale these images in any way, though
+        this->fBgImageScale = ((baseScale + 0.05f) / (osu->getSkin()->i_menu_button_bg.scale()) * Osu::getRawUIScale());
+        this->setSize(vec::ceil(baseSize * baseScale) * Osu::getRawUIScale());
     }
 
-    if(this->bVisible)  // lag prevention (animationHandler overflow)
-    {
+    if(this->bVisible) {  // lag prevention (animationHandler overflow)
         const float centerOffsetAnimationTarget =
             ((cv::songbrowser_button_anim_y_curve.getBool() && !g_carousel->isScrollingFast())
                  ? 1.0f - std::clamp<float>(std::abs((this->getPos().y + (this->getSize().y / 2) -
@@ -160,8 +167,6 @@ void CarouselButton::updateLayoutEx() {
         else
             anim::moveQuadOut(&this->fCenterOffsetVelocityAnimation, centerOffsetVelocityAnimationTarget, 1.25f, true);
     }
-
-    this->setSize(vec::ceil(baseSize * baseScale) * cv::ui_scale.getFloat());
 
     const float percentCenterOffsetAnimation = 0.035f;
     const float percentVelocityOffsetAnimation = 0.35f;
@@ -289,10 +294,6 @@ void CarouselButton::onMouseOutside() {
 void CarouselButton::setTargetRelPosY(float targetRelPosY) {
     this->fTargetRelPosY = targetRelPosY;
     this->setRelPosY(this->fTargetRelPosY);
-}
-
-vec2 CarouselButton::getActualOffset() const {
-    return vec2((int)(marginPixelsX), (int)(marginPixelsY * cv::ui_scale.getFloat()));
 }
 
 void CarouselButton::setMoveAwayState(CarouselButton::MOVE_AWAY_STATE moveAwayState, bool animate) {

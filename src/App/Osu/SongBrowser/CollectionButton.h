@@ -4,11 +4,11 @@
 #include "CarouselButton.h"
 
 class CollectionButton final : public CarouselButton {
-   public:
-    DEF_BUTTON_TYPE(CollectionButton, CollectionButton_, CarouselButton)
+    NOCOPY_NOMOVE(CollectionButton)
    public:
     CollectionButton(float xPos, float yPos, float xSize, float ySize, UString name, const UString &collectionName,
                      std::vector<SongButton *> children = {});
+    ~CollectionButton() override = default;
 
     void draw() override;
 

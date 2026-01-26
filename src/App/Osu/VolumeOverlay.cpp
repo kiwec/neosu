@@ -258,18 +258,18 @@ bool VolumeOverlay::isVisible() { return engine->getTime() < this->fVolumeChange
 // needless to say, this is not a good way of doing things
 bool VolumeOverlay::canChangeVolume() {
     const bool can_scroll =
-        this->isBusy() || keyboard->isAltDown() ||                                                             //
-        (                                                                                                      //
-            !(ui->getSongBrowser()->isVisible() && db->isFinished()) &&                                        //
-            !(ui->getOsuDirectScreen()->isVisible()) &&                                                        //
-            !(ui->getOptionsOverlay()->isVisible() && ui->getOptionsOverlay()->isMouseInside()) &&             //
-            !(ui->getOptionsOverlay()->getContextMenu()->isVisible()) &&                                       //
-            !(ui->getChangelog()->isVisible()) &&                                                              //
-            !(ui->getRankingScreen()->isVisible()) &&                                                          //
-            !(ui->getModSelector()->isMouseInScrollView()) &&                                                  //
-            !(ui->getChat()->isMouseInChat()) &&                                                               //
-            !(ui->getUserStatsScreen()->isVisible()) &&                                                        //
-            !(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !ui->getPauseOverlay()->isVisible())  //
+        this->isBusy() || keyboard->isAltDown() ||                                                                //
+        (                                                                                                         //
+            !(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !ui->getPauseOverlay()->isVisible()) &&  //
+            !(ui->getSongBrowser()->isVisible() && db->isFinished()) &&                                           //
+            !(ui->getOsuDirectScreen()->isVisible()) &&                                                           //
+            !(ui->getOptionsOverlay()->isVisible() && ui->getOptionsOverlay()->isMouseInside()) &&                //
+            !(ui->getOptionsOverlay()->getContextMenu()->isVisible()) &&                                          //
+            !(ui->getChangelog()->isVisible()) &&                                                                 //
+            !(ui->getRankingScreen()->isVisible()) &&                                                             //
+            !(ui->getModSelector()->isMouseInScrollView()) &&                                                     //
+            !(ui->getChat()->isMouseInChat()) &&                                                                  //
+            !(ui->getUserStatsScreen()->isVisible())                                                              //
         );
 
     return can_scroll;

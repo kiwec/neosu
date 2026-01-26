@@ -12,18 +12,6 @@
 
 #include "OpenGLHeaders.h"
 
-OpenGLImage::OpenGLImage(std::string filepath, bool mipmapped, bool keepInSystemMemory)
-    : Image(std::move(filepath), mipmapped, keepInSystemMemory) {
-    this->GLTexture = 0;
-    this->iTextureUnitBackup = 0;
-}
-
-OpenGLImage::OpenGLImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory)
-    : Image(width, height, mipmapped, keepInSystemMemory) {
-    this->GLTexture = 0;
-    this->iTextureUnitBackup = 0;
-}
-
 OpenGLImage::~OpenGLImage() {
     this->destroy();
     this->deleteGL();

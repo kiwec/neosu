@@ -87,7 +87,7 @@ class UString {
     UString(const char16_t *str) noexcept;
     UString(const char16_t *str, int length) noexcept;
     UString(std::u16string_view str) noexcept;
-    UString(std::wstring_view str) noexcept delete_if_not_windows;
+    UString(std::wstring_view str) noexcept;
     UString(const wchar_t *str) noexcept;
     UString(const wchar_t *str, int length) noexcept;
     UString(const char *utf8) noexcept;
