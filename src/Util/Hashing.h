@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <cctype>
+#include <algorithm>
 
 namespace Hash {
 namespace flat = ankerl::unordered_dense;
