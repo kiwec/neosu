@@ -175,11 +175,11 @@ void CarouselButton::updateLayoutEx() {
     float minOffset = g_carousel->getSize().x * (percentCenterOffsetAnimation + percentHoverOffsetAnimation);
     {
         // also respect the width of the button image: push to the right until the edge of the button image can never be
-        // visible even if all animations are fully active the 0.925f here heuristically pushes the buttons a bit further
+        // visible even if all animations are fully active the 0.91f here heuristically pushes the buttons a bit further
         // to the right than would be necessary, to make animations work better on lower resolutions (would otherwise
         // hit the left edge too early)
-        const float buttonWidthCompensation =
-            std::max(g_carousel->getSize().x - this->getActualSize().x * 0.925f, 0.0f);
+        // NOTE @spec: this 0.91 and 0.09 relationship is extremely important for the actual offset amount somehow
+        const float buttonWidthCompensation = std::max(g_carousel->getSize().x - this->getActualSize().x * 0.91f, 0.0f);
         minOffset += buttonWidthCompensation;
     }
 
@@ -192,7 +192,7 @@ void CarouselButton::updateLayoutEx() {
     offsetX = std::clamp<float>(
         offsetX, 0.0f,
         g_carousel->getSize().x -
-            this->getActualSize().x * 0.075f);  // WARNING: hardcoded to match 0.925f above for buttonWidthCompensation
+            this->getActualSize().x * 0.09f);  // WARNING: hardcoded to match 0.91f above for buttonWidthCompensation
 
     this->setRelPosX(offsetX);
     this->setRelPosY(this->fTargetRelPosY + this->getSize().y * 0.125f * this->fHoverMoveAwayAnimation);

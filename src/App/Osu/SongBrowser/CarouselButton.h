@@ -104,7 +104,7 @@ class CarouselButton : public CBaseUIButton {
     static constexpr const int marginPixelsX{9};
     static constexpr const int marginPixelsY{9};
     static constexpr const vec2 baseSize{699.0f, 103.0f};
-    static constexpr const float baseOsuPixelsScale{0.606f};
+    static constexpr const float baseOsuPixelsScale{0.624f};
 
     // dynamic but shared
     static inline vec2 actualScaledOffsetWithMargin{vec2((int)(marginPixelsX), (int)(marginPixelsY))};
