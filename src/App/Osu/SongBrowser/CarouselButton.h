@@ -122,10 +122,10 @@ class CarouselButton : public CBaseUIButton {
 
     std::atomic<bool> bIsSearchMatch;
 
-    bool bHideIfSelected : 1;
-    bool bSelected : 1;
-    bool bChildrenNeedSorting : 1 {true};
-    bool bWasAnimationEverStarted : 1 {false};
+    bool bHideIfSelected;
+    bool bSelected;
+    bool bChildrenNeedSorting{true};
+    bool bWasAnimationEverStarted{false};
 
-    MOVE_AWAY_STATE moveAwayState : 2;
+    MOVE_AWAY_STATE moveAwayState;
 };

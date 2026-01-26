@@ -153,7 +153,6 @@ void SongDifficultyButton::draw() {
 
 void SongDifficultyButton::update(CBaseUIEventCtx& c) {
     if(!this->bVisible) {
-        this->fVisibleFor = 0.f;
         return;
     }
     CarouselButton::update(c);

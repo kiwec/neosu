@@ -28,9 +28,10 @@ void CBaseUIElement::update(CBaseUIEventCtx &c) {
     // TODO: hover "consumption"
     {
         const bool oldMouseInsideState = this->bMouseInside;
-        const bool mousePosInside = this->getRect().contains(mouse->getPos());
+        const bool mousePosInside = this->getRect().containsStrict(mouse->getPos());
 
-        // check if mouse is inside element
+        // check if mouse is (strictly) inside element
+        // exclude bounds to avoid conflicting focus if elements share border pixels
         this->bMouseInside = mousePosInside;
         // re-check to account for possible isMouseInside override
         if((this->bMouseInside = this->isMouseInside())) {

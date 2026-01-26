@@ -346,9 +346,9 @@ void Chat::draw() {
     this->button_container->draw();
 
     if(this->selected_channel == nullptr) {
-        f32 chat_h = round(this->getSize().y * 0.3f);
+        f32 chat_h = std::round(this->getSize().y * 0.3f);
         f32 chat_y = this->getSize().y - chat_h;
-        f32 chat_w = this->isSmallChat() ? round(this->getSize().x * 0.6) : this->getSize().x;
+        f32 chat_w = this->isSmallChat() ? std::round(this->getSize().x * 0.6f) : this->getSize().x;
         g->setColor(argb(150, 0, 0, 0));
         g->fillRect(0, chat_y, chat_w, chat_h);
     } else {

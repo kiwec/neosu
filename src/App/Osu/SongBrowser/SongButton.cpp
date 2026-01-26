@@ -78,7 +78,6 @@ void SongButton::draw() {
 
 void SongButton::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) {
-        this->fVisibleFor = 0.f;
         return;
     }
 
@@ -262,6 +261,7 @@ void SongButton::updateLayoutEx() {
 
     if(osu->getSkin()->version < 2.2f) {
         this->fTextOffset += size.x * 0.02f * 2.0f;
+        if(this->grade != ScoreGrade::N) this->fGradeOffset += this->calculateGradeWidth() / 2.f;
     } else {
         const f32 thumbnailYRatio = g_songbrowser->thumbnailYRatio;
         this->fTextOffset += size.y * thumbnailYRatio + size.x * 0.02f;
@@ -275,6 +275,9 @@ SongButton *SongButton::setVisible(bool visible) {
         for(auto *child : this->childDiffBtns()) {
             child->maybeUpdateGrade();
         }
+    } else {
+        // reset visible time
+        this->fVisibleFor = 0.f;
     }
     CarouselButton::setVisible(visible);
     return this;

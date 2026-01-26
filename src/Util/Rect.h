@@ -10,10 +10,16 @@ class McRect {
 
     constexpr McRect(vec2 pos, vec2 size, bool isCentered = false) { this->set(pos, size, isCentered); }
 
+    // loosely within (inside or equals (+ lenience amount))
     [[nodiscard]] inline bool contains(vec2 point, float lenience = 0.f) const {
-        vec2 max = this->vMin + this->vSize;
         return vec::all(vec::greaterThanEqual(point + lenience, this->vMin)) &&
-               vec::all(vec::lessThanEqual(point - lenience, max));
+               vec::all(vec::lessThanEqual(point - lenience, this->vMin + this->vSize));
+    }
+
+    // strictly within (not or-equal)
+    [[nodiscard]] inline bool containsStrict(vec2 point) const {
+        return vec::all(vec::greaterThan(point, this->vMin)) &&
+               vec::all(vec::lessThan(point, this->vMin + this->vSize));
     }
 
     [[nodiscard]] McRect intersect(const McRect &rect) const;
