@@ -222,28 +222,17 @@ void SoLoudSound::setPitch(float pitch) {
 void SoLoudSound::setFrequency(float frequency) {
     if(!this->isReady() || !this->audioSource) return;
 
-    frequency = (frequency > 99.0f ? std::clamp<float>(frequency, 100.0f, 100000.0f) : 0.0f);
+    const float previousFreq = this->fFrequency;
+    // 0 means reset to default
+    this->fFrequency =
+        (frequency > 99.0f ? std::clamp<float>(frequency, 100.0f, 100000.0f) : this->audioSource->mBaseSamplerate);
 
-    if(this->fFrequency != frequency) {
-        if(frequency > 0) {
-            if(this->bStream) {
-                float pitchRatio = frequency / this->fFrequency;
+    logIfCV(debug_snd, "SoLoudSound: Freq change {:s}: {:f}->{:f} (base: {} speed: {} effective: {})", this->sFilePath,
+            previousFreq, this->fFrequency, this->audioSource->mBaseSamplerate, this->fSpeed,
+            this->fFrequency / this->fSpeed);
 
-                // apply the frequency change through pitch
-                // this isn't the only or even a good way, but it does the trick
-                this->setPitch(this->fPitch * pitchRatio);
-            } else if(this->handle) {
-                soloud->setSamplerate(this->handle, frequency);
-            }
-            this->fFrequency = frequency;
-        } else {  // 0 means reset to default
-            if(this->bStream)
-                this->setPitch(1.0f);
-            else if(this->handle)
-                soloud->setSamplerate(this->handle, frequency);
-            this->fFrequency = this->audioSource->mBaseSamplerate;
-        }
-    }
+    // need to account for speed
+    soloud->setSamplerate(this->handle, this->fFrequency / this->fSpeed);
 }
 
 void SoLoudSound::setPan(float pan) {
