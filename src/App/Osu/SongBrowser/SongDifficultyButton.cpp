@@ -173,7 +173,8 @@ void SongDifficultyButton::update(CBaseUIEventCtx& c) {
         const f32 targetAnim = newOffsetPercentSelectionState ? 1.f : 0.f;
 
         if(targetAnim != this->fOffsetPercentAnim) {
-            anim::moveQuadOut(&this->fOffsetPercentAnim, targetAnim, 0.25f * (1.0f - this->fOffsetPercentAnim), true);
+            anim::moveQuadOut(&this->fOffsetPercentAnim, targetAnim,
+                              0.25f * (std::abs(targetAnim - this->fOffsetPercentAnim)), true);
         }
     }
 

@@ -23,10 +23,6 @@
 
 using namespace neosu::sbr;
 
-float CarouselButton::lastHoverSoundTime{0.f};
-vec2 CarouselButton::actualScaledOffsetWithMargin{
-    vec2((int)(marginPixelsX), (int)(marginPixelsY * Osu::getRawUIScale()))};
-
 // Color Button::inactiveDifficultyBackgroundColor = argb(255, 0, 150, 236); // blue
 
 CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize, UString name)
@@ -40,7 +36,6 @@ CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize,
     this->bHideIfSelected = false;
 
     this->fTargetRelPosY = yPos;
-    this->fBgImageScale = 1.0f;
     this->fOffsetPercent = 0.0f;
     this->fHoverOffsetAnimation = 0.0f;
     this->fCenterOffsetAnimation = 0.0f;
@@ -50,8 +45,9 @@ CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize,
     this->fHoverMoveAwayAnimation = 0.0f;
     this->moveAwayState = MOVE_AWAY_STATE::MOVE_CENTER;
 
-    actualScaledOffsetWithMargin = vec2((int)(marginPixelsX), (int)(marginPixelsY * Osu::getRawUIScale()));
-    this->rect.setSize(vec::ceil(baseSize * baseScale) * Osu::getRawUIScale());
+    const float scale = Osu::getUIScale(baseOsuPixelsScale) * Osu::getUIScale();
+    actualScaledOffsetWithMargin = vec::ceil(vec2{(int)marginPixelsX, (int)(marginPixelsY)} * scale);
+    this->rect.setSize(vec::ceil(baseSize * scale));
 }
 
 CarouselButton::~CarouselButton() { this->deleteAnimations(); }
@@ -97,8 +93,8 @@ void CarouselButton::drawMenuButtonBackground() {
     g->setColor(this->bSelected ? this->getActiveBackgroundColor() : this->getInactiveBackgroundColor());
     g->pushTransform();
     {
-        g->scale(this->fBgImageScale, this->fBgImageScale);
-        g->translate(this->getPos().x - 3.f, this->getPos().y + this->getSize().y / 2);
+        g->scale(bgImageScale, bgImageScale);
+        g->translate(this->getPos().x - 1.f /* random? */, this->getPos().y + this->getSize().y / 2);
         g->drawImage(osu->getSkin()->i_menu_button_bg, AnchorPoint::LEFT);
     }
     g->popTransform();
@@ -134,12 +130,14 @@ bool CarouselButton::isMouseInside() {
 void CarouselButton::updateLayoutEx() {
     // these should barely ever change but we have no way to detect that as of now
     {
-        actualScaledOffsetWithMargin.y = (int)(marginPixelsY * Osu::getRawUIScale());
+        const float scale = Osu::getUIScale(baseOsuPixelsScale) * Osu::getUIScale();
+
+        actualScaledOffsetWithMargin = vec::ceil(vec2{(int)marginPixelsX, (int)(marginPixelsY)} * scale);
+        this->setSize(vec::ceil(baseSize * scale));
 
         // complete BS sizing/rounding/etc.
         // it seems that osu stable also doesn't scale these images in any way, though
-        this->fBgImageScale = ((baseScale + 0.05f) / (osu->getSkin()->i_menu_button_bg.scale()) * Osu::getRawUIScale());
-        this->setSize(vec::ceil(baseSize * baseScale) * Osu::getRawUIScale());
+        bgImageScale = (scale + 0.005f /* ??? */) / (osu->getSkin()->i_menu_button_bg.scale());
     }
 
     if(this->bVisible) {  // lag prevention (animationHandler overflow)
@@ -168,7 +166,7 @@ void CarouselButton::updateLayoutEx() {
             anim::moveQuadOut(&this->fCenterOffsetVelocityAnimation, centerOffsetVelocityAnimationTarget, 1.25f, true);
     }
 
-    const float percentCenterOffsetAnimation = 0.035f;
+    const float percentCenterOffsetAnimation = 0.05f;
     const float percentVelocityOffsetAnimation = 0.35f;
     const float percentHoverOffsetAnimation = 0.075f;
 

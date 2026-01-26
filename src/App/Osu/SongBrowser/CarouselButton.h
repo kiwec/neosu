@@ -100,19 +100,20 @@ class CarouselButton : public CBaseUIButton {
 
     void setMoveAwayState(MOVE_AWAY_STATE moveAwayState, bool animate = true);
 
+    // constant shared
     static constexpr const int marginPixelsX{9};
     static constexpr const int marginPixelsY{9};
     static constexpr const vec2 baseSize{699.0f, 103.0f};
-    static constexpr const float baseScale{1.15f};
+    static constexpr const float baseOsuPixelsScale{0.606f};
 
-    static vec2 actualScaledOffsetWithMargin;
-
-    static float lastHoverSoundTime;
+    // dynamic but shared
+    static inline vec2 actualScaledOffsetWithMargin{vec2((int)(marginPixelsX), (int)(marginPixelsY))};
+    static inline float lastHoverSoundTime{0.f};
+    static inline float bgImageScale{1.f};
 
     std::vector<SongButton *> children;
 
     float fTargetRelPosY;
-    float fBgImageScale;
     float fOffsetPercent;
     float fHoverOffsetAnimation;
     float fHoverMoveAwayAnimation;

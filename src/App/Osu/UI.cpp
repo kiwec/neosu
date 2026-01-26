@@ -258,7 +258,7 @@ void UI::draw() {
                                   osu->getVirtScreenHeight());
         } else {
             if(cv::resolution_keep_aspect_ratio.getBool()) {
-                const float scale = Osu::getImageScaleToFitResolution(osu->backBuffer->getSize(), g->getResolution());
+                const float scale = Osu::getRectScaleToFitResolution(osu->backBuffer->getSize(), g->getResolution());
                 const float scaledWidth = osu->backBuffer->getWidth() * scale;
                 const float scaledHeight = osu->backBuffer->getHeight() * scale;
                 osu->backBuffer->draw(std::max(0.0f, g->getResolution().x / 2.0f - scaledWidth / 2.0f) *

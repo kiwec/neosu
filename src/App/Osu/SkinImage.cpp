@@ -458,7 +458,7 @@ float SkinImage::getImageScale(bool animated) const {
         return 1.0f;
 }
 
-float SkinImage::getResolutionScale() const { return Osu::getImageScale(this->vBaseSizeForScaling2x, this->fOsuSize); }
+float SkinImage::getResolutionScale() const { return Osu::getRectScale(this->vBaseSizeForScaling2x, this->fOsuSize); }
 
 bool SkinImage::isReady() {
     if(this->bReady) return true;

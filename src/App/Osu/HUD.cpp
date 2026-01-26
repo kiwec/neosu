@@ -563,7 +563,7 @@ void HUD::drawCursorRipples() {
     // allow overscale/underscale as usual
     // this does additionally scale with the resolution (which osu doesn't do for some reason for cursor ripples)
     const float normalized2xScale = cursorRipple.scale();
-    const float imageScale = Osu::getImageScale(vec2(520.0f, 520.0f), 233.0f);
+    const float imageScale = Osu::getRectScale(vec2(520.0f, 520.0f), 233.0f);
 
     const float normalizedWidth = cursorRipple->getWidth() / normalized2xScale * imageScale;
     const float normalizedHeight = cursorRipple->getHeight() / normalized2xScale * imageScale;
@@ -936,7 +936,7 @@ void HUD::drawScorebarBg(float alpha, float breakAnim) {
     if(osu->getSkin()->i_scorebar_bg->isMissingTexture()) return;
 
     const float scale = cv::hud_scale.getFloat() * cv::hud_scorebar_scale.getFloat();
-    const float ratio = Osu::getImageScale(vec2(1, 1), 1.0f);
+    const float ratio = Osu::getRectScale(vec2(1, 1), 1.0f);
 
     const vec2 breakAnimOffset = vec2(0, -20.0f * breakAnim) * ratio;
     g->setColor(Color(0xffffffff).setA(alpha * (1.0f - breakAnim)));
@@ -965,7 +965,7 @@ void HUD::drawHPBar(double health, float alpha, float breakAnim) {
     const bool useNewDefault = !osu->getSkin()->i_scorebar_marker->isMissingTexture();
 
     const float scale = cv::hud_scale.getFloat() * cv::hud_scorebar_scale.getFloat();
-    const float ratio = Osu::getImageScale(vec2(1, 1), 1.0f);
+    const float ratio = Osu::getRectScale(vec2(1, 1), 1.0f);
 
     const vec2 colourOffset = (useNewDefault ? vec2(7.5f, 7.8f) : vec2(3.0f, 10.0f)) * ratio;
     const float currentXPosition = (colourOffset.x + (health * osu->getSkin()->i_scorebar_colour->getSize().x));
@@ -1761,7 +1761,7 @@ void HUD::drawStatistics(HUDStats s) const {
         flatYDelta *= subtitleRatio;
     }
 
-    const float offsetScale = Osu::getImageScale(vec2(1.0f, 1.0f), 1.0f);
+    const float offsetScale = Osu::getRectScale(vec2(1.0f, 1.0f), 1.0f);
     const float yDelta = ((font->getHeight() + flatYDelta) * scale) * cv::hud_statistics_spacing_scale.getFloat();
 
     static constexpr Color shadowColor = rgb(0, 0, 0);
@@ -2216,7 +2216,7 @@ void HUD::drawInputOverlay(int numK1, int numK2, int numM1, int numM2) {
     const float scale = cv::hud_scale.getFloat() * cv::hud_inputoverlay_scale.getFloat();  // global scaler
     const float oScale = inputoverlayBackground->getResolutionScale() *
                          1.6f;  // for converting harcoded osu offset pixels to screen pixels
-    const float offsetScale = Osu::getImageScale(vec2(1.0f, 1.0f),
+    const float offsetScale = Osu::getRectScale(vec2(1.0f, 1.0f),
                                                  1.0f);  // for scaling the x/y offset convars relative to screen size
 
     const float xStartOffset = cv::hud_inputoverlay_offset_x.getFloat() * offsetScale;

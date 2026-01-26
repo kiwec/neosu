@@ -549,8 +549,8 @@ void RankingScreen::updateLayout() {
     // NOTE: no uiScale for rankingPanel and rankingGrade, doesn't really work due to legacy layout expectations
     const vec2 hardcodedOsuRankingPanelImageSize = vec2(622, 505) * (osu->getSkin()->i_ranking_panel.scale());
     this->rankingPanel->setImage(osu->getSkin()->i_ranking_panel);
-    this->rankingPanel->setScale(Osu::getImageScale(hardcodedOsuRankingPanelImageSize, 317.0f),
-                                 Osu::getImageScale(hardcodedOsuRankingPanelImageSize, 317.0f));
+    this->rankingPanel->setScale(Osu::getRectScale(hardcodedOsuRankingPanelImageSize, 317.0f),
+                                 Osu::getRectScale(hardcodedOsuRankingPanelImageSize, 317.0f));
     this->rankingPanel->setSize(
         std::max(hardcodedOsuRankingPanelImageSize.x * this->rankingPanel->getScale().x,
                  this->rankingPanel->getImage()->getWidth() * this->rankingPanel->getScale().x),
@@ -595,7 +595,7 @@ void RankingScreen::setGrade(ScoreGrade grade) {
     const float uiScale = /*Osu::getRawUIScale()*/ 1.0f;  // NOTE: no uiScale for rankingPanel and rankingGrade,
                                                           // doesn't really work due to legacy layout expectations
 
-    const float rankingGradeImageScale = Osu::getImageScale(hardcodedOsuRankingGradeImageSize, 230.0f) * uiScale;
+    const float rankingGradeImageScale = Osu::getRectScale(hardcodedOsuRankingGradeImageSize, 230.0f) * uiScale;
     this->rankingGrade->setScale(rankingGradeImageScale, rankingGradeImageScale);
     this->rankingGrade->setSize(this->rankingGrade->getImage()->getWidth() * this->rankingGrade->getScale().x,
                                 this->rankingGrade->getImage()->getHeight() * this->rankingGrade->getScale().y);

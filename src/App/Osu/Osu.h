@@ -115,11 +115,11 @@ class Osu final : public App, public MouseListener {
     static inline const vec2 osuBaseResolution{640.0f, 480.0f};
     static inline float rawUIScale{1.f};
 
+    static float getRectScaleToFitResolution(vec2 size, vec2 resolution);
+    static float getRectScaleToFillResolution(vec2 size, vec2 resolution);
+    static float getRectScale(vec2 size, float osuSize);
     static float getImageScaleToFitResolution(const Image *img, vec2 resolution);
-    static float getImageScaleToFitResolution(vec2 size, vec2 resolution);
-    static float getImageScaleToFillResolution(vec2 size, vec2 resolution);
     static float getImageScaleToFillResolution(const Image *img, vec2 resolution);
-    static float getImageScale(vec2 size, float osuSize);
     static float getImageScale(const Image *img, float osuSize);
     static float getUIScale(float osuSize);
     static float getUIScale();                                  // NOTE: includes premultiplied dpi scale!

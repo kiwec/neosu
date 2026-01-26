@@ -456,7 +456,7 @@ void SongButton::onCreateNewCollectionConfirmed(const UString &text, int id) {
 float SongButton::calculateGradeScale() {
     const vec2 size = this->getActualSize();
     const auto &gradeImg = osu->getSkin()->getGradeImageSmall(this->grade);
-    return Osu::getImageScaleToFitResolution(gradeImg->getSizeBaseRaw(), vec2(size.x, size.y * this->fGradeScale));
+    return Osu::getRectScaleToFitResolution(gradeImg->getSizeBaseRaw(), vec2(size.x, size.y * this->fGradeScale));
 }
 
 float SongButton::calculateGradeWidth() {

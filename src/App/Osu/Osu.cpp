@@ -1775,7 +1775,7 @@ void Osu::onUserCardChange(std::string_view new_username) {
     this->userButton->setID(BanchoState::get_uid());
 }
 
-float Osu::getImageScaleToFitResolution(vec2 size, vec2 resolution) {
+float Osu::getRectScaleToFitResolution(vec2 size, vec2 resolution) {
     if(resolution.x / size.x > resolution.y / size.y) {
         return resolution.y / size.y;
     } else {
@@ -1784,10 +1784,10 @@ float Osu::getImageScaleToFitResolution(vec2 size, vec2 resolution) {
 }
 
 float Osu::getImageScaleToFitResolution(const Image *img, vec2 resolution) {
-    return getImageScaleToFitResolution(vec2(img->getWidth(), img->getHeight()), resolution);
+    return getRectScaleToFitResolution(vec2(img->getWidth(), img->getHeight()), resolution);
 }
 
-float Osu::getImageScaleToFillResolution(vec2 size, vec2 resolution) {
+float Osu::getRectScaleToFillResolution(vec2 size, vec2 resolution) {
     if(resolution.x / size.x < resolution.y / size.y) {
         return resolution.y / size.y;
     } else {
@@ -1796,10 +1796,10 @@ float Osu::getImageScaleToFillResolution(vec2 size, vec2 resolution) {
 }
 
 float Osu::getImageScaleToFillResolution(const Image *img, vec2 resolution) {
-    return getImageScaleToFillResolution(vec2(img->getWidth(), img->getHeight()), resolution);
+    return getRectScaleToFillResolution(vec2(img->getWidth(), img->getHeight()), resolution);
 }
 
-float Osu::getImageScale(vec2 size, float osuSize) {
+float Osu::getRectScale(vec2 size, float osuSize) {
     auto screen = osu ? osu->getVirtScreenSize() : engine->getScreenSize();
     if(screen.x * 3 > screen.y * 4) {
         // Reduce width to fit 4:3
@@ -1815,7 +1815,7 @@ float Osu::getImageScale(vec2 size, float osuSize) {
 }
 
 float Osu::getImageScale(const Image *img, float osuSize) {
-    return getImageScale(vec2(img->getWidth(), img->getHeight()), osuSize);
+    return getRectScale(vec2(img->getWidth(), img->getHeight()), osuSize);
 }
 
 float Osu::getUIScale(float osuSize) {
