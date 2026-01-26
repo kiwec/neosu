@@ -171,10 +171,8 @@ void CBaseUIContainer::update(CBaseUIEventCtx &c) {
     CBaseUIElement::update(c);
     if(!this->bVisible) return;
 
-    // NOTE 1: do NOT use a range-based for loop here, update() might invalidate iterators by changing the container contents...
-    // NOTE 2: iterating backwards for proper event ordering, things should be drawn front-to-back, but the last drawn (on top) element should handle events first
-
-    for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
+    // NOTE: do NOT use a range-based for loop here, update() might invalidate iterators by changing the container contents...
+    for(size_t i = 0; i < this->vElements.size(); i++) {
         auto *e = this->vElements[i];
         if(e->isVisible()) e->update(c);
     }
@@ -197,42 +195,36 @@ void CBaseUIContainer::update_pos() {
 }
 
 void CBaseUIContainer::onKeyUp(KeyboardEvent &e) {
-    for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
-        auto *elem = this->vElements[i];
+    for(auto *elem : this->vElements) {
         if(elem->isVisible()) elem->onKeyUp(e);
     }
 }
 void CBaseUIContainer::onKeyDown(KeyboardEvent &e) {
-    for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
-        auto *elem = this->vElements[i];
+    for(auto *elem : this->vElements) {
         if(elem->isVisible()) elem->onKeyDown(e);
     }
 }
 
 void CBaseUIContainer::onChar(KeyboardEvent &e) {
-    for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
-        auto *elem = this->vElements[i];
+    for(auto *elem : this->vElements) {
         if(elem->isVisible()) elem->onChar(e);
     }
 }
 
 void CBaseUIContainer::onFocusStolen() {
-    for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
-        auto *elem = this->vElements[i];
+    for(auto *elem : this->vElements) {
         elem->stealFocus();
     }
 }
 
 void CBaseUIContainer::onEnabled() {
-    for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
-        auto *elem = this->vElements[i];
+    for(auto *elem : this->vElements) {
         elem->setEnabled(true);
     }
 }
 
 void CBaseUIContainer::onDisabled() {
-    for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
-        auto *elem = this->vElements[i];
+    for(auto *elem : this->vElements) {
         elem->setEnabled(false);
     }
 }
@@ -242,8 +234,7 @@ void CBaseUIContainer::onMouseDownOutside(bool /*left*/, bool /*right*/) { this-
 bool CBaseUIContainer::isBusy() {
     if(!this->bVisible) return false;
 
-    for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
-        auto *elem = this->vElements[i];
+    for(auto *elem : this->vElements) {
         if(elem->isBusy()) return true;
     }
 
@@ -253,8 +244,7 @@ bool CBaseUIContainer::isBusy() {
 bool CBaseUIContainer::isActive() {
     if(!this->bVisible) return false;
 
-    for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
-        auto *elem = this->vElements[i];
+    for(auto *elem : this->vElements) {
         if(elem->isActive()) return true;
     }
 

@@ -28,7 +28,6 @@
 #endif
 
 class ConVar;
-class DirectoryCache;
 
 class File {
     NOCOPY_NOMOVE(File)

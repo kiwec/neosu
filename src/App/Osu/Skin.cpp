@@ -19,6 +19,7 @@
 #include "SkinImage.h"
 #include "SoundEngine.h"
 #include "UI.h"
+#include "Hashing.h"
 #include "VolumeOverlay.h"
 #include "Logging.h"
 #include "crypto.h"
@@ -868,21 +869,9 @@ bool Skin::parseSkinINI(std::string filepath) {
                 PARSE_LINE("ScoreOverlap", ':', &this->score_overlap_amt);
                 PARSE_LINE("HitCircleOverlap", ':', &this->hitcircle_overlap_amt);
 
-                if(Parsing::parse(curLine, "ComboPrefix", ':', &this->combo_prefix)) {
-                    // XXX: jank path normalization
-                    std::ranges::replace(this->combo_prefix, '\\', '/');
-                }
-
-                if(Parsing::parse(curLine, "ScorePrefix", ':', &this->score_prefix)) {
-                    // XXX: jank path normalization
-                    std::ranges::replace(this->score_prefix, '\\', '/');
-                }
-
-                if(Parsing::parse(curLine, "HitCirclePrefix", ':', &this->hitcircle_prefix)) {
-                    // XXX: jank path normalization
-                    std::ranges::replace(this->hitcircle_prefix, '\\', '/');
-                }
-
+                PARSE_LINE("ComboPrefix", ':', &this->combo_prefix);
+                PARSE_LINE("ScorePrefix", ':', &this->score_prefix);
+                PARSE_LINE("HitCirclePrefix", ':', &this->hitcircle_prefix);
                 break;
             }
 #undef PARSE_LINE
@@ -916,6 +905,68 @@ bool Skin::parseSkinINI(std::string filepath) {
     for(const auto &tempCol : tempColors) {
         if(tempCol.has_value()) {
             this->c_combo_colors.push_back(tempCol.value());
+        }
+    }
+
+    // sigh... fixup incorrectly-cased subfolder prefixes for compatibility with case-sensitive filesystems
+    // (yes, this really happens)
+    // TODO: have a check to determine whether the current filesystem is case-insensitive already
+    // this shouldn't be *too* expensive, though, just some more annoying directory enumeration syscalls
+
+    const bool debug = cv::debug_osu.getBool() || cv::debug_file.getBool();
+    {
+        const std::string topdir = this->file_path;
+        for(std::string *subfolder_ref : {&this->combo_prefix, &this->score_prefix, &this->hitcircle_prefix}) {
+            auto &prefix_subfolder = *subfolder_ref;
+            if(prefix_subfolder.empty()) continue;
+            // normalize
+            File::normalizeSlashes(prefix_subfolder, '\\', '/');
+            if(prefix_subfolder.empty()) continue;
+
+            int found = 0;
+            logIf(debug, "checking for subfolder {} case-insensitively", prefix_subfolder);
+            std::vector<std::string> skin_subfolders_split = prefix_subfolder.contains('/')
+                                                                 ? SString::split<std::string>(prefix_subfolder, '/')
+                                                                 : std::vector<std::string>{prefix_subfolder};
+
+            std::string cur_prefix_path = topdir;
+            for(auto &subsubfolder : skin_subfolders_split) {
+                std::vector<std::string> topdir_subfolders = Environment::getFoldersInFolder(cur_prefix_path);
+                if(topdir_subfolders.empty()) {
+                    // we reached the end, no need to look further
+                    // add the non-path part of the prefix onto the end
+                    cur_prefix_path = fmt::format("{}{}{}", cur_prefix_path, cur_prefix_path.ends_with('/') ? "" : "/",
+                                                  skin_subfolders_split.back());
+                    logIf(debug, "got final prefix: {}", cur_prefix_path);
+                    break;
+                }
+
+                // put directories into a case-insensitive set for comparison
+                Hash::unstable_ncase_set<std::string> topdirs_nocase;
+                for(const auto &dir : topdir_subfolders) {
+                    topdirs_nocase.insert(dir);
+                }
+
+                logIf(debug, "got {} topdirs in {}", topdirs_nocase.size(), cur_prefix_path);
+                if(const auto &nocaseIt = topdirs_nocase.find(subsubfolder); nocaseIt != topdirs_nocase.end()) {
+                    logIf(debug, "found {} (nocase: {}) in {}", subsubfolder, *nocaseIt, cur_prefix_path);
+                    cur_prefix_path =
+                        fmt::format("{}{}{}", cur_prefix_path, cur_prefix_path.ends_with('/') ? "" : "/", *nocaseIt);
+                    ++found;
+                } else {
+                    logIf(debug, "did not find {} in {}", subsubfolder, cur_prefix_path);
+                    break;
+                }
+            }
+
+            // == sz || == sz -1 because the last part of the prefix usually ends up being part of the filename
+            if(found == skin_subfolders_split.size() || found == skin_subfolders_split.size() - 1) {
+                // update our skin prefix subfolder
+                prefix_subfolder = cur_prefix_path.substr(cur_prefix_path.length() - prefix_subfolder.length());
+                logIf(debug, "got new subfolder: {}", prefix_subfolder);
+            } else {
+                logIf(debug, "#found {} != subsubfolders.size() {}", found, skin_subfolders_split.size());
+            }
         }
     }
 

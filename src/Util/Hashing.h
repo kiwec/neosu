@@ -5,6 +5,7 @@
 
 #include <string>
 #include <string_view>
+#include <cctype>
 
 namespace Hash {
 namespace flat = ankerl::unordered_dense;
@@ -33,5 +34,44 @@ struct StableStringHash {
 
 template <typename T>
 using stable_stringmap = std::unordered_map<std::string, T, StableStringHash, std::equal_to<>>;
+
+struct StringHashNcase {
+   private:
+    [[nodiscard]] inline std::size_t hashFunc(std::string_view str) const {
+        std::size_t hash = 0;
+        for(auto &c : str) {
+            hash = hash * 31 + std::tolower(static_cast<unsigned char>(c));
+        }
+        return hash;
+    }
+
+   public:
+    using is_transparent = void;
+
+    std::size_t operator()(const std::string &s) const { return hashFunc(s); }
+    std::size_t operator()(std::string_view sv) const { return hashFunc(sv); }
+};
+
+struct StringEqualNcase {
+   private:
+    [[nodiscard]] inline bool equality(std::string_view lhs, std::string_view rhs) const {
+        return std::ranges::equal(
+            lhs, rhs, [](unsigned char a, unsigned char b) -> bool { return std::tolower(a) == std::tolower(b); });
+    }
+
+   public:
+    using is_transparent = void;
+
+    bool operator()(const std::string &lhs, const std::string &rhs) const { return equality(lhs, rhs); }
+    bool operator()(const std::string &lhs, std::string_view rhs) const { return equality(lhs, rhs); }
+    bool operator()(std::string_view lhs, const std::string &rhs) const { return equality(lhs, rhs); }
+};
+
+// case-insensitive string map
+template <typename T>
+using unstable_ncase_stringmap = Hash::flat::map<std::string, T, StringHashNcase, StringEqualNcase>;
+
+template <typename T>
+using unstable_ncase_set = Hash::flat::set<T, StringHashNcase, StringEqualNcase>;
 
 }  // namespace Hash

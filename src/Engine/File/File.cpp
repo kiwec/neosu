@@ -33,48 +33,12 @@ namespace {  // static namespace
 // encapsulation of directory caching logic
 //------------------------------------------------------------------------------
 class DirectoryCache final {
-   private:
-    struct StringHashNcase {
-       private:
-        [[nodiscard]] inline uSz hashFunc(std::string_view str) const {
-            uSz hash = 0;
-            for(auto &c : str) {
-                hash = hash * 31 + std::tolower(static_cast<unsigned char>(c));
-            }
-            return hash;
-        }
-
-       public:
-        using is_transparent = void;
-
-        uSz operator()(const std::string &s) const { return hashFunc(s); }
-        uSz operator()(std::string_view sv) const { return hashFunc(sv); }
-    };
-
-    struct StringEqualNcase {
-       private:
-        [[nodiscard]] inline bool equality(std::string_view lhs, std::string_view rhs) const {
-            return std::ranges::equal(
-                lhs, rhs, [](unsigned char a, unsigned char b) -> bool { return std::tolower(a) == std::tolower(b); });
-        }
-
-       public:
-        using is_transparent = void;
-
-        bool operator()(const std::string &lhs, const std::string &rhs) const { return equality(lhs, rhs); }
-        bool operator()(const std::string &lhs, std::string_view rhs) const { return equality(lhs, rhs); }
-        bool operator()(std::string_view lhs, const std::string &rhs) const { return equality(lhs, rhs); }
-    };
-
-    template <typename T>
-    using sv_ncase_unordered_map = Hash::flat::map<std::string, T, StringHashNcase, StringEqualNcase>;
-
    public:
     DirectoryCache() = default;
 
     // directory entry type
     struct DirectoryEntry {
-        sv_ncase_unordered_map<std::pair<std::string, File::FILETYPE>> files;
+        Hash::unstable_ncase_stringmap<std::pair<std::string, File::FILETYPE>> files;
         chrono::steady_clock::time_point lastCacheAccess;
         fs::file_time_type lastModified;
     };
