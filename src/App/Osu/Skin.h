@@ -81,9 +81,9 @@ struct Skin final {
 
     [[nodiscard]] inline bool useSmoothCursorTrail() const { return this->i_cursor_middle.img != MISSING_TEXTURE; }
 
-    std::string name;
-    std::string file_path;
-    std::string skin_ini_path;
+    std::string name;           // the skin name by itself
+    std::string skin_dir;       // fully qualified skin directory (e.g. /path/to/skins_directory/<name>/)
+    std::string skin_ini_path;  // fully qualified skin.ini path (e.g. /path/to/skins_directory/<name>/skin.ini)
     std::vector<Resource *> resources;
     std::vector<Sound *> sounds;
     std::vector<SkinImage *> images;

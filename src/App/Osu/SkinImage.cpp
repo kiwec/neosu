@@ -94,11 +94,11 @@ bool SkinImage::load(const std::string& skinElementName, const std::string& anim
 }
 
 bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefaultSkin, bool animated, bool addToImages) {
-    std::string filepath1 = this->skin->file_path;
+    std::string filepath1 = this->skin->skin_dir;
     filepath1.append(skinElementName);
     filepath1.append("@2x.png");
 
-    std::string filepath2 = this->skin->file_path;
+    std::string filepath2 = this->skin->skin_dir;
     filepath2.append(skinElementName);
     filepath2.append(".png");
 

@@ -51,7 +51,7 @@ void internal::collect_outdated_db_diffs(const Sync::stop_token& stoken, std::ve
     Sync::shared_lock readlock(db->beatmap_difficulties_mtx);
     for(const auto& [_, diff] : db->beatmap_difficulties) {
         if(stoken.stop_requested()) break;
-        if(diff->fStarsNomod <= 0.f || diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION) {
+        if(diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION) {
             outdiffs.push_back(diff);
         }
     }
@@ -123,7 +123,7 @@ std::vector<BPMTuple> bpm_calc_buf;
 std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> dummy_diffobj_cache;
 
 forceinline bool score_needs_recalc(const FinishedScore& score) {
-    return score.ppv2_version < DiffCalc::PP_ALGORITHM_VERSION || score.ppv2_score <= 0.f;
+    return score.ppv2_version < DiffCalc::PP_ALGORITHM_VERSION;
 }
 
 // Calculate difficulty and PP for a group of scores sharing mod parameters.

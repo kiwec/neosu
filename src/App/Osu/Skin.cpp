@@ -123,7 +123,7 @@ bool Skin::unpack(const char *filepath) {
 
 Skin::Skin(const UString &name, std::string filepath, bool isDefaultSkin) {
     this->name = name.utf8View();
-    this->file_path = std::move(filepath);
+    this->skin_dir = std::move(filepath);
     this->o_default = isDefaultSkin;
 
     // vars
@@ -227,7 +227,7 @@ void Skin::load() {
                     (int)(prand() % std::min(this->filepaths_for_random_skin.size(), skinNames.size()));
 
                 this->name = skinNames[randomIndex];
-                this->file_path = this->filepaths_for_random_skin[randomIndex];
+                this->skin_dir = this->filepaths_for_random_skin[randomIndex];
             }
         }
     }
@@ -254,7 +254,7 @@ void Skin::load() {
 
     // skin ini
     this->randomizeFilePath();
-    this->skin_ini_path = this->file_path + "skin.ini";
+    this->skin_ini_path = this->skin_dir + "skin.ini";
 
     bool parseSkinIni1Status = true;
     bool parseSkinIni2Status = true;
@@ -478,10 +478,10 @@ void Skin::load() {
     // always load default skin menu-back (to show in options menu)
     {
         // HACKHACK to avoid annoying code changes
-        std::string origpath = this->file_path;
-        this->file_path = MCENGINE_IMAGES_PATH "/default/";
+        std::string origpath = this->skin_dir;
+        this->skin_dir = MCENGINE_IMAGES_PATH "/default/";
         this->i_menu_back2_DEFAULTSKIN = this->createSkinImage("menu-back", vec2(225, 87), 54);
-        this->file_path = origpath;
+        this->skin_dir = origpath;
     }
     this->i_menu_back2 = this->createSkinImage("menu-back", vec2(225, 87), 54);
 
@@ -915,7 +915,7 @@ bool Skin::parseSkinINI(std::string filepath) {
 
     const bool debug = cv::debug_osu.getBool() || cv::debug_file.getBool();
     {
-        const std::string topdir = this->file_path;
+        const std::string topdir = this->skin_dir;
         for(std::string *subfolder_ref : {&this->combo_prefix, &this->score_prefix, &this->hitcircle_prefix}) {
             auto &prefix_subfolder = *subfolder_ref;
             if(prefix_subfolder.empty()) continue;
@@ -987,7 +987,7 @@ Color Skin::getComboColorForCounter(int i, int offset) const {
 
 void Skin::randomizeFilePath() {
     if(this->o_random_elements && this->filepaths_for_random_skin.size() > 0)
-        this->file_path = this->filepaths_for_random_skin[prand() % this->filepaths_for_random_skin.size()];
+        this->skin_dir = this->filepaths_for_random_skin[prand() % this->filepaths_for_random_skin.size()];
 }
 
 SkinImage *Skin::createSkinImage(const std::string &skinElementName, vec2 baseSizeForScaling2x, float osuSize,
@@ -1020,12 +1020,12 @@ void Skin::checkLoadImage(BasicSkinImage &imgRef, const std::string &skinElement
     defaultFilePath2.append(".");
     defaultFilePath2.append(fileExtension);
 
-    std::string filepath1 = this->file_path;
+    std::string filepath1 = this->skin_dir;
     filepath1.append(skinElementName);
     filepath1.append("@2x.");
     filepath1.append(fileExtension);
 
-    std::string filepath2 = this->file_path;
+    std::string filepath2 = this->skin_dir;
     filepath2.append(skinElementName);
     filepath2.append(".");
     filepath2.append(fileExtension);
@@ -1171,7 +1171,7 @@ void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const s
     // load user skin
     bool loaded_user_skin = false;
     if(cv::skin_use_skin_hitsounds.getBool() || !isSample) {
-        sndRef = try_load_sound(this->file_path, skinElementName, loop, resourceName, false);
+        sndRef = try_load_sound(this->skin_dir, skinElementName, loop, resourceName, false);
         loaded_user_skin = (sndRef != nullptr);
     }
 
