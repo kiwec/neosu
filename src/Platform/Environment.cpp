@@ -415,7 +415,14 @@ std::string manualDirectoryFixup(std::string_view input) {
     assert(!input.empty());
 
     auto fsPath = File::getFsPath(input);
+
+#ifdef _MSC_VER
+    // MSVC will fail to convert some utf8 paths and just throw exceptions (aka crash)
+    auto u8ret = fsPath.u8string();
+    std::string ret(u8ret.begin(), u8ret.end());
+#else
     std::string ret = fsPath.string();
+#endif
     char endSep = '/';
 
     if constexpr(Env::cfg(OS::WINDOWS)) {
