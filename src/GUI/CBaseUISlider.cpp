@@ -56,9 +56,11 @@ void CBaseUISlider::draw() {
     // draw sliding line
     if(!this->bHorizontal)
         g->drawLine(this->getPos().x + this->getSize().x / 2.0f, this->getPos().y + this->vBlockSize.y / 2.0,
-                    this->getPos().x + this->getSize().x / 2.0f, this->getPos().y + this->getSize().y - this->vBlockSize.y / 2.0f);
+                    this->getPos().x + this->getSize().x / 2.0f,
+                    this->getPos().y + this->getSize().y - this->vBlockSize.y / 2.0f);
     else
-        g->drawLine(this->getPos().x + (this->vBlockSize.x - 1) / 2 + 1, this->getPos().y + this->getSize().y / 2.0f + 1,
+        g->drawLine(this->getPos().x + (this->vBlockSize.x - 1) / 2 + 1,
+                    this->getPos().y + this->getSize().y / 2.0f + 1,
                     this->getPos().x + this->getSize().x - (this->vBlockSize.x - 1) / 2,
                     this->getPos().y + this->getSize().y / 2.0f + 1);
 
@@ -67,8 +69,9 @@ void CBaseUISlider::draw() {
 
 void CBaseUISlider::drawBlock() {
     // draw block
-    vec2 center = this->getPos() + vec2(this->vBlockSize.x / 2 + (this->getSize().x - this->vBlockSize.x) * this->getPercent(),
-                                    this->getSize().y / 2);
+    vec2 center =
+        this->getPos() + vec2(this->vBlockSize.x / 2 + (this->getSize().x - this->vBlockSize.x) * this->getPercent(),
+                              this->getSize().y / 2);
     vec2 topLeft = center - this->vBlockSize / 2.f;
     vec2 topRight = center + vec2(this->vBlockSize.x / 2 + 1, -this->vBlockSize.y / 2);
     vec2 halfLeft = center + vec2(-this->vBlockSize.x / 2, 1);
@@ -228,8 +231,8 @@ CBaseUISlider *CBaseUISlider::setValue(float value, bool animate, bool call_call
 
     if(!this->bHorizontal) {
         if(animate)
-            anim::moveQuadOut(&this->vBlockPos.y, (this->getSize().y - this->vBlockSize.y) * (1.0f - percent), 0.2f, 0.0f,
-                              true);
+            anim::moveQuadOut(&this->vBlockPos.y, (this->getSize().y - this->vBlockSize.y) * (1.0f - percent), 0.2f,
+                              0.0f, true);
         else
             this->vBlockPos.y = (this->getSize().y - this->vBlockSize.y) * (1.0f - percent);
     } else {

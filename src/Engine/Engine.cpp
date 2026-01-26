@@ -110,12 +110,12 @@ Engine::Engine() {
         networkHandler = std::make_unique<NetworkHandler>();
         this->runtime_assert(!!networkHandler, "Network handler failed to initialize!");
 
+        soundEngine.reset(SoundEngine::initialize());
+        this->runtime_assert(!!soundEngine && soundEngine->succeeded(), "Sound engine failed to initialize!");
+
         resourceManager = std::make_unique<ResourceManager>();
         this->runtime_assert(!!resourceManager, "Resource manager menu failed to initialize!");
         resourceManager->setSyncLoadMaxBatchSize(512);  // this decays back down to a small number quickly by itself
-
-        soundEngine.reset(SoundEngine::initialize());
-        this->runtime_assert(!!soundEngine && soundEngine->succeeded(), "Sound engine failed to initialize!");
 
         DiscRPC::init();
 
@@ -458,6 +458,12 @@ void Engine::onShutdown() {
     this->bShuttingDown = true;
     if(soundEngine) soundEngine->shutdown();
     env->shutdown();
+}
+
+void Engine::stealUIFocus() {
+    // HACKHACK for textboxes
+    this->guiContainer->stealFocus();
+    app->stealFocus();
 }
 
 // hardcoded engine hotkeys

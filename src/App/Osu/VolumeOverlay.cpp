@@ -5,6 +5,7 @@
 #include "CBaseUIContainer.h"
 #include "Changelog.h"
 #include "Chat.h"
+#include "Environment.h"
 #include "OsuConVars.h"
 #include "OsuDirectScreen.h"
 #include "Engine.h"
@@ -261,6 +262,7 @@ bool VolumeOverlay::canChangeVolume() {
         this->isBusy() || keyboard->isAltDown() ||                                                                //
         (                                                                                                         //
             !(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !ui->getPauseOverlay()->isVisible()) &&  //
+            (osu->getVirtScreenRect().contains(mouse->getPos())) &&                                      //
             !(ui->getSongBrowser()->isVisible() && db->isFinished()) &&                                           //
             !(ui->getOsuDirectScreen()->isVisible()) &&                                                           //
             !(ui->getOptionsOverlay()->isVisible() && ui->getOptionsOverlay()->isMouseInside()) &&                //

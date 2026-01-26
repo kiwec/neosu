@@ -10,7 +10,7 @@
 #include "Graphics.h"
 #include "Font.h"
 
-Mouse::Mouse() : InputDevice(), vPos(env->getMousePos()), vPosWithoutOffsets(this->vPos), vActualPos(this->vPos) {
+Mouse::Mouse() : InputDevice(), vPos(env->getMousePos()), vPosWithoutOffsets(this->vPos) {
     this->fSensitivity = cv::mouse_sensitivity.getFloat();
     this->bIsRawInputDesired = cv::mouse_raw_input.getBool();
     cv::mouse_raw_input.setCallback(SA::MakeDelegate<&Mouse::onRawInputChanged>(this));
@@ -32,7 +32,7 @@ void Mouse::draw() {
     // green rect = virtual cursor pos
     g->setColor(0xff00ff00);
     float size = 20.0f;
-    g->drawRect(this->vActualPos.x - size / 2, this->vActualPos.y - size / 2, size, size);
+    g->drawRect(this->vPos.x - size / 2, this->vPos.y - size / 2, size, size);
 
     // red rect = real cursor pos
     g->setColor(0xffff0000);
@@ -186,7 +186,6 @@ void Mouse::resetWheelDelta() {
 void Mouse::onPosChange(vec2 pos) {
     this->vPosWithoutOffsets = pos;
     this->vPos = (this->vOffset + pos);
-    this->vActualPos = this->vPos;
 
     // notify environment of the virtual cursor position
     env->updateCachedMousePos(this->vPosWithoutOffsets);
@@ -246,7 +245,6 @@ void Mouse::setOffset(vec2 offset) {
     // update position to maintain visual position after offset change
     vec2 posAdjustment = this->vOffset - oldOffset;
     this->vPos += posAdjustment;
-    this->vActualPos += posAdjustment;
 }
 
 void Mouse::addListener(MouseListener *mouseListener, bool insertOnTop) {

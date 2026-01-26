@@ -266,6 +266,13 @@ Osu::Osu()
         PeppyImporter::import_settings_from_osu_stable();
     }
 
+    // don't allow empty osu_folder if it's still empty at this point
+    if(cv::osu_folder.getString().empty()) {
+        const std::string fallback = this->getDefaultFallbackOsuFolder();
+        debugLog("using fallback/default osu! folder: {}", fallback);
+        cv::osu_folder.setValue(fallback, false);
+    }
+
     // Initialize sound here so we can load the preferred device from config
     // Avoids initializing the sound device twice, which can take a while depending on the driver
     this->setupAudio();
@@ -404,13 +411,6 @@ Osu::Osu()
             const bool extracted = env->getEnvInterop().handle_osk(ev.path.c_str());
             if(extracted) env->deleteFile(ev.path);
         });
-    }
-
-    // don't allow empty osu_folder if it's still empty at this point
-    if(cv::osu_folder.getString().empty()) {
-        const std::string fallback = this->getDefaultFallbackOsuFolder();
-        debugLog("using fallback/default osu! folder: {}", fallback);
-        cv::osu_folder.setValue(fallback);
     }
 
     env->setCursorVisible(!this->internalRect.contains(mouse->getPos()));

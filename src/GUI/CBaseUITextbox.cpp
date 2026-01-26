@@ -87,8 +87,8 @@ void CBaseUITextbox::draw() {
     // draw base frame
     if(this->bDrawFrame) {
         if(this->frameDarkColor != 0 || this->frameBrightColor != 0)
-            g->drawRect(this->getPos(), this->getSize(), this->frameDarkColor,
-                        this->frameBrightColor, this->frameBrightColor, this->frameDarkColor);
+            g->drawRect(this->getPos(), this->getSize(), this->frameDarkColor, this->frameBrightColor,
+                        this->frameBrightColor, this->frameDarkColor);
         else {
             g->setColor(this->frameColor);
             g->drawRect(this->getPos(), this->getSize());
@@ -147,7 +147,7 @@ void CBaseUITextbox::update(CBaseUIEventCtx &c) {
 
     // Steal focus from all other Textboxes
     if(!was_active && this->bActive) {
-        app->stealFocus();
+        engine->stealUIFocus();
         this->bActive = true;
     }
 
@@ -213,20 +213,21 @@ void CBaseUITextbox::update(CBaseUIEventCtx &c) {
                     const int scrollspeed = mouseX < 0 ? std::abs(mouseX) / 2 + 1 : 3;
 
                     // TODO: animations which don't suck for usability
-                    this->fTextScrollAddX =
-                        std::clamp<int>(this->fTextScrollAddX + scrollspeed, 0,
-                                        this->fTextWidth - this->getSize().x + cv::ui_textbox_text_offset_x.getInt() * 2);
+                    this->fTextScrollAddX = std::clamp<int>(
+                        this->fTextScrollAddX + scrollspeed, 0,
+                        this->fTextWidth - this->getSize().x + cv::ui_textbox_text_offset_x.getInt() * 2);
                     /// animation->moveSmoothEnd(&m_fTextScrollAddX, clampi(this->fTextScrollAddX+scrollspeed, 0,
                     /// m_fTextWidth-m_vSize.x+cv::ui_textbox_text_offset_x.getInt()*2), 1);
                 }
 
                 if(mouseX > this->getSize().x * 0.85f) {
-                    const int scrollspeed = mouseX > this->getSize().x ? std::abs(mouseX - this->getSize().x) / 2 + 1 : 1;
+                    const int scrollspeed =
+                        mouseX > this->getSize().x ? std::abs(mouseX - this->getSize().x) / 2 + 1 : 1;
 
                     // TODO: animations which don't suck for usability
-                    this->fTextScrollAddX =
-                        std::clamp<int>(this->fTextScrollAddX - scrollspeed, 0,
-                                        this->fTextWidth - this->getSize().x + cv::ui_textbox_text_offset_x.getInt() * 2);
+                    this->fTextScrollAddX = std::clamp<int>(
+                        this->fTextScrollAddX - scrollspeed, 0,
+                        this->fTextWidth - this->getSize().x + cv::ui_textbox_text_offset_x.getInt() * 2);
                     /// animation->moveSmoothEnd(&m_fTextScrollAddX, clampi(this->fTextScrollAddX-scrollspeed, 0,
                     /// m_fTextWidth-m_vSize.x+cv::ui_textbox_text_offset_x.getInt()*2), 1);
                 }
@@ -482,7 +483,8 @@ void CBaseUITextbox::handleCaretKeyboardDelete() {
                                   this->font->getStringWidth(this->getVisibleText().substr(0, this->iCaretPosition)) +
                                   this->fTextScrollAddX;
         if(caretPosition < (this->getSize().x - cv::ui_textbox_text_offset_x.getInt()))
-            this->fTextScrollAddX += std::abs(this->getSize().x - cv::ui_textbox_text_offset_x.getInt() - caretPosition);
+            this->fTextScrollAddX +=
+                std::abs(this->getSize().x - cv::ui_textbox_text_offset_x.getInt() - caretPosition);
     }
 }
 
@@ -651,6 +653,11 @@ void CBaseUITextbox::onResized() {
 
     // HACKHACK: brute force fix layout
     this->setText(this->sText);
+}
+
+void CBaseUITextbox::onMouseOutside() {
+    CBaseUIElement::onMouseOutside();
+    env->setCursor(CURSORTYPE::CURSOR_NORMAL);
 }
 
 void CBaseUITextbox::onMouseDownInside(bool left, bool right) {

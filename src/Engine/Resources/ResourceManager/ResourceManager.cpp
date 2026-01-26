@@ -12,6 +12,7 @@
 #include "RenderTarget.h"
 #include "Shader.h"
 #include "Sound.h"
+#include "SoundEngine.h"
 #include "TextureAtlas.h"
 #include "VertexArrayObject.h"
 #include "Hashing.h"
@@ -538,7 +539,7 @@ Sound *ResourceManager::loadSound(std::string filepath, const std::string &resou
 
     // create instance and load it
     filepath.insert(0, MCENGINE_SOUNDS_PATH "/");
-    auto *snd{Sound::createSound(filepath, stream, overlayable, loop)};
+    auto *snd{soundEngine->createSound(filepath, stream, overlayable, loop)};
     setResourceName(snd, resourceName);
 
     loadResource(snd, true);
@@ -552,7 +553,7 @@ Sound *ResourceManager::loadSoundAbs(std::string filepath, const std::string &re
     if(res != nullptr) return res;
 
     // create instance and load it
-    auto *snd{Sound::createSound(std::move(filepath), stream, overlayable, loop)};
+    auto *snd{soundEngine->createSound(std::move(filepath), stream, overlayable, loop)};
     setResourceName(snd, resourceName);
 
     loadResource(snd, true);

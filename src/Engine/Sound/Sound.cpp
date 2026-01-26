@@ -19,12 +19,13 @@ void Sound::initAsync() {
     std::string toLoad;
     const bool isRebuild = !this->sRebuildFilePath.empty();
     if(isRebuild) {
-        this->doPathFixup(this->sRebuildFilePath);
         toLoad = std::move(this->sRebuildFilePath);
         this->sRebuildFilePath.clear();
     } else {
         toLoad = this->sFilePath;
     }
+
+    this->doPathFixup(toLoad);
 
     logIfCV(debug_rm, "Resource Manager: Loading {:s}", toLoad);
 
@@ -60,19 +61,6 @@ void Sound::rebuild(std::string_view newFilePath, bool async) {
     }
 
     resourceManager->reloadResource(this, async);
-}
-
-Sound* Sound::createSound(std::string filepath, bool stream, bool overlayable, bool loop) {
-#if !defined(MCENGINE_FEATURE_BASS) && !defined(MCENGINE_FEATURE_SOLOUD)
-#error No sound backend available!
-#endif
-#ifdef MCENGINE_FEATURE_BASS
-    if(soundEngine->getTypeId() == BASS) return new BassSound(std::move(filepath), stream, overlayable, loop);
-#endif
-#ifdef MCENGINE_FEATURE_SOLOUD
-    if(soundEngine->getTypeId() == SOLOUD) return new SoLoudSound(std::move(filepath), stream, overlayable, loop);
-#endif
-    return nullptr;
 }
 
 // quick heuristic to check if it's going to be worth loading the audio

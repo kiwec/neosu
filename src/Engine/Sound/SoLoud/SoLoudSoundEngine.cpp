@@ -24,6 +24,11 @@
 
 std::unique_ptr<SoLoudThreadWrapper> soloud{nullptr};
 
+// factory
+Sound *SoLoudSoundEngine::createSound(std::string filepath, bool stream, bool overlayable, bool loop) {
+    return new SoLoudSound(std::move(filepath), stream, overlayable, loop);
+}
+
 SoundEngine::OutputDriver SoLoudSoundEngine::getMAorSDLCV() {
     OutputDriver out{OutputDriver::SOLOUD_MA};
 
@@ -406,15 +411,15 @@ bool SoLoudSoundEngine::setOutputDeviceInt(const SoundEngine::OUTPUT_DEVICE &des
     auto dumpOutputDevices = [&]() {
         const auto &curDev = this->currentOutputDevice;
         debugLog("CURRENT id: {} drv: {} enbl: {} def: {} init: {} name: {}", curDev.id, (u8)curDev.driver,
-                       curDev.enabled, curDev.isDefault, curDev.isInit, curDev.name);
+                 curDev.enabled, curDev.isDefault, curDev.isInit, curDev.name);
         for(const auto &dev : this->outputDevices) {
             debugLog("OUR id: {} name: {} drv: {} enbl: {} def: {} init: {}", dev.id, dev.name, (u8)dev.driver,
-                           dev.enabled, dev.isDefault, dev.isInit, dev.name);
+                     dev.enabled, dev.isDefault, dev.isInit, dev.name);
         }
         for(const auto &[id, dev] : this->mSoloudDevices) {
             debugLog("SOLOUD id: {} name: {} def: {} excl: {} identifier: {}", id,
-                           std::string_view{dev.name.data(), strlen(dev.name.data())}, dev.isDefault, dev.isExclusive,
-                           std::string_view{dev.identifier.data(), strlen(dev.identifier.data())});
+                     std::string_view{dev.name.data(), strlen(dev.name.data())}, dev.isDefault, dev.isExclusive,
+                     std::string_view{dev.identifier.data(), strlen(dev.identifier.data())});
         }
     };
 

@@ -33,15 +33,16 @@ class Sound : public Resource {
 
    public:
     Sound(std::string filepath, bool stream, bool overlayable, bool loop)
-        : Resource(SOUND, std::move(filepath)), bStream(stream), bIsLooped(loop), bIsOverlayable(overlayable) {
+        : Resource(SOUND, std::move(filepath),
+                   /*doFilesystemExistenceCheck=*/false),  // we check filesystem status in async load
+          bStream(stream),
+          bIsLooped(loop),
+          bIsOverlayable(overlayable) {
         this->activeHandleCache.reserve(5);
     }
 
     // rebuild with a new path (or reload with the same path)
     void rebuild(std::string_view newFilePath = "", bool async = false);
-
-    // Factory method to create the appropriate sound object
-    static Sound *createSound(std::string filepath, bool stream, bool overlayable, bool loop);
 
     virtual void setPositionUS(u64 us) = 0;
     inline void setPositionMS(u32 ms) { return this->setPositionUS(ms * 1000ULL); };

@@ -54,6 +54,9 @@ class SoundEngine {
     // checked on startup by engine
     [[nodiscard]] inline bool succeeded() const { return this->bInitSuccess; }
 
+    // Sound* object factory (based on active backend)
+    virtual Sound *createSound(std::string filepath, bool stream, bool overlayable, bool loop) = 0;
+
     virtual void restart() = 0;
     virtual void shutdown() { ; }
     virtual void update() { ; }

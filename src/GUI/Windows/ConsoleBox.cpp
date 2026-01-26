@@ -224,17 +224,15 @@ void ConsoleBox::processPendingLogAnimations() {
 }
 
 void ConsoleBox::update(CBaseUIEventCtx &c) {
+    // handle textbox focus first
+    this->textbox->update(c);
+
     CBaseUIElement::update(c);
 
     // handle pending animation operations from logging threads
     processPendingLogAnimations();
 
     const bool mleft = mouse->isLeftDown();
-
-    if(mleft && this->textbox->isMouseInside() && this->textbox->isVisible()) this->textbox->setActive(true);
-
-    // handle consolebox
-    this->textbox->update(c);
 
     if(this->textbox->hitEnter()) {
         this->processCommand(this->textbox->getText().toUtf8());

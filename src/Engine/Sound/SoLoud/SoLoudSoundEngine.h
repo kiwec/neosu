@@ -26,6 +26,9 @@ class SoLoudSoundEngine final : public SoundEngine {
     SoLoudSoundEngine();
     ~SoLoudSoundEngine() override;
 
+    // factory
+    Sound *createSound(std::string filepath, bool stream, bool overlayable, bool loop) override;
+
     void restart() override;
     void onFocusGained() override;
     void onFocusLost() override;

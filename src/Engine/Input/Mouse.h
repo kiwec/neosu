@@ -40,7 +40,6 @@ class Mouse final : public InputDevice {
     // state getters
     [[nodiscard]] constexpr forceinline vec2 getPos() const { return this->vPos; }
     [[nodiscard]] constexpr forceinline vec2 getRealPos() const { return this->vPosWithoutOffsets; }
-    [[nodiscard]] constexpr forceinline vec2 getActualPos() const { return this->vActualPos; }
     [[nodiscard]] constexpr forceinline vec2 getDelta() const { return this->vDelta; }
     [[nodiscard]] constexpr forceinline vec2 getRawDelta() const { return this->vRawDelta; }
 
@@ -105,9 +104,8 @@ class Mouse final : public InputDevice {
     // position state
     vec2 vPos{0.f};                // position with offset applied
     vec2 vPosWithoutOffsets{0.f};  // position without offset
-    vec2 vDelta{0.f};              // movement delta in the current frame
-    vec2 vRawDelta{0.f};   // movement delta in the current frame, without consideration for clipping or sensitivity
-    vec2 vActualPos{0.f};  // final cursor position after all transformations
+    vec2 vDelta{0.f};  // movement delta in the current frame
+    vec2 vRawDelta{0.f};  // movement delta in the current frame, without consideration for clipping or sensitivity
 
     // mode tracking
     bool bIsRawInputDesired{false};  // whether the user wants raw (relative) input

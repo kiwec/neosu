@@ -5,6 +5,7 @@
 
 #include "BassManager.h"
 #include "BassSoundEngine.h"
+#include "BassSound.h"
 #include "ConVar.h"
 #include "Engine.h"
 #include "ResourceManager.h"
@@ -16,20 +17,25 @@
 #include <cmath>
 #include <utility>
 
+// factory
+Sound *BassSoundEngine::createSound(std::string filepath, bool stream, bool overlayable, bool loop) {
+    return new BassSound(std::move(filepath), stream, overlayable, loop);
+}
+
 #ifdef MCENGINE_PLATFORM_WINDOWS
 
-DWORD BassSoundEngine::ASIO_clamp(const BASS_ASIO_INFO &info, DWORD buflen) {
-    if(std::cmp_equal(buflen, -1)) return info.bufpref;
+uint32_t BassSoundEngine::ASIO_clamp(const BASS_ASIO_INFO &info, uint32_t buflen) {
+    if(buflen == (uint32_t)-1) return info.bufpref;
     if(buflen < info.bufmin) return info.bufmin;
     if(buflen > info.bufmax) return info.bufmax;
     if(info.bufgran == 0) return buflen;
 
     if(info.bufgran == -1) {
         // Buffer lengths are only allowed in powers of 2
-        for(int oksize = info.bufmin; std::cmp_less_equal(oksize, info.bufmax); oksize *= 2) {
-            if(std::cmp_equal(oksize, buflen)) {
+        for(int oksize = info.bufmin; oksize <= info.bufmax; oksize *= 2) {
+            if(oksize == buflen) {
                 return buflen;
-            } else if(std::cmp_greater(oksize, buflen)) {
+            } else if(oksize > buflen) {
                 oksize /= 2;
                 return oksize;
             }

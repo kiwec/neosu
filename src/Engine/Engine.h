@@ -77,6 +77,9 @@ class Engine final : public KeyboardListener {
     void toggleFullscreen();
     void disableFullscreen();
 
+    // UI focus hacks (passthrough to app + engine UI)
+    void stealUIFocus();
+
     void showMessageInfo(const UString &title, const UString &message);
     void showMessageWarning(const UString &title, const UString &message);
     void showMessageError(const UString &title, const UString &message);

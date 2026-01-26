@@ -3,9 +3,9 @@
 
 #ifdef MCENGINE_FEATURE_BASS
 #include "SoundEngine.h"
-#include "BassSound.h"
 
 class Sound;
+class BassSound;
 
 #if defined(MCENGINE_PLATFORM_WINDOWS) && !defined(BASSASIO_H)
 namespace bass_EXTERN {
@@ -25,6 +25,9 @@ class BassSoundEngine final : public SoundEngine {
    public:
     BassSoundEngine();
     ~BassSoundEngine() override;
+
+    // factory
+    Sound *createSound(std::string filepath, bool stream, bool overlayable, bool loop) override;
 
     void restart() override;
     void shutdown() override;
@@ -48,7 +51,7 @@ class BassSoundEngine final : public SoundEngine {
     void onParamChanged(float oldValue, float newValue) override;
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
-    static DWORD ASIO_clamp(const BASS_ASIO_INFO &info, DWORD buflen);
+    static uint32_t ASIO_clamp(const BASS_ASIO_INFO &info, uint32_t buflen);
     inline void setOnASIOBufferChangeCB(std::function<void(const BASS_ASIO_INFO &info)> cb) {
         this->asio_buffer_change_cb = std::move(cb);
     }
