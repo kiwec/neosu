@@ -226,6 +226,11 @@ void CBaseUIScrollView::draw() {
 void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
     if(!this->isVisible()) return;
 
+    if(!c.propagate_clicks) {
+        // big sigh...
+        this->stealFocus();
+    }
+
     const bool wasContainerBusyBeforeUpdate = this->container.isBusy();
 
     this->container.update(c);
