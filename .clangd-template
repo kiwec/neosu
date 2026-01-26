@@ -1,0 +1,80 @@
+# Not required, but recommended for development (rename to .clangd and replace CompilationDatabase with your build subfolder)
+
+CompileFlags:
+    Add: [-ferror-limit=0, -Wno-sign-compare, -Wno-c23-extensions, -D_CLANGD]
+    Remove: [-funroll-*, -fno-keep-inline-dllexport, -fhardened, -mtls-dialect*, -fimplicit*, -fipa*, -fdevirt*, -ffat-*, -flto-*, -O*]
+    BuiltinHeaders: QueryDriver
+    CompilationDatabase: build
+
+Diagnostics:
+  UnusedIncludes: None
+  ClangTidy:
+    FastCheckFilter: Strict
+    Add: ['*']
+    Remove: [
+    'abseil-*',
+    'altera-*',
+    'android-*',
+    'fuchsia-*',
+    'google-*',
+    'llvm*',
+    'cert-err52-cpp',
+    '*readability*',
+    'cert-int09-c',
+    'modernize-avoid-c-style-cast',
+    'cppcoreguidelines-pro-type-vararg',
+    'modernize-avoid-c-arrays',
+    'cppcoreguidelines-avoid-c-arrays',
+    'hicpp-explicit-conversions',
+    'cppcoreguidelines-pro-type-static-cast-downcast',
+    'cppcoreguidelines-pro-type-reinterpret-cast',
+    'hicpp-uppercase-literal-suffix',
+    'boost-use-ranges',
+    'hicpp-vararg',
+    'cert-dcl37-c',
+    'hicpp-use-nullptr',
+    'hicpp-braces-around-statements',
+    'hicpp-signed-bitwise',
+    'modernize-use-trailing-return-type',
+    'cppcoreguidelines-prefer-member-initializer',
+    'zircon-*',
+    'misc-no-recursion',
+    'cppcoreguidelines-owning-memory',
+    'cert-err33-c',
+    'hicpp-avoid-c-arrays',
+    'cppcoreguidelines-avoid-non-const-global-variables',
+    'cppcoreguidelines-pro-type-union-access',
+    'cppcoreguidelines-avoid-do-while',
+    'concurrency-mt-unsafe',
+    'hicpp-no-malloc',
+    'hicpp-avoid-goto',
+    'cppcoreguidelines-avoid-goto',
+    'hicpp-use-override',
+    'modernize-use-std-print',
+    'cppcoreguidelines-no-malloc',
+    'modernize-redundant-void-arg',
+    'cppcoreguidelines-pro-bounds-pointer-arithmetic',
+    'cppcoreguidelines-non-private-member-variables-in-classes',
+    'misc-non-private-member-variables-in-classes',
+    'bugprone-assignment-in-if*',
+    'bugprone-reserved*',
+    'bugprone-easily-swappable*',
+    'modernize*trailing*',
+    'modernize-use-using',
+    'cppcoreguidelines-avoid-magic-numbers',
+    'cppcoreguidelines-macro-usage',
+    'cppcoreguidelines-pro-bounds-constant-array-index',
+    'cert-dcl51-cpp',
+    'misc-const-correctness',
+    'modernize-use-designated-initializers',
+    'cppcoreguidelines-pro-bounds-avoid-unchecked-container-access',
+    'misc-use-anonymous-namespace',
+    'hicpp-no-assembler']
+
+InlayHints:
+    Enabled: No
+
+Hover:
+  ShowAKA: true
+  MacroContentsLimit: 0
+
