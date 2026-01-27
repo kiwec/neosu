@@ -38,6 +38,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Added Song Browser right click->Export Collection and Export Beatmapset)",
         R"(  - Note that all of the difficulties from the beatmapset in a collection will be archived, not just the difficulty in the collection itself.)",
         R"(- Fixed carousel buttons' menu-button-background image being incorrectly scaled)",
+        R"(- Added button to import McOsu collections/scores/settings from Steam)",
         R"(- Added Linux ARM64 releases)",
         R"(- Added asio_freq convar to allow custom sample rates on BASSASIO)",
         R"(- SoLoud fixes/improvements:)",

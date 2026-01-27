@@ -45,6 +45,7 @@ class OptionsOverlay final : public ScreenBackable, public NotificationOverlayKe
 
     // used by Osu for osu_folder callback
     void updateOsuFolderTextbox(std::string_view newFolder);
+    void updateMcOsuFolderTextbox(std::string_view newFolder);
 
     // used by Chat
     void askForLoginDetails();

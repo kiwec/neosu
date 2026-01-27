@@ -120,6 +120,7 @@ struct OptionsOverlayImpl final {
     void onSkinSelect();
     void onOutputDeviceChange();
     void updateOsuFolderTextbox(std::string_view newFolder);
+    void updateMcOsuFolderTextbox(std::string_view newFolder);
     void askForLoginDetails();
     void update_login_button(bool loggedIn = false);
     void updateSkinNameLabel();
@@ -299,6 +300,7 @@ struct OptionsOverlayImpl final {
     UIButton *logInButton{nullptr};
 
     CBaseUITextbox *osuFolderTextbox{nullptr};
+    CBaseUITextbox *mcOsuFolderTextbox{nullptr};
 
     ConVar *waitingKey{nullptr};
 
@@ -355,6 +357,9 @@ void OptionsOverlay::onOutputDeviceChange() { return pImpl->onOutputDeviceChange
 void OptionsOverlay::updateOsuFolderTextbox(std::string_view newFolder) {
     return pImpl->updateOsuFolderTextbox(newFolder);
 }
+void OptionsOverlay::updateMcOsuFolderTextbox(std::string_view newFolder) {
+    return pImpl->updateMcOsuFolderTextbox(newFolder);
+}
 void OptionsOverlay::askForLoginDetails() { return pImpl->askForLoginDetails(); }
 void OptionsOverlay::update_login_button(bool loggedIn) { return pImpl->update_login_button(loggedIn); }
 void OptionsOverlay::updateSkinNameLabel() { return pImpl->updateSkinNameLabel(); }
@@ -407,8 +412,10 @@ class ResetButton final : public CBaseUIButton {
         Color middle = argb((int)(255 * this->fAnim), 255, 211, 50);
         Color right = 0x00000000;
 
-        g->fillGradient(this->getPos().x, this->getPos().y, this->getSize().x * 1.25f, this->getSize().y, middle, right, middle, right);
-        g->fillGradient(this->getPos().x, this->getPos().y, fullColorBlockSize, this->getSize().y, left, middle, left, middle);
+        g->fillGradient(this->getPos().x, this->getPos().y, this->getSize().x * 1.25f, this->getSize().y, middle, right,
+                        middle, right);
+        g->fillGradient(this->getPos().x, this->getPos().y, fullColorBlockSize, this->getSize().y, left, middle, left,
+                        middle);
     }
 
     void update(CBaseUIEventCtx &c) override {
@@ -490,21 +497,26 @@ class SkinPreviewElement final : public CBaseUIElement {
             const int colorOffset = 0;
             const float colorRGBMultiplier = 1.0f;
 
-            Circle::drawCircle(osu->getSkin(),
-                               this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (1.0f / 5.0f), 0.0f),
-                               hitcircleDiameter, numberScale, overlapScale, number, colorCounter, colorOffset,
-                               colorRGBMultiplier, approachScale, approachAlpha, approachAlpha, true, false);
-            Circle::drawHitResult(osu->getSkin(), hitcircleDiameter, hitcircleDiameter,
-                                  this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (2.0f / 5.0f), 0.0f),
-                                  LiveScore::HIT::HIT_100, 0.45f, 0.33f);
-            Circle::drawHitResult(osu->getSkin(), hitcircleDiameter, hitcircleDiameter,
-                                  this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (3.0f / 5.0f), 0.0f),
-                                  LiveScore::HIT::HIT_50, 0.45f, 0.66f);
-            Circle::drawHitResult(osu->getSkin(), hitcircleDiameter, hitcircleDiameter,
-                                  this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (4.0f / 5.0f), 0.0f),
-                                  LiveScore::HIT::HIT_MISS, 0.45f, 1.0f);
+            Circle::drawCircle(
+                osu->getSkin(),
+                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (1.0f / 5.0f), 0.0f),
+                hitcircleDiameter, numberScale, overlapScale, number, colorCounter, colorOffset, colorRGBMultiplier,
+                approachScale, approachAlpha, approachAlpha, true, false);
+            Circle::drawHitResult(
+                osu->getSkin(), hitcircleDiameter, hitcircleDiameter,
+                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (2.0f / 5.0f), 0.0f),
+                LiveScore::HIT::HIT_100, 0.45f, 0.33f);
+            Circle::drawHitResult(
+                osu->getSkin(), hitcircleDiameter, hitcircleDiameter,
+                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (3.0f / 5.0f), 0.0f),
+                LiveScore::HIT::HIT_50, 0.45f, 0.66f);
+            Circle::drawHitResult(
+                osu->getSkin(), hitcircleDiameter, hitcircleDiameter,
+                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (4.0f / 5.0f), 0.0f),
+                LiveScore::HIT::HIT_MISS, 0.45f, 1.0f);
             Circle::drawApproachCircle(
-                osu->getSkin(), this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (1.0f / 5.0f), 0.0f),
+                osu->getSkin(),
+                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (1.0f / 5.0f), 0.0f),
                 osu->getSkin()->getComboColorForCounter(colorCounter, colorOffset), hitcircleDiameter, approachScale,
                 approachCircleAlpha, false, false);
         } else if(this->iMode == 1) {
@@ -581,7 +593,8 @@ class SliderPreviewElement final : public CBaseUIElement {
             heightAddPercent = 1.0f - temp;
 
             points.emplace_back((useLegacyRenderer ? this->getPos().x : 0) + hitcircleDiameter / 2 + i * pointDist,
-                                (useLegacyRenderer ? this->getPos().y : 0) + this->getSize().y / 2 - hitcircleDiameter / 3 +
+                                (useLegacyRenderer ? this->getPos().y : 0) + this->getSize().y / 2 -
+                                    hitcircleDiameter / 3 +
                                     heightAddPercent * (this->getSize().y / 2 - hitcircleDiameter / 2));
         }
 
@@ -856,16 +869,6 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     this->addLabel_("3) Copy paste the full path into the textbox:")->setTextColor(0xff666666);
     this->addLabel_("");
     this->osuFolderTextbox = this->addTextbox(cv::osu_folder.getString(), &cv::osu_folder);
-    UIButton *importMcOsuSettingsButton = this->addButton_("Import settings from McOsu");
-    importMcOsuSettingsButton->setClickCallback(SA::MakeDelegate([]() -> void {
-        if(SettingsImporter::import_from_mcosu()) {
-            ui->getNotificationOverlay()->addToast(US_("Successfully imported settings from McOsu."), SUCCESS_TOAST);
-
-        } else {
-            ui->getNotificationOverlay()->addToast(US_("Error: Couldn't find McOsu install directory or config file!"),
-                                                   ERROR_TOAST);
-        }
-    }));
     UIButton *importPeppySettingsButton = this->addButton_("Import settings from osu!stable");
     importPeppySettingsButton->setClickCallback(SA::MakeDelegate([]() -> void {
         if(SettingsImporter::import_from_osu_stable()) {
@@ -877,7 +880,6 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
                 US_("Error: Couldn't find osu!stable install directory or config file!"), ERROR_TOAST);
         }
     }));
-    this->addSpacer();
     this->addCheckboxTooltip_(
         "Use osu!.db database (read-only)",
         "If you have an existing osu! installation,\nthen this will speed up the initial loading process.",
@@ -1732,6 +1734,26 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     this->addCheckbox_("Draw 300s", &cv::hitresult_draw_300s);
 
     this->addSection_("Maintenance");
+
+    this->addSubSection_("McOsu folder");
+    this->mcOsuFolderTextbox = this->addTextbox(cv::mcosu_folder.getString(), &cv::mcosu_folder);
+    UIButton *importMcOsuSettingsButton = this->addButton_("Import collections/scores/settings from McOsu");
+    importMcOsuSettingsButton->setClickCallback(SA::MakeDelegate([]() -> void {
+        if(SettingsImporter::import_from_mcosu()) {
+            // To finish importing collections.db/scores.db, we need to trigger a database reload
+            if(db->isFinished() || db->isCancelled()) {
+                // TODO: bug prone since it can be called from any state...
+                ui->getSongBrowser()->refreshBeatmaps(ui->getActiveScreen());
+            }
+
+            ui->getNotificationOverlay()->addToast(US_("Successfully imported settings from McOsu."), SUCCESS_TOAST);
+
+        } else {
+            ui->getNotificationOverlay()->addToast(US_("Error: Couldn't find McOsu install directory or config file!"),
+                                                   ERROR_TOAST);
+        }
+    }));
+
     this->addSubSection_("Restore");
     UIButton *resetAllSettingsButton = this->addButton_("Reset all settings");
     resetAllSettingsButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onResetEverythingClicked>(this));
@@ -2018,6 +2040,7 @@ void OptionsOverlayImpl::update(CBaseUIEventCtx &c) {
 
     // apply textbox changes on enter key
     if(this->osuFolderTextbox->hitEnter()) cv::osu_folder.setValue(this->osuFolderTextbox->getText());
+    if(this->mcOsuFolderTextbox->hitEnter()) cv::mcosu_folder.setValue(this->mcOsuFolderTextbox->getText());
 
     // HACKHACK (should just use callback)
     // XXX: disable serverTextbox while logging in
@@ -2730,6 +2753,14 @@ void OptionsOverlayImpl::updateOsuFolderTextbox(std::string_view newFolder) {
     if(this->osuFolderTextbox && this->osuFolderTextbox->getText() != newFolder) {
         this->osuFolderTextbox->stealFocus();  // what's the point of this stealFocus?
         this->osuFolderTextbox->setText(newFolder);
+    }
+}
+
+void OptionsOverlayImpl::updateMcOsuFolderTextbox(std::string_view newFolder) {
+    // don't recurse
+    if(this->mcOsuFolderTextbox && this->mcOsuFolderTextbox->getText() != newFolder) {
+        this->mcOsuFolderTextbox->stealFocus();  // what's the point of this stealFocus?
+        this->mcOsuFolderTextbox->setText(newFolder);
     }
 }
 
@@ -4038,6 +4069,7 @@ void OptionsOverlayImpl::save() {
     }
 
     cv::osu_folder.setValue(this->osuFolderTextbox->getText());
+    cv::mcosu_folder.setValue(this->mcOsuFolderTextbox->getText());
     this->updateFposuDPI();
     this->updateFposuCMper360();
 
