@@ -101,11 +101,11 @@ struct ResourceManagerImpl final {
     }
 
     // remove a managed resource from the main resources vector + the name map and typed vectors
-    void removeManagedResource(Resource *res, int managedResourceIndex) {
+    void removeManagedResource(Resource *res, std::vector<Resource *>::iterator resIterator) {
         if(!res) return;
         logIfCV(debug_rm, "Removing managed {}", res->getDebugIdentifier());
 
-        this->vResources.erase(this->vResources.begin() + managedResourceIndex);
+        this->vResources.erase(resIterator);
 
         if(res->getName().length() > 0) this->mNameToResourceMap.erase(res->getName());
         removeResourceFromTypedVector(res);
@@ -148,25 +148,25 @@ struct ResourceManagerImpl final {
 
         switch(res->getResType()) {
             case Resource::Type::IMAGE: {
-                std::erase_if(this->vImages, [res](const auto &contained) { return res == contained; });
+                std::erase(this->vImages, res);
             } break;
             case Resource::Type::FONT: {
-                std::erase_if(this->vFonts, [res](const auto &contained) { return res == contained; });
+                std::erase(this->vFonts, res);
             } break;
             case Resource::Type::SOUND: {
-                std::erase_if(this->vSounds, [res](const auto &contained) { return res == contained; });
+                std::erase(this->vSounds, res);
             } break;
             case Resource::Type::SHADER: {
-                std::erase_if(this->vShaders, [res](const auto &contained) { return res == contained; });
+                std::erase(this->vShaders, res);
             } break;
             case Resource::Type::RENDERTARGET: {
-                std::erase_if(this->vRenderTargets, [res](const auto &contained) { return res == contained; });
+                std::erase(this->vRenderTargets, res);
             } break;
             case Resource::Type::TEXTUREATLAS: {
-                std::erase_if(this->vTextureAtlases, [res](const auto &contained) { return res == contained; });
+                std::erase(this->vTextureAtlases, res);
             } break;
             case Resource::Type::VAO: {
-                std::erase_if(this->vVertexArrayObjects, [res](const auto &contained) { return res == contained; });
+                std::erase(this->vVertexArrayObjects, res);
             } break;
             case Resource::Type::APPDEFINED:
                 // app-defined types aren't added to specific vectors
@@ -257,15 +257,8 @@ void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destfla
 
     logIf(debug, "destroying {:s}", rs->getDebugIdentifier());
 
-    bool isManagedResource = false;
-    int managedResourceIndex = -1;
-    for(size_t i = 0; i < pImpl->vResources.size(); i++) {
-        if(pImpl->vResources[i] == rs) {
-            isManagedResource = true;
-            managedResourceIndex = i;
-            break;
-        }
-    }
+    auto managedResourceIterator = std::ranges::find(pImpl->vResources, rs);
+    const bool isManagedResource = managedResourceIterator != pImpl->vResources.end();
 
     using enum ResourceDestroyFlags;
     const bool shouldDelete = !flags::has<RDF_NODELETE>(destflags);
@@ -284,7 +277,7 @@ void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destfla
 
         pImpl->asyncLoader.scheduleAsyncDestroy(rs, shouldDelete);
 
-        if(isManagedResource) pImpl->removeManagedResource(rs, managedResourceIndex);
+        if(isManagedResource) pImpl->removeManagedResource(rs, managedResourceIterator);
 
         if(flags::has<RDF_FORCE_BLOCKING>(destflags)) {
             do {
@@ -296,7 +289,7 @@ void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destfla
     }
 
     // standard destroy
-    if(isManagedResource) pImpl->removeManagedResource(rs, managedResourceIndex);
+    if(isManagedResource) pImpl->removeManagedResource(rs, managedResourceIterator);
 
     if(shouldDelete) {
         SAFE_DELETE(rs);

@@ -260,7 +260,7 @@ void Mouse::addListener(MouseListener *mouseListener, bool insertOnTop) {
 }
 
 void Mouse::removeListener(MouseListener *mouseListener) {
-    std::erase_if(this->listeners, [mouseListener](const auto &listener) -> bool { return listener == mouseListener; });
+    std::erase(this->listeners, mouseListener);
 }
 
 void Mouse::onRawInputChanged(float newval) {

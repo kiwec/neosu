@@ -137,7 +137,7 @@ void AvatarManager::remove_avatar(const AvatarIdentifier& id_folder) {
 
     if(current_refcount == 0) {
         // dequeue if it's waiting to be loaded, that's all
-        if(std::erase_if(this->load_queue, [&id_folder](const auto& pair) { return pair == id_folder; }) > 0) {
+        if(std::erase(this->load_queue, id_folder) > 0) {
             logIfCV(debug_avatars, "removed {} from load queue", id_folder.first);
         }
     }

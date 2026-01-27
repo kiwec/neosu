@@ -598,8 +598,7 @@ void Database::deleteScore(const FinishedScore &scoreToDelete) {
 
     Sync::unique_lock lock(this->scores_mtx);
     if(const auto &scoreit = this->scores.find(scoreToDelete.beatmap_hash); scoreit != this->scores.end()) {
-        if(std::erase_if(scoreit->second,
-                         [scoreToDelete](const auto &existing) -> bool { return scoreToDelete == existing; })) {
+        if(std::erase(scoreit->second, scoreToDelete)) {
             this->scores_changed.store(true, std::memory_order_release);
         }
     }
@@ -1031,9 +1030,7 @@ void Database::loadMaps() {
                             this->beatmap_difficulties.erase(diff->getMD5());
 
                             // remove from loudness_to_calc
-                            std::erase_if(this->loudness_to_calc, [diff = diff.get()](const auto &loudness_diff) {
-                                return loudness_diff == diff;
-                            });
+                            std::erase(this->loudness_to_calc, diff.get());
                         }
                         diffs.reset();
                         break;
@@ -1664,9 +1661,7 @@ void Database::loadMaps() {
                                 this->beatmap_difficulties.erase(diff->getMD5());
 
                                 // remove from loudness_to_calc
-                                std::erase_if(this->loudness_to_calc, [diff = diff.get()](const auto &loudness_diff) {
-                                    return loudness_diff == diff;
-                                });
+                                std::erase(this->loudness_to_calc, diff.get());
                             }
                             beatmapSets[i].diffs.reset();
                         }

@@ -36,12 +36,14 @@ ScrollContainer::~CBaseUIScrollViewContainer() = default;
 CBaseUIContainer *ScrollContainer::removeBaseUIElement(CBaseUIElement *element) {
     this->invalidateUpdate = true;
     this->vVisibleElements.erase(element);
+    std::erase(this->vVisibleElementsToDraw, element);
     return CBaseUIContainer::removeBaseUIElement(element);
 }
 
 CBaseUIContainer *ScrollContainer::deleteBaseUIElement(CBaseUIElement *element) {
     this->invalidateUpdate = true;
     this->vVisibleElements.erase(element);
+    std::erase(this->vVisibleElementsToDraw, element);
     return CBaseUIContainer::removeBaseUIElement(element);
 }
 

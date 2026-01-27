@@ -70,8 +70,7 @@ void Keyboard::addListener(KeyboardListener *keyboardListener, bool insertOnTop)
 }
 
 void Keyboard::removeListener(KeyboardListener *keyboardListener) {
-    std::erase_if(this->listeners,
-                  [keyboardListener](const auto &listener) -> bool { return listener == keyboardListener; });
+    std::erase(this->listeners, keyboardListener);
 }
 
 void Keyboard::onKeyDown_internal(KeyboardEvent &event) {
