@@ -44,7 +44,6 @@ class SoLoudSound final : public Sound {
     float getSpeed() const override;
     float getPitch() const override;
     // i.e. we would be hearing audio 15ms sooner than if we were using BASS
-    i32 getBASSStreamLatencyCompensation() const override;
     inline float getFrequency() const override { return this->fFrequency; }
 
     bool isPlaying() const override;

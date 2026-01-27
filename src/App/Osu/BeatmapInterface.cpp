@@ -2432,10 +2432,9 @@ void BeatmapInterface::updateInterpedMusicPos() {
     }
 
     i64 realMusicPos = -1000;
-    i64 returnPos = -1000;
     if(this->isActuallyLoading()) {
         // fake negative start
-        returnPos = -1000;
+        this->iCurMusicPos = -1000;
 
         if(useMcOsuInterp || useLazerInterp) {
             this->musicInterp->update(0.0, currentTime, 0.0, false, 0.0, false);
@@ -2443,19 +2442,13 @@ void BeatmapInterface::updateInterpedMusicPos() {
         // otherwise don't do anything (default interpolator is embedded in stream playback position)
     } else {
         if(useMcOsuInterp || useLazerInterp) {
-            returnPos = (i32)this->musicInterp->update(
+            this->iCurMusicPos = (i32)this->musicInterp->update(
                 (f64)(realMusicPos = (i64)this->music->getPositionMS()), currentTime, this->music->getSpeed(), false,
                 this->music->getLengthMS(), this->music->isPlaying() && !this->bWasSeekFrame);
         } else {
-            returnPos = (i32)(realMusicPos = (i64)this->music->getPositionMS());
+            this->iCurMusicPos = (i32)(realMusicPos = (i64)this->music->getPositionMS());
         }
-
-        if(this->music->getSpeed() < 1.0f && cv::compensate_music_speed.getBool() &&
-           cv::snd_speed_compensate_pitch.getBool())
-            returnPos += (i64)(((1.0f - this->music->getSpeed()) / 0.75f) * 5);  // osu (new)
     }
-
-    this->iCurMusicPos = (i32)returnPos;
 
     if(cv::debug_snd.getInt() > 1) {
         const std::string logString = fmt::format(
@@ -2577,9 +2570,8 @@ void BeatmapInterface::update2() {
         }
 
         // ugh. force update all hitobjects while waiting (necessary because of pvs optimization)
-        i32 curPos = this->iCurMusicPos + (i32)(cv::universal_offset.getFloat() * this->getSpeedMultiplier()) +
-                     this->music->getBASSStreamLatencyCompensation() - this->beatmap->getLocalOffset() -
-                     this->beatmap->getOnlineOffset() -
+        i32 curPos = this->iCurMusicPos + (i32)(cv::universal_offset.getFloat() * this->getSpeedMultiplier()) -
+                     this->beatmap->getLocalOffset() - this->beatmap->getOnlineOffset() -
                      (this->beatmap->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
         if(curPos > -1)  // otherwise auto would already click elements that start at exactly 0 (while the map has not
                          // even started)
@@ -2653,7 +2645,6 @@ void BeatmapInterface::update2() {
     // update timing (with offsets)
     this->iCurMusicPosWithOffsets = this->iCurMusicPos;
     this->iCurMusicPosWithOffsets += (i32)(cv::universal_offset.getFloat() * this->getSpeedMultiplier());
-    this->iCurMusicPosWithOffsets += this->music->getBASSStreamLatencyCompensation();
     this->iCurMusicPosWithOffsets -= this->beatmap->getLocalOffset();
     this->iCurMusicPosWithOffsets -= this->beatmap->getOnlineOffset();
     if(this->beatmap->getVersion() < 5) {
