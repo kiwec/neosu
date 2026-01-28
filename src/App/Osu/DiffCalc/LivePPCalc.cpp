@@ -53,17 +53,17 @@ struct LivePPCalc::LivePPCalcImpl {
         return was_invalid || (curIdx != m_last_queued && curIdx >= 0);
     }
 
-    struct lazyCalcParams {
-       private:
-        struct storage {
-            std::string lastCalcedPath;
-            f32 lastCalcedAR, lastCalcedCS;
-            f32 lastCalcedSpeedMultiplier;
-            DatabaseBeatmap::LOAD_DIFFOBJ_RESULT diffres;
-            std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> diffobjCache;
-        };
+    // only accessed async
+    struct LazyCalcParamCache {
+        std::string lastCalcedPath{""};
+        f32 lastCalcedAR{0.f}, lastCalcedCS{0.f};
+        f32 lastCalcedSpeedMultiplier{0.f};
+        DatabaseBeatmap::LOAD_DIFFOBJ_RESULT diffres{};
+        std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> diffobjCache{
+            std::make_unique<std::vector<DifficultyCalculator::DiffObject>>()};
+    } m_paramCache;
 
-       public:
+    struct LazyCalcParams {
         std::string osufile_path;
         u64 legacyTotalScore;
         f32 CS, AR, HP, OD;
@@ -75,15 +75,7 @@ struct LivePPCalc::LivePPCalcImpl {
         Replay::Mods mods;
 
         // to avoid rebuilding diffres unless something changes
-        [[nodiscard]] storage &get_cache() const {
-            static storage c{.lastCalcedPath = this->osufile_path,
-                             .lastCalcedAR = this->AR,
-                             .lastCalcedCS = this->CS,
-                             .lastCalcedSpeedMultiplier = this->speedMultiplier,
-                             .diffres = DatabaseBeatmap::loadDifficultyHitObjects(this->osufile_path, this->AR,
-                                                                                  this->CS, this->speedMultiplier),
-                             .diffobjCache = std::make_unique<std::vector<DifficultyCalculator::DiffObject>>()};
-
+        [[nodiscard]] LazyCalcParamCache &get_latest_cached(LazyCalcParamCache &c) const {
             // rebuild as necessary
             if(c.lastCalcedPath != this->osufile_path || c.lastCalcedAR != this->AR || c.lastCalcedCS != this->CS ||
                c.lastCalcedSpeedMultiplier != this->speedMultiplier) {
@@ -123,32 +115,34 @@ struct LivePPCalc::LivePPCalcImpl {
 
         update_queued_idx(cur_hobj);
 
-        m_calc_inst.enqueue([p = lazyCalcParams{
-                                 .osufile_path = m_bmi->beatmap ? m_bmi->beatmap->getFilePath() : "",  //
-                                 .legacyTotalScore = score.getScore(),                                 //
-                                 .CS = m_bmi->getCS(),                                                 //
-                                 .AR = m_bmi->getAR(),                                                 //
-                                 .HP = m_bmi->getHP(),                                                 //
-                                 .OD = m_bmi->getOD(),                                                 //
-                                 .speedMultiplier = m_bmi->getSpeedMultiplier(),                       //
-                                 .current_hitobject = m_bmi->iCurrentHitObjectIndex,                   //
-                                 .nb_circles = m_bmi->iCurrentNumCircles,                              //
-                                 .nb_sliders = m_bmi->iCurrentNumSliders,                              //
-                                 .nb_spinners = m_bmi->iCurrentNumSpinners,                            //
-                                 .highestCombo = score.getComboMax(),                                  //
-                                 .numMisses = score.getNumMisses(),                                    //
-                                 .num300s = score.getNum300s(),                                        //
-                                 .num100s = score.getNum100s(),                                        //
-                                 .num50s = score.getNum50s(),                                          //
-                                 .mods = score.mods,                                                   //
-                             }](void) -> LazyPPRes {
+        m_calc_inst.enqueue([p =
+                                 LazyCalcParams{
+                                     .osufile_path = m_bmi->beatmap ? m_bmi->beatmap->getFilePath() : "",  //
+                                     .legacyTotalScore = score.getScore(),                                 //
+                                     .CS = m_bmi->getCS(),                                                 //
+                                     .AR = m_bmi->getAR(),                                                 //
+                                     .HP = m_bmi->getHP(),                                                 //
+                                     .OD = m_bmi->getOD(),                                                 //
+                                     .speedMultiplier = m_bmi->getSpeedMultiplier(),                       //
+                                     .current_hitobject = m_bmi->iCurrentHitObjectIndex,                   //
+                                     .nb_circles = m_bmi->iCurrentNumCircles,                              //
+                                     .nb_sliders = m_bmi->iCurrentNumSliders,                              //
+                                     .nb_spinners = m_bmi->iCurrentNumSpinners,                            //
+                                     .highestCombo = score.getComboMax(),                                  //
+                                     .numMisses = score.getNumMisses(),                                    //
+                                     .num300s = score.getNum300s(),                                        //
+                                     .num100s = score.getNum100s(),                                        //
+                                     .num50s = score.getNum50s(),                                          //
+                                     .mods = score.mods,                                                   //
+                                 },
+                             &old_cache = m_paramCache](void) -> LazyPPRes {
             LazyPPRes result;
 
             if(p.osufile_path.empty()) return result;
 
             AsyncPPC::pp_res &retInfo = result.res;
 
-            auto &cache = p.get_cache();
+            auto &cache = p.get_latest_cached(old_cache);
             DatabaseBeatmap::LOAD_DIFFOBJ_RESULT &diffres = cache.diffres;
 
             if(diffres.error.errc) return result;  // uh-oh
@@ -233,7 +227,7 @@ struct LivePPCalc::LivePPCalcImpl {
 
             if(cv::debug_pp.getBool()) {
                 logRaw("[LivePPCalc] PP: {} params (post):\n{}", retInfo.pp,
-                               DifficultyCalculator::PPv2CalcParamsToString(ppv2pars));
+                       DifficultyCalculator::PPv2CalcParamsToString(ppv2pars));
             }
 
             result.calc_index = p.current_hitobject;

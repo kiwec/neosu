@@ -209,7 +209,7 @@ int entrypoint(int argc_, char *argv_[]) {
         int base = 10;
         uint64_t flagsValue = 0;
         std::string_view cur{argv[4]};
-        if(cur.starts_with("0x")) {
+        if(cur.starts_with("0x") || cur.starts_with("0X")) {
             base = 16;
             cur = cur.substr(2);
         }

@@ -13,7 +13,7 @@ struct LivePPCalc {
 
    private:
     struct LivePPCalcImpl;
-    StaticPImpl<LivePPCalcImpl, 350> pImpl;
+    StaticPImpl<LivePPCalcImpl, 450> pImpl;
 
    public:
     LivePPCalc() = delete;
