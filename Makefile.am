@@ -1269,10 +1269,16 @@ neosu_resource.o: $(srcdir)/$(ASSETS_DIR)/resource.rc $(srcdir)/$(ASSETS_DIR)/ne
 neosu_LDADD = neosu_resource.o $(WINPTHREAD_LDFLAGS)
 endif
 
-bear.cfg:
+bear-check-version:
 	@$(BEAR) --version || { echo bear is unavailable to generate a compile_commands.json, install bear && exit 1; }
-	@if [ `$(BEAR) --version | cut -d' ' -f2 | cut -d'.' -f1` -le 3 ]; then { \
-	  echo '{'; \
+	@if [ `$(BEAR) --version | cut -d' ' -f2 | cut -d'.' -f1` -ge 4 ]; then { \
+	  echo "bear 4.0 support is broken, downgrade to bear 3.x" && exit 1; \
+	}; else { \
+	  exit 0; \
+	}; fi
+
+bear.cfg: bear-check-version
+	@(echo '{'; \
 	  echo '"compilation": {'; \
 	  echo '"compilers_to_recognize": ['; \
 	  echo '{'; \
@@ -1287,7 +1293,7 @@ bear.cfg:
 	  echo '],'; \
 	  echo '"compilers_to_exclude": ["$(CXX)", "$(CC)"]'; \
 	  echo '}'; \
-	  echo '}' ; } > bear.cfg; else { echo "bear 4.0 support is broken, downgrade to bear 3.x" && exit 1; }; fi
+	  echo '}' ) > bear.cfg
 
 # bear 4.0 is BROKEN and i have no idea what the hell it wants
 # this is what i had for future reference when it becomes unbroken
@@ -1306,9 +1312,12 @@ bear.cfg:
 
 # need to manually make sure BUILT_SOURCES (dependencies) are fully built before building the main neosu objects, due to weird
 # interactions with sub-makes and parallel jobs
+# also run an extra step to exclude PCH flags
+# this is so that you avoid missing includes when it's already in the PCH and clangd then thinks it's already included
 compile_commands.json: bear.cfg mostlyclean-compile
 	$(BEAR) --config bear.cfg --append -- $(MAKE) $(AM_MAKEFLAGS) $(BUILT_SOURCES) && \
-	$(BEAR) --config bear.cfg --append -- $(MAKE) $(AM_MAKEFLAGS) $(neosu_OBJECTS) $(neosu_DEPENDENCIES) $(EXTRA_neosu_DEPENDENCIES)
+	$(BEAR) --config bear.cfg --append -- $(MAKE) $(AM_MAKEFLAGS) $(neosu_OBJECTS) $(neosu_DEPENDENCIES) $(EXTRA_neosu_DEPENDENCIES) && \
+	$(SED) -i '/"-include",/{N;/"\.\/pch\.h",/d;}' $@
 
 $(abs_top_srcdir)/.clangd: compile_commands.json
 	@if [ -f $@ ]; then \
@@ -1463,7 +1472,7 @@ clean-deps:
 
 clean-dep-cache:
 	rm -rf $(DEPS_CACHE)
-.PHONY: clean-deps clean-dep-cache install-libs
+.PHONY: clean-deps clean-dep-cache install-libs bear-check-version
 
 maintainer-clean-local: clean-deps clean-dep-cache
 
