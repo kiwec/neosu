@@ -761,7 +761,6 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             this->input_box->sText.insert(this->input_box->iCaretPosition, this->tab_completion_match);
             this->input_box->iCaretPosition += this->tab_completion_match.length();
             this->input_box->setText(this->input_box->sText);
-            this->input_box->updateTextPos();
             this->input_box->tickCaret();
 
             soundEngine->play(osu->getSound((ActionSound)((prand() % 4) + (size_t)ActionSound::TYPING1)));

@@ -5,6 +5,7 @@
 
 class McFont;
 
+// TODO: so much duplication for text things between textbox/label/button
 class CBaseUITextbox : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUITextbox)
    public:
@@ -66,8 +67,8 @@ class CBaseUITextbox : public CBaseUIElement {
         this->iCaretWidth = caretWidth;
         return this;
     }
-    CBaseUITextbox *setTextJustification(int textJustification) {
-        this->iTextJustification = textJustification;
+    CBaseUITextbox *setTextJustification(TEXT_JUSTIFICATION textJustification) {
+        this->textJustification = textJustification;
         this->setText(this->sText);
         return this;
     }
@@ -120,7 +121,6 @@ class CBaseUITextbox : public CBaseUIElement {
     int iTextAddY;
     int iCaretX;
     int iCaretWidth;
-    int iTextJustification;
 
     int iSelectStart;
     int iSelectEnd;
@@ -132,6 +132,8 @@ class CBaseUITextbox : public CBaseUIElement {
     Color frameDarkColor;
     Color caretColor;
     Color backgroundColor;
+
+    TEXT_JUSTIFICATION textJustification{TEXT_JUSTIFICATION::LEFT};
 
     bool bHitenter;
     bool bContextMouse;

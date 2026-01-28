@@ -157,8 +157,9 @@ class CBaseUIButton : public CBaseUIElement {
     Color textBrightColor;
     Color textDarkColor;
 
+    TEXT_JUSTIFICATION textJustification{TEXT_JUSTIFICATION::CENTERED};
+
     bool bDrawFrame;
     bool bDrawBackground;
     bool bDrawShadow{true};
-    TEXT_JUSTIFICATION textJustification{TEXT_JUSTIFICATION::CENTERED};
 };

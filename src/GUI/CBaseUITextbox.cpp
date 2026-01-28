@@ -39,7 +39,6 @@ CBaseUITextbox::CBaseUITextbox(float xPos, float yPos, float xSize, float ySize,
     this->bDrawFrame = true;
     this->bDrawBackground = true;
 
-    this->iTextJustification = 0;
     this->iTextAddX = cv::ui_textbox_text_offset_x.getInt();
     this->iTextAddY = 0;
     this->fTextScrollAddX = 0;
@@ -295,7 +294,6 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
                     this->sText.erase(this->iCaretPosition, 1);
 
                     this->setText(this->sText);
-                    this->updateTextPos();
                 }
             }
             this->tickCaret();
@@ -340,7 +338,6 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
                     }
 
                     this->setText(this->sText);
-                    this->updateTextPos();
                 }
             }
             this->tickCaret();
@@ -531,17 +528,17 @@ CBaseUITextbox *CBaseUITextbox::setText(UString text) {
 
     // handle text justification
     this->fTextWidth = this->font->getStringWidth(this->getVisibleText());
-    switch(this->iTextJustification) {
-        case 0:  // left
+    switch(this->textJustification) {
+        case TEXT_JUSTIFICATION::LEFT:
             this->iTextAddX = cv::ui_textbox_text_offset_x.getInt();
             break;
 
-        case 1:  // middle
+        case TEXT_JUSTIFICATION::CENTERED:
             this->iTextAddX = -(this->fTextWidth - this->getSize().x) / 2.0f;
             this->iTextAddX = this->iTextAddX > 0 ? this->iTextAddX : cv::ui_textbox_text_offset_x.getInt();
             break;
 
-        case 2:  // right
+        case TEXT_JUSTIFICATION::RIGHT:
             this->iTextAddX = (this->getSize().x - this->fTextWidth) - cv::ui_textbox_text_offset_x.getInt();
             this->iTextAddX = this->iTextAddX > 0 ? this->iTextAddX : cv::ui_textbox_text_offset_x.getInt();
             break;
@@ -562,6 +559,7 @@ CBaseUITextbox *CBaseUITextbox::setText(UString text) {
     this->iTextAddY = addY > 0 ? addY : 0;
 
     this->updateCaretX();
+    this->updateTextPos();
 
     return this;
 }
@@ -590,11 +588,6 @@ void CBaseUITextbox::handleDeleteSelectedText() {
 
     if(this->iSelectEnd > this->iSelectStart) this->iCaretPosition -= selectedTextLength;
 
-    this->setText(this->sText);
-
-    // scroll back if empty white space
-    this->updateTextPos();
-
     this->deselectText();
 
     this->setText(this->sText);
@@ -622,7 +615,7 @@ void CBaseUITextbox::insertTextFromClipboard() {
 }
 
 void CBaseUITextbox::updateTextPos() {
-    if(this->iTextJustification == 0) {
+    if(this->textJustification == TEXT_JUSTIFICATION::LEFT) {
         if((this->iTextAddX + this->fTextScrollAddX) > cv::ui_textbox_text_offset_x.getInt()) {
             if(this->hasSelectedText() && this->iCaretPosition == 0) {
                 this->fTextScrollAddX = cv::ui_textbox_text_offset_x.getInt() - this->iTextAddX;
