@@ -61,6 +61,9 @@ static_assert(SDL_WF_EQ(FULLSCREEN) && SDL_WF_EQ(OPENGL) && SDL_WF_EQ(OCCLUDED) 
 #endif
 
 void Environment::Interop::handle_existing_window(int argc, char *argv[]) {
+    auto args = std::vector(argv, argv + argc);
+    if(std::ranges::contains(args, "-testapp")) return;
+
 #ifndef APP_LIBRARY_BUILD
     return NEOSU_handle_existing_window(argc, argv);
 #else
@@ -120,7 +123,10 @@ SDL_Environment *Environment::s_sdlenv{nullptr};
 
 Environment::Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                          const std::vector<std::string> &cmdlineVec)
-    : m_interop(tryCreatingAppEnvInterop()), m_mArgMap(argMap), m_vCmdLine(cmdlineVec), m_cursorIcons(/*lazy init*/) {
+    : m_interop(argMap.contains("-testapp") ? new Interop(this) : tryCreatingAppEnvInterop()),
+      m_mArgMap(argMap),
+      m_vCmdLine(cmdlineVec),
+      m_cursorIcons(/*lazy init*/) {
     env = this;
 
     s_sdlenv = SDL_GetEnvironment();

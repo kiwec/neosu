@@ -68,6 +68,9 @@ class McFont final : public Resource {
     void drawDebug() const;
     bool m_bDebugDrawAtlas{false};
 
+    // debug manual
+    void drawTextureAtlas() const;
+
    protected:
     void init() override;
     void initAsync() override;

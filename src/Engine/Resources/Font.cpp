@@ -1318,27 +1318,31 @@ void McFont::cleanupSharedResources() {
     }
 }
 
+void McFont::drawTextureAtlas() const {
+    // debug
+    g->setColor(0xFFFFFFFF);
+    g->pushTransform();
+    {
+        const auto &ta = pImpl->m_textureAtlas;
+        const i32 offscreenPixels = ta->getHeight() - (engine->getScreenHeight() * 0.75);
+        const f32 textYRatio = (f32)(engine->getScreenHeight() * 0.75) / (f32)ta->getHeight();
+
+        const i32 yOffset =
+            textYRatio >= 1
+                ? 0
+                : -(i32)((f32)(offscreenPixels) * (mouse->getPos().y / (f32)(engine->getScreenHeight() * 0.75)));
+        const f32 fitWidth = (engine->getScreenWidth() * 0.75) / ta->getWidth();
+
+        g->scale(fitWidth, fitWidth);
+        g->translate(ta->getWidth() / 2.f, (ta->getHeight() / 2.f) + yOffset);
+        g->drawImage(ta->getAtlasImage().get());
+    }
+    g->popTransform();
+}
+
 void McFont::drawDebug() const {
     if(m_bDebugDrawAtlas) {
-        // debug
-        g->setColor(0xFFFFFFFF);
-        g->pushTransform();
-        {
-            const auto &ta = pImpl->m_textureAtlas;
-            const i32 offscreenPixels = ta->getHeight() - (engine->getScreenHeight() * 0.75);
-            const f32 textYRatio = (f32)(engine->getScreenHeight() * 0.75) / (f32)ta->getHeight();
-
-            const i32 yOffset =
-                textYRatio >= 1
-                    ? 0
-                    : -(i32)((f32)(offscreenPixels) * (mouse->getPos().y / (f32)(engine->getScreenHeight() * 0.75)));
-            const f32 fitWidth = (engine->getScreenWidth() * 0.75) / ta->getWidth();
-
-            g->scale(fitWidth, fitWidth);
-            g->translate(ta->getWidth() / 2.f, (ta->getHeight() / 2.f) + yOffset);
-            g->drawImage(ta->getAtlasImage().get());
-        }
-        g->popTransform();
+        this->drawTextureAtlas();
     }
 }
 

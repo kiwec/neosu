@@ -8,8 +8,14 @@
 #include "dynutils.h"
 #endif
 
+#include "Environment.h"
+
+#include "TestApps.h"
+
 App *App::create(bool dummy) {
     if(dummy) return new App();
+
+    if(env->getLaunchArgs().contains("-testapp")) return new mc::tests::Gears();
 
     App *ret = nullptr;
 #ifndef APP_LIBRARY_BUILD
