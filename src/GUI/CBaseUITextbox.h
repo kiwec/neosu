@@ -113,8 +113,8 @@ class CBaseUITextbox : public CBaseUIElement {
 
     McFont *font;
 
+    double fCaretBlinkStartTime{0.};
     float fTextScrollAddX;
-    float fLinetime;
     float fTextWidth;
 
     int iTextAddX;
@@ -141,6 +141,5 @@ class CBaseUITextbox : public CBaseUIElement {
     bool bCatchMouse;
     bool bDrawFrame;
     bool bDrawBackground;
-    bool bLine;
     bool bSelectCheck;
 };

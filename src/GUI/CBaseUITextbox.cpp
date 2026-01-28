@@ -13,6 +13,7 @@
 #include "Cursors.h"
 #include "Engine.h"
 #include "Keyboard.h"
+#include "Logging.h"
 #include "Mouse.h"
 #include "ResourceManager.h"
 #include "SoundEngine.h"
@@ -54,8 +55,6 @@ CBaseUITextbox::CBaseUITextbox(float xPos, float yPos, float xSize, float ySize,
     this->iSelectStart = 0;
     this->iSelectEnd = 0;
 
-    this->bLine = false;
-    this->fLinetime = 0.0f;
     this->fTextWidth = 0.0f;
     this->iCaretPosition = 0;
 }
@@ -115,7 +114,7 @@ void CBaseUITextbox::draw() {
         this->drawText();
 
         // draw caret
-        if(this->bActive && this->bLine) {
+        if(this->bActive) {
             const int caretWidth = std::round((float)this->iCaretWidth * dpiScale);
             const int height = std::round(this->getSize().y - 2 * 3 * dpiScale);
             const float yadd = std::round(height / 2.0f);
@@ -165,18 +164,12 @@ void CBaseUITextbox::update(CBaseUIEventCtx &c) {
     // update caret blinking
     {
         if(!this->bActive) {
-            this->bLine = true;
-            this->fLinetime = engine->getTime();
+            this->tickCaret();
         } else {
-            if((engine->getTime() - this->fLinetime) >= cv::ui_textbox_caret_blink_time.getFloat() && !this->bLine) {
-                this->bLine = true;
-                this->fLinetime = engine->getTime();
-            }
-
-            if((engine->getTime() - this->fLinetime) >= cv::ui_textbox_caret_blink_time.getFloat() && this->bLine) {
-                this->bLine = false;
-                this->fLinetime = engine->getTime();
-            }
+            const double elapsed = engine->getTime() - this->fCaretBlinkStartTime;
+            const float newAbsAlpha =
+                static_cast<float>((std::cos((elapsed / cv::ui_textbox_caret_blink_time.getDouble()) * PI) + 1.) / 2.);
+            this->caretColor.setA(newAbsAlpha);
         }
     }
 
@@ -486,8 +479,8 @@ void CBaseUITextbox::handleCaretKeyboardDelete() {
 }
 
 void CBaseUITextbox::tickCaret() {
-    this->bLine = true;
-    this->fLinetime = engine->getTime();
+    this->caretColor.setA(1.f);
+    this->fCaretBlinkStartTime = engine->getTime();
 }
 
 bool CBaseUITextbox::hitEnter() {
