@@ -2410,9 +2410,7 @@ void BeatmapInterface::update() {
         this->iAllowAnyNextKeyUntilHitObjectIndex = this->iCurrentHitObjectIndex + 1;
     }
 
-    if(this->last_keys != this->current_keys) {
-        this->write_frame();
-    } else if(this->last_event_time + 0.01666666666 <= Timing::getTimeReal()) {
+    if(this->last_keys != this->current_keys || (this->last_event_time + 0.01666666666 <= Timing::getTimeReal())) {
         this->write_frame();
     }
 }
@@ -2432,23 +2430,28 @@ void BeatmapInterface::updateInterpedMusicPos() {
     }
 
     i64 realMusicPos = -1000;
+    i64 returnPos = -1000;
     if(this->isActuallyLoading()) {
         // fake negative start
-        this->iCurMusicPos = -1000;
-
         if(useMcOsuInterp || useLazerInterp) {
             this->musicInterp->update(0.0, currentTime, 0.0, false, 0.0, false);
         }
         // otherwise don't do anything (default interpolator is embedded in stream playback position)
     } else {
         if(useMcOsuInterp || useLazerInterp) {
-            this->iCurMusicPos = (i32)this->musicInterp->update(
+            returnPos = (i32)this->musicInterp->update(
                 (f64)(realMusicPos = (i64)this->music->getPositionMS()), currentTime, this->music->getSpeed(), false,
                 this->music->getLengthMS(), this->music->isPlaying() && !this->bWasSeekFrame);
         } else {
-            this->iCurMusicPos = (i32)(realMusicPos = (i64)this->music->getPositionMS());
+            returnPos = (i32)(realMusicPos = (i64)this->music->getPositionMS());
         }
+
+        if(this->music->getSpeed() < 1.0f && cv::compensate_music_speed.getBool() &&
+           cv::snd_speed_compensate_pitch.getBool())
+            returnPos += (i64)(((1.0f - this->music->getSpeed()) / 0.75f) * 5);  // osu (new)
     }
+
+    this->iCurMusicPos = (i32)returnPos;
 
     if(cv::debug_snd.getInt() > 1) {
         const std::string logString = fmt::format(

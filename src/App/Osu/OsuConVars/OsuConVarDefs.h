@@ -644,7 +644,7 @@ CONVAR(combo_anim2_duration, 0.4f, CLIENT | SKINS | SERVER);
 CONVAR(combo_anim2_size, 0.5f, CLIENT | SKINS | SERVER);
 CONVAR(combobreak_sound_combo, 20, CLIENT | SKINS | SERVER,
        "Only play the combobreak sound if the combo is higher than this");
-CONVAR(compensate_music_speed, false, CLIENT | SKINS | SERVER,
+CONVAR(compensate_music_speed, true, CLIENT | SKINS | SERVER,
        "compensates speeds slower than 1x a little bit, by adding an offset depending on the slowness");
 CONVAR(confine_cursor_fullscreen, true, CLIENT | SKINS | SERVER);
 CONVAR(confine_cursor_windowed, false, CLIENT | SKINS | SERVER);
