@@ -120,7 +120,6 @@ struct OptionsOverlayImpl final {
     void onSkinSelect();
     void onOutputDeviceChange();
     void updateOsuFolderTextbox(std::string_view newFolder);
-    void updateMcOsuFolderTextbox(std::string_view newFolder);
     void askForLoginDetails();
     void update_login_button(bool loggedIn = false);
     void updateSkinNameLabel();
@@ -129,6 +128,7 @@ struct OptionsOverlayImpl final {
     void updateLayout();
     void onBack();
 
+   private:
     void setVisibleInt(bool visible, bool fromOnBack = false);
     void scheduleSearchUpdate();
 
@@ -220,7 +220,7 @@ struct OptionsOverlayImpl final {
 #define addButtonLabel_(UStext, USlabelText, ...) addButton(US_(UStext), USlabelText __VA_OPT__(, ) __VA_ARGS__)
 #define addButtonButton_(UStext1, UStext2) addButtonButton(US_(UStext1), US_(UStext2))
 #define addButtonButtonLabel_(UStext1, UStext2, USlabelText, ...) \
-    addButtonButton(US_(UStext1), US_(UStext2), US_(USlabelText), __VA_OPT__(, ) __VA_ARGS__)
+    addButtonButton(US_(UStext1), US_(UStext2), US_(USlabelText) __VA_OPT__(, ) __VA_ARGS__)
 #define addKeyBindButton_(UStext, cvar) addKeyBindButton(US_(UStext), cvar)
 #define addCheckbox_(UStext, ...) addCheckbox(US_(UStext) __VA_OPT__(, ) __VA_ARGS__)
 #define addCheckboxTooltip_(UStext, UStooltipText, ...) \
@@ -228,7 +228,7 @@ struct OptionsOverlayImpl final {
 #define addButtonCheckbox_(USbuttontext, UScbxtooltip) addButtonCheckbox(US_(UStext), US_(UScbxtooltip))
 #define addSlider_(UStext, ...) addSlider(US_(UStext) __VA_OPT__(, ) __VA_ARGS__)
 #define addTextbox_(UStext, ...) addTextbox(US_(UStext) __VA_OPT__(, ) __VA_ARGS__)
-#define addTextboxLabel_(UStext, USlabelText, ...) addTextbox(US_(UStext), US_(USlabelText), __VA_OPT__(, ) __VA_ARGS__)
+#define addTextboxLabel_(UStext, USlabelText, ...) addTextbox(US_(UStext), US_(USlabelText) __VA_OPT__(, ) __VA_ARGS__)
 
     SkinPreviewElement *addSkinPreview();
     SliderPreviewElement *addSliderPreview();
@@ -288,9 +288,6 @@ struct OptionsOverlayImpl final {
     CBaseUIElement *notelockSelectButton{nullptr};
     CBaseUILabel *notelockSelectLabel{nullptr};
     ResetButton *notelockSelectResetButton{nullptr};
-    CBaseUIElement *hpDrainSelectButton{nullptr};
-    CBaseUILabel *hpDrainSelectLabel{nullptr};
-    ResetButton *hpDrainSelectResetButton{nullptr};
 
     CBaseUIElement *sectionGeneral{nullptr};
     CBaseUITextbox *serverTextbox{nullptr};
@@ -300,7 +297,6 @@ struct OptionsOverlayImpl final {
     UIButton *logInButton{nullptr};
 
     CBaseUITextbox *osuFolderTextbox{nullptr};
-    CBaseUITextbox *mcOsuFolderTextbox{nullptr};
 
     ConVar *waitingKey{nullptr};
 
@@ -308,7 +304,6 @@ struct OptionsOverlayImpl final {
     float fAnimation{0.f};
 
     float fOsuFolderTextboxInvalidAnim{0.f};
-    float fVibrationStrengthExampleTimer{0.f};
     bool bLetterboxingOffsetUpdateScheduled{false};
     bool bUIScaleChangeScheduled{false};
     bool bUIScaleScrollToSliderScheduled{false};
@@ -356,9 +351,6 @@ void OptionsOverlay::onSkinSelect() { return pImpl->onSkinSelect(); }
 void OptionsOverlay::onOutputDeviceChange() { return pImpl->onOutputDeviceChange(); }
 void OptionsOverlay::updateOsuFolderTextbox(std::string_view newFolder) {
     return pImpl->updateOsuFolderTextbox(newFolder);
-}
-void OptionsOverlay::updateMcOsuFolderTextbox(std::string_view newFolder) {
-    return pImpl->updateMcOsuFolderTextbox(newFolder);
 }
 void OptionsOverlay::askForLoginDetails() { return pImpl->askForLoginDetails(); }
 void OptionsOverlay::update_login_button(bool loggedIn) { return pImpl->update_login_button(loggedIn); }
@@ -2774,14 +2766,6 @@ void OptionsOverlayImpl::updateOsuFolderTextbox(std::string_view newFolder) {
     if(this->osuFolderTextbox && this->osuFolderTextbox->getText() != newFolder) {
         this->osuFolderTextbox->stealFocus();  // what's the point of this stealFocus?
         this->osuFolderTextbox->setText(newFolder);
-    }
-}
-
-void OptionsOverlayImpl::updateMcOsuFolderTextbox(std::string_view newFolder) {
-    // don't recurse
-    if(this->mcOsuFolderTextbox && this->mcOsuFolderTextbox->getText() != newFolder) {
-        this->mcOsuFolderTextbox->stealFocus();  // what's the point of this stealFocus?
-        this->mcOsuFolderTextbox->setText(newFolder);
     }
 }
 
