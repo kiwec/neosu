@@ -17,13 +17,12 @@
 //==================================
 class AsyncResourceLoader::LoaderThread final {
    public:
+    // this is set on AsyncResourceLoader creation
     static inline AsyncResourceLoader *loader_ptr{nullptr};
 
-    size_t thread_index;
     std::atomic<uint64_t> last_active;
 
-    LoaderThread(size_t index) noexcept
-        : thread_index(index), last_active(Timing::getTicksMS()), thread(worker_loop, this) {}
+    LoaderThread(size_t index) noexcept : last_active(Timing::getTicksMS()), thread(worker_loop, this, index) {}
 
     [[nodiscard]] bool isReady() const noexcept { return this->thread.joinable(); }
 
@@ -36,13 +35,12 @@ class AsyncResourceLoader::LoaderThread final {
    private:
     Sync::jthread thread;
 
-    static void worker_loop(const Sync::stop_token &stoken, LoaderThread *this_) noexcept {
+    static void worker_loop(const Sync::stop_token &stoken, LoaderThread *this_, const size_t thread_index) noexcept {
         loader_ptr->iActiveThreadCount.fetch_add(1, std::memory_order_relaxed);
 
-        logIfCV(debug_rm, "Thread #{} started", this_->thread_index);
+        logIfCV(debug_rm, "Thread #{} started", thread_index);
 
-        const UString loaderThreadName{
-            fmt::format("res_ldr_thr{}", (this_->thread_index % loader_ptr->iMaxThreads) + 1)};
+        const UString loaderThreadName{fmt::format("res_ldr_thr{}", (thread_index % loader_ptr->iMaxThreads) + 1)};
         McThread::set_current_thread_name(loaderThreadName);
         McThread::set_current_thread_prio(
             McThread::Priority::NORMAL);  // reset priority (don't inherit from main thread)
@@ -74,10 +72,9 @@ class AsyncResourceLoader::LoaderThread final {
             if(debug) {
                 debugName = resource->getDebugIdentifier();
                 if(interrupted) {
-                    debugLog("Thread #{} skipping (interrupted) workID {} {:s}", this_->thread_index, work->workId,
-                             debugName);
+                    debugLog("Thread #{} skipping (interrupted) workID {} {:s}", thread_index, work->workId, debugName);
                 } else {
-                    debugLog("Thread #{} loading workID {} {:s}", this_->thread_index, work->workId, debugName);
+                    debugLog("Thread #{} loading workID {} {:s}", thread_index, work->workId, debugName);
                 }
             }
 
@@ -88,7 +85,7 @@ class AsyncResourceLoader::LoaderThread final {
 
                 resource->loadAsync();
 
-                logIf(debug, "Thread #{} finished async loading {:s}", this_->thread_index, debugName);
+                logIf(debug, "Thread #{} finished async loading {:s}", thread_index, debugName);
 
                 work->state = WorkState::ASYNC_COMPLETE;
             }
@@ -101,7 +98,7 @@ class AsyncResourceLoader::LoaderThread final {
 
         loader_ptr->iActiveThreadCount.fetch_sub(1, std::memory_order_acq_rel);
 
-        logIfCV(debug_rm, "Thread #{} exiting", this_->thread_index);
+        logIfCV(debug_rm, "Thread #{} exiting", thread_index);
     }
 };
 

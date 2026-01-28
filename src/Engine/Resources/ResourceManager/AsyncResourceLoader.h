@@ -14,16 +14,11 @@ class ConVar;
 class AsyncResourceLoader final {
     NOCOPY_NOMOVE(AsyncResourceLoader)
 
-    friend struct ResourceManagerImpl;
-    friend class ResourceManager;
-
    public:
     AsyncResourceLoader();
     ~AsyncResourceLoader();
 
-   private:
     // main interface for ResourceManager
-    inline void resetMaxPerUpdate() { this->bMaxLoadsResetPending = true; }
     inline void setMaxPerUpdate(size_t num) { this->iLoadsPerUpdate = std::clamp<size_t>(num, 1, 512); }
     void requestAsyncLoad(Resource *resource);
     void update(bool lowLatency);
@@ -43,6 +38,7 @@ class AsyncResourceLoader final {
     [[nodiscard]] inline size_t getNumLoadingWorkAsyncDestroy() const { return this->asyncDestroyQueue.size(); }
     [[nodiscard]] inline size_t getMaxPerUpdate() const { return this->iLoadsPerUpdate; }
 
+   private:
     enum class WorkState : uint8_t {
         PENDING = 0,
         ASYNC_IN_PROGRESS = 1,
@@ -72,7 +68,7 @@ class AsyncResourceLoader final {
     std::unique_ptr<LoadingWork> getNextAsyncCompleteWork();
 
     // set during ctor, dependent on hardware
-    size_t iMaxThreads;
+    const size_t iMaxThreads;
     static constexpr const size_t HARD_THREADCOUNT_LIMIT{32};
     // always keep one thread around to avoid unnecessary thread creation/destruction spikes for spurious loads
     static constexpr const size_t MIN_NUM_THREADS{1};
@@ -80,7 +76,6 @@ class AsyncResourceLoader final {
     // how many resources to load on update()
     // default is == max # threads (or 1 during gameplay)
     size_t iLoadsPerUpdate;
-    bool bMaxLoadsResetPending{false};
 
     // thread idle configuration
     static constexpr uint64_t IDLE_GRACE_PERIOD{1000};  // 1 sec

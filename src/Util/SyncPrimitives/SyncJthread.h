@@ -62,6 +62,8 @@ class sdl_jthread {
             stop_token token;
 
             static int CDECLCALL invoke(void* data) {
+                // as of now, just sets up some thread-local state we want for every thread created
+                // (like DAZ + CTZ for SSE / FTZ for ARM)
                 McThread::on_thread_init();
 
                 auto* ctx = static_cast<thread_context*>(data);

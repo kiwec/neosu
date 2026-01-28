@@ -351,8 +351,6 @@ void ResourceManager::requestNextLoadUnmanaged() {
 
 size_t ResourceManager::getSyncLoadMaxBatchSize() const { return pImpl->asyncLoader.getMaxPerUpdate(); }
 
-void ResourceManager::resetSyncLoadMaxBatchSize() { pImpl->asyncLoader.resetMaxPerUpdate(); }
-
 void ResourceManager::setSyncLoadMaxBatchSize(size_t resourcesToLoad) {
     pImpl->asyncLoader.setMaxPerUpdate(resourcesToLoad);
 }

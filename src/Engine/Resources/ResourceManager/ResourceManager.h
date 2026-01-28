@@ -67,7 +67,6 @@ class ResourceManager final {
 
     [[nodiscard]] size_t getSyncLoadMaxBatchSize() const;
     void setSyncLoadMaxBatchSize(size_t resourcesToLoad);
-    void resetSyncLoadMaxBatchSize();
 
     // can't allow directly setting resource names, otherwise the map will go out of sync
     void setResourceName(Resource *res, std::string name);
