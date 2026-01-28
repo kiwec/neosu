@@ -240,9 +240,9 @@ std::string get_steam_path() {
 #endif
 }
 
-void update_mcosu_folder_from_steam() {
+std::string get_mcosu_path() {
     auto steam_path = get_steam_path();
-    if(steam_path.empty()) return;
+    if(steam_path.empty()) return "";
     namespace ACF = Parsing::ACF;
 
     // Get all steamapps folders
@@ -252,9 +252,9 @@ void update_mcosu_folder_from_steam() {
     ACF::Section vdf = ACF::parse(vdfFile.readToString());
 
     auto it = vdf.map.find("libraryfolders");
-    if(it == vdf.map.end()) return;
+    if(it == vdf.map.end()) return "";
     auto* libraryfolders = std::get_if<ACF::Section>(&it->second);
-    if(libraryfolders == nullptr) return;
+    if(libraryfolders == nullptr) return "";
 
     for(auto [_, variant] : libraryfolders->map) {
         auto* section = std::get_if<ACF::Section>(&variant);
@@ -275,19 +275,20 @@ void update_mcosu_folder_from_steam() {
         const std::string installdir = ACF::getValue(&acf, {"AppState", "installdir"});
         if(installdir.empty()) continue;
 
-        // Success!
-        auto new_mcosu_folder = fmt::format("{}/common/{}", steamapps, installdir);
-        debugLog("Found McOsu folder from Steam: {}", new_mcosu_folder);
-        cv::mcosu_folder.setValue(new_mcosu_folder);
+        // We found it!!!
+        return fmt::format("{}/common/{}", steamapps, installdir);
     }
+
+    return "";
 }
 }  // namespace
 
-bool import_from_mcosu() {
-    auto mcosu_path = cv::mcosu_folder.getString();
-    if(mcosu_path.empty() || !env->directoryExists(mcosu_path)) {
-        update_mcosu_folder_from_steam();
-        mcosu_path = cv::mcosu_folder.getString();
+bool import_from_mcosu(std::string mcosu_path) {
+    if(mcosu_path.empty()) {
+        mcosu_path = get_mcosu_path();
+        if(mcosu_path.empty()) {
+            return false;
+        }
     }
 
     std::string cfg_path = mcosu_path + "/cfg/osu.cfg";

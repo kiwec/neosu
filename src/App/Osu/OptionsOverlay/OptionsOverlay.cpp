@@ -1734,26 +1734,49 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
     this->addSection_("Maintenance");
 
-    this->addSubSection_("McOsu folder");
-    this->mcOsuFolderTextbox = this->addTextbox(cv::mcosu_folder.getString(), &cv::mcosu_folder);
+    this->addSubSection_("Import/Reset");
+
     UIButton *importMcOsuSettingsButton = this->addButton_("Import collections/scores/settings from McOsu");
     importMcOsuSettingsButton->setClickCallback(SA::MakeDelegate([]() -> void {
-        if(SettingsImporter::import_from_mcosu()) {
-            // To finish importing collections.db/scores.db, we need to trigger a database reload
-            if(db->isFinished() || db->isCancelled()) {
-                // TODO: bug prone since it can be called from any state...
-                ui->getSongBrowser()->refreshBeatmaps(ui->getActiveScreen());
+        auto conclude_import = [](bool success) {
+            if(success) {
+                // To finish importing collections.db/scores.db, we need to trigger a database reload
+                if(db->isFinished() || db->isCancelled()) {
+                    // TODO: bug prone since it can be called from any state...
+                    ui->getSongBrowser()->refreshBeatmaps(ui->getActiveScreen());
+                }
+
+                ui->getNotificationOverlay()->addToast(US_("Successfully imported settings from McOsu."),
+                                                       SUCCESS_TOAST);
+
+            } else {
+                ui->getNotificationOverlay()->addToast(
+                    US_("Couldn't find McOsu config files! Make sure to select the directory containing McOsu.exe."),
+                    ERROR_TOAST);
+            }
+        };
+
+        bool imported = SettingsImporter::import_from_mcosu();
+        if(imported) {
+            conclude_import(true);
+            return;
+        }
+
+        ui->getNotificationOverlay()->addNotification("Opening file browser ...", 0xffffffff, false, 0.75f);
+        env->openFolderWindow([conclude_import](const std::vector<UString> &paths) {
+            if(paths.empty()) {
+                ui->getNotificationOverlay()->addToast(US_("You must select the McOsu folder to import its settings."),
+                                                       ERROR_TOAST);
+                return;
             }
 
-            ui->getNotificationOverlay()->addToast(US_("Successfully imported settings from McOsu."), SUCCESS_TOAST);
-
-        } else {
-            ui->getNotificationOverlay()->addToast(US_("Error: Couldn't find McOsu install directory or config file!"),
-                                                   ERROR_TOAST);
-        }
+            // use the first selected path
+            const std::string mcosu_path = paths[0].toUtf8();
+            const bool imported = SettingsImporter::import_from_mcosu(mcosu_path);
+            conclude_import(imported);
+        });
     }));
 
-    this->addSubSection_("Restore");
     UIButton *resetAllSettingsButton = this->addButton_("Reset all settings");
     resetAllSettingsButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onResetEverythingClicked>(this));
     resetAllSettingsButton->setColor(0xffd90000);
@@ -2039,7 +2062,6 @@ void OptionsOverlayImpl::update(CBaseUIEventCtx &c) {
 
     // apply textbox changes on enter key
     if(this->osuFolderTextbox->hitEnter()) cv::osu_folder.setValue(this->osuFolderTextbox->getText());
-    if(this->mcOsuFolderTextbox->hitEnter()) cv::mcosu_folder.setValue(this->mcOsuFolderTextbox->getText());
 
     // HACKHACK (should just use callback)
     // XXX: disable serverTextbox while logging in
@@ -4068,7 +4090,6 @@ void OptionsOverlayImpl::save() {
     }
 
     cv::osu_folder.setValue(this->osuFolderTextbox->getText());
-    cv::mcosu_folder.setValue(this->mcOsuFolderTextbox->getText());
     this->updateFposuDPI();
     this->updateFposuCMper360();
 

@@ -223,11 +223,6 @@ Osu::Osu()
         cv::osu_folder.setValue(normalized, false);
         if(osu && osu->UIReady()) ui->getOptionsOverlay()->updateOsuFolderTextbox(normalized);
     });
-    cv::mcosu_folder.setCallback([](std::string_view /*oldString*/, std::string_view newString) -> void {
-        std::string normalized = Environment::normalizeDirectory(std::string{newString});
-        cv::mcosu_folder.setValue(normalized, false);
-        if(osu && osu->UIReady()) ui->getOptionsOverlay()->updateMcOsuFolderTextbox(normalized);
-    });
 
     // clamp to sane range
     cv::slider_curve_points_separation.setCallback([](float /*oldValue*/, float newValue) -> void {
