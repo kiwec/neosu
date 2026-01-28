@@ -1316,6 +1316,8 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
 
     // try to avoid rebuilding by going through some cases we know can be skipped,
     // in increasingly expensive order (as long as it's still worth it vs rebuilding)
+    bool doUpdateLayout = false;
+
     int once = 0;
     while(!once++ && rebuild) {
         if(colBtnPtr) break;  // no logic for collection buttons, it's not worth it
@@ -1335,8 +1337,8 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
         // check old and new parent selections
         // NOTE: using previously selected difficulty because previously selected song button has already been updated at this point...
         if(prevSelDiffBtn && songButtonPtr) {
-            const SongButton *oldParentPtr = prevSelDiffBtn->getParentSongButton();
-            const SongButton *newParentPtr = !diffBtnPtr ? songButtonPtr : diffBtnPtr->getParentSongButton();
+            SongButton *oldParentPtr = prevSelDiffBtn->getParentSongButton();
+            SongButton *newParentPtr = !diffBtnPtr ? songButtonPtr : diffBtnPtr->getParentSongButton();
 
             if(oldParentPtr == newParentPtr) {
                 rebuild = false;
@@ -1357,9 +1359,13 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
 
             // EXCEPT! another edge case:when in GROUP_COLLECTIONS, there can be multiple occurrences of the same diff button
             // across collections, and some sets may be collapsed while others aren't!
-            if(oldVis == newVis && (oldVis != SetVisibility::SHOW_PARENT ||
-                                    (!this->isInParentsCollapsedMode() && this->curGroup != GroupType::COLLECTIONS))) {
+            if(((oldParentPtr->isVisible() == newParentPtr->isVisible()) || oldVis == newVis) &&
+               (oldVis != SetVisibility::SHOW_PARENT ||
+                (!this->isInParentsCollapsedMode() && this->curGroup != GroupType::COLLECTIONS))) {
                 rebuild = false;
+                // sadly, we still need to update layout (cheaper than full rebuild though)
+                // this is because Y coordinates change depending on selection state and depend on all surrounding buttons
+                doUpdateLayout = true;
                 break;
             }
         }
@@ -1367,6 +1373,8 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
 
     if(rebuild) {
         this->rebuildSongButtons();
+    } else if(doUpdateLayout) {
+        this->updateSongButtonLayout();
     }
 }
 

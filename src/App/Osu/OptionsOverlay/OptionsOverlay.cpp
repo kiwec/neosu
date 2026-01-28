@@ -476,7 +476,7 @@ class SkinPreviewElement final : public CBaseUIElement {
     void draw() override {
         if(!this->bVisible) return;
 
-        const auto &skin = osu->getSkin();
+        const Skin *skin = osu->getSkin();
 
         float hitcircleDiameter = this->getSize().y * 0.5f;
         float numberScale =
@@ -496,28 +496,27 @@ class SkinPreviewElement final : public CBaseUIElement {
             const int colorCounter = 42;
             const int colorOffset = 0;
             const float colorRGBMultiplier = 1.0f;
+            using enum LiveScore::HIT;
 
             Circle::drawCircle(
-                osu->getSkin(),
-                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (1.0f / 5.0f), 0.0f),
+                skin, this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (1.0f / 5.0f), 0.0f),
                 hitcircleDiameter, numberScale, overlapScale, number, colorCounter, colorOffset, colorRGBMultiplier,
                 approachScale, approachAlpha, approachAlpha, true, false);
             Circle::drawHitResult(
-                osu->getSkin(), hitcircleDiameter, hitcircleDiameter,
+                skin, hitcircleDiameter, hitcircleDiameter,
                 this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (2.0f / 5.0f), 0.0f),
-                LiveScore::HIT::HIT_100, 0.45f, 0.33f);
+                HIT_100, 0.45f, 0.33f);
             Circle::drawHitResult(
-                osu->getSkin(), hitcircleDiameter, hitcircleDiameter,
-                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (3.0f / 5.0f), 0.0f),
-                LiveScore::HIT::HIT_50, 0.45f, 0.66f);
+                skin, hitcircleDiameter, hitcircleDiameter,
+                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (3.0f / 5.0f), 0.0f), HIT_50,
+                0.45f, 0.66f);
             Circle::drawHitResult(
-                osu->getSkin(), hitcircleDiameter, hitcircleDiameter,
+                skin, hitcircleDiameter, hitcircleDiameter,
                 this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (4.0f / 5.0f), 0.0f),
-                LiveScore::HIT::HIT_MISS, 0.45f, 1.0f);
+                HIT_MISS, 0.45f, 1.0f);
             Circle::drawApproachCircle(
-                osu->getSkin(),
-                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (1.0f / 5.0f), 0.0f),
-                osu->getSkin()->getComboColorForCounter(colorCounter, colorOffset), hitcircleDiameter, approachScale,
+                skin, this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (1.0f / 5.0f), 0.0f),
+                skin->getComboColorForCounter(colorCounter, colorOffset), hitcircleDiameter, approachScale,
                 approachCircleAlpha, false, false);
         } else if(this->iMode == 1) {
             const int numNumbers = 6;
@@ -3194,7 +3193,7 @@ void OptionsOverlayImpl::onFPSSliderChange(CBaseUISlider *slider) {
                 cv->setValue(0.f);
                 if(element->baseElems.size() == 3) {
                     auto *labelPointer = dynamic_cast<CBaseUILabel *>(element->baseElems[2].get());
-                    labelPointer->setText("∞");
+                    labelPointer->setText(US_("∞"));
                 }
             } else {
                 cv->setValue(std::round(slider->getFloat()));  // round to int
