@@ -55,38 +55,38 @@ struct LivePPCalc::LivePPCalcImpl {
 
     // only accessed async
     struct LazyCalcParamCache {
-        std::string lastCalcedPath{""};
-        f32 lastCalcedAR{0.f}, lastCalcedCS{0.f};
-        f32 lastCalcedSpeedMultiplier{0.f};
+        std::string path{""};
+        f32 AR{0.f}, CS{0.f};
+        f32 speed_multiplier{0.f};
         DatabaseBeatmap::LOAD_DIFFOBJ_RESULT diffres{};
-        std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> diffobjCache{
+        std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> diffobj_cache{
             std::make_unique<std::vector<DifficultyCalculator::DiffObject>>()};
-    } m_paramCache;
+    } m_param_cache;
 
     struct LazyCalcParams {
         std::string osufile_path;
-        u64 legacyTotalScore;
+        u64 legacy_total_score;
         f32 CS, AR, HP, OD;
-        f32 speedMultiplier;
+        f32 speed_multiplier;
         int current_hitobject;
         int nb_circles, nb_sliders, nb_spinners;
-        int highestCombo, numMisses;
-        int num300s, num100s, num50s;
+        int highest_combo, nb_misses;
+        int nb_300s, nb_100s, nb_50s;
         Replay::Mods mods;
 
         // to avoid rebuilding diffres unless something changes
         [[nodiscard]] LazyCalcParamCache &get_latest_cached(LazyCalcParamCache &c) const {
             // rebuild as necessary
-            if(c.lastCalcedPath != this->osufile_path || c.lastCalcedAR != this->AR || c.lastCalcedCS != this->CS ||
-               c.lastCalcedSpeedMultiplier != this->speedMultiplier) {
-                c.lastCalcedPath = this->osufile_path;
-                c.lastCalcedAR = this->AR;
-                c.lastCalcedCS = this->CS;
-                c.lastCalcedSpeedMultiplier = this->speedMultiplier;
+            if(c.path != this->osufile_path || c.AR != this->AR || c.CS != this->CS ||
+               c.speed_multiplier != this->speed_multiplier) {
+                c.path = this->osufile_path;
+                c.AR = this->AR;
+                c.CS = this->CS;
+                c.speed_multiplier = this->speed_multiplier;
                 // get new diffres
-                c.diffobjCache->clear();
+                c.diffobj_cache->clear();
                 c.diffres = DatabaseBeatmap::loadDifficultyHitObjects(this->osufile_path, this->AR, this->CS,
-                                                                      this->speedMultiplier);
+                                                                      this->speed_multiplier);
             }
             return c;
         }
@@ -118,24 +118,24 @@ struct LivePPCalc::LivePPCalcImpl {
         m_calc_inst.enqueue([p =
                                  LazyCalcParams{
                                      .osufile_path = m_bmi->beatmap ? m_bmi->beatmap->getFilePath() : "",  //
-                                     .legacyTotalScore = score.getScore(),                                 //
+                                     .legacy_total_score = score.getScore(),                               //
                                      .CS = m_bmi->getCS(),                                                 //
                                      .AR = m_bmi->getAR(),                                                 //
                                      .HP = m_bmi->getHP(),                                                 //
                                      .OD = m_bmi->getOD(),                                                 //
-                                     .speedMultiplier = m_bmi->getSpeedMultiplier(),                       //
+                                     .speed_multiplier = m_bmi->getSpeedMultiplier(),                      //
                                      .current_hitobject = m_bmi->iCurrentHitObjectIndex,                   //
                                      .nb_circles = m_bmi->iCurrentNumCircles,                              //
                                      .nb_sliders = m_bmi->iCurrentNumSliders,                              //
                                      .nb_spinners = m_bmi->iCurrentNumSpinners,                            //
-                                     .highestCombo = score.getComboMax(),                                  //
-                                     .numMisses = score.getNumMisses(),                                    //
-                                     .num300s = score.getNum300s(),                                        //
-                                     .num100s = score.getNum100s(),                                        //
-                                     .num50s = score.getNum50s(),                                          //
+                                     .highest_combo = score.getComboMax(),                                 //
+                                     .nb_misses = score.getNumMisses(),                                    //
+                                     .nb_300s = score.getNum300s(),                                        //
+                                     .nb_100s = score.getNum100s(),                                        //
+                                     .nb_50s = score.getNum50s(),                                          //
                                      .mods = score.mods,                                                   //
                                  },
-                             &old_cache = m_paramCache](void) -> LazyPPRes {
+                             &old_cache = m_param_cache](void) -> LazyPPRes {
             LazyPPRes result;
 
             if(p.osufile_path.empty()) return result;
@@ -154,7 +154,7 @@ struct LivePPCalc::LivePPCalcImpl {
             const bool modAuto = flags::has<ModFlags::Autoplay>(p.mods.flags);
 
             // this is assumed to always be valid
-            std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> &diffobjCache = cache.diffobjCache;
+            std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> &diffobjCache = cache.diffobj_cache;
 
             DifficultyCalculator::BeatmapDiffcalcData diffcalcData{.sortedHitObjects = diffres.diffobjects,
                                                                    .CS = p.CS,
@@ -165,7 +165,7 @@ struct LivePPCalc::LivePPCalcImpl {
                                                                    .relax = relax,
                                                                    .autopilot = autopilot,
                                                                    .touchDevice = td,
-                                                                   .speedMultiplier = p.speedMultiplier,
+                                                                   .speedMultiplier = p.speed_multiplier,
                                                                    .breakDuration = diffres.totalBreakDuration,
                                                                    .playableLength = diffres.playableLength};
 
@@ -206,12 +206,12 @@ struct LivePPCalc::LivePPCalcImpl {
                 .numSliders = p.nb_sliders,
                 .numSpinners = p.nb_spinners,
                 .maxPossibleCombo = (i32)diffres.getMaxComboAtIndex(p.current_hitobject < 0 ? 0 : p.current_hitobject),
-                .combo = p.highestCombo,
-                .misses = p.numMisses,
-                .c300 = p.num300s,
-                .c100 = p.num100s,
-                .c50 = p.num50s,
-                .legacyTotalScore = (u32)p.legacyTotalScore};
+                .combo = p.highest_combo,
+                .misses = p.nb_misses,
+                .c300 = p.nb_300s,
+                .c100 = p.nb_100s,
+                .c50 = p.nb_50s,
+                .legacyTotalScore = (u32)p.legacy_total_score};
 
             // HACKHACK: for auto, just ignore reality and calculate maximum pp of a perfect play up until this point
             // this allows calculation after seeking and dropping combo
