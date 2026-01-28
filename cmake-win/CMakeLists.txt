@@ -346,6 +346,16 @@ add_external_project(simdutf
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
+add_external_project(ctre
+    CMAKE_ARGS
+        ${EXTERNAL_PROJECT_CMAKE_ARGS}
+        -DCTRE_BUILD_TESTS=OFF
+        -DCTRE_BUILD_PACKAGE=ON
+        -DCTRE_BUILD_PACKAGE_DEB=OFF
+        -DCTRE_BUILD_PACKAGE_RPM=OFF 
+    BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
+)
+
 # Discord SDK (pre-built binary)
 add_external_project(discordsdk
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
@@ -479,6 +489,7 @@ ExternalProject_Add(neosu_main
         soloud_external
         nsync_external
         simdutf_external
+        ctre_external
         discordsdk_external
         bass_external
         bassfx_external

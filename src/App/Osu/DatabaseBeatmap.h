@@ -43,7 +43,7 @@ enum {
 };
 }
 
-struct HitSamples {
+struct HitSamples final {
     u8 hitSounds = 0;
     u8 normalSet = 0;
     u8 additionSet = 0;
@@ -151,7 +151,7 @@ class DatabaseBeatmap final {
     static inline const auto alwaysFalseStopPred = Sync::stop_token{};
 
     // raw structs (not editable, we're following db format directly)
-    struct TIMINGPOINT {
+    struct TIMINGPOINT final {
         f64 offset;
         f64 msPerBeat;
 
@@ -165,13 +165,13 @@ class DatabaseBeatmap final {
         bool operator==(const TIMINGPOINT &) const = default;
     };
 
-    struct BREAK {
+    struct BREAK final {
         i64 startTime;
         i64 endTime;
     };
 
     // custom structs
-    struct LOAD_DIFFOBJ_RESULT {
+    struct LOAD_DIFFOBJ_RESULT final {
         LOAD_DIFFOBJ_RESULT();
         ~LOAD_DIFFOBJ_RESULT();
 
@@ -212,7 +212,7 @@ class DatabaseBeatmap final {
 
     // primitive objects
 
-    struct HITCIRCLE {
+    struct HITCIRCLE final {
         int x, y;
         i32 time;
         int number;
@@ -222,8 +222,8 @@ class DatabaseBeatmap final {
         HitSamples samples;
     };
 
-    struct SLIDER {
-        SLIDER() noexcept; // needs extern ctors/dtors due to SLIDER_SCORING_TIME being externally defined
+    struct SLIDER final {
+        SLIDER() noexcept;  // needs extern ctors/dtors due to SLIDER_SCORING_TIME being externally defined
         ~SLIDER() noexcept;
 
         SLIDER(const SLIDER &) noexcept;
@@ -250,14 +250,14 @@ class DatabaseBeatmap final {
         std::vector<SLIDER_SCORING_TIME> scoringTimesForStarCalc;
     };
 
-    struct SPINNER {
+    struct SPINNER final {
         int x, y;
         i32 time;
         i32 endTime;
         HitSamples samples;
     };
 
-    struct PRIMITIVE_CONTAINER {
+    struct PRIMITIVE_CONTAINER final {
         std::vector<HITCIRCLE> hitcircles{};
         std::vector<SLIDER> sliders{};
         std::vector<SPINNER> spinners{};
@@ -358,7 +358,7 @@ class DatabaseBeatmap final {
 
     LOAD_META_RESULT loadMetadata(bool compute_md5 = true);
 
-    struct LOAD_GAMEPLAY_RESULT {
+    struct LOAD_GAMEPLAY_RESULT final {
         LOAD_GAMEPLAY_RESULT();
         ~LOAD_GAMEPLAY_RESULT();
 
@@ -502,7 +502,7 @@ class DatabaseBeatmap final {
         if(this->md5_init.load(std::memory_order_relaxed) || this->md5_init.load(std::memory_order_acquire))
             return this->sMD5Hash;
 
-        return MD5Hash::sentinel; // DEADBEEFDEADBEEFDEADBEEFDEADBEEF
+        return MD5Hash::sentinel;  // DEADBEEFDEADBEEFDEADBEEFDEADBEEF
     }
 
    private:

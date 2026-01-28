@@ -24,7 +24,7 @@ enum {
 };
 }
 
-struct HitSamples {
+struct HitSamples final {
     u8 hitSounds = 0;           // bitfield of HitSoundTypes to play
     u8 normalSet = 0;           // SampleSetType of the normal sound
     u8 additionSet = 0;         // SampleSetType of the whistle, finish and clap sounds
@@ -32,7 +32,7 @@ struct HitSamples {
     i32 index = 0;              // index of the sample (for custom map sounds). if 0, use skin sound instead
     std::string filename = "";  // when not empty, ignore all the above mess (except volume) and just play that file
 
-    using Set_Slider_Hit = struct {
+    struct Set_Slider_Hit {
         i32 set;
         i32 slider;
         i32 hit;

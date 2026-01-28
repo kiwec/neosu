@@ -103,6 +103,11 @@ set(SIMDUTF_URL "https://github.com/simdutf/simdutf/archive/refs/tags/v${SIMDUTF
 set(SIMDUTF_HASH "SHA512=ee30ac7b7b96dfef2ced3938b1cc8e10cd5ec5b3d35ac9679f30fbb7811bf3f930a31f5b4cf0b4002f27eba84d2e27e7c7bd910d96aa04485588188ad910361d")
 set_download_name("simdutf" "${SIMDUTF_VERSION}" "${SIMDUTF_URL}")
 
+set(CTRE_VERSION "6225211806c48230e5d17a1e555ef69e7325051c")
+set(CTRE_URL "https://github.com/hanickadot/compile-time-regular-expressions/archive/${CTRE_VERSION}.tar.gz")
+set(CTRE_HASH "SHA512=7633ac6297e61e1f2f59468b0eeb29d8f010dc069b0e866d261744cfa0a772c7ac2ae4818bb563cd578db5a1d86bc37f12aa9cddc87d551cba2942239ab09c87")
+set_download_name("ctre" "${CTRE_VERSION}" "${CTRE_URL}")
+
 set(CURL_VERSION "8.18.0")
 string(REPLACE "." "_" _curl_ver_temp "${CURL_VERSION}")
 set(CURL_URL "https://github.com/curl/curl/releases/download/curl-${_curl_ver_temp}/curl-${CURL_VERSION}.tar.gz")

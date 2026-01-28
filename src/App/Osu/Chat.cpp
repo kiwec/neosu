@@ -45,7 +45,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <regex>
+#include "ctre.hpp"
 #include <utility>
 
 using namespace flags::operators;
@@ -143,33 +143,30 @@ void ChatChannel::add_message(ChatMessage msg) {
     // Groups 1, 2 only exist for wiki links
     // Groups 3, 4, 5, 6 only exist for labeled links
     // Group 7 only exists for raw links
-    std::wregex url_regex(LR"((\[\[(.+?)\]\])|(\[((\S+)://\S+) (.+?)\])|(https?://\S+))");
+    static constexpr ctll::fixed_string url_pattern{LR"((\[\[(.+?)\]\])|(\[((\S+)://\S+) (.+?)\])|(https?://\S+))"};
 
     std::wstring msg_text = msg.text.to_wstring();
-    std::wsmatch match;
     std::vector<CBaseUILabel *> temp_text_fragments;
-    std::wstring::const_iterator search_start = msg_text.cbegin();
     sSz text_idx = 0;
-    while(std::regex_search(search_start, msg_text.cend(), match, url_regex)) {
-        sSz match_pos;
-        sSz match_len;
+
+    for(auto match : ctre::search_all<url_pattern>(msg_text)) {
+        sSz match_start = match.begin() - msg_text.cbegin();
+        sSz match_len = match.end() - match.begin();
+
         UString link_url;
         UString link_label;
-        if(match[7].matched) {
+
+        if(auto raw_link = match.get<7>(); raw_link) {
             // Raw link
-            match_pos = match.position(7);
-            match_len = match.length(7);
-            link_url = match.str(7).c_str();
-            link_label = match.str(7).c_str();
-        } else if(match[3].matched) {
+            link_url = raw_link.to_view();
+            link_label = raw_link.to_view();
+        } else if(auto labeled_link = match.get<3>(); labeled_link) {
             // Labeled link
-            match_pos = match.position(3);
-            match_len = match.length(3);
-            link_url = match.str(4).c_str();
-            link_label = match.str(6).c_str();
+            link_url = match.get<4>().to_view();
+            link_label = match.get<6>().to_view();
 
             // Normalize invite links to osump://
-            UString link_protocol = match.str(5).c_str();
+            UString link_protocol = match.get<5>().to_view();
             if(link_protocol == US_("osu")) {
                 // osu:// -> osump://
                 link_url.insert(2, US_("mp"));
@@ -179,28 +176,27 @@ void ChatChannel::add_message(ChatMessage msg) {
             }
         } else {
             // Wiki link
-            match_pos = match.position(1);
-            match_len = match.length(1);
+            auto wiki_name = match.get<2>().to_view();
             link_url = US_("https://osu.ppy.sh/wiki/");
-            link_url.append(match.str(2).c_str());
+            link_url.append(wiki_name);
             link_label = US_("wiki:");
-            link_label.append(match.str(2).c_str());
+            link_label.append(wiki_name);
         }
 
-        sSz search_idx = search_start - msg_text.cbegin();
-        auto url_start = search_idx + match_pos;
-        auto preceding_text = msg.text.substr(text_idx, url_start - text_idx);
-        if(preceding_text.length() > 0) {
+        // Add preceding text
+        if(match_start > text_idx) {
+            auto preceding_text = msg.text.substr(text_idx, match_start - text_idx);
             temp_text_fragments.push_back(new CBaseUILabel(0, 0, 0, 0, "", preceding_text));
         }
 
         auto link = new ChatLink(0, 0, 0, 0, link_url, link_label);
         temp_text_fragments.push_back(link);
 
-        text_idx = url_start + match_len;
-        search_start = msg_text.cbegin() + text_idx;
+        text_idx = match_start + match_len;
     }
-    if(search_start != msg_text.cend()) {
+
+    // Add remaining text after last match
+    if(text_idx < (sSz)msg_text.size()) {
         auto text = msg.text.substr(text_idx);
         temp_text_fragments.push_back(new CBaseUILabel(0, 0, 0, 0, "", text));
     }

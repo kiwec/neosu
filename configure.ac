@@ -699,11 +699,7 @@ AS_IF([test "x$enable_native" != "xno"], [
 ])
 # use c/c++23 because we can
 AX_CHECK_COMPILE_FLAG([-std=gnu++23], [
-    AX_CHECK_COMPILE_FLAG([-std=gnu++26], [
-        NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -std=gnu++26"
-        ], [
-        NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -std=gnu++23"
-    ])
+    CXXFLAGS="$CXXFLAGS -std=gnu++23"
 ], [
     AC_MSG_ERROR([Compiler does not support gnu++23])
 ])
@@ -843,6 +839,7 @@ AS_IF([test "x$enable_omp" = "xyes"], [
     AC_SUBST([OPENMP], [1])
 ])
 
+_using_gcc_lto=
 AS_IF([test "x$enable_lto" != "xno"], [
     AX_CHECK_COMPILE_FLAG([-flto=thin], [
         AX_CHECK_LINK_FLAG([-flto=thin -fno-fat-lto-objects -fwhole-program-vtables], [
@@ -858,6 +855,7 @@ AS_IF([test "x$enable_lto" != "xno"], [
         ])], [
         # gcc
         AX_CHECK_LINK_FLAG([-flto=auto -ffat-lto-objects -fuse-linker-plugin -fdevirtualize-at-ltrans], [
+            _using_gcc_lto=1
             CXXFLAGS="$CXXFLAGS -flto=auto -ffat-lto-objects -fuse-linker-plugin -fdevirtualize-at-ltrans"
             CFLAGS="$CFLAGS -flto=auto -ffat-lto-objects -fuse-linker-plugin -fdevirtualize-at-ltrans"
             LDFLAGS="$LDFLAGS -flto=auto -ffat-lto-objects -fuse-linker-plugin -fdevirtualize-at-ltrans"
@@ -877,6 +875,21 @@ AS_IF([test "x$enable_lto" != "xno"], [
             NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -flto-partition=one"
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -flto-partition=one"
         ])
+    ])
+])
+
+# check for -Wl,--build-id (makes some debugging tools work better)
+AX_CHECK_LINK_FLAG([-Wl,--build-id], [
+    LDFLAGS="$LDFLAGS -Wl,--build-id"
+])
+
+# check for -Wl,--icf=all (binary size opt)
+AX_CHECK_LINK_FLAG([-Wl,--icf=all], [
+    LDFLAGS="$LDFLAGS -Wl,--icf=all"
+    # this is also recommended if icf is used
+    AX_CHECK_COMPILE_FLAG([-faddrsig], [
+        CXXFLAGS="$CXXFLAGS -faddrsig"
+        CFLAGS="$CFLAGS -faddrsig"
     ])
 ])
 
@@ -1042,7 +1055,7 @@ AS_IF([test "x$use_dx11" = "xyes"], [
 ])
 
 SDL3_MIN_VERSION=3.4.0
-SDL3_BUILD_VERSION=cd72f6b02eea3023fa208560774a78193cf9de35 # git
+SDL3_BUILD_VERSION=ee38b7c3dfc4f534195cf9a6f6e5227368e1b4e3 # git
 FREETYPE2_MIN_VERSION=2.10.0
 FREETYPE2_BUILD_VERSION=2.14.1
 LIBJPEG_MIN_VERSION=3.0.0
@@ -1072,6 +1085,8 @@ NSYNC_MIN_VERSION=1.29.2
 NSYNC_BUILD_VERSION=1.30.0
 SIMDUTF_MIN_VERSION=7.0.0
 SIMDUTF_BUILD_VERSION=8.0.0 # fast and correct utf conversion utilities
+CTRE_MIN_VERSION=3.10.0 # regex support that doesn't have exceptions FORCED enabled
+CTRE_BUILD_VERSION=6225211806c48230e5d17a1e555ef69e7325051c # git as of Jan 28th, 2026
 
 # always build these from source if we want to use them
 AC_SUBST([SOLOUD_VERSION], [1.3.0]) # neoloud fork
@@ -1116,6 +1131,7 @@ AS_IF([test "x$enable_system_deps" != "xno"], [
     PKG_CHECK_AUTO([LZMA], [liblzma >= $LZMA_MIN_VERSION], [have_liblzma=yes], [have_liblzma=no])
     PKG_CHECK_AUTO([LIBARCHIVE], [libarchive >= $LIBARCHIVE_MIN_VERSION], [have_libarchive=yes], [have_libarchive=no])
     PKG_CHECK_AUTO([SIMDUTF], [simdutf >= $SIMDUTF_MIN_VERSION], [have_simdutf=yes], [have_simdutf=no])
+    PKG_CHECK_AUTO([CTRE], [ctre >= $CTRE_MIN_VERSION], [have_ctre=yes], [have_ctre=no])
     # check for standalone openssl if we have system curl
     AS_IF([test "x$have_curl" = "xyes"], [
         PKG_CHECK_AUTO([OPENSSL], [openssl >= $OPENSSL_MIN_VERSION], [have_openssl=yes], [have_openssl=no])
@@ -1211,6 +1227,12 @@ SIMDUTF_PREFIX="${DEPS_PREFIX}"
 AC_SUBST([SIMDUTF_VERSION])
 AC_SUBST([SIMDUTF_PREFIX])
 
+AS_IF([test "x$have_ctre" != "xyes"], [have_ctre="build from source"])
+CTRE_VERSION=$CTRE_BUILD_VERSION
+CTRE_PREFIX="${DEPS_PREFIX}"
+AC_SUBST([CTRE_VERSION])
+AC_SUBST([CTRE_PREFIX])
+
 AS_IF([test "x$have_libarchive" = "xbuild from source" &&
     { test "x$have_libacl" != "xyes" && test "x$have_libacl" != "xnot required"; }], [have_libacl="build from source"])
 LIBACL_VERSION=$LIBACL_BUILD_VERSION
@@ -1265,6 +1287,7 @@ AM_CONDITIONAL([BUILD_FMT], [test "x$have_fmt" != "xyes"])
 AM_CONDITIONAL([BUILD_LZMA], [test "x$have_liblzma" != "xyes"])
 AM_CONDITIONAL([BUILD_LIBARCHIVE], [test "x$have_libarchive" != "xyes"])
 AM_CONDITIONAL([BUILD_SIMDUTF], [test "x$have_simdutf" != "xyes"])
+AM_CONDITIONAL([BUILD_CTRE], [test "x$have_ctre" != "xyes"])
 AM_CONDITIONAL([BUILD_LIBACL], [test "x$have_libacl" = "xbuild from source"])
 AM_CONDITIONAL([BUILD_CURL], [test "x$have_curl" != "xyes"])
 AM_CONDITIONAL([BUILD_MPG123], [test "$with_soloud" = "yes" && test "x$have_mpg123" != "xyes"])
@@ -1366,6 +1389,7 @@ Dependencies:
     liblzma:            ${have_liblzma-build from source}
     libarchive:         ${have_libarchive-build from source}
     simdutf:            ${have_simdutf-build from source}
+    ctre:               ${have_ctre-build from source}
     libacl:             ${have_libacl-build from source}
     mpg123:             ${have_mpg123-build from source}
     spdlog:             ${have_spdlog-build from source}
