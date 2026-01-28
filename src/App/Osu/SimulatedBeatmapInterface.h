@@ -68,7 +68,6 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] bool isContinueScheduled() const override { return false; }
     [[nodiscard]] bool isPaused() const override { return false; }
     [[nodiscard]] bool isPlaying() const override { return true; }
-    [[nodiscard]] u32 getScoreV1DifficultyMultiplier() const override;
     [[nodiscard]] f32 getRawAR() const override;
     [[nodiscard]] f32 getAR() const override;
     [[nodiscard]] f32 getCS() const override;
@@ -97,9 +96,6 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] f32 getPitchMultiplier() const override;
 
    protected:
-    // database
-    DatabaseBeatmap *beatmap;
-
     // sound
     i32 iCurMusicPos = 0;
 

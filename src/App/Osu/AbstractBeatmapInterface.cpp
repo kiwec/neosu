@@ -3,6 +3,7 @@
 #include "Osu.h"
 #include "GameRules.h"
 #include "LegacyReplay.h"
+#include "DatabaseBeatmap.h"
 
 f32 AbstractBeatmapInterface::getHitWindow300() const {
     return GameRules::mapDifficultyRange(this->getOD(), GameRules::getMinHitWindow300(),
@@ -69,6 +70,17 @@ i32 AbstractBeatmapInterface::getPVS() const {
     // future hitobjects) to speed up loops which iterate over all hitobjects
     return this->fCachedApproachTimeForUpdate + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() +
            1500;  // sanity
+}
+
+u32 AbstractBeatmapInterface::getScoreV1DifficultyMultiplier() const {
+    // NOTE: We intentionally get CS/HP/OD from beatmap data, not "real" CS/HP/OD
+    //       Since this multiplier is only used for ScoreV1
+    u32 breakTimeMS = this->getBreakDurationTotal();
+    f32 drainLength =
+        std::max(this->getLengthPlayable() - std::min(breakTimeMS, this->getLengthPlayable()), (u32)1000) / 1000;
+    return std::round((this->beatmap->getCS() + this->beatmap->getHP() + this->beatmap->getOD() +
+                       std::clamp<f32>((f32)this->beatmap->getNumObjects() / drainLength * 8.0f, 0.0f, 16.0f)) /
+                      38.0f * 5.0f);
 }
 
 LiveScore::HIT AbstractBeatmapInterface::getHitResult(i32 delta) const {

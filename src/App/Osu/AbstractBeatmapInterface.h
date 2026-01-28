@@ -4,6 +4,8 @@
 #include "Vectors.h"
 
 class HitObject;
+class DatabaseBeatmap;
+using BeatmapDifficulty = DatabaseBeatmap;
 
 // either simulated or actual
 class AbstractBeatmapInterface {
@@ -28,7 +30,6 @@ class AbstractBeatmapInterface {
 
     [[nodiscard]] virtual f32 getSpeedMultiplier() const = 0;
     [[nodiscard]] virtual f32 getPitchMultiplier() const = 0;
-    [[nodiscard]] virtual u32 getScoreV1DifficultyMultiplier() const = 0;
     [[nodiscard]] virtual f32 getRawAR() const = 0;
     [[nodiscard]] virtual f32 getRawOD() const = 0;
     [[nodiscard]] virtual f32 getAR() const = 0;
@@ -69,6 +70,8 @@ class AbstractBeatmapInterface {
     bool holding_slider = false;
 
     // Generic behavior below, do not override
+    [[nodiscard]] inline BeatmapDifficulty *getBeatmap() const { return this->beatmap; }
+
     [[nodiscard]] bool isClickHeld() const;
     [[nodiscard]] LiveScore::HIT getHitResult(i32 delta) const;
 
@@ -85,6 +88,7 @@ class AbstractBeatmapInterface {
     [[nodiscard]] f32 getOverallDifficultyForSpeedMultiplier() const;
     [[nodiscard]] f32 getRawODForSpeedMultiplier() const;
     [[nodiscard]] f32 getConstantOverallDifficultyForSpeedMultiplier() const;
+    [[nodiscard]] u32 getScoreV1DifficultyMultiplier() const;
 
     // for HitObject::update to avoid recalculating for each object every frame
     [[nodiscard]] forceinline f32 getCachedApproachTimeForUpdate() const { return this->fCachedApproachTimeForUpdate; }
@@ -92,4 +96,7 @@ class AbstractBeatmapInterface {
         return this->fSpeedAdjustedAnimationSpeedFactor;
     }
     [[nodiscard]] forceinline f32 getBaseAnimationSpeed() const { return this->fBaseAnimationSpeedFactor; }
+
+   protected:
+    BeatmapDifficulty *beatmap{nullptr};
 };

@@ -1174,17 +1174,6 @@ f32 BeatmapInterface::getPitchMultiplier() const {
 const Skin *BeatmapInterface::getSkin() const { return osu->getSkin(); }
 Skin *BeatmapInterface::getSkinMutable() { return osu->getSkinMutable(); }
 
-u32 BeatmapInterface::getScoreV1DifficultyMultiplier() const {
-    // NOTE: We intentionally get CS/HP/OD from beatmap data, not "real" CS/HP/OD
-    //       Since this multiplier is only used for ScoreV1
-    u32 breakTimeMS = this->getBreakDurationTotal();
-    f32 drainLength =
-        std::max(this->getLengthPlayable() - std::min(breakTimeMS, this->getLengthPlayable()), (u32)1000) / 1000;
-    return std::round((this->beatmap->getCS() + this->beatmap->getHP() + this->beatmap->getOD() +
-                       std::clamp<f32>((f32)this->beatmap->getNumObjects() / drainLength * 8.0f, 0.0f, 16.0f)) /
-                      38.0f * 5.0f);
-}
-
 f32 BeatmapInterface::getRawAR() const {
     if(unlikely(!this->beatmap)) return 5.0f;
 

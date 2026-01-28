@@ -121,17 +121,6 @@ void SimulatedBeatmapInterface::fail(bool force_death) {
 
 void SimulatedBeatmapInterface::cancelFailing() { this->bFailed = false; }
 
-u32 SimulatedBeatmapInterface::getScoreV1DifficultyMultiplier() const {
-    // NOTE: We intentionally get CS/HP/OD from beatmap data, not "real" CS/HP/OD
-    //       Since this multiplier is only used for ScoreV1
-    u32 breakTimeMS = this->getBreakDurationTotal();
-    f32 drainLength =
-        std::max(this->getLengthPlayable() - std::min(breakTimeMS, this->getLengthPlayable()), (u32)1000) / 1000;
-    return std::round((this->beatmap->getCS() + this->beatmap->getHP() + this->beatmap->getOD() +
-                       std::clamp<f32>((f32)this->beatmap->getNumObjects() / drainLength * 8.0f, 0.0f, 16.0f)) /
-                      38.0f * 5.0f);
-}
-
 f32 SimulatedBeatmapInterface::getCS() const {
     float CSdifficultyMultiplier = 1.0f;
     if(this->mods.has(ModFlags::HardRock)) CSdifficultyMultiplier = 1.3f;

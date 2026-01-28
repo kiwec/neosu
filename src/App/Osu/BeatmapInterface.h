@@ -110,7 +110,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // loads the music of the currently selected diff and starts playing from the previewTime (e.g. clicking on a beatmap)
     void selectBeatmap();
     void selectBeatmap(DatabaseBeatmap *map);
-    [[nodiscard]] inline DatabaseBeatmap *getBeatmap() const { return this->beatmap; }
 
     // stops + unloads the currently loaded music and deletes all hitobjects
     void deselectBeatmap();
@@ -198,7 +197,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] inline i32 getCurMusicPos() const { return this->iCurMusicPos; }
     [[nodiscard]] inline i32 getCurMusicPosWithOffsets() const { return this->iCurMusicPosWithOffsets; }
 
-    [[nodiscard]] u32 getScoreV1DifficultyMultiplier() const override;
     [[nodiscard]] f32 getRawAR() const override;
     [[nodiscard]] f32 getAR() const override;
     [[nodiscard]] f32 getCS() const override;
@@ -371,7 +369,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // beatmap
     bool bIsSpinnerActive;
     vec2 vContinueCursorPoint{0.f};
-    DatabaseBeatmap *beatmap{nullptr};
     Sound *music;
 
     // playfield
