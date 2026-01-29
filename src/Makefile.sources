@@ -100,7 +100,8 @@ neosu_SOURCES = \
 	src/App/Osu/UserStatsScreen.cpp \
 	src/App/Osu/VolumeOverlay.cpp \
 	src/App/Osu/score.cpp \
-	src/App/Tests/Gears/Gears.cpp \
+	src/App/Tests/BaseFrameworkTest/BaseFrameworkTest.cpp \
+	src/App/Tests/TestRunner.cpp \
 	src/Binary/curl_blob.cpp \
 	src/Binary/misc_bin.cpp \
 	src/Binary/shaders.cpp \

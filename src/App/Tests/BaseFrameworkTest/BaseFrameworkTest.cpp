@@ -1,5 +1,5 @@
-// Copyright (c) 2026, WH, All rights reserved.
-#include "Gears.h"
+// Copyright (c) 2015, PG, 2026, WH, All rights reserved.
+#include "BaseFrameworkTest.h"
 
 #include "Engine.h"
 #include "Mouse.h"
@@ -15,12 +15,12 @@
 #include "CBaseUIButton.h"
 
 namespace mc::tests {
-class GearsButton : public CBaseUIButton {
-    NOCOPY_NOMOVE(GearsButton)
+class FrameworkTestButton : public CBaseUIButton {
+    NOCOPY_NOMOVE(FrameworkTestButton)
    public:
-    GearsButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
+    FrameworkTestButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {}
-    ~GearsButton() override = default;
+    ~FrameworkTestButton() override = default;
 
     void onMouseInside() override { debugLog(""); }
     void onMouseOutside() override { debugLog(""); }
@@ -36,26 +36,30 @@ class GearsButton : public CBaseUIButton {
     }
 };
 
-Gears::Gears() {
+BaseFrameworkTest::BaseFrameworkTest() {
     debugLog("");
 
-    m_testButton = std::make_unique<GearsButton>(300.f, 600.f, 200.f, 25.f, "GearsButton", "GearsButton");
+    m_testButton = std::make_unique<FrameworkTestButton>(300.f, 600.f, 200.f, 25.f, "TestButton", "TestButton");
 
-    // load resource
+    // load resource (NOTE: if it's already loaded it won't load again, and it's automatically destroyed on engine shutdown)
     resourceManager->loadImage("ic_music_48dp.png", "TESTIMAGE");
 
     // engine overrides
-    cv::debug_mouse.setValue(1.0f);
+    cv::debug_mouse.setValue(true);
 
     mouse->addListener(this);
 }
 
-Gears::~Gears() {
+BaseFrameworkTest::~BaseFrameworkTest() {
     debugLog("");
+
+    // cleanup
     mouse->removeListener(this);
+
+    cv::debug_mouse.setValue(false);
 }
 
-void Gears::draw() {
+void BaseFrameworkTest::draw() {
     McFont *testFont = engine->getDefaultFont();
 
     // test general drawing
@@ -120,63 +124,66 @@ void Gears::draw() {
     g->popTransform();
 }
 
-void Gears::update() {
+void BaseFrameworkTest::update() {
     CBaseUIEventCtx c;
     m_testButton->update(c);
 }
 
-void Gears::onResolutionChanged(vec2 newResolution) { debugLog("{}", newResolution); }
+void BaseFrameworkTest::onResolutionChanged(vec2 newResolution) { debugLog("{}", newResolution); }
 
-void Gears::onDPIChanged() { debugLog("{}"); }
+void BaseFrameworkTest::onDPIChanged() { debugLog("{}"); }
 
-bool Gears::isInGameplay() const {
+bool BaseFrameworkTest::isInGameplay() const {
     // debugLog("");
     return false;
 }
-bool Gears::isInUnpausedGameplay() const {
+bool BaseFrameworkTest::isInUnpausedGameplay() const {
     // debugLog("");
     return false;
 }
 
-void Gears::stealFocus() { debugLog(""); }
+void BaseFrameworkTest::stealFocus() { debugLog(""); }
 
-bool Gears::onShutdown() {
+bool BaseFrameworkTest::onShutdown() {
     debugLog("");
     return true;
 }
 
-Sound *Gears::getSound(ActionSound action) const {
+Sound *BaseFrameworkTest::getSound(ActionSound action) const {
     debugLog("{}", static_cast<size_t>(action));
     return nullptr;
 }
 
-void Gears::showNotification(const NotificationInfo &notif) {
+void BaseFrameworkTest::showNotification(const NotificationInfo &notif) {
     debugLog("text: {} color: {} duration: {} class: {} preset: {} cb: {:p}", notif.text, notif.custom_color.v,
              notif.duration, static_cast<size_t>(notif.nclass), static_cast<size_t>(notif.preset),
              fmt::ptr(&notif.callback));
+    if(notif.callback) {
+        notif.callback();
+    }
 }
 
-void Gears::onFocusGained() { debugLog(""); }
+void BaseFrameworkTest::onFocusGained() { debugLog(""); }
 
-void Gears::onFocusLost() { debugLog(""); }
+void BaseFrameworkTest::onFocusLost() { debugLog(""); }
 
-void Gears::onMinimized() { debugLog(""); }
+void BaseFrameworkTest::onMinimized() { debugLog(""); }
 
-void Gears::onRestored() { debugLog(""); }
+void BaseFrameworkTest::onRestored() { debugLog(""); }
 
-void Gears::onKeyDown(KeyboardEvent &e) { debugLog("keyDown: {}", e.getScanCode()); }
+void BaseFrameworkTest::onKeyDown(KeyboardEvent &e) { debugLog("keyDown: {}", e.getScanCode()); }
 
-void Gears::onKeyUp(KeyboardEvent &e) { debugLog("keyUp: {}", e.getScanCode()); }
+void BaseFrameworkTest::onKeyUp(KeyboardEvent &e) { debugLog("keyUp: {}", e.getScanCode()); }
 
-void Gears::onChar(KeyboardEvent &e) {
+void BaseFrameworkTest::onChar(KeyboardEvent &e) {
     const char16_t charray[]{e.getCharCode(), u'\0'};
     debugLog("charCode: {}", UString{&charray[0]});
 }
 
-void Gears::onButtonChange(ButtonEvent event) {
+void BaseFrameworkTest::onButtonChange(ButtonEvent event) {
     debugLog("button: {} down: {} timestamp: {}", static_cast<size_t>(event.btn), event.down, event.timestamp);
 }
-void Gears::onWheelVertical(int delta) { debugLog("{}", delta); }
-void Gears::onWheelHorizontal(int delta) { debugLog("{}", delta); }
+void BaseFrameworkTest::onWheelVertical(int delta) { debugLog("{}", delta); }
+void BaseFrameworkTest::onWheelHorizontal(int delta) { debugLog("{}", delta); }
 
 }  // namespace mc::tests

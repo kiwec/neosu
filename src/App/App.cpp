@@ -10,12 +10,15 @@
 
 #include "Environment.h"
 
-#include "TestApps.h"
+#include "TestRunner.h"
 
 App *App::create(bool dummy) {
     if(dummy) return new App();
 
-    if(env->getLaunchArgs().contains("-testapp")) return new mc::tests::Gears();
+    // run tests instead of neosu (a bit dirty but it works)
+    if(auto it = env->getLaunchArgs().find("-testapp"); it != env->getLaunchArgs().end()) {
+        return new mc::tests::TestRunner(it->second);
+    }
 
     App *ret = nullptr;
 #ifndef APP_LIBRARY_BUILD

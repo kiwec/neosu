@@ -1,8 +1,8 @@
-// Copyright (c) 2026, WH, All rights reserved.
+// Copyright (c) 2015, PG, 2026, WH, All rights reserved.
 #pragma once
 
-#ifndef GEARS_TEST_H
-#define GEARS_TEST_H
+#ifndef BASEFRAMEWORKTEST_H
+#define BASEFRAMEWORKTEST_H
 
 #include "App.h"
 #include "MouseListener.h"
@@ -13,13 +13,13 @@ struct CBaseUIEventCtx;
 
 namespace mc::tests {
 
-class GearsButton;
+class FrameworkTestButton;
 
-class Gears : public App, public MouseListener {
-    NOCOPY_NOMOVE(Gears)
+class BaseFrameworkTest : public App, public MouseListener {
+    NOCOPY_NOMOVE(BaseFrameworkTest)
    public:
-    Gears();
-    ~Gears() override;
+    BaseFrameworkTest();
+    ~BaseFrameworkTest() override;
 
     void draw() override;
     void update() override;
@@ -40,7 +40,6 @@ class Gears : public App, public MouseListener {
 
     bool onShutdown() override;
 
-    // may return null!
     [[nodiscard]] Sound *getSound(ActionSound action) const override;
 
     void showNotification(const NotificationInfo &notif) override;
@@ -57,7 +56,7 @@ class Gears : public App, public MouseListener {
     void onWheelHorizontal(int delta) override;
 
     // UI
-    std::unique_ptr<GearsButton> m_testButton;
+    std::unique_ptr<FrameworkTestButton> m_testButton;
 };
 }  // namespace mc::tests
 
