@@ -1,0 +1,28 @@
+import fs from 'node:fs/promises';
+import Module from './bin/neosu.js';
+
+// https://osu.ppy.sh/scores/1641562531 (636pp)
+async function test_pp_simple() {
+    const res = await fetch('https://osu.ppy.sh/osu/3337690');
+    const map_bytes = await res.bytes();
+
+    const neosu = await Module();
+    const beatmap = new neosu.Beatmap(map_bytes);
+    try {
+        const pp = beatmap.calculate({
+            num300s: 3027,
+            num100s: 115,
+            num50s: 4,
+            numMisses: 11,
+            score: 300461780,
+            comboMax: 3483,
+        });
+        console.log("pp:", pp);
+    } catch(err) {
+        console.error("failed to calc pp:", err);
+    } finally {
+        beatmap.delete();
+    }
+}
+
+test_pp_simple();

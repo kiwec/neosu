@@ -50,7 +50,11 @@ struct FinishedScore {
     // NOTE: unfinished feature
     // std::vector<u8> hitdeltas;
 
+#ifndef BUILD_TOOLS_ONLY
+
     std::vector<LegacyReplay::Frame> replay;  // not always loaded
+
+#endif
 
     const DatabaseBeatmap *map{nullptr};  // NOTE: do NOT assume this is set
 

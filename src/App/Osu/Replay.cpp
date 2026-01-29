@@ -88,10 +88,6 @@ f32 Mods::get_naive_od(f32 baseOD) const {
     return OD;
 }
 
-f64 Mods::get_scorev1_multiplier() const {
-    return DifficultyCalculator::getScoreV1ScoreMultiplier(this->flags, this->speed);
-}
-
 LegacyFlags Mods::to_legacy() const {
     LegacyFlags legacy_flags{};
     if(this->speed > 1.f) {
@@ -200,6 +196,10 @@ f32 Mods::get_naive_od(const DatabaseBeatmap *map) const {
         baseOD = map->getOD();
     }
     return get_naive_od(baseOD);
+}
+
+f64 Mods::get_scorev1_multiplier() const {
+    return DifficultyCalculator::getScoreV1ScoreMultiplier(this->flags, this->speed);
 }
 
 Mods Mods::from_cvars() {
