@@ -169,7 +169,7 @@ void ChatChannel::add_message(ChatMessage msg) {
             UString link_protocol = match.get<5>().to_view();
             if(link_protocol == US_("osu")) {
                 // osu:// -> osump://
-                link_url.insert(2, US_("mp"));
+                link_url.insert(3, US_("mp"));
             } else if(link_protocol == US_("http://osump")) {
                 // http://osump:// -> osump://
                 link_url.erase(0, 7);
