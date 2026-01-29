@@ -793,8 +793,7 @@ bool Environment::minimizeWindow() {
             brokenMinimizeRepeatedSpamWorkaroundCounter++;
         }
         m_bRestoreFullscreen = true;
-        SDL_SetWindowFullscreen(m_window, false);
-        SDL_SetWindowBordered(m_window, false);
+        disableFullscreen();
     } else {
         brokenMinimizeRepeatedSpamWorkaroundCounter = 0;
     }
@@ -818,12 +817,16 @@ void Environment::enableFullscreen() {
     SDL_SetWindowFullscreenMode(m_window, nullptr);
     if(!SDL_SetWindowFullscreen(m_window, true)) {
         debugLog("Failed to enable fullscreen: {:s}", SDL_GetError());
+    } else {
+        SDL_SetWindowBordered(m_window, false);
     }
 }
 
 void Environment::disableFullscreen() {
     if(!SDL_SetWindowFullscreen(m_window, false)) {
         debugLog("Failed to disable fullscreen: {:s}", SDL_GetError());
+    } else {
+        SDL_SetWindowBordered(m_window, true);
     }
 }
 

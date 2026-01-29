@@ -600,6 +600,8 @@ bool SDLMain::createWindow() {
     SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "0", SDL_HINT_NORMAL);
     SDL_SetHintWithPriority(SDL_HINT_TOUCH_MOUSE_EVENTS, "0", SDL_HINT_NORMAL);
     SDL_SetHintWithPriority(SDL_HINT_MOUSE_EMULATE_WARP_WITH_RELATIVE, "0", SDL_HINT_NORMAL);
+    // don't conflict with our handling of it
+    SDL_SetHintWithPriority(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0", SDL_HINT_NORMAL);
 
     // create window
     m_window = SDL_CreateWindowWithProperties(props);

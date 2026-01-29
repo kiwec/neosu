@@ -221,8 +221,10 @@ class Environment {
         using enum WinFlags;
         using namespace flags::operators;
         // we do not use "real" fullscreen mode, so maximized+borderless+unoccluded is the same as fullscreen
+        // also return true if our window size is == the desktop res, i dont understand why sdl doesn't update this in tandem
         // also return true if we are pending a re-fullscreen, to avoid issues related to that and event ordering on alt-tab
-        return m_bRestoreFullscreen || flags::has<F_FULLSCREEN>(m_winflags) ||
+        return m_bRestoreFullscreen || (getWindowSize() == getNativeScreenSize()) ||
+               flags::has<F_FULLSCREEN>(m_winflags) ||
                (!flags::has<F_OCCLUDED>(m_winflags) && flags::has<F_BORDERLESS | F_MAXIMIZED>(m_winflags));
     }
     [[nodiscard]] constexpr bool winResizable() const { return flags::has<WinFlags::F_RESIZABLE>(m_winflags); }
