@@ -57,7 +57,7 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
     std::wstring link_wstr = this->link.to_wstring();
 
     // Detect multiplayer invite links
-    if(this->link.startsWith("osump://")) {
+    if(this->link.startsWith(US_("osump://"))) {
         if(ui->getRoom()->isVisible()) {
             ui->getNotificationOverlay()->addNotification("You are already in a multiplayer room.");
             return;
