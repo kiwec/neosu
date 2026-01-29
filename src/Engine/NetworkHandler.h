@@ -17,7 +17,7 @@ typedef void CURL;
 class Engine;
 
 // generic networking things, not BANCHO::Net
-namespace NeoNet {
+namespace Mc::Net {
 struct NetworkImpl;
 
 // standalone helper
@@ -135,5 +135,5 @@ class NetworkHandler {
 
 }  // namespace NeoNet
 
-using NeoNet::NetworkHandler;
+using Mc::Net::NetworkHandler;
 extern std::unique_ptr<NetworkHandler> networkHandler;

@@ -85,7 +85,7 @@ class DownloadManager {
 
         debugLog("Downloading {:s}", request->url.c_str());
 
-        NeoNet::RequestOptions options{
+        Mc::Net::RequestOptions options{
             .user_agent = BanchoState::user_agent,
             .progress_callback =
                 [request](float progress) { request->progress.store(progress, std::memory_order_release); },
@@ -96,12 +96,12 @@ class DownloadManager {
 
         // capture s_download_manager as a copy to keep DownloadManager alive during callback
         networkHandler->httpRequestAsync(request->url, std::move(options),
-                                         [self = s_download_manager, request](NeoNet::Response response) {
+                                         [self = s_download_manager, request](Mc::Net::Response response) {
                                              self->onDownloadComplete(request, std::move(response));
                                          });
     }
 
-    void onDownloadComplete(const std::shared_ptr<DownloadRequest>& request, NeoNet::Response response) {
+    void onDownloadComplete(const std::shared_ptr<DownloadRequest>& request, Mc::Net::Response response) {
         if(this->shutting_down.load(std::memory_order_acquire)) return;
         this->currently_downloading.store(false, std::memory_order_release);
 

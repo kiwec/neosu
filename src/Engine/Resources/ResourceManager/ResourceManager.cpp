@@ -14,6 +14,7 @@
 #include "Sound.h"
 #include "SoundEngine.h"
 #include "TextureAtlas.h"
+#include "Timing.h"
 #include "VertexArrayObject.h"
 #include "Hashing.h"
 
@@ -603,7 +604,8 @@ Shader *ResourceManager::createShader(std::string vertexShader, std::string frag
 RenderTarget *ResourceManager::createRenderTarget(int x, int y, int width, int height,
                                                   MultisampleType multiSampleType) {
     RenderTarget *rt = g->createRenderTarget(x, y, width, height, multiSampleType);
-    setResourceName(rt, fmt::format("_RT_{:d}x{:d}", width, height));
+    // for uniqueness, use timestamp
+    setResourceName(rt, fmt::format("_RT_{:d}x{:d}-{}", width, height, Timing::getTicksNS()));
 
     loadResource(rt, true);
 
@@ -616,7 +618,7 @@ RenderTarget *ResourceManager::createRenderTarget(int width, int height, Multisa
 
 TextureAtlas *ResourceManager::createTextureAtlas(int width, int height, bool filtering) {
     auto *ta = new TextureAtlas(width, height, filtering);
-    setResourceName(ta, fmt::format("_TA_{:d}x{:d}", width, height));
+    setResourceName(ta, fmt::format("_TA_{:d}x{:d}-{}", width, height, Timing::getTicksNS()));
 
     loadResource(ta, false);
 

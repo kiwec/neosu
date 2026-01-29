@@ -796,7 +796,7 @@ void Chat::mark_as_read(ChatChannel *chan) {
     chan->read = true;
 
     std::string url{"web/osu-markasread.php?"};
-    url.append(fmt::format("channel={:s}", NeoNet::urlEncode(chan->name.utf8View())));
+    url.append(fmt::format("channel={:s}", Mc::Net::urlEncode(chan->name.utf8View())));
     BANCHO::Api::append_auth_params(url);
 
     BANCHO::Api::Request request;

@@ -496,10 +496,10 @@ void OsuDirectScreen::search(std::string_view query) {
     const i32 filter = cv::direct_ranking_status_filter.getInt();
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     std::string url = fmt::format("{}osu.{}/web/osu-search.php?m=0&r={}&q={}&p={}", scheme, BanchoState::endpoint,
-                                  filter, NeoNet::urlEncode(query), offset);
+                                  filter, Mc::Net::urlEncode(query), offset);
     BANCHO::Api::append_auth_params(url);
 
-    NeoNet::RequestOptions options{
+    Mc::Net::RequestOptions options{
         .user_agent = "osu!",
         .timeout = 5,
         .connect_timeout = 5,
@@ -513,7 +513,7 @@ void OsuDirectScreen::search(std::string_view query) {
     this->loading = true;
 
     networkHandler->httpRequestAsync(
-        url, std::move(options), [current_request_id, this](const NeoNet::Response& response) {
+        url, std::move(options), [current_request_id, this](const Mc::Net::Response& response) {
             this->loading = false;
 
             if(current_request_id != this->request_id) {

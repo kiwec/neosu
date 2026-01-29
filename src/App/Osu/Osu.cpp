@@ -78,8 +78,6 @@ using namespace flags::operators;
 
 Osu *osu{nullptr};
 
-App *NEOSU_create_app_real() { return new Osu(); }
-
 // prevents score submission when/if a protected convar is changed during gameplay
 void Osu::globalOnSetValueProtectedCallback() {
     if(likely(this->map_iface)) {
@@ -176,7 +174,7 @@ Osu::Osu()
     Environment::createDirectory(NEOSU_SCREENSHOTS_PATH);
     Environment::createDirectory(NEOSU_SKINS_PATH);
 
-    env->setWindowTitle("neosu");
+    // env->setWindowTitle("neosu");
 
     engine->getConsoleBox()->setRequireShiftToActivate(true);
     mouse->addListener(this);
@@ -418,6 +416,15 @@ Osu::Osu()
 }
 
 Osu::~Osu() {
+    // remove mouse listener status (TODO: don't register ourselves explicitly, let apprunner do that)
+    {
+        mouse->removeListener(this);
+        // another piece of global state, don't forget!
+        // this entire mouse offset/scale handling being done in-app instead of in-engine causes more trouble than it's worth
+        mouse->setOffset({0.f, 0.f});
+        mouse->setScale({1.f, 1.f});
+    }
+
     // remove the static callbacks
     cvars().setCVSubmittableCheckFunc({});
     ConVar::setOnSetValueGameplayCallback({});
@@ -433,11 +440,117 @@ Osu::~Osu() {
     VolNormalization::shutdown();
     BANCHO::Net::cleanup_networking();
 
+    // destroy playing music
+    if(this->map_iface && this->map_iface->getMusic()) {
+        resourceManager->destroyResource(this->map_iface->getMusic(), ResourceDestroyFlags::RDF_FORCE_BLOCKING);
+        this->map_iface.reset();
+    }
+
+    // clear main menu maps early, just in case
+    if(this->UIReady()) {
+        this->ui_memb->getMainMenu()->clearPreloadedMaps();
+    }
+
     this->bUILoaded = false;
     this->ui_memb.reset();  // destroy ui layers
     ui = nullptr;
     db.reset();  // shutdown db
 
+    // destroy all skin sounds (and potentially loading skin), then skin
+    if(this->skinScheduledToLoad && this->skinScheduledToLoad != this->skin.get()) {
+        for(auto *sound : this->skinScheduledToLoad->sounds) {
+            resourceManager->destroyResource(sound, ResourceDestroyFlags::RDF_FORCE_BLOCKING);
+        }
+        this->skinScheduledToLoad->sounds.clear();
+        SAFE_DELETE(this->skinScheduledToLoad);
+    }
+    if(this->skin) {
+        for(auto *sound : this->skin->sounds) {
+            resourceManager->destroyResource(sound, ResourceDestroyFlags::RDF_FORCE_BLOCKING);
+        }
+        this->skin->sounds.clear();
+        this->skin.reset();
+    }
+
+    // destroy rendertargets
+    resourceManager->destroyResource(this->backBuffer, ResourceDestroyFlags::RDF_FORCE_BLOCKING);
+    this->backBuffer = nullptr;
+    resourceManager->destroyResource(this->playfieldBuffer, ResourceDestroyFlags::RDF_FORCE_BLOCKING);
+    this->playfieldBuffer = nullptr;
+    resourceManager->destroyResource(this->sliderFrameBuffer, ResourceDestroyFlags::RDF_FORCE_BLOCKING);
+    this->sliderFrameBuffer = nullptr;
+    resourceManager->destroyResource(this->AAFrameBuffer, ResourceDestroyFlags::RDF_FORCE_BLOCKING);
+    this->AAFrameBuffer = nullptr;
+    resourceManager->destroyResource(this->frameBuffer, ResourceDestroyFlags::RDF_FORCE_BLOCKING);
+    this->frameBuffer = nullptr;
+    resourceManager->destroyResource(this->frameBuffer2, ResourceDestroyFlags::RDF_FORCE_BLOCKING);
+    this->frameBuffer2 = nullptr;
+
+    // release cursor
+    env->setCursorClip(false, {});
+    env->setCursorVisible(true);
+
+    // TODO: this is disgusting and completely manual, but required if we want to support re-entrancy
+    {
+        cv::background_image_cache_size.reset();
+        cv::background_image_eviction_delay_frames.reset();
+        cv::background_image_loading_delay.reset();
+        cv::load_beatmap_background_images.reset();
+        cv::cmd::save.reset();
+        cv::cursor_trail_max_size.reset();
+        cv::fposu_curved.reset();
+        cv::fposu_distance.reset();
+        cv::fposu_noclip.reset();
+        cv::skin_use_skin_hitsounds.reset();
+        cv::options_slider_quality.reset();
+        cv::options_high_quality_sliders.reset();
+        cv::rich_presence.reset();
+        cv::rich_presence_map_backgrounds.reset();
+        cv::snd_soloud_backend.reset();
+        cv::loudness_calc_threads.reset();
+        cv::songbrowser_search_hardcoded_filter.reset();
+        cv::volume_master.reset();
+        cv::volume_effects.reset();
+        cv::volume_music.reset();
+        cv::hud_volume_size_multiplier.reset();
+        cv::resolution.reset();
+        cv::letterboxed_resolution.reset();
+        cv::windowed_resolution.reset();
+        cv::animation_speed_override.reset();
+        cv::ui_scale.reset();
+        cv::ui_scale_to_dpi.reset();
+        cv::letterboxing.reset();
+        cv::letterboxing_offset_x.reset();
+        cv::letterboxing_offset_y.reset();
+        cv::confine_cursor_windowed.reset();
+        cv::confine_cursor_fullscreen.reset();
+        cv::confine_cursor_never.reset();
+        cv::osu_folder.reset();
+        cv::slider_curve_points_separation.reset();
+        cv::skin.reset();
+        cv::skin_reload.reset();
+        cv::mod_mafham.reset();
+        cv::mod_fposu.reset();
+        cv::playfield_mirror_horizontal.reset();
+        cv::playfield_mirror_vertical.reset();
+        cv::playfield_rotation.reset();
+        cv::speed_override.reset();
+        cv::mod_doubletime_dummy.reset();
+        cv::mod_halftime_dummy.reset();
+        cv::draw_songbrowser_thumbnails.reset();
+        cv::bleedingedge.reset();
+        cv::mod_fullalternate.reset();
+        cv::mod_singletap.reset();
+        cv::mod_no_keylock.reset();
+        cv::snd_freq.reset();
+        cv::win_snd_wasapi_exclusive.reset();
+        cv::win_snd_wasapi_buffer_size.reset();
+        cv::win_snd_wasapi_period_size.reset();
+        cv::win_snd_wasapi_event_callbacks.reset();
+        cv::asio_buffer_size.reset();
+        cv::snd_output_device.reset();
+        cv::win_global_media_hotkeys.reset();
+    }
     // "osu" will be set to null when global_osu_ is deleted (at the end of all automatically deleted members)
 }
 

@@ -106,7 +106,7 @@ void fetch_online_scores(const DatabaseBeatmap *beatmap) {
 
     // Map info
     std::string map_filename = env->getFileNameFromFilePath(beatmap->getFilePath());
-    url.append(fmt::format("&f={}", NeoNet::urlEncode(map_filename)));
+    url.append(fmt::format("&f={}", Mc::Net::urlEncode(map_filename)));
     url.append(fmt::format("&c={:s}", beatmap->getMD5().string()));
     url.append(fmt::format("&i={}", beatmap->getSetID()));
 

@@ -87,7 +87,7 @@ void send_request(const Request &request) {
         return;
     }
 
-    NeoNet::RequestOptions options{
+    Mc::Net::RequestOptions options{
         .user_agent = "osu!",
         .timeout = 60,
         .connect_timeout = 5,
@@ -96,7 +96,7 @@ void send_request(const Request &request) {
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto query_url = fmt::format("{:s}osu.{:s}{:s}", scheme, BanchoState::endpoint, request.path);
 
-    networkHandler->httpRequestAsync(query_url, std::move(options), [request](NeoNet::Response response) {
+    networkHandler->httpRequestAsync(query_url, std::move(options), [request](Mc::Net::Response response) {
         if(response.success) {
             Packet api_response;
             api_response.id = request.type;

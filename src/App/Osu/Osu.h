@@ -43,11 +43,10 @@ extern UI *ui;
 
 class Osu final : public App, public MouseListener {
     NOCOPY_NOMOVE(Osu)
-   protected:
+   public:
     Osu();
 
    private:
-    friend App *NEOSU_create_app_real();
     struct GlobalOsuCtorDtorThing {
         NOCOPY_NOMOVE(GlobalOsuCtorDtorThing)
        public:

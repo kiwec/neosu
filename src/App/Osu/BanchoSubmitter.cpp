@@ -27,7 +27,7 @@ void submit_score(FinishedScore score) {
     std::array<u8, 32> iv;
     crypto::rng::get_rand(iv);
 
-    NeoNet::RequestOptions options{
+    Mc::Net::RequestOptions options{
         .user_agent = "osu!",
         .timeout = 60,
         .connect_timeout = 5,
@@ -195,7 +195,7 @@ void submit_score(FinishedScore score) {
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto url = fmt::format("{}osu.{}/web/osu-submit-modular-selector.php", scheme, BanchoState::endpoint);
-    networkHandler->httpRequestAsync(url, std::move(options), [](NeoNet::Response response) {
+    networkHandler->httpRequestAsync(url, std::move(options), [](Mc::Net::Response response) {
         if(response.success) {
             // TODO: handle success (pp, etc + error codes)
             debugLog("Score submit result: {}", response.body);

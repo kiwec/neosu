@@ -58,17 +58,14 @@ struct NotificationInfo {
     NotificationPreset preset{NotificationPreset::INFO};
 };
 
+class Engine;
 class App : public KeyboardListener {
     NOCOPY_NOMOVE(App)
-
    protected:
+    friend Engine;
     App() = default;
 
    public:
-    // load app dynamically, possibly
-    // dummy = true means don't try to return a dynamic base class
-    static App* create(bool dummy);
-
     ~App() override = default;
 
     virtual void draw() {}
@@ -99,9 +96,5 @@ class App : public KeyboardListener {
 };
 
 extern std::unique_ptr<App> app;
-
-extern "C" {
-extern EXPORT_NAME_ App* NEOSU_create_app_real();
-}
 
 #endif

@@ -67,7 +67,11 @@ ModFPoSu::ModFPoSu() {
     this->makeBackgroundCube();
 }
 
-ModFPoSu::~ModFPoSu() { anim::deleteExistingAnimation(&this->fZoomFOVAnimPercent); }
+ModFPoSu::~ModFPoSu() {
+    anim::deleteExistingAnimation(&this->fZoomFOVAnimPercent);
+    resourceManager->destroyResource(this->vaoCube);
+    resourceManager->destroyResource(this->vao);
+}
 
 void ModFPoSu::draw() {
     if(!cv::mod_fposu.getBool()) return;

@@ -115,7 +115,7 @@ class MainMenu::MainButton final : public CBaseUIButton {
 
 MainMenu::MainMenu() : UIScreen() {
     // engine settings
-    mouse->addListener(this);
+    mouse->addListener(this);  // TODO: why is this special-cased here?
 
     this->fSizeAddAnim = 0.0f;
     this->fCenterOffsetAnim = 0.0f;
@@ -283,6 +283,8 @@ MainMenu::MainMenu() : UIScreen() {
 }
 
 MainMenu::~MainMenu() {
+    mouse->removeListener(this);
+
     this->clearPreloadedMaps();
     SAFE_DELETE(this->updateAvailableButton);
 

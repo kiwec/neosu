@@ -6,9 +6,9 @@ neosu_SOURCES = \
 	libraries/glad/glad_egl.cpp \
 	libraries/glad/glad_gl.cpp \
 	libraries/sha256.cpp \
-	src/App/App.cpp \
+	src/App/AppRegistry.cpp \
+	src/App/AppRunner.cpp \
 	src/App/Osu/AbstractBeatmapInterface.cpp \
-	src/App/Osu/AppEnvInterop.cpp \
 	src/App/Osu/AvatarManager.cpp \
 	src/App/Osu/BackgroundImageHandler.cpp \
 	src/App/Osu/Bancho.cpp \
@@ -43,6 +43,7 @@ neosu_SOURCES = \
 	src/App/Osu/MapExporter.cpp \
 	src/App/Osu/ModFPoSu.cpp \
 	src/App/Osu/ModSelector.cpp \
+	src/App/Osu/NeosuEnvInterop.cpp \
 	src/App/Osu/NeosuUrl.cpp \
 	src/App/Osu/NotificationOverlay.cpp \
 	src/App/Osu/OptionsOverlay/OptionsOverlay.cpp \
@@ -101,7 +102,6 @@ neosu_SOURCES = \
 	src/App/Osu/VolumeOverlay.cpp \
 	src/App/Osu/score.cpp \
 	src/App/Tests/BaseFrameworkTest/BaseFrameworkTest.cpp \
-	src/App/Tests/TestRunner.cpp \
 	src/Binary/curl_blob.cpp \
 	src/Binary/misc_bin.cpp \
 	src/Binary/shaders.cpp \

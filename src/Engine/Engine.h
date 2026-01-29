@@ -25,11 +25,11 @@ class McFont;
 class InputDevice;
 class SoundEngine;
 
-namespace NeoNet {
+namespace Mc::Net {
 class NetworkHandler;
 }
 
-using NeoNet::NetworkHandler;
+using Mc::Net::NetworkHandler;
 class ResourceManager;
 class AsyncIOHandler;
 class DirectoryWatcher;

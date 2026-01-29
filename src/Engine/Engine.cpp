@@ -3,7 +3,7 @@
 
 #include "Environment.h"
 
-#include "App.h"
+#include "AppRunner.h"
 #include "MakeDelegateWrapper.h"
 
 #include "AsyncIOHandler.h"
@@ -50,7 +50,7 @@ Engine::Engine() {
     crypto::init();
 
     // always keep a dummy App() alive so we don't have to null-check for "app" inside engine code
-    app.reset(App::create(true));
+    app.reset(new App());
 
     this->guiContainer = nullptr;
     this->visualProfiler = nullptr;
@@ -133,7 +133,7 @@ Engine::~Engine() {
 
     // reset() all global unique_ptrs
     debugLog("Engine: Freeing app...");
-    app.reset(App::create(true));  // re-create a dummy app and delete it again at the end
+    app.reset(new App());  // re-create a dummy app and delete it again at the end
 
     debugLog("Engine: Freeing engine GUI...");
     if(const auto &cbox = Engine::consoleBox.load(std::memory_order_acquire); cbox != nullptr) {
@@ -233,7 +233,11 @@ void Engine::loadApp() {
         //*****************//
 
 #ifndef BUILD_TOOLS_ONLY
-        app.reset(App::create(false));
+        {
+            const auto &it = env->getLaunchArgs().find("-testapp");
+            const bool testMode = (it != env->getLaunchArgs().end());
+            app = std::make_unique<AppRunner>(testMode, testMode ? it->second.value_or("") : "");
+        }
         this->runtime_assert(!!app, "App failed to initialize!");
 #endif
 
@@ -333,18 +337,6 @@ void Engine::onUpdate() {
         }
 
         {
-            VPROF_BUDGET("AnimationHandler::update", VPROF_BUDGETGROUP_UPDATE);
-            anim::update();
-        }
-
-        {
-            VPROF_BUDGET("InputDevices::update", VPROF_BUDGETGROUP_UPDATE);
-            for(auto *inputDevice : this->inputDevices) {
-                inputDevice->update();
-            }
-        }
-
-        {
             // VPROF_BUDGET("SoundEngine::update", VPROF_BUDGETGROUP_UPDATE);
             soundEngine->update();  // currently does nothing anyways
         }
@@ -355,15 +347,28 @@ void Engine::onUpdate() {
         }
 
         {
-            VPROF_BUDGET("GUI::update", VPROF_BUDGETGROUP_UPDATE);
-            CBaseUIEventCtx c;
-            if(this->guiContainer) this->guiContainer->update(c);
-        }
-
-        {
             VPROF_BUDGET("NetworkHandler::update", VPROF_BUDGETGROUP_UPDATE);
             // run networking response callbacks, if any
             networkHandler->update();
+        }
+
+        {
+            VPROF_BUDGET("AnimationHandler::update", VPROF_BUDGETGROUP_UPDATE);
+            anim::update();
+        }
+
+        // dispatch events + update gui
+        {
+            VPROF_BUDGET("InputDevices::update", VPROF_BUDGETGROUP_UPDATE);
+            for(auto *inputDevice : this->inputDevices) {
+                inputDevice->update();
+            }
+        }
+
+        {
+            VPROF_BUDGET("GUI::update", VPROF_BUDGETGROUP_UPDATE);
+            CBaseUIEventCtx c;
+            if(this->guiContainer) this->guiContainer->update(c);
         }
     }
 

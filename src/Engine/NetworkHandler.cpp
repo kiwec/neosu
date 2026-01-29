@@ -15,7 +15,7 @@
 #include <utility>
 #include <queue>
 
-namespace NeoNet {
+namespace Mc::Net {
 
 std::string urlEncode(std::string_view unencodedString) noexcept {
     CURL* curl = curl_easy_init();

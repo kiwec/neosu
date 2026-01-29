@@ -29,18 +29,18 @@ void handle_neosu_url(const char *url) {
 
         auto endpoint = params[3];
 
-        auto code = NeoNet::urlEncode(params[4]);
-        auto proof = NeoNet::urlEncode(crypto::conv::encode64(BanchoState::oauth_verifier));
+        auto code = Mc::Net::urlEncode(params[4]);
+        auto proof = Mc::Net::urlEncode(crypto::conv::encode64(BanchoState::oauth_verifier));
         auto url = fmt::format("https://{}/connect/finish?code={}&proof={}", endpoint, code, proof);
 
-        NeoNet::RequestOptions options{
+        Mc::Net::RequestOptions options{
             .user_agent = BanchoState::user_agent,
             .timeout = 30,
             .connect_timeout = 5,
             .follow_redirects = true,
         };
 
-        networkHandler->httpRequestAsync(url, std::move(options), [](NeoNet::Response response) {
+        networkHandler->httpRequestAsync(url, std::move(options), [](Mc::Net::Response response) {
             if(response.success) {
                 cv::mp_oauth_token.setValue(response.body);
                 BanchoState::reconnect();

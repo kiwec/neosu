@@ -56,7 +56,6 @@ class ResourceManager final {
     }
 
     void destroyResource(Resource *rs, ResourceDestroyFlags flags = ResourceDestroyFlags::RDF_DEFAULT);
-    void destroyResources();
 
     // async reload
     void reloadResource(Resource *rs, bool async = false);
@@ -88,8 +87,8 @@ class ResourceManager final {
     // fonts
     McFont *loadFont(std::string filepath, const std::string &resourceName, int fontSize = 16, bool antialiasing = true,
                      int fontDPI = 96);
-    McFont *loadFont(std::string filepath, const std::string &resourceName, const char16_t* characters, size_t numCharacters,
-                     int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
+    McFont *loadFont(std::string filepath, const std::string &resourceName, const char16_t *characters,
+                     size_t numCharacters, int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
 
     // sounds
     Sound *loadSound(std::string filepath, const std::string &resourceName, bool stream = false,
@@ -139,6 +138,7 @@ class ResourceManager final {
     [[nodiscard]] size_t getNumLoadingWorkAsyncDestroy() const;
 
    private:
+    void destroyResources();
     void loadResource(Resource *res, bool load);
 
     friend class Engine;

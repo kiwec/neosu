@@ -11,7 +11,7 @@
 
 struct CBaseUIEventCtx;
 
-namespace mc::tests {
+namespace Mc::Tests {
 
 class FrameworkTestButton;
 
@@ -58,6 +58,6 @@ class BaseFrameworkTest : public App, public MouseListener {
     // UI
     std::unique_ptr<FrameworkTestButton> m_testButton;
 };
-}  // namespace mc::tests
+}  // namespace Mc::Tests
 
 #endif

@@ -25,6 +25,9 @@ typedef struct SDL_Rect SDL_Rect;
 class Graphics;
 class UString;
 class Engine;
+namespace Mc {
+struct AppDescriptor;
+}
 
 class Environment;
 extern Environment *env;
@@ -77,19 +80,16 @@ class Environment {
         virtual bool handle_osz(const char * /*osz_path*/) { return false; }
         virtual void setup_system_integrations() {}
 
-        static void handle_existing_window([[maybe_unused]] int argc,
-                                           [[maybe_unused]] char *argv[]);  // only impl. for windows ATM
         Environment *env_p;
     };
 
    protected:
-    Interop *tryCreatingAppEnvInterop();  // run on init
-
     friend struct Interop;
     std::unique_ptr<Interop> m_interop;
 
    public:
-    Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
+    Environment(const Mc::AppDescriptor &appDesc,
+                const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                 const std::vector<std::string> &cmdlineVec);
     virtual ~Environment();
 

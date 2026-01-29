@@ -40,7 +40,7 @@ u64 last_packet_ms{0};
 double seconds_between_pings{1.0};
 std::string auth_token = "";
 bool use_websockets = false;
-std::shared_ptr<NeoNet::WSInstance> websocket{nullptr};
+std::shared_ptr<Mc::Net::WSInstance> websocket{nullptr};
 
 void parse_packets(u8 *data, size_t s_data) {
     Packet batch = {
@@ -78,7 +78,7 @@ void parse_packets(u8 *data, size_t s_data) {
 void attempt_logging_in() {
     assert(!BanchoState::is_online());
 
-    NeoNet::RequestOptions options{
+    Mc::Net::RequestOptions options{
         .post_data = BanchoState::build_login_packet(),
         .user_agent = "osu!",
         .timeout = 30,
@@ -93,7 +93,7 @@ void attempt_logging_in() {
     last_packet_ms = Timing::getTicksMS();
 
     // TODO: allow user to cancel login attempt
-    networkHandler->httpRequestAsync(query_url, std::move(options), [](NeoNet::Response response) {
+    networkHandler->httpRequestAsync(query_url, std::move(options), [](Mc::Net::Response response) {
         if(!response.success) {
             auto errmsg = fmt::format("Failed to log in: {}", response.error_msg);
             ui->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
@@ -127,7 +127,7 @@ void attempt_logging_in() {
 void send_bancho_packet_http(Packet outgoing) {
     if(auth_token.empty()) return;
 
-    NeoNet::RequestOptions options{
+    Mc::Net::RequestOptions options{
         .user_agent = "osu!",
         .timeout = 30,
         .connect_timeout = 5,
@@ -142,7 +142,7 @@ void send_bancho_packet_http(Packet outgoing) {
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
 
-    networkHandler->httpRequestAsync(query_url, std::move(options), [](NeoNet::Response response) {
+    networkHandler->httpRequestAsync(query_url, std::move(options), [](Mc::Net::Response response) {
         if(!response.success) {
             debugLog("Failed to send packet, HTTP error {}", response.response_code);
             return;
@@ -155,7 +155,7 @@ void send_bancho_packet_http(Packet outgoing) {
 void send_bancho_packet_ws(Packet outgoing) {
     if(auth_token.empty()) return;
 
-    if(websocket == nullptr || websocket->status == NeoNet::WSStatus::DISCONNECTED) {
+    if(websocket == nullptr || websocket->status == Mc::Net::WSStatus::DISCONNECTED) {
         // We have been disconnected in less than 5 seconds.
         // Don't try to reconnect, server clearly doesn't want us to.
         // (without this, we would be spamming retries every frame)
@@ -166,7 +166,7 @@ void send_bancho_packet_ws(Packet outgoing) {
             return;
         }
 
-        NeoNet::WSOptions options;
+        Mc::Net::WSOptions options;
         options.user_agent = "osu!";
         options.headers["x-mcosu-ver"] = BanchoState::neosu_version;
         options.headers["osu-token"] = auth_token;
@@ -179,7 +179,7 @@ void send_bancho_packet_ws(Packet outgoing) {
         websocket = new_websocket;
     }
 
-    if(websocket->status == NeoNet::WSStatus::UNSUPPORTED) {
+    if(websocket->status == Mc::Net::WSStatus::UNSUPPORTED) {
         // fallback to http!
         use_websockets = false;
         send_bancho_packet_http(outgoing);
@@ -323,7 +323,7 @@ void BanchoState::disconnect(bool shutdown) {
         packet.write<u32>(4);
         packet.write<u32>(0);
 
-        NeoNet::RequestOptions options{
+        Mc::Net::RequestOptions options{
             .post_data = std::string(reinterpret_cast<char *>(packet.memory), packet.pos),
             .user_agent = "osu!",
             .timeout = 5,

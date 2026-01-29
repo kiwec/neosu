@@ -58,7 +58,7 @@ void UpdateHandler::checkForUpdates(bool force_update) {
 
     debugLog("UpdateHandler: Checking for a newer version from {}", versionUrl);
 
-    NeoNet::RequestOptions options{
+    Mc::Net::RequestOptions options{
         .user_agent = BanchoState::user_agent,
         .timeout = 10,
         .connect_timeout = 5,
@@ -66,7 +66,7 @@ void UpdateHandler::checkForUpdates(bool force_update) {
 
     this->status = STATUS_CHECKING_FOR_UPDATE;
     networkHandler->httpRequestAsync(versionUrl, std::move(options),
-                                     [this, force_update](const NeoNet::Response &response) {
+                                     [this, force_update](const Mc::Net::Response &response) {
                                          this->onVersionCheckComplete(response.body, response.success, force_update);
                                      });
 }
@@ -127,7 +127,7 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
              cv::version.getFloat(), current_build_tms, latest_version, latest_build_tms);
     debugLog("UpdateHandler: Downloading {:s}", update_url);
 
-    NeoNet::RequestOptions options{
+    Mc::Net::RequestOptions options{
         .user_agent = BanchoState::user_agent,
         .timeout = 300,  // 5 minutes for large downloads
         .connect_timeout = 10,
@@ -136,7 +136,7 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
 
     this->status = STATUS_DOWNLOADING_UPDATE;
     networkHandler->httpRequestAsync(update_url, std::move(options),
-                                     [this, online_update_hash](const NeoNet::Response &response) {
+                                     [this, online_update_hash](const Mc::Net::Response &response) {
                                          this->onDownloadComplete(response.body, response.success, online_update_hash);
                                      });
 }

@@ -14,7 +14,7 @@
 
 #include "CBaseUIButton.h"
 
-namespace mc::tests {
+namespace Mc::Tests {
 class FrameworkTestButton : public CBaseUIButton {
     NOCOPY_NOMOVE(FrameworkTestButton)
    public:
@@ -186,4 +186,4 @@ void BaseFrameworkTest::onButtonChange(ButtonEvent event) {
 void BaseFrameworkTest::onWheelVertical(int delta) { debugLog("{}", delta); }
 void BaseFrameworkTest::onWheelHorizontal(int delta) { debugLog("{}", delta); }
 
-}  // namespace mc::tests
+}  // namespace Mc::Tests

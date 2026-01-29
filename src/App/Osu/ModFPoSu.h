@@ -1,5 +1,6 @@
 #pragma once
 // Copyright (c) 2019, Colin Brook & PG, All rights reserved.
+#include "noinclude.h"
 #include "Vectors.h"
 #include "Matrices.h"
 
@@ -17,6 +18,8 @@ class UString;
 class ModFPoSu3DModel;
 
 class ModFPoSu {
+    NOCOPY_NOMOVE(ModFPoSu);
+
    public:
     static constexpr const float SIZEDIV3D = 1.0f / 512.0f;  // 1.0f / (float)GameRules::OSU_COORD_WIDTH
 

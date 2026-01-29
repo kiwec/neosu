@@ -1,23 +1,21 @@
 // Copyright (c) 2026, WH, All rights reserved.
 #pragma once
 
-#ifndef TESTRUNNER_H
-#define TESTRUNNER_H
+#ifndef APPRUNNER_H
+#define APPRUNNER_H
 
 #include "App.h"
 #include "MouseListener.h"
 
 #include <memory>
-#include <optional>
 #include <string>
 
-namespace mc::tests {
-
-class TestRunner : public App, public MouseListener {
-    NOCOPY_NOMOVE(TestRunner)
+class AppRunner : public App, public MouseListener {
+    NOCOPY_NOMOVE(AppRunner)
    public:
-    explicit TestRunner(std::optional<std::string> testName);
-    ~TestRunner() override;
+    AppRunner() = delete;
+    AppRunner(bool testMode, std::string_view appName);
+    ~AppRunner() override;
 
     void draw() override;
     void update() override;
@@ -49,13 +47,15 @@ class TestRunner : public App, public MouseListener {
     void showNotification(const NotificationInfo &info) override;
 
    private:
-    void launchTest(const char *name);
+    void launchApp(const char *name);
     void returnToMenu();
 
-    std::unique_ptr<App> m_activeTest;
+    std::unique_ptr<App> m_activeApp;
     int m_iHoveredIndex{-1};
+    // let's launch the app when we release the mouse button instead of when initially pressing it
+    // prevents window focus fuckery
+    int m_iMouseDownIndex{-1};
+    bool m_bTestMode;
 };
-
-}  // namespace mc::tests
 
 #endif

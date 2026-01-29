@@ -249,6 +249,13 @@ class ConVar {
         this->removeCallback();
         this->removeChangeCallback();
     }
+    inline void reset() {
+        this->removeAllCallbacks();
+        this->invalidateCache();
+        this->hasServerValue = false;
+        this->hasSkinValue = false;
+        this->setServerProtected(CvarProtection::DEFAULT);
+    }
 
     // get
     [[nodiscard]] inline float getDefaultFloat() const { return static_cast<float>(this->dDefaultValue); }

@@ -22,6 +22,7 @@
 #include "DiffCalcTool.h"
 
 #include "environment_private.h"
+#include "AppDescriptor.h"
 
 #if defined(_WIN32)
 #include "WinDebloatDefs.h"
@@ -156,9 +157,14 @@ MAIN_FUNC /* int argc, char *argv[] */
         return (SDL_AppResult)NEOSU_run_diffcalc(argc, argv);
     }
 
-    // if a neosu instance is already running, send it a message then quit
-    // only works on windows for now
-    Environment::Interop::handle_existing_window(argc, argv);
+    // if we have an "existing window handler", let it run very early
+    // for the neosu implementation, this checks if an existing instance is running, and if it is,
+    // sends it a message (with the current argc+argv) and quits the current instance (so we might never proceed further in this process)
+    // (only works on windows for now)
+    const auto &appDesc = Mc::getDefaultAppDescriptor();
+    if(appDesc.handleExistingWindow) {
+        appDesc.handleExistingWindow(argc, argv);
+    }
 
     CrashHandler::init();  // initialize minidump handling
 
@@ -263,13 +269,13 @@ MAIN_FUNC /* int argc, char *argv[] */
     VPROF_ENTER_SCOPE("Main", VPROF_BUDGETGROUP_ROOT);
     VPROF_ENTER_SCOPE("SDL", VPROF_BUDGETGROUP_BETWEENFRAMES);
 
-    auto *fmain = new SDLMain(arg_map, arg_cmdline);  // need to allocate dynamically
+    auto *fmain = new SDLMain(appDesc, arg_map, arg_cmdline);  // need to allocate dynamically
     *appstate = fmain;
     return !fmain ? SDL_APP_FAILURE : fmain->initialize();
 #else
 
     // otherwise just put it on the stack
-    SDLMain fmain{arg_map, arg_cmdline};
+    SDLMain fmain{appDesc, arg_map, arg_cmdline};
     if(fmain.initialize() == SDL_APP_FAILURE) {
         SDL_AppQuit(&fmain, SDL_APP_FAILURE);
     }

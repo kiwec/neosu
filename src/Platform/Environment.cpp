@@ -13,7 +13,7 @@
 #include "ConVar.h"
 #include "Thread.h"
 
-#include "EnvironmentInterop.h"
+#include "AppDescriptor.h"
 #include "DirectX11Interface.h"
 #include "SDLGLInterface.h"
 
@@ -56,74 +56,14 @@ static_assert(SDL_WF_EQ(FULLSCREEN) && SDL_WF_EQ(OPENGL) && SDL_WF_EQ(OCCLUDED) 
               "outdated WinFlags enum");
 #undef SDL_WF_EQ
 
-#ifdef APP_LIBRARY_BUILD
-#include "dynutils.h"
-#endif
-
-void Environment::Interop::handle_existing_window(int argc, char *argv[]) {
-    auto args = std::vector(argv, argv + argc);
-    if(std::ranges::contains(args, "-testapp")) return;
-
-#ifndef APP_LIBRARY_BUILD
-    return NEOSU_handle_existing_window(argc, argv);
-#else
-    auto *selfHandle = dynutils::load_lib(nullptr);
-    assert(selfHandle);
-
-    using NEOSU_handle_existing_window_t = void(int argc, char *argv[]);
-    auto *pHandler = dynutils::load_func<NEOSU_handle_existing_window_t>(selfHandle, "NEOSU_handle_existing_window");
-    if(pHandler) {
-        debugLog("got handler function at {:p}", (void *)pHandler);
-        pHandler(argc, argv);  // this may exit the program
-    } else {
-        debugLog("could not resolve handler function");
-        debugLog(dynutils::get_error());
-    }
-
-    dynutils::unload_lib(selfHandle);
-
-    return;
-#endif
-}
-
-Environment::Interop *Environment::tryCreatingAppEnvInterop() {
-    Interop *ret = nullptr;
-#ifndef APP_LIBRARY_BUILD
-    ret = static_cast<Interop *>(NEOSU_create_env_interop(this));
-#else
-    auto *selfHandle = dynutils::load_lib(nullptr);
-    assert(selfHandle);
-
-    using NEOSU_create_env_interop_t = void *(void *environmentPtr);
-    auto *pInteropCreator = dynutils::load_func<NEOSU_create_env_interop_t>(selfHandle, "NEOSU_create_env_interop");
-    if(pInteropCreator) {
-        debugLog("got app env interop creator function at {:p}", (void *)pInteropCreator);
-        ret = static_cast<Interop *>(pInteropCreator(this));
-        if(ret) {
-            debugLog("got app interop at {:p}", (void *)ret);
-        }
-    }
-
-    if(!ret) {
-        ret = new Interop(this);
-        debugLog("could not resolve app env interop creator function");
-        debugLog(dynutils::get_error());
-    }
-
-    dynutils::unload_lib(selfHandle);
-
-#endif
-    assert(ret);
-    return ret;
-}
-
 Environment *env{nullptr};
 
 SDL_Environment *Environment::s_sdlenv{nullptr};
 
-Environment::Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
+Environment::Environment(const Mc::AppDescriptor &appDesc,
+                         const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                          const std::vector<std::string> &cmdlineVec)
-    : m_interop(argMap.contains("-testapp") ? new Interop(this) : tryCreatingAppEnvInterop()),
+    : m_interop(appDesc.createInterop ? static_cast<Interop *>(appDesc.createInterop(this)) : new Interop(this)),
       m_mArgMap(argMap),
       m_vCmdLine(cmdlineVec),
       m_cursorIcons(/*lazy init*/) {
@@ -1080,8 +1020,8 @@ void Environment::setCursorVisible(bool visible) {
             return;
         }
         m_bHideCursorPending = false;
-        setCursor(CURSORTYPE::CURSOR_NORMAL);
         SDL_HideCursor();
+        setCursor(CURSORTYPE::CURSOR_NORMAL);
 
         if(mouse && mouse->isRawInputWanted()) {  // re-enable rawinput
             setRawMouseInput(true);

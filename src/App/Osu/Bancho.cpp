@@ -900,9 +900,9 @@ void BanchoState::handle_packet(Packet &packet) {
                 }
 
                 // Submit map
-                NeoNet::RequestOptions options{
+                Mc::Net::RequestOptions options{
                     .user_agent = "osu!",
-                    .mime_parts{NeoNet::RequestOptions::MimePart{
+                    .mime_parts{Mc::Net::RequestOptions::MimePart{
                         .filename = fmt::format("{}.osu", md5.string()),
                         .name = "osu_file",
                         .data = std::move(osu_file),

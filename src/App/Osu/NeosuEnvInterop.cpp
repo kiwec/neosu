@@ -1,4 +1,4 @@
-#include "EnvironmentInterop.h"
+#include "NeosuEnvInterop.h"
 #include "Environment.h"
 
 #include "OsuConVars.h"
@@ -16,12 +16,12 @@
 #include "UI.h"
 #include "Logging.h"
 
-struct OsuEnvInterop : public Environment::Interop {
-    NOCOPY_NOMOVE(OsuEnvInterop)
+struct NeosuEnvInterop : public Environment::Interop {
+    NOCOPY_NOMOVE(NeosuEnvInterop)
    public:
-    OsuEnvInterop() = delete;
-    OsuEnvInterop(Environment *env_ptr) : Interop(env_ptr) {}
-    ~OsuEnvInterop() override = default;
+    NeosuEnvInterop() = delete;
+    NeosuEnvInterop(Environment *env_ptr) : Interop(env_ptr) {}
+    ~NeosuEnvInterop() override = default;
 
     bool handle_cmdline_args(const std::vector<std::string> &args) override;
     bool handle_osk(const char *osk_path) override;
@@ -29,15 +29,17 @@ struct OsuEnvInterop : public Environment::Interop {
     void setup_system_integrations() override;
 };
 
-void *NEOSU_create_env_interop(void *void_envptr) {
+namespace neosu {
+void *createInterop(void *void_envptr) {
     assert(void_envptr);
     auto *envptr = static_cast<Environment *>(void_envptr);
-    return new OsuEnvInterop(envptr);
+    return new NeosuEnvInterop(envptr);
 }
+}  // namespace neosu
 
 // drag-drop/file associations/registry stuff below
-bool OsuEnvInterop::handle_osk(const char *osk_path) {
-    if(!Skin::unpack(osk_path)) return false;
+bool NeosuEnvInterop::handle_osk(const char *osk_path) {
+    if(!ui || !osu || !Skin::unpack(osk_path)) return false;
 
     auto folder_name = Environment::getFileNameFromFilePath(osk_path);
     folder_name.erase(folder_name.size() - 4);  // remove .osk extension
@@ -48,7 +50,7 @@ bool OsuEnvInterop::handle_osk(const char *osk_path) {
     return true;
 }
 
-bool OsuEnvInterop::handle_osz(const char *osz_path) {
+bool NeosuEnvInterop::handle_osz(const char *osz_path) {
     if(!osu) return false;
 
     if(osu->isInPlayMode()) {
@@ -106,7 +108,9 @@ bool OsuEnvInterop::handle_osz(const char *osz_path) {
     return true;
 }
 
-bool OsuEnvInterop::handle_cmdline_args(const std::vector<std::string> &args) {
+bool NeosuEnvInterop::handle_cmdline_args(const std::vector<std::string> &args) {
+    if(!osu || !db) return false;
+
     bool need_to_reload_database = false;
 
     for(const auto &arg : args) {
@@ -255,7 +259,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
     }
 
     // else check the custom registered message
-    OsuEnvInterop *interop{static_cast<OsuEnvInterop *>(userdata)};
+    NeosuEnvInterop *interop{static_cast<NeosuEnvInterop *>(userdata)};
 
     // reconstruct the mapping/event names from the identifier passed in lParam
     auto sender_pid = static_cast<DWORD>(msg->wParam);
@@ -319,7 +323,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
 }
 }  // namespace
 
-void OsuEnvInterop::setup_system_integrations() {
+void NeosuEnvInterop::setup_system_integrations() {
     if(!register_hotkeys()) {
         unregister_hotkeys();
         // don't set up a callback
@@ -426,7 +430,7 @@ void OsuEnvInterop::setup_system_integrations() {
     RegCloseKey(osz_key);
 }
 
-void NEOSU_handle_existing_window(int argc, char *argv[]) {
+void neosu::handleExistingWindow(int argc, char *argv[]) {
     // if a neosu instance is already running, send it a message then quit
     HWND existing_window = FindWindow(TEXT(PACKAGE_NAME), nullptr);
     if(existing_window) {
@@ -508,8 +512,10 @@ void NEOSU_handle_existing_window(int argc, char *argv[]) {
 }
 
 #else  // not implemented
-void OsuEnvInterop::setup_system_integrations() { return; }
+void NeosuEnvInterop::setup_system_integrations() { return; }
 
-void NEOSU_handle_existing_window(int /*argc*/, char * /*argv*/[]) {}
+namespace neosu {
+void handleExistingWindow(int /*argc*/, char * /*argv*/[]) {}
+}  // namespace neosu
 
 #endif

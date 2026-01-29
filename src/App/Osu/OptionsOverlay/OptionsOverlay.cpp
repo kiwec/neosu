@@ -3107,7 +3107,7 @@ void OptionsOverlayImpl::onLogInClicked(bool left, bool right) {
             crypto::rng::get_rand(BanchoState::oauth_verifier);
             crypto::hash::sha256(&BanchoState::oauth_verifier[0], 32, &BanchoState::oauth_challenge[0]);
 
-            auto challenge_b64 = NeoNet::urlEncode(crypto::conv::encode64(BanchoState::oauth_challenge));
+            auto challenge_b64 = Mc::Net::urlEncode(crypto::conv::encode64(BanchoState::oauth_challenge));
             auto url = fmt::format("https://{}/connect/start?challenge={}", BanchoState::endpoint, challenge_b64);
 
             env->openURLInDefaultBrowser(url);
