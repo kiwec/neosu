@@ -183,10 +183,8 @@ class UString {
                                      std::optional<int> endOpt = std::nullopt) const noexcept;
 
     // iterators for range-based for loops
-    [[nodiscard]] constexpr auto begin() noexcept { return this->sUnicode.begin(); }
-    [[nodiscard]] constexpr auto end() noexcept { return this->sUnicode.end(); }
-    [[nodiscard]] constexpr auto begin() const noexcept { return this->sUnicode.begin(); }
-    [[nodiscard]] constexpr auto end() const noexcept { return this->sUnicode.end(); }
+    [[nodiscard]] constexpr const auto begin() const noexcept { return this->sUnicode.begin(); }
+    [[nodiscard]] constexpr const auto end() const noexcept { return this->sUnicode.end(); }
     [[nodiscard]] constexpr auto cbegin() const noexcept { return this->sUnicode.cbegin(); }
     [[nodiscard]] constexpr auto cend() const noexcept { return this->sUnicode.cend(); }
 
@@ -199,11 +197,11 @@ class UString {
 
     void erase(int offset, int count) noexcept;
 
-    inline constexpr const char16_t &front() noexcept {
+    [[nodiscard]] inline constexpr const char16_t &front() const noexcept {
         assert(!this->isEmpty());
         return operator[](0);
     }
-    inline constexpr const char16_t &back() noexcept {
+    [[nodiscard]] inline constexpr const char16_t &back() const noexcept {
         assert(!this->isEmpty());
         return operator[](this->length() - 1);
     }
