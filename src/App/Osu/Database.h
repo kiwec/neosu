@@ -37,7 +37,7 @@ class DatabaseBeatmap;
 using BeatmapDifficulty = DatabaseBeatmap;
 using BeatmapSet = DatabaseBeatmap;
 
-#define NEOSU_MAPS_DB_VERSION 20260130
+#define NEOSU_MAPS_DB_VERSION 20260202
 #define NEOSU_SCORE_DB_VERSION 20240725
 
 class Database;

@@ -997,7 +997,12 @@ void Database::loadMaps() {
                         neosu_maps.skip_string();  // sSource
                         neosu_maps.skip_string();  // sTags
                         MD5Hash md5;
-                        (void)neosu_maps.read_hash_chars(md5);  // TODO: validate
+                        if(version >= 20260202) {
+                            // storing as the raw digest bytes past this ver
+                            (void)neosu_maps.read_hash_digest(md5);  // TODO: validate
+                        } else {
+                            (void)neosu_maps.read_hash_chars(md5);  // TODO: validate
+                        }
                         // other fixed-sized fields in the middle... try adding new stuff at the end so this doesn't break in the future
                         neosu_maps.skip_bytes(sizeof(f32) + sizeof(f32) + sizeof(f32) + sizeof(f32) + sizeof(f64) +
                                               sizeof(u32) + sizeof(u64) + sizeof(i16) + sizeof(i16) + sizeof(u16) +
@@ -1061,7 +1066,12 @@ void Database::loadMaps() {
 
                     MD5Hash diff_hash;
                     // TODO: properly validate and skip beatmaps with invalid hashes
-                    (void)neosu_maps.read_hash_chars(diff_hash);
+                    if(version >= 20260202) {
+                        // storing as the raw digest bytes past this ver
+                        (void)neosu_maps.read_hash_digest(diff_hash);
+                    } else {
+                        (void)neosu_maps.read_hash_chars(diff_hash);
+                    }
 
                     f32 fAR = neosu_maps.read<f32>();
                     f32 fCS = neosu_maps.read<f32>();
@@ -1243,7 +1253,12 @@ void Database::loadMaps() {
                 for(uSz i = 0; i < nb_overrides; i++) {
                     MapOverrides over;
                     MD5Hash map_md5;
-                    (void)neosu_maps.read_hash_chars(map_md5);  // TODO: validate
+                    if(version >= 20260202) {
+                        // storing as the raw digest bytes past this ver
+                        (void)neosu_maps.read_hash_digest(map_md5);  // TODO: validate
+                    } else {
+                        (void)neosu_maps.read_hash_chars(map_md5);  // TODO: validate
+                    }
                     over.local_offset = neosu_maps.read<i16>();
                     over.online_offset = neosu_maps.read<i16>();
                     over.star_rating = neosu_maps.read<f32>();
@@ -1270,16 +1285,32 @@ void Database::loadMaps() {
             }
 
             // star ratings section
-            if(version >= 20260130) {
-                u32 nb_star_entries = neosu_maps.read<u32>();
-                Sync::unique_lock lock(this->star_ratings_mtx);
-                for(u32 i = 0; i < nb_star_entries; i++) {
-                    MD5Hash hash;
-                    (void)neosu_maps.read_hash(hash);
-                    DiffStars::Ratings ratings;
-                    (void)neosu_maps.read_bytes(reinterpret_cast<u8 *>(ratings.values.data()),
-                                                sizeof(f32) * DiffStars::NUM_ENTRIES);
-                    this->star_ratings[hash] = ratings;
+            if(version >= 20260202) {
+                const uSz stored_speeds = neosu_maps.read<u8>();
+                const uSz stored_combos = neosu_maps.read<u8>();
+                const u32 nb_star_entries = neosu_maps.read<u32>();
+                const uSz stored_entries = stored_speeds * stored_combos;
+                const bool layout_matches =
+                    (stored_speeds == DiffStars::SPEEDS_NUM && stored_combos == DiffStars::NUM_MOD_COMBOS);
+
+                if(layout_matches) {
+                    Sync::unique_lock lock(this->star_ratings_mtx);
+                    this->star_ratings.reserve(nb_star_entries);
+                    for(u32 i = 0; i < nb_star_entries; i++) {
+                        MD5Hash hash;
+                        (void)neosu_maps.read_hash_digest(hash);
+                        DiffStars::Ratings ratings;
+                        (void)neosu_maps.read_bytes(reinterpret_cast<u8 *>(ratings.values.data()),
+                                                    sizeof(f32) * DiffStars::NUM_ENTRIES);
+                        this->star_ratings.emplace(hash, ratings);
+                    }
+                } else {
+                    // layout changed; skip stored data, recalc will be triggered
+                    debugLog("star ratings layout changed (stored {}x{}, current {}x{}), skipping", stored_speeds,
+                             stored_combos, (u8)DiffStars::SPEEDS_NUM, (uSz)DiffStars::NUM_MOD_COMBOS);
+                    for(u32 i = 0; i < nb_star_entries; i++) {
+                        neosu_maps.skip_bytes(sizeof(MD5Hash) + sizeof(f32) * stored_entries);
+                    }
                 }
             }
         }
@@ -1784,7 +1815,7 @@ void Database::saveMaps() {
             maps.write_string(diff->sDifficultyName);
             maps.write_string(diff->sSource);
             maps.write_string(diff->sTags);
-            maps.write_hash_chars(diff->getMD5());
+            maps.write_hash_digest(diff->getMD5());
             maps.write<f32>(diff->fAR);
             maps.write<f32>(diff->fCS);
             maps.write<f32>(diff->fHP);
@@ -1830,7 +1861,7 @@ void Database::saveMaps() {
         Sync::shared_lock lock(this->peppy_overrides_mtx);
         maps.write<u32>(this->peppy_overrides.size());
         for(const auto &[hash, override] : this->peppy_overrides) {
-            maps.write_hash_chars(hash);
+            maps.write_hash_digest(hash);
             maps.write<i16>(override.local_offset);
             maps.write<i16>(override.online_offset);
             maps.write<f32>(override.star_rating);
@@ -1847,12 +1878,15 @@ void Database::saveMaps() {
     }
 
     // star ratings section
+    // header: num_speeds, num_combos so we can detect layout changes without bumping db version
     u32 nb_star_entries = 0;
     {
         Sync::shared_lock lock(this->star_ratings_mtx);
+        maps.write<u8>(DiffStars::SPEEDS_NUM);
+        maps.write<u8>(DiffStars::NUM_MOD_COMBOS);
         maps.write<u32>(this->star_ratings.size());
         for(const auto &[hash, ratings] : this->star_ratings) {
-            maps.write_hash(hash);
+            maps.write_hash_digest(hash);
             maps.write_bytes(reinterpret_cast<const u8 *>(ratings.values.data()), sizeof(f32) * DiffStars::NUM_ENTRIES);
             nb_star_entries++;
         }
@@ -2471,6 +2505,7 @@ void Database::saveScores() {
             break;
         }
 
+        // TODO: should store as digest directly, need score db version bump
         dbr.write_hash_chars(hash);
         dbr.write<u32>(scorevec.size());
 
