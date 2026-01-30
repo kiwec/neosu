@@ -385,7 +385,7 @@ void ScoreButton::update(CBaseUIEventCtx &c) {
                 db->scores_mtx.unlock();
             }
 
-            this->sScoreScorePP = fmt::format("PP: {}pp ({}x{:s})", (int)std::round(sc.get_pp()), sc.comboMax,
+            this->sScoreScorePP = fmt::format("PP: {}pp ({:L}x{:s})", (int)std::round(sc.get_pp()), sc.comboMax,
                                               comboBasedSuffix(sc.perfect, fullCombo));
         }
     }
@@ -684,12 +684,13 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
 
     this->scoreGrade = sc.calculate_grade();
     this->sScoreUsername = UString(sc.playerName.c_str());
-    this->sScoreScore = fmt::format("Score: {} ({}x{:s})", sc.score, sc.comboMax, comboSuffix);
+    this->sScoreScore = fmt::format("Score: {:L} ({:L}x{:s})", sc.score, sc.comboMax, comboSuffix);
 
     if(f64 pp = sc.get_pp(); pp == -1.0) {
-        this->sScoreScorePP = fmt::format("PP: ??? ({}x{:s})", sc.comboMax, comboSuffix);
+        this->sScoreScorePP = fmt::format("PP: ??? ({:L}x{:s})", sc.comboMax, comboSuffix);
     } else {
-        this->sScoreScorePP = fmt::format("PP: {}pp ({}x{:s})", (int)std::round(pp), sc.comboMax, comboSuffix);
+        // TODO: should PP use thousands separators?
+        this->sScoreScorePP = fmt::format("PP: {}pp ({:L}x{:s})", (int)std::round(pp), sc.comboMax, comboSuffix);
     }
 
     this->sScoreAccuracy = fmt::format("{:.2f}%", accuracy);

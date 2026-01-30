@@ -31,6 +31,8 @@
 #endif
 
 #include <filesystem>
+#include <locale>
+#include <clocale>
 
 #ifdef WITH_LIVEPP
 #include "LPP_API_x64_CPP.h"
@@ -141,6 +143,11 @@ MAIN_FUNC /* int argc, char *argv[] */
 #if defined(_WIN32) && defined(_DEBUG)  // only debug allocates a console immediately
     SetConsoleOutputCP(65001 /*CP_UTF8*/);
 #endif
+
+    // set locale for e.g. fmt::format("{:L}") to work as expected without explicitly setting it
+    if (std::setlocale(LC_ALL, "") != nullptr) { // need this check to avoid std::locale{""} not being exception-safe
+        std::locale::global(std::locale{""});
+    }
 
 #ifdef WITH_LIVEPP
     debugLog("Starting Live++");

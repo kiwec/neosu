@@ -139,7 +139,7 @@ void ScoreboardSlot::draw() {
     // draw combo
     g->pushTransform();
     {
-        UString comboString = fmt::format("{:d}x"_cf, this->score.maxCombo);
+        UString comboString = fmt::format("{:L}x", this->score.maxCombo);
         const float stringWidth = font_normal->getStringWidth(comboString);
 
         g->scale(scoreScale, scoreScale);
@@ -177,7 +177,7 @@ void ScoreboardSlot::draw() {
             } break;
             // other conditions fall through to scorev1
             default: {
-                wincond_based_scoretext = fmt::format("{:d}"_cf, this->score.score);
+                wincond_based_scoretext = fmt::format("{:L}", this->score.score);
             } break;
         }
 
