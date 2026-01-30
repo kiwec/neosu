@@ -18,7 +18,6 @@
 
 #include <atomic>
 #include <memory>
-#include <queue>
 #include <unordered_map>
 #include <chrono>
 #include <utility>
@@ -30,58 +29,49 @@ class DownloadManager;
 // shared global instance
 std::shared_ptr<DownloadManager> s_download_manager;
 
-// TODO: allow more than 1 download at a time, while still respecting per-domain rate limits
-
 class DownloadManager {
     NOCOPY_NOMOVE(DownloadManager)
    private:
     struct DownloadRequest {
         std::string url;
+        std::string host;
         std::atomic<float> progress{0.0f};
         std::atomic<int> response_code{0};
         std::vector<u8> data;
         Sync::mutex data_mutex;
+        std::atomic<bool> downloading{false};
         std::atomic<bool> completed{false};
-        std::chrono::steady_clock::time_point retry_after{};
     };
 
     std::atomic<bool> shutting_down{false};
-    Hash::unstable_stringmap<std::shared_ptr<DownloadRequest>> active_downloads;
-    Sync::mutex active_mutex;
 
-    // rate limiting and queuing
-    std::queue<std::shared_ptr<DownloadRequest>> download_queue;
     Sync::mutex queue_mutex;
-    std::atomic<bool> currently_downloading{false};
-    std::chrono::steady_clock::time_point last_download_start{};
+    Hash::unstable_stringmap<std::shared_ptr<DownloadRequest>> queue;
+    Hash::unstable_stringmap<std::chrono::steady_clock::time_point> per_host_retry_after;
 
     void checkAndStartNextDownload() {
-        if(this->shutting_down.load(std::memory_order_acquire) ||
-           this->currently_downloading.load(std::memory_order_acquire))
-            return;
-
-        Sync::scoped_lock lock(this->queue_mutex);
-        if(this->download_queue.empty()) return;
+        // NOTE: this->queue_mutex should already be acquired here!
+        if(this->shutting_down.load(std::memory_order_acquire)) return;
+        if(this->queue.empty()) return;
 
         auto now = std::chrono::steady_clock::now();
 
-        // check if we need to wait for rate limiting (100ms between downloads)
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_download_start);
-        if(elapsed < std::chrono::milliseconds(100)) return;
+        std::shared_ptr<DownloadRequest> request = nullptr;
+        for(auto [_url, dl] : this->queue) {
+            if(dl->downloading.load(std::memory_order_acquire)) continue;
+            if(dl->completed.load(std::memory_order_acquire)) continue;
+            if(this->per_host_retry_after.contains(dl->host) && this->per_host_retry_after[dl->host] > now) continue;
 
-        // check for retry delays
-        auto request = this->download_queue.front();
-        if(request->retry_after > now) return;
+            // TODO: prevent more than 1 simultaneous download per domain
+            //       (currently can happen if downloads take more than 100ms)
 
-        // ready to start next download
-        this->download_queue.pop();
-        this->startDownloadNow(request);
-    }
+            request = dl;
+            break;
+        }
+        if(request == nullptr) return;
 
-    void startDownloadNow(const std::shared_ptr<DownloadRequest>& request) {
-        if(this->shutting_down.load(std::memory_order_acquire)) return;
-        this->currently_downloading.store(true, std::memory_order_release);
-        this->last_download_start = std::chrono::steady_clock::now();
+        request->downloading.store(true, std::memory_order_release);
+        this->per_host_retry_after[request->host] = now + std::chrono::milliseconds(100);
 
         debugLog("Downloading {:s}", request->url.c_str());
 
@@ -103,7 +93,6 @@ class DownloadManager {
 
     void onDownloadComplete(const std::shared_ptr<DownloadRequest>& request, Mc::Net::Response response) {
         if(this->shutting_down.load(std::memory_order_acquire)) return;
-        this->currently_downloading.store(false, std::memory_order_release);
 
         // update request with results
         {
@@ -113,15 +102,17 @@ class DownloadManager {
                 request->data = std::vector<u8>(response.body.begin(), response.body.end());
 
                 if(response.response_code == 429) {
-                    // rate limited, retry after 5 seconds
-                    // TODO: read headers and if the usual retry-after are set, follow those
-                    // TODO: per-domain rate limits
+                    // rate limited, reset and retry later
                     request->progress.store(0.0f, std::memory_order_release);
-                    request->retry_after = std::chrono::steady_clock::now() + std::chrono::seconds(5);
 
-                    // re-queue for retry
+                    u32 seconds_to_wait = 5;
+                    if(response.headers.contains("retry-after")) {
+                        seconds_to_wait = Parsing::strto<u32>(response.headers["retry-after"]);
+                    }
+
                     Sync::scoped_lock lock(this->queue_mutex);
-                    this->download_queue.push(request);
+                    this->per_host_retry_after[request->host] =
+                        std::chrono::steady_clock::now() + std::chrono::seconds(seconds_to_wait);
                 } else {
                     request->progress.store(1.f, std::memory_order_release);
                     request->completed.store(true, std::memory_order_release);
@@ -134,12 +125,15 @@ class DownloadManager {
             }
         }
 
+        Sync::scoped_lock lock(this->queue_mutex);
+        request->downloading.store(false, std::memory_order_release);
+
         // check if we can start next download
         this->checkAndStartNextDownload();
     }
 
    public:
-    DownloadManager() { this->last_download_start = std::chrono::steady_clock::now() - std::chrono::milliseconds(100); }
+    DownloadManager() {}
 
     ~DownloadManager() { this->shutdown(); }
 
@@ -147,39 +141,42 @@ class DownloadManager {
         if(!this->shutting_down.exchange(true)) {
             // clear download queue to prevent new work
             Sync::scoped_lock lock(this->queue_mutex);
-            while(!this->download_queue.empty()) {
-                this->download_queue.pop();
-            }
+            this->queue.clear();
         }
     }
 
     std::shared_ptr<DownloadRequest> start_download(const std::string& url) {
         if(this->shutting_down.load(std::memory_order_acquire)) return nullptr;
 
-        Sync::scoped_lock lock(this->active_mutex);
+        Sync::scoped_lock lock(this->queue_mutex);
 
         // check if already downloading or cached
-        auto it = this->active_downloads.find(url);
-        if(it != this->active_downloads.end()) {
+        if(this->queue.contains(url)) {
+            auto dl = this->queue[url];
+
+            // remove from queue once we finished the download
+            if(dl->completed.load(std::memory_order_acquire)) {
+                this->queue.erase(url);
+            }
+
             // if we have been rate limited, we might need to resume downloads manually
-            if(!this->currently_downloading.load(std::memory_order_acquire)) {
+            if(!dl->downloading.load(std::memory_order_acquire)) {
                 this->checkAndStartNextDownload();
             }
 
-            return it->second;
+            return dl;
         }
 
         // create new download request
         auto request = std::make_shared<DownloadRequest>();
         request->url = url;
 
-        this->active_downloads[url] = request;
+        auto host_start = url.find("://") + 3;
+        auto host_end = url.find('/', host_start);
+        request->host = url.substr(host_start, host_end - host_start);
 
         // queue for download
-        {
-            Sync::scoped_lock queue_lock(this->queue_mutex);
-            this->download_queue.push(request);
-        }
+        this->queue[url] = request;
 
         // try to start immediately if possible
         this->checkAndStartNextDownload();

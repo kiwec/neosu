@@ -52,10 +52,11 @@ Changelog::Changelog() : ScreenBackable() {
         R"(  - Improved SoLoud audio offset behavior to better match BASS (fixed desync when changing rates))",
         R"(  - Optimized SoLoud rate changing to help with audio crackling on lower-end setups or small buffer sizes)",
         R"(- Misc. bug fixes:)",
-        R"(  - Fix crashing when trying to enter song browser with an empty osu! folder)",
-        R"(  - Fix crashing when deleting entire collections)",
-        R"(  - Fix issues related to handling scores with the exact same submission timestamp)",
-        R"(  - Fix loading of skin elements with mismatched combo/score/hitcircle prefix (from skin.ini) casing on Linux)",
+        R"(  - Fixed crashing when trying to enter song browser with an empty osu! folder)",
+        R"(  - Fixed crashing when deleting entire collections)",
+        R"(  - Fixed map downloads not starting until all map thumbnails are loaded)",
+        R"(  - Fixed issues related to handling scores with the exact same submission timestamp)",
+        R"(  - Fixed loading of skin elements with mismatched combo/score/hitcircle prefix (from skin.ini) casing on Linux)",
         R"(- Added CPU/RAM usage tracking to VProf (Shift+F11->CTRL+Tab))",
     };
     changelogs.push_back(v42_00);
