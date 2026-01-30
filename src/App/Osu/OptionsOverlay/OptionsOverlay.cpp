@@ -1244,7 +1244,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
             ->setKeyDelta(1);
 
         auto *label1 = static_cast<UILabel *>(this->elemContainers.back()->baseElems[0].get());
-        label1->setTooltipText("Universal Offset, but unaffected by rate adjustments.");
+        label1->setTooltipText("Universal Offset, but unaffected by rate adjustments.\nUse this if you feel like you need to use a local offset on every map.");
     }
 
     this->addSubSection_("Gameplay");

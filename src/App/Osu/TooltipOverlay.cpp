@@ -32,7 +32,8 @@ void TooltipOverlay::draw() {
         const vec2 offset = vec2(10, 10) * dpiScale;
         const int margin = 5 * dpiScale;
         const int lineSpacing = 8 * dpiScale;
-        const float alpha = this->fAnim * this->fAnim * this->fAnim;
+        const float borderTextAlpha = this->fAnim * this->fAnim * this->fAnim;
+        const float backgroundAlpha = borderTextAlpha * 0.9f; // make the background semi-transparent at all times
 
         int width = 0;
         for(const auto& line : this->lines) {
@@ -62,12 +63,12 @@ void TooltipOverlay::draw() {
         }
 
         // draw background
-        g->setColor(Color(0xff000000).setA(alpha));
+        g->setColor(Color(0xff000000).setA(backgroundAlpha));
 
         g->fillRect((int)cursorPos.x + offset.x, (int)cursorPos.y + offset.y, width + 2 * margin, height + 2 * margin);
 
         // draw text
-        g->setColor(Color(0xffffffff).setA(alpha));
+        g->setColor(Color(0xffffffff).setA(borderTextAlpha));
 
         g->pushTransform();
         g->translate((int)(cursorPos.x + offset.x + margin),
@@ -79,7 +80,7 @@ void TooltipOverlay::draw() {
         g->popTransform();
 
         // draw border
-        g->setColor(Color(0xffffffff).setA(alpha));
+        g->setColor(Color(0xffffffff).setA(borderTextAlpha));
 
         g->drawRect((int)cursorPos.x + offset.x, (int)cursorPos.y + offset.y, width + 2 * margin, height + 2 * margin);
     }
