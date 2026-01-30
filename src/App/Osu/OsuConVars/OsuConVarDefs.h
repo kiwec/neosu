@@ -620,6 +620,7 @@ CONVAR(main_menu_startup_anim_duration, 0.25f, CLIENT | SKINS | SERVER);
 CONVAR(main_menu_use_server_logo, true, CLIENT | SKINS | SERVER);
 
 // Not sorted
+CONVAR(diffcalc_threads, 0.f, CLIENT, "0 = autodetect");
 CONVAR(beatmap_preview_mods_live, false, CLIENT | SKINS | SERVER,
        "whether to immediately apply all currently selected mods while browsing beatmaps (e.g. speed/pitch)");
 CONVAR(beatmap_preview_music_loop, true, CLIENT | SKINS | SERVER);

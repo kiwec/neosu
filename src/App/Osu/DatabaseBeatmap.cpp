@@ -426,6 +426,9 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromData(const std::vector<u8> &fileBuffer,
                                                                                    std::string_view osuFilePath,
                                                                                    const Sync::stop_token &dead) {
+    thread_local std::vector<std::string_view> spbuf1, spbuf2, spbuf3, spbuf4, spbuf5,
+        hitsamplebuf;  // to avoid reallocations; "spbuf" == SString::split buffer
+
     PRIMITIVE_CONTAINER c{};
 
     if(dead.stop_requested()) {
@@ -447,9 +450,6 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
 
     std::array<std::optional<Color>, 8> tempColors;
     std::vector<DatabaseBeatmap::TIMINGPOINT> tempTimingpoints;
-
-    std::vector<std::string_view> spbuf1, spbuf2, spbuf3, spbuf4, spbuf5,
-        hitsamplebuf;  // to avoid reallocations; "spbuf" == SString::split buffer
 
     // load the actual beatmap
     int hitobjectsWithoutSpinnerCounter = 0;

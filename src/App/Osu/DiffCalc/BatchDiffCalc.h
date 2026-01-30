@@ -2,35 +2,18 @@
 // Copyright (c) 2024, kiwec & 2025-2026, WH, All rights reserved.
 #include "types.h"
 
-#include <optional>
-#include <vector>
-
-struct MD5Hash;
-
-class DatabaseBeatmap;
-using BeatmapDifficulty = DatabaseBeatmap;
-using BeatmapSet = DatabaseBeatmap;
-
 // Recalculates outdated/legacy scores and beatmaps imported from databases asynchronously.
 namespace BatchDiffCalc {
-
-struct MapResult {
-    BeatmapDifficulty* map{};
-    u32 length_ms{};
-    u32 nb_circles{};
-    u32 nb_sliders{};
-    u32 nb_spinners{};
-    f32 star_rating{};
-    u32 min_bpm{};
-    u32 max_bpm{};
-    u32 avg_bpm{};
-};
 
 // Start unified calculation for maps and all scores that need PP recalculation.
 // Groups work by beatmap to load each file only once.
 void start_calc();
 
 void abort_calc();
+
+// Flush accumulated results to the database. Must be called from the main thread.
+// Returns false once when calculation is finished, signaling the caller to call abort_calc().
+[[nodiscard]] bool update_mainthread();
 
 [[nodiscard]] u32 get_maps_total();
 [[nodiscard]] u32 get_maps_processed();
@@ -41,10 +24,6 @@ void abort_calc();
 [[nodiscard]] bool running();          // is the thread still running?
 [[nodiscard]] bool scores_finished();  // are score recalculations done?
 [[nodiscard]] bool is_finished();      // is everything done?
-
-// Get map calculation results (scores are updated directly in the database)
-[[nodiscard]] std::vector<MapResult> get_map_results();
-[[nodiscard]] std::optional<std::vector<MapResult>> try_get_map_results();
 
 struct internal;
 }  // namespace BatchDiffCalc

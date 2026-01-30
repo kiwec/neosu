@@ -425,12 +425,6 @@ Osu::~Osu() {
         mouse->setScale({1.f, 1.f});
     }
 
-    // remove the static callbacks
-    cvars().setCVSubmittableCheckFunc({});
-    ConVar::setOnSetValueGameplayCallback({});
-    ConVar::setOnGetValueProtectedCallback({});
-    ConVar::setOnSetValueProtectedCallback({});
-
     // remove soundengine callbacks (so it doesnt try to call them after we are destroyed)
     soundEngine->setDeviceChangeBeforeCallback({});
     soundEngine->setDeviceChangeAfterCallback({});
@@ -455,6 +449,12 @@ Osu::~Osu() {
     this->ui_memb.reset();  // destroy ui layers
     ui = nullptr;
     db.reset();  // shutdown db
+
+    // remove the static callbacks
+    cvars().setCVSubmittableCheckFunc({});
+    ConVar::setOnSetValueGameplayCallback({});
+    ConVar::setOnGetValueProtectedCallback({});
+    ConVar::setOnSetValueProtectedCallback({});
 
     // destroy all skin sounds (and potentially loading skin), then skin
     if(this->skinScheduledToLoad && this->skinScheduledToLoad != this->skin.get()) {

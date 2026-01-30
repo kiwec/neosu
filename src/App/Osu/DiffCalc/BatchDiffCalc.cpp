@@ -23,31 +23,24 @@
 
 namespace cv {
 extern ConVar debug_pp;
-}
+extern ConVar diffcalc_threads;
+}  // namespace cv
 
 namespace BatchDiffCalc {
+namespace {
+struct ScoreResult {
+    FinishedScore score;
+    f64 pp;
+    f64 total_stars;
+    f64 aim_stars;
+    f64 speed_stars;
+};
+}  // namespace
 
 struct internal {
-    static void update_score_in_db(const FinishedScore& score, f64 pp, f64 total_stars, f64 aim_stars, f64 speed_stars);
     static void collect_outdated_db_diffs(const Sync::stop_token& stoken, std::vector<BeatmapDifficulty*>& outdiffs);
+    static void flush_score_results(std::vector<ScoreResult>& pending);
 };
-
-// TODO: it might make more sense to instead pass this out from a general "get_results"
-// instead of strangely doing this separately vs. beatmap calculation
-void internal::update_score_in_db(const FinishedScore& score, f64 pp, f64 total_stars, f64 aim_stars, f64 speed_stars) {
-    Sync::unique_lock lk(db->scores_mtx);
-    auto it = db->getScoresMutable().find(score.beatmap_hash);
-    if(it == db->getScoresMutable().end()) return;
-
-    if(auto scoreIt = std::ranges::find(it->second, score); scoreIt != it->second.end()) {
-        scoreIt->ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
-        scoreIt->ppv2_score = pp;
-        scoreIt->ppv2_total_stars = total_stars;
-        scoreIt->ppv2_aim_stars = aim_stars;
-        scoreIt->ppv2_speed_stars = speed_stars;
-        db->scores_changed.store(true, std::memory_order_release);
-    }
-}
 
 void internal::collect_outdated_db_diffs(const Sync::stop_token& stoken, std::vector<BeatmapDifficulty*>& outdiffs) {
     Sync::shared_lock readlock(db->beatmap_difficulties_mtx);
@@ -102,10 +95,28 @@ struct WorkItem {
     std::vector<ScoreWork> scores;
 };
 
-Timing::Timer recalc_timer;
-u32 errored_count{0};
+struct MapResult {
+    BeatmapDifficulty* map{};
+    u32 length_ms{};
+    u32 nb_circles{};
+    u32 nb_sliders{};
+    u32 nb_spinners{};
+    f32 star_rating{};
+    u32 min_bpm{};
+    u32 max_bpm{};
+    u32 avg_bpm{};
+};
 
-Sync::jthread worker_thread;
+// per-thread mutable state for worker threads
+struct WorkerContext {
+    std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> diffobj_cache;
+    std::vector<BPMTuple> bpm_calc_buf;
+};
+
+Timing::Timer recalc_timer;
+std::atomic<u32> errored_count{0};
+
+Sync::jthread coordinator_thread;
 
 std::atomic<u32> scores_processed{0};
 std::atomic<u32> scores_total{0};
@@ -114,23 +125,21 @@ std::atomic<u32> maps_total{0};
 std::atomic<bool> workqueue_ready{false};
 
 std::vector<MapResult> map_results;
+std::vector<ScoreResult> score_results;
 Sync::mutex results_mutex;
 
-// Owned by worker thread during execution
+// owned by coordinator thread during execution
 std::vector<WorkItem> work_queue;
-std::vector<BPMTuple> bpm_calc_buf;
-
-// The order in which the work is run doesn't really make this cache that useful, but just pass it
-// as a star calculation parameter to avoid it needing to reallocate a new cache
-std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> dummy_diffobj_cache;
+std::atomic<u32> next_work_index{0};
 
 forceinline bool score_needs_recalc(const FinishedScore& score) {
     return score.ppv2_version < DiffCalc::PP_ALGORITHM_VERSION;
 }
 
 // Calculate difficulty and PP for a group of scores sharing mod parameters.
-void process_score_group(BeatmapDifficulty* map, const ModParams& params, const std::vector<const ScoreWork*>& scores,
-                         DatabaseBeatmap::PRIMITIVE_CONTAINER& primitives, const Sync::stop_token& stoken) {
+void process_score_group(const BeatmapDifficulty* map, const ModParams& params, std::vector<ScoreWork*>& scores,
+                         DatabaseBeatmap::PRIMITIVE_CONTAINER& primitives, const Sync::stop_token& stoken,
+                         WorkerContext& ctx) {
     if(scores.empty()) return;
 
     auto diffres =
@@ -138,7 +147,7 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
     if(stoken.stop_requested()) return;
     if(diffres.error.errc) {
         const u32 item_failed_scores = scores.size();
-        errored_count += item_failed_scores;
+        errored_count.fetch_add(item_failed_scores, std::memory_order_relaxed);
         logFailure(diffres.error, "loadDifficultyHitObjects map hash {} map path {}", map->getMD5().string(),
                    map->getFilePath());
         scores_processed.fetch_add(item_failed_scores, std::memory_order_relaxed);
@@ -160,7 +169,7 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
 
     DifficultyCalculator::DifficultyAttributes attributes{};
 
-    DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = std::move(dummy_diffobj_cache),
+    DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = std::move(ctx.diffobj_cache),
                                                      .outAttributes = attributes,
                                                      .beatmapData = diffcalc_data,
                                                      .outAimStrains = nullptr,
@@ -170,41 +179,57 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
                                                      .cancelCheck = stoken};
 
     f64 total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(star_params);
-    dummy_diffobj_cache = std::move(star_params.cachedDiffObjects);
-    dummy_diffobj_cache->clear();
+    ctx.diffobj_cache = std::move(star_params.cachedDiffObjects);
+    ctx.diffobj_cache->clear();
 
     if(stoken.stop_requested()) return;
 
-    // Calculate PP for each score using shared difficulty attributes
-    for(const auto* sw : scores) {
-        const auto& score = sw->score;
+    // calculate PP for each score using shared difficulty attributes
+    std::vector<ScoreResult> group_results;
+    group_results.reserve(scores.size());
 
-        DifficultyCalculator::PPv2CalcParams ppv2params{.attributes = attributes,
-                                                        .modFlags = score.mods.flags,
-                                                        .timescale = score.mods.speed,
-                                                        .ar = params.ar,
-                                                        .od = params.od,
-                                                        .numHitObjects = map->iNumObjects,
-                                                        .numCircles = map->iNumCircles,
-                                                        .numSliders = map->iNumSliders,
-                                                        .numSpinners = map->iNumSpinners,
-                                                        .maxPossibleCombo = (i32)diffres.getTotalMaxCombo(),
-                                                        .combo = score.comboMax,
-                                                        .misses = score.numMisses,
-                                                        .c300 = score.num300s,
-                                                        .c100 = score.num100s,
-                                                        .c50 = score.num50s,
-                                                        .legacyTotalScore = (u32)score.score,
-                                                        .isMcOsuImported = score.is_mcosu_imported()};
+    for(auto* sw : scores) {
+        DifficultyCalculator::PPv2CalcParams ppv2params{
+            .attributes = attributes,
+            .modFlags = sw->score.mods.flags,
+            .timescale = sw->score.mods.speed,
+            .ar = params.ar,
+            .od = params.od,
+            // TODO: this is "technically" racy (according to TSan) since we update object/circles/sliders/spinners
+            // in update_mainthread from map results
+            .numHitObjects = map->iNumObjects,
+            .numCircles = map->iNumCircles,
+            .numSliders = map->iNumSliders,
+            .numSpinners = map->iNumSpinners,
+            .maxPossibleCombo = (i32)diffres.getTotalMaxCombo(),
+            .combo = sw->score.comboMax,
+            .misses = sw->score.numMisses,
+            .c300 = sw->score.num300s,
+            .c100 = sw->score.num100s,
+            .c50 = sw->score.num50s,
+            .legacyTotalScore = (u32)sw->score.score,
+            .isMcOsuImported = sw->score.is_mcosu_imported()};
 
         // mcosu scores use a different scorev1 algorithm
         const f64 pp = DifficultyCalculator::calculatePPv2(ppv2params);
-        internal::update_score_in_db(score, pp, total_stars, attributes.AimDifficulty, attributes.SpeedDifficulty);
+
         if(pp <= 0.f) {
-            ++errored_count;
+            errored_count.fetch_add(1, std::memory_order_relaxed);
         }
-        scores_processed.fetch_add(1, std::memory_order_relaxed);
+
+        group_results.push_back(ScoreResult{.score = std::move(sw->score),
+                                            .pp = pp,
+                                            .total_stars = total_stars,
+                                            .aim_stars = attributes.AimDifficulty,
+                                            .speed_stars = attributes.SpeedDifficulty});
     }
+
+    {
+        Sync::scoped_lock lock(results_mutex);
+        score_results.insert(score_results.end(), std::make_move_iterator(group_results.begin()),
+                             std::make_move_iterator(group_results.end()));
+    }
+    scores_processed.fetch_add(static_cast<u32>(scores.size()), std::memory_order_relaxed);
 }
 
 // Build work queue on worker thread to avoid blocking main thread.
@@ -275,9 +300,9 @@ void build_work_queue(const Sync::stop_token& stoken) {
     }
 }
 
-void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
+void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerContext& ctx) {
     if(!item.map) {
-        ++errored_count;
+        errored_count.fetch_add(1, std::memory_order_relaxed);
         return;
     }
 
@@ -287,11 +312,11 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
 
     if(primitives.error.errc) {
         const u32 item_failed_scores = item.scores.size();
-        errored_count += item_failed_scores;
+        errored_count.fetch_add(item_failed_scores, std::memory_order_relaxed);
         logFailure(primitives.error, "loadPrimitiveObjects map hash: {} map path: {}", item.map->getMD5().string(),
                    item.map->sFilePath);
         if(item.needs_map_calc) {
-            ++errored_count;
+            errored_count.fetch_add(1, std::memory_order_relaxed);
             Sync::scoped_lock lock(results_mutex);
             map_results.push_back(MapResult{.map = item.map});
             maps_processed.fetch_add(1, std::memory_order_relaxed);
@@ -330,7 +355,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
 
             DifficultyCalculator::DifficultyAttributes attributes{};
 
-            DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = std::move(dummy_diffobj_cache),
+            DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = std::move(ctx.diffobj_cache),
                                                              .outAttributes = attributes,
                                                              .beatmapData = diffcalc_data,
                                                              .outAimStrains = nullptr,
@@ -341,14 +366,14 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
 
             result.star_rating = static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(star_params));
 
-            dummy_diffobj_cache = std::move(star_params.cachedDiffObjects);
-            dummy_diffobj_cache->clear();
+            ctx.diffobj_cache = std::move(star_params.cachedDiffObjects);
+            ctx.diffobj_cache->clear();
 
             if(result.star_rating <= 0.f) {
-                ++errored_count;
+                errored_count.fetch_add(1, std::memory_order_relaxed);
             }
         } else {
-            ++errored_count;
+            errored_count.fetch_add(1, std::memory_order_relaxed);
             logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}", item.map->getMD5().string(),
                        item.map->sFilePath);
         }
@@ -356,8 +381,8 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
         if(stoken.stop_requested()) return;
 
         if(!primitives.timingpoints.empty()) {
-            bpm_calc_buf.resize(primitives.timingpoints.size());
-            BPMInfo bpm = getBPM(primitives.timingpoints, bpm_calc_buf);
+            ctx.bpm_calc_buf.resize(primitives.timingpoints.size());
+            BPMInfo bpm = getBPM(primitives.timingpoints, ctx.bpm_calc_buf);
             result.min_bpm = bpm.min;
             result.max_bpm = bpm.max;
             result.avg_bpm = bpm.most_common;
@@ -375,14 +400,14 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
     // process score calculations, grouped by mod parameters to share difficulty calc
     // subsequent loadDifficultyHitObjects calls skip slider timing (sliderTimesCalculated == true)
     if(!item.scores.empty()) {
-        Hash::flat::map<ModParams, std::vector<const ScoreWork*>, ModParamsHash> score_groups;
-        for(const auto& sw : item.scores) {
+        Hash::flat::map<ModParams, std::vector<ScoreWork*>, ModParamsHash> score_groups;
+        for(auto& sw : item.scores) {
             score_groups[sw.params].push_back(&sw);
         }
 
-        for(const auto& [params, group] : score_groups) {
+        for(auto& [params, group] : score_groups) {
             if(stoken.stop_requested()) return;
-            process_score_group(item.map, params, group, primitives, stoken);
+            process_score_group(item.map, params, group, primitives, stoken, ctx);
         }
     }
 
@@ -391,11 +416,33 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
     item.scores.shrink_to_fit();
 }
 
-void runloop(const Sync::stop_token& stoken) {
-    McThread::set_current_thread_name(US_("db_recalc"));
+void worker_fn(i32 thread_index, const Sync::stop_token& coord_stoken) {
+    McThread::set_current_thread_name(fmt::format("diffcalc_{}", thread_index));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);
 
-    errored_count = 0;
+    WorkerContext ctx;
+    ctx.diffobj_cache = std::make_unique<std::vector<DifficultyCalculator::DiffObject>>();
+
+    const u32 queue_size = work_queue.size();
+    while(!coord_stoken.stop_requested()) {
+        u32 idx = next_work_index.fetch_add(1, std::memory_order_relaxed);
+        if(idx >= queue_size) break;
+
+        while(osu->shouldPauseBGThreads() && !coord_stoken.stop_requested()) {
+            Timing::sleepMS(100);
+        }
+        if(coord_stoken.stop_requested()) break;
+
+        process_work_item(work_queue[idx], coord_stoken, ctx);
+        Timing::sleep(0);
+    }
+}
+
+void coordinator(const Sync::stop_token& stoken) {
+    McThread::set_current_thread_name(US_("diffcalc_coord"));
+    McThread::set_current_thread_prio(McThread::Priority::LOW);  // we don't really do anything here
+
+    errored_count.store(0, std::memory_order_relaxed);
     recalc_timer.reset();
 
     build_work_queue(stoken);
@@ -408,24 +455,44 @@ void runloop(const Sync::stop_token& stoken) {
     debugLog("DB recalculator: {} work items ({} maps, {} scores)", initial_workqueue_size, get_maps_total(),
              get_scores_total());
 
-    for(auto& item : work_queue) {
-        while(osu->shouldPauseBGThreads() && !stoken.stop_requested()) {
-            Timing::sleepMS(100);
+    // determine thread count
+    i32 nb_threads = 0;
+    // if we only have a small amount of work don't even bother
+    if(initial_workqueue_size < 1000) {
+        nb_threads = 1;
+    } else {
+        const i32 nb_cpus = McThread::get_logical_cpu_count();
+        nb_threads = std::clamp(cv::diffcalc_threads.getInt(), 0, nb_cpus <= 2 ? nb_cpus : nb_cpus - 1);
+        if(nb_threads == 0) {
+            // subtract 1 from real number of CPUs because we don't know if hyperthreading is enabled or not
+            // if it is, then nb_cpus / 2 would effectively occupy every "real" cpu core with a pretty heavy task, leaving less
+            // cpu time for the main thread
+            nb_threads = std::max((nb_cpus - 1) / 2, 1);
         }
-
-        if(stoken.stop_requested()) return;
-
-        process_work_item(item, stoken);
-
-        Timing::sleep(0);
+        // sanity (1000 cpus?)
+        if(static_cast<u32>(nb_threads) > initial_workqueue_size) {
+            nb_threads = std::max(static_cast<i32>(initial_workqueue_size), 1);
+        }
     }
 
-    if(!stoken.stop_requested() && errored_count < initial_workqueue_size) {
+    next_work_index.store(0, std::memory_order_relaxed);
+
+    // spawn workers
+    {
+        std::vector<Sync::jthread> workers;
+        workers.reserve(nb_threads);
+        for(i32 i = 0; i < nb_threads; i++) {
+            workers.emplace_back(worker_fn, i, stoken);
+        }
+        // jthread destructors join all workers
+    }
+
+    if((!stoken.stop_requested() || is_finished()) &&
+       errored_count.load(std::memory_order_relaxed) < initial_workqueue_size) {
         recalc_timer.update();
         debugLog("DB recalculator: took {} seconds, failed to recalculate {}/{}.", recalc_timer.getDelta(),
-                 errored_count, initial_workqueue_size);
+                 errored_count.load(std::memory_order_relaxed), initial_workqueue_size);
     }
-    errored_count = 0;
 
     // just in case
     maps_processed.store(get_maps_total(), std::memory_order_release);
@@ -434,11 +501,29 @@ void runloop(const Sync::stop_token& stoken) {
     // cleanup
     work_queue.clear();
     work_queue.shrink_to_fit();
-    bpm_calc_buf.clear();
-    bpm_calc_buf.shrink_to_fit();
 }
 
 }  // namespace
+
+void internal::flush_score_results(std::vector<ScoreResult>& pending) {
+    bool any_updated = false;
+    Sync::unique_lock lk(db->scores_mtx);
+    for(auto& res : pending) {
+        auto it = db->getScoresMutable().find(res.score.beatmap_hash);
+        if(it == db->getScoresMutable().end()) continue;
+        if(auto scoreIt = std::ranges::find(it->second, res.score); scoreIt != it->second.end()) {
+            scoreIt->ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
+            scoreIt->ppv2_score = res.pp;
+            scoreIt->ppv2_total_stars = res.total_stars;
+            scoreIt->ppv2_aim_stars = res.aim_stars;
+            scoreIt->ppv2_speed_stars = res.speed_stars;
+            any_updated = true;
+        }
+    }
+    if(any_updated) {
+        db->scores_changed.store(true, std::memory_order_release);
+    }
+}
 
 void start_calc() {
     abort_calc();
@@ -449,20 +534,15 @@ void start_calc() {
     scores_total = 0;
     workqueue_ready = false;
     map_results.clear();
-    if(!dummy_diffobj_cache) {
-        // this will stay alive forever, just make sure its created once
-        dummy_diffobj_cache = std::make_unique<std::vector<DifficultyCalculator::DiffObject>>();
-    } else {
-        dummy_diffobj_cache->clear();
-    }
+    score_results.clear();
 
-    worker_thread = Sync::jthread(runloop);
+    coordinator_thread = Sync::jthread(coordinator);
 }
 
 void abort_calc() {
-    if(!worker_thread.joinable()) return;
+    if(!coordinator_thread.joinable()) return;
 
-    worker_thread = {};
+    coordinator_thread = {};
 
     scores_total = 0;
     maps_total = 0;
@@ -471,9 +551,60 @@ void abort_calc() {
     workqueue_ready = false;
     work_queue.clear();
     map_results.clear();
-    if(dummy_diffobj_cache) {
-        dummy_diffobj_cache->clear();
+    score_results.clear();
+}
+
+bool update_mainthread() {
+    if(!running()) return true;
+
+    std::vector<MapResult> pending_maps;
+    std::vector<ScoreResult> pending_scores;
+
+    {
+        Sync::unique_lock lock(results_mutex, Sync::try_to_lock);
+        if(!lock.owns_lock()) return true;
+        pending_maps = std::move(map_results);
+        pending_scores = std::move(score_results);
+        map_results.clear();
+        score_results.clear();
     }
+
+    // apply map results
+    if(!pending_maps.empty()) {
+        Hash::flat::set<BeatmapSet*> unique_sets;
+
+        {
+            Sync::unique_lock lock(db->peppy_overrides_mtx);
+            for(const auto& res : pending_maps) {
+                auto* map = res.map;
+                unique_sets.insert(map->getParentSet());
+                map->iNumCircles = res.nb_circles;
+                map->iNumSliders = res.nb_sliders;
+                map->iNumSpinners = res.nb_spinners;
+                map->iNumObjects = res.nb_circles + res.nb_sliders + res.nb_spinners;
+                map->iLengthMS = std::max(map->iLengthMS, res.length_ms);
+                map->fStarsNomod = res.star_rating;
+                map->iMinBPM = res.min_bpm;
+                map->iMaxBPM = res.max_bpm;
+                map->iMostCommonBPM = res.avg_bpm;
+                map->ppv2Version = DiffCalc::PP_ALGORITHM_VERSION;
+                if(map->type == DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) {
+                    db->peppy_overrides[map->getMD5()] = map->get_overrides();
+                }
+            }
+        }
+
+        for(auto* set : unique_sets) {
+            set->updateRepresentativeValues();
+        }
+    }
+
+    // apply score results
+    if(!pending_scores.empty()) {
+        internal::flush_score_results(pending_scores);
+    }
+
+    return !is_finished();
 }
 
 u32 get_maps_total() { return maps_total.load(std::memory_order_acquire); }
@@ -484,7 +615,7 @@ u32 get_scores_total() { return scores_total.load(std::memory_order_acquire); }
 
 u32 get_scores_processed() { return scores_processed.load(std::memory_order_acquire); }
 
-bool running() { return workqueue_ready.load(std::memory_order_acquire) && worker_thread.joinable(); }
+bool running() { return workqueue_ready.load(std::memory_order_acquire) && coordinator_thread.joinable(); }
 
 bool scores_finished() {
     const u32 score_total = get_scores_total();
@@ -495,22 +626,6 @@ bool is_finished() {
     const u32 processed = get_maps_processed() + get_scores_processed();
     const u32 total = get_maps_total() + get_scores_total();
     return workqueue_ready.load(std::memory_order_acquire) && processed >= total;
-}
-
-std::vector<MapResult> get_map_results() {
-    Sync::scoped_lock lock(results_mutex);
-    std::vector<MapResult> moved = std::move(map_results);
-    map_results.clear();
-    return moved;
-}
-
-std::optional<std::vector<MapResult>> try_get_map_results() {
-    Sync::unique_lock lock(results_mutex, Sync::try_to_lock);
-    if(!lock.owns_lock()) return std::nullopt;
-
-    std::vector<MapResult> moved = std::move(map_results);
-    map_results.clear();
-    return moved;
 }
 
 }  // namespace BatchDiffCalc

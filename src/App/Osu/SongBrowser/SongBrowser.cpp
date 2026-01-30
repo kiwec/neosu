@@ -895,51 +895,9 @@ void SongBrowser::update(CBaseUIEventCtx &c) {
 
     BottomBar::update(c);
 
-    // map star/bpm/other calc
-    if(BatchDiffCalc::running()) {
-        std::vector<BatchDiffCalc::MapResult> results;
-        if(BatchDiffCalc::is_finished()) {
-            BatchDiffCalc::abort_calc();  // join thread
-            results = BatchDiffCalc::get_map_results();
-        } else {
-            auto maybe_result = BatchDiffCalc::try_get_map_results();
-            if(maybe_result.has_value()) {
-                results = maybe_result.value();
-            }
-        }
-
-        if(!results.empty()) {
-            static Hash::flat::set<BeatmapSet *> uniqueSetsForDiffs;
-
-            {
-                Sync::unique_lock lock(db->peppy_overrides_mtx);
-                for(const auto &res : results) {
-                    auto map = res.map;
-                    uniqueSetsForDiffs.insert(map->getParentSet());
-                    map->iNumCircles = res.nb_circles;
-                    map->iNumSliders = res.nb_sliders;
-                    map->iNumSpinners = res.nb_spinners;
-                    map->iNumObjects = res.nb_circles + res.nb_sliders + res.nb_spinners;
-                    map->iLengthMS = std::max(map->iLengthMS, res.length_ms);
-                    map->fStarsNomod = res.star_rating;
-                    map->iMinBPM = res.min_bpm;
-                    map->iMaxBPM = res.max_bpm;
-                    map->iMostCommonBPM = res.avg_bpm;
-                    map->ppv2Version = DiffCalc::PP_ALGORITHM_VERSION;
-                    if(map->type == DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) {
-                        db->peppy_overrides[map->getMD5()] = map->get_overrides();
-                    }
-                }
-            }
-
-            for(auto *set : uniqueSetsForDiffs) {
-                assert(set);
-                set->updateRepresentativeValues();
-            }
-            uniqueSetsForDiffs.clear();
-        }
-    } else if(BatchDiffCalc::running() && BatchDiffCalc::is_finished()) {
-        // if there was never anything to do just make sure to join the thread
+    // flush diffcalc results to database
+    if(!BatchDiffCalc::update_mainthread()) {
+        // just clean up if we are finished
         BatchDiffCalc::abort_calc();
     }
 
