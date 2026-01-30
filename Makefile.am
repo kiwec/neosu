@@ -543,10 +543,7 @@ $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).ta
 		-D SDL_CCACHE="$(if $(filter ccache,$(CCACHE)),ON,OFF)" \
 		-D CMAKE_C_COMPILER="$(CC)" \
 		-D CMAKE_C_FLAGS_RELEASE="$(CFLAGS) -Wno-error=incompatible-pointer-types" \
-		-D CMAKE_C_FLAGS_DEBUG="$(CFLAGS) -Wno-error=incompatible-pointer-types" \
-		-D CMAKE_CXX_COMPILER="$(CXX)" \
-		-D CMAKE_CXX_FLAGS_RELEASE="$(CXXFLAGS)" \
-		-D CMAKE_CXX_FLAGS_DEBUG="$(CXXFLAGS)" && \
+		-D CMAKE_C_FLAGS_DEBUG="$(CFLAGS) -Wno-error=incompatible-pointer-types" && \
 	$(CMAKE) --build build "$(CMAKEPAROPT)" && \
 	$(CMAKE) --install build
 	$(PKG_CONFIG) --exists --print-errors sdl3

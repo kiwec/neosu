@@ -71,12 +71,12 @@ void ScrollContainer::update(CBaseUIEventCtx &c) {
     this->invalidateUpdate = false;
 
     for(auto *e : this->vVisibleElements) {
+        e->update(c);
         if(this->invalidateUpdate) {
             // iterators have been invalidated!
             // try again next time.
             break;
         }
-        e->update(c);
     }
 
     this->invalidateUpdate = false;
@@ -96,11 +96,11 @@ bool ScrollContainer::isBusy() {
     if(!this->bVisible) return false;
 
     for(auto *e : this->vVisibleElements) {
-        if(this->invalidateUpdate) {
-            return false;
-        }
         if(e->isBusy()) {
             return true;
+        }
+        if(this->invalidateUpdate) {
+            return false;
         }
     }
 
@@ -111,11 +111,11 @@ bool ScrollContainer::isActive() {
     if(!this->bVisible) return false;
 
     for(auto *e : this->vVisibleElements) {
-        if(this->invalidateUpdate) {
-            return false;
-        }
         if(e->isActive()) {
             return true;
+        }
+        if(this->invalidateUpdate) {
+            return false;
         }
     }
 
