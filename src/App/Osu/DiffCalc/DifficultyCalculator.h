@@ -293,6 +293,15 @@ class DifficultyCalculator {
     };
 
    public:
+    // raw difficulty values before the final rating transform (computeAimRating/computeSpeedRating).
+    // identical between hidden and non-hidden for the same strains, so can be reused
+    // to avoid redundant calculate_difficulty calls for HD pairs.
+    struct RawDifficultyValues {
+        f64 aimNoSliders{0.};
+        f64 aim{0.};
+        f64 speed{0.};
+    };
+
     struct StarCalcParams {
         std::unique_ptr<std::vector<DiffObject>> cachedDiffObjects;
         DifficultyAttributes &outAttributes;
@@ -306,6 +315,9 @@ class DifficultyCalculator {
         // cancellation
         Sync::stop_token cancelCheck{};
 
+        // if non-null, raw difficulty values are written here before the rating transform
+        RawDifficultyValues *outRawDifficulty{nullptr};
+
         // "pseudo-incremental":
         // ignore "upToObjectIndex" to expect future calls with a larger object index
         // by pre-calculating and filling cachedDiffObjects, if it's empty
@@ -314,6 +326,10 @@ class DifficultyCalculator {
 
     // stars, fully static
     static f64 calculateStarDiffForHitObjects(StarCalcParams &params);
+
+    // recompute final star rating from pre-calculated raw difficulty values with
+    // different mod flags (e.g. hidden). skips all strain/difficulty calculation.
+    static f64 recomputeStarRating(const RawDifficultyValues &raw, const BeatmapDiffcalcData &beatmapData);
 
     struct PPv2CalcParams {
         DifficultyAttributes attributes;
@@ -336,7 +352,7 @@ class DifficultyCalculator {
         i32 c50;
 
         u32 legacyTotalScore;
-        bool isMcOsuImported; // mcosu scores use a different scorev1 algorithm
+        bool isMcOsuImported;  // mcosu scores use a different scorev1 algorithm
     };
 
     // pp, fully static
@@ -419,31 +435,31 @@ class DifficultyCalculator {
     // helper functions
     static f64 erf(f64 x);
     static f64 erfInv(f64 x);
-    static forceinline f64 reverseLerp(f64 x, f64 start, f64 end) {
+    static forceinline INLINE_BODY f64 reverseLerp(f64 x, f64 start, f64 end) {
         return std::clamp<f64>((x - start) / (end - start), 0.0, 1.0);
     };
-    static forceinline f64 smoothstep(f64 x, f64 start, f64 end) {
+    static forceinline INLINE_BODY f64 smoothstep(f64 x, f64 start, f64 end) {
         x = reverseLerp(x, start, end);
         return x * x * (3.0 - 2.0 * x);
     };
-    static forceinline f64 smootherStep(f64 x, f64 start, f64 end) {
+    static forceinline INLINE_BODY f64 smootherStep(f64 x, f64 start, f64 end) {
         x = reverseLerp(x, start, end);
         return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
     };
-    static forceinline f64 smoothstepBellCurve(f64 x, f64 mean = 0.5, f64 width = 0.5) {
+    static forceinline INLINE_BODY f64 smoothstepBellCurve(f64 x, f64 mean = 0.5, f64 width = 0.5) {
         x -= mean;
         x = x > 0 ? (width - x) : (width + x);
         return smoothstep(x, 0, width);
     };
-    static forceinline f64 logistic(f64 x, f64 midpointOffset, f64 multiplier, f64 maxValue = 1.0) {
+    static forceinline INLINE_BODY f64 logistic(f64 x, f64 midpointOffset, f64 multiplier, f64 maxValue = 1.0) {
         return maxValue / (1 + std::exp(multiplier * (midpointOffset - x)));
     }
-    static forceinline f64 strainDifficultyToPerformance(f64 difficulty) {
+    static forceinline INLINE_BODY f64 strainDifficultyToPerformance(f64 difficulty) {
         return std::pow(5.0 * std::max(1.0, difficulty / 0.0675) - 4.0, 3.0) / 100000.0;
     }
 
     // Adjust hitwindow to match lazer
-    static forceinline f64 adjustHitWindow(f64 hitwindow) { return std::floor(hitwindow) - 0.5; }
+    static forceinline INLINE_BODY f64 adjustHitWindow(f64 hitwindow) { return std::floor(hitwindow) - 0.5; }
 
     // Lazer formula for adjusting OD by clock rate
     static f64 adjustOverallDifficultyByClockRate(f64 OD, f64 clockRate);

@@ -487,6 +487,10 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     const f64 adjAR = GameRules::arWithSpeed(params.beatmapData.AR, params.beatmapData.speedMultiplier);
     const f64 adjOD = adjustOverallDifficultyByClockRate(params.beatmapData.OD, params.beatmapData.speedMultiplier);
 
+    if(params.outRawDifficulty) {
+        *params.outRawDifficulty = {aimNoSliders, aim, speed};
+    }
+
     aimNoSliders = computeAimRating(aimNoSliders, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating,
                                     params.outAttributes.SliderFactor, params.beatmapData);
     aim = computeAimRating(aim, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating,
@@ -501,6 +505,23 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
 
     params.outAttributes.AimTopWeightedSliderFactor = aimTopWeightedSliderFactor;
     params.outAttributes.SpeedTopWeightedSliderFactor = speedTopWeightedSliderFactor;
+
+    return calculateTotalStarsFromSkills(aim, speed);
+}
+
+f64 DifficultyCalculator::recomputeStarRating(const RawDifficultyValues &raw, const BeatmapDiffcalcData &beatmapData) {
+    const u32 numDiffObjects = beatmapData.sortedHitObjects.size();
+    const f64 sliderFactor =
+        raw.aim > 0.0 ? calculateDifficultyRating(raw.aimNoSliders) / calculateDifficultyRating(raw.aim) : 1.0;
+    const f64 mechanicalDifficultyRating = calculateMechanicalDifficultyRating(raw.aim, raw.speed);
+
+    const f64 adjAR = GameRules::arWithSpeed(beatmapData.AR, beatmapData.speedMultiplier);
+    const f64 adjOD = adjustOverallDifficultyByClockRate(beatmapData.OD, beatmapData.speedMultiplier);
+
+    const f64 aim = computeAimRating(raw.aim, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating, sliderFactor,
+                                     beatmapData);
+    const f64 speed =
+        computeSpeedRating(raw.speed, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating, beatmapData);
 
     return calculateTotalStarsFromSkills(aim, speed);
 }

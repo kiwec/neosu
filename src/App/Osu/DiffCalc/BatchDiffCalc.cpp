@@ -114,6 +114,8 @@ struct MapResult {
 struct WorkerContext {
     std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> diffobj_cache;
     std::vector<BPMTuple> bpm_calc_buf;
+    std::vector<f32> base_span_durations;
+    std::vector<f32> base_scoring_times;
 };
 
 Timing::Timer recalc_timer;
@@ -352,36 +354,70 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
             ArCsVariant{0.5f, 0.5f, {3, 5}},  // EZ: EZ(3), HD|EZ(5)
         };
 
-        for(u8 speed_idx = 0; speed_idx < DiffStars::SPEEDS_NUM; speed_idx++) {
+        for(const auto& var : VARIANTS) {
             if(stoken.stop_requested()) return;
-            const f32 speed = DiffStars::SPEEDS[speed_idx];
 
-            for(const auto& var : VARIANTS) {
+            const f32 ar = std::clamp(base_ar * var.ar_od_hp_mul, 0.f, 10.f);
+            const f32 cs = std::clamp(base_cs * var.cs_mul, 0.f, 10.f);
+            const f32 od = std::clamp(base_od * var.ar_od_hp_mul, 0.f, 10.f);
+            const f32 hp = std::clamp(base_hp * var.ar_od_hp_mul, 0.f, 10.f);
+
+            // build DifficultyHitObjects once at speed=1.0 for this AR/CS variant.
+            // object construction, sorting, and stacking are all speed-independent;
+            // only the timing fields need rescaling per speed. slider timing is
+            // calculated once (sliderTimesCalculated flag on primitives).
+            auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(primitives, ar, cs, 1.0f, false, stoken);
+            if(stoken.stop_requested()) return;
+
+            if(&var == &VARIANTS[0]) {
+                result.length_ms = diffres.playableLength;
+            }
+
+            if(diffres.error.errc) {
+                logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}",
+                           item.map->getMD5(), item.map->sFilePath);
+                continue;
+            }
+
+            // save base slider timing (overwritten by speed rescaling below).
+            // baseTime/baseEndTime are already preserved on DifficultyHitObject,
+            // but spanDuration and scoringTimes have no base counterpart.
+            ctx.base_span_durations.clear();
+            ctx.base_scoring_times.clear();
+            for(const auto& obj : diffres.diffobjects) {
+                if(obj.type == DifficultyHitObject::TYPE::SLIDER) {
+                    ctx.base_span_durations.push_back(obj.spanDuration);
+                    for(const auto& st : obj.scoringTimes) {
+                        ctx.base_scoring_times.push_back(st.time);
+                    }
+                }
+            }
+
+            for(u8 speed_idx = 0; speed_idx < DiffStars::SPEEDS_NUM; speed_idx++) {
                 if(stoken.stop_requested()) return;
+                const f32 speed = DiffStars::SPEEDS[speed_idx];
+                const f64 inv_speed = 1.0 / (f64)speed;
 
-                const f32 ar = std::clamp(base_ar * var.ar_od_hp_mul, 0.f, 10.f);
-                const f32 cs = std::clamp(base_cs * var.cs_mul, 0.f, 10.f);
-                const f32 od = std::clamp(base_od * var.ar_od_hp_mul, 0.f, 10.f);
-                const f32 hp = std::clamp(base_hp * var.ar_od_hp_mul, 0.f, 10.f);
-
-                // first call (speed_idx==0, BASE variant) calculates slider times
-                auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(primitives, ar, cs, speed, false, stoken);
-                if(stoken.stop_requested()) return;
-
-                // capture length from the first diffres (nomod 1x)
-                if(speed_idx == 0 && &var == &VARIANTS[0]) {
-                    result.length_ms = diffres.playableLength;
+                // rescale timing fields from base values for this speed
+                {
+                    uSz si = 0, sti = 0;
+                    for(auto& obj : diffres.diffobjects) {
+                        obj.time = (i32)((f64)obj.baseTime * inv_speed);
+                        obj.endTime = (i32)((f64)obj.baseEndTime * inv_speed);
+                        if(obj.type == DifficultyHitObject::TYPE::SLIDER) {
+                            obj.spanDuration = (f32)((f64)ctx.base_span_durations[si] * inv_speed);
+                            for(auto& st : obj.scoringTimes) {
+                                st.time = (f32)((f64)ctx.base_scoring_times[sti] * inv_speed);
+                                sti++;
+                            }
+                            si++;
+                        }
+                    }
                 }
 
-                if(diffres.error.errc) {
-                    logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}",
-                               item.map->getMD5(), item.map->sFilePath);
-                    continue;
-                }
-
-                for(u8 HD = 0; HD < 2; HD++) {
-                    const u8 combo_idx = var.combo_idx[HD];
-                    const u8 flat_idx = speed_idx * DiffStars::NUM_MOD_COMBOS + combo_idx;
+                // HD=0: full calculation, saving raw difficulty values
+                {
+                    const u8 flat_idx = speed_idx * DiffStars::NUM_MOD_COMBOS + var.combo_idx[0];
 
                     DifficultyCalculator::BeatmapDiffcalcData diffcalc_data{
                         .sortedHitObjects = diffres.diffobjects,
@@ -389,7 +425,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
                         .HP = hp,
                         .AR = ar,
                         .OD = od,
-                        .hidden = (HD == 1),
+                        .hidden = false,
                         .relax = false,
                         .autopilot = false,
                         .touchDevice = false,
@@ -398,6 +434,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
                         .playableLength = diffres.playableLength};
 
                     DifficultyCalculator::DifficultyAttributes attributes{};
+                    DifficultyCalculator::RawDifficultyValues raw_diff{};
 
                     DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = std::move(ctx.diffobj_cache),
                                                                      .outAttributes = attributes,
@@ -406,20 +443,25 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
                                                                      .outSpeedStrains = nullptr,
                                                                      .incremental = nullptr,
                                                                      .upToObjectIndex = -1,
-                                                                     .cancelCheck = stoken};
+                                                                     .cancelCheck = stoken,
+                                                                     .outRawDifficulty = &raw_diff};
 
-                    const f32 stars =
+                    result.star_ratings.values[flat_idx] =
                         static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(star_params));
 
                     ctx.diffobj_cache = std::move(star_params.cachedDiffObjects);
 
-                    result.star_ratings.values[flat_idx] = stars;
-
                     if(stoken.stop_requested()) return;
+
+                    // HD=1: recompute star rating from cached raw difficulty values.
+                    // strains are identical (hidden only affects the final rating transform),
+                    // so we skip DiffObject construction, strain calc, and calculate_difficulty.
+                    const u8 hd_flat_idx = speed_idx * DiffStars::NUM_MOD_COMBOS + var.combo_idx[1];
+                    diffcalc_data.hidden = true;
+                    result.star_ratings.values[hd_flat_idx] =
+                        static_cast<f32>(DifficultyCalculator::recomputeStarRating(raw_diff, diffcalc_data));
                 }
 
-                // clear after both HD iterations; the HD=1 call reuses the
-                // cache built by HD=0 since hidden only affects final rating
                 ctx.diffobj_cache->clear();
             }
         }
