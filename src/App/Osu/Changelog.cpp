@@ -452,376 +452,433 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v38_00;
     v38_00.title = "38.00 (2025-07-13)";
     v38_00.changes = {
-        "- Added user list interface (F9, aka. \"Extended Chat Console\")",
-        "- Added support for older osu!.db versions (~2014)",
-        "- Fixed beatmap downloads sometimes not getting saved correctly",
-        "- Fixed LOGOUT packet triggering errors on some servers",
-        "- Greatly optimized skin dropdown list performance, for users with many skins",
-        "- Improved clarity of beatmap background thumbnails (enabled mipmapping to reduce aliasing)",
-        "- Added CJK/Unicode font support (skin dropdowns, chat, other text)",
-        "  - Missing font fallback list is currently hardcoded, will be expanded and improved in the future",
-        "- Added support for raw input/sensitivity on Linux",
-        "- Added option to disable cursor confinement during gameplay - \"Confine Cursor (NEVER)\"",
-        "- Allowed left/right CTRL/ALT/SHIFT keys to be mapped independently",
-        "- Fixed letterboxed mode cutting off GUI/HUD elements strangely",
-        "- Fixed crashing on partially corrupt scores databases",
-        "- Fixed rate change slider having a much smaller range than it should",
-        "- Fixed leaderboard scores showing the wrong AR/OD for non-HT/DT rate-changed plays",
-        "- Updated osu! version to b20250702.1",
+        R"_(- Added user list interface (F9, aka. "Extended Chat Console"))_",
+        R"(- Added support for older osu!.db versions (~2014))",
+        R"(- Fixed beatmap downloads sometimes not getting saved correctly)",
+        R"(- Fixed LOGOUT packet triggering errors on some servers)",
+        R"(- Greatly optimized skin dropdown list performance, for users with many skins)",
+        R"(- Improved clarity of beatmap background thumbnails (enabled mipmapping to reduce aliasing))",
+        R"(- Added CJK/Unicode font support (skin dropdowns, chat, other text))",
+        R"(  - Missing font fallback list is currently hardcoded, will be expanded and improved in the future)",
+        R"(- Added support for raw input/sensitivity on Linux)",
+        R"_(- Added option to disable cursor confinement during gameplay - "Confine Cursor (NEVER)")_",
+        R"(- Allowed left/right CTRL/ALT/SHIFT keys to be mapped independently)",
+        R"(- Fixed letterboxed mode cutting off GUI/HUD elements strangely)",
+        R"(- Fixed crashing on partially corrupt scores databases)",
+        R"(- Fixed rate change slider having a much smaller range than it should)",
+        R"(- Fixed leaderboard scores showing the wrong AR/OD for non-HT/DT rate-changed plays)",
+        R"(- Updated osu! version to b20250702.1)",
         // Spectating is not included in this release (feature cvar: cv::enable_spectating)
     };
     changelogs.push_back(v38_00);
 
     CHANGELOG v37_03;
     v37_03.title = "37.03 (2025-03-09)";
-    v37_03.changes.emplace_back("- Added missing mode-osu.png");
-    v37_03.changes.emplace_back("- Fixed search bar not being visible on some resolutions");
-    v37_03.changes.emplace_back("- Updated osu! version to b20250309.2");
+    v37_03.changes = {
+        R"(- Added missing mode-osu.png)",
+        R"(- Fixed search bar not being visible on some resolutions)",
+        R"(- Updated osu! version to b20250309.2)",
+    };
     changelogs.push_back(v37_03);
 
     CHANGELOG v37_02;
     v37_02.title = "37.02 (2025-01-28)";
-    v37_02.changes.emplace_back("- Added support for mode-osu skin element");
-    v37_02.changes.emplace_back("- Fixed \"Draw Background Thumbnails in SongBrowser\" setting");
-    v37_02.changes.emplace_back("- Fixed UR bar scaling setting being imported incorrectly");
-    v37_02.changes.emplace_back("- Improved rendering of scores list");
-    v37_02.changes.emplace_back("- Removed back button height limit");
+    v37_02.changes = {
+        R"(- Added support for mode-osu skin element)",
+        R"(- Fixed "Draw Background Thumbnails in SongBrowser" setting)",
+        R"(- Fixed UR bar scaling setting being imported incorrectly)",
+        R"(- Improved rendering of scores list)",
+        R"(- Removed back button height limit)",
+    };
     changelogs.push_back(v37_02);
 
     CHANGELOG v37_01;
     v37_01.title = "37.01 (2025-01-27)";
-    v37_01.changes.emplace_back("- Added support for back button skin hacks");
-    v37_01.changes.emplace_back("- Added windowed_resolution convar (window size will now be saved)");
-    v37_01.changes.emplace_back("- Changed user card to be compatible with more skins");
-    v37_01.changes.emplace_back("- Improved rendering of grade/ranking skin elements");
-    v37_01.changes.emplace_back("- Improved rendering of song info text/background");
+    v37_01.changes = {
+        R"(- Added support for back button skin hacks)",
+        R"(- Added windowed_resolution convar (window size will now be saved))",
+        R"(- Changed user card to be compatible with more skins)",
+        R"(- Improved rendering of grade/ranking skin elements)",
+        R"(- Improved rendering of song info text/background)",
+    };
     changelogs.push_back(v37_01);
 
     CHANGELOG v37_00;
     v37_00.title = "37.00 (2025-01-26)";
-    v37_00.changes.emplace_back("- Added support for song browser skin elements");
-    v37_00.changes.emplace_back("- Added file handlers for .osk, .osr, and .osz formats");
-    v37_00.changes.emplace_back("- Fixed interface animations not playing at the correct speed");
-    v37_00.changes.emplace_back("- Fixed crash when starting beatmap with live pp/stars enabled");
-    v37_00.changes.emplace_back("- Fixed dropdowns in the options menu (such as skin select)");
-    v37_00.changes.emplace_back("- Updated osu! folder detection");
-    v37_00.changes.emplace_back("- Updated osu! version to b20250122.1");
+    v37_00.changes = {
+        R"(- Added support for song browser skin elements)",
+        R"(- Added file handlers for .osk, .osr, and .osz formats)",
+        R"(- Fixed interface animations not playing at the correct speed)",
+        R"(- Fixed crash when starting beatmap with live pp/stars enabled)",
+        R"(- Fixed dropdowns in the options menu (such as skin select))",
+        R"(- Updated osu! folder detection)",
+        R"(- Updated osu! version to b20250122.1)",
+    };
     changelogs.push_back(v37_00);
 
     CHANGELOG v36_06;
     v36_06.title = "36.06 (2025-01-08)";
-    v36_06.changes.emplace_back("- Added support for new osu!.db format");
+    v36_06.changes = {
+        R"(- Added support for new osu!.db format)",
+    };
     changelogs.push_back(v36_06);
 
     CHANGELOG v36_05;
     v36_05.title = "36.05 (2024-12-26)";
-    v36_05.changes.emplace_back("- Fixed crash when loading old scores");
-    v36_05.changes.emplace_back("- Fixed crash when alt-tabbing");
-    v36_05.changes.emplace_back("- Improved Discord integration");
-    v36_05.changes.emplace_back("- Linux: Fixed osu!stable settings import");
+    v36_05.changes = {
+        R"(- Fixed crash when loading old scores)",
+        R"(- Fixed crash when alt-tabbing)",
+        R"(- Improved Discord integration)",
+        R"(- Linux: Fixed osu!stable settings import)",
+    };
     changelogs.push_back(v36_05);
 
     CHANGELOG v36_04;
     v36_04.title = "36.04 (2024-12-11)";
-    v36_04.changes.emplace_back("- Settings will now auto-import from osu!stable on first launch");
-    v36_04.changes.emplace_back("- You can also re-import them manually from the settings menu");
-    v36_04.changes.emplace_back("- Fixed Discord integration being retarded");
-    v36_04.changes.emplace_back("- Linux: Fixed crash when osu!folder wasn't set");
+    v36_04.changes = {
+        R"(- Settings will now auto-import from osu!stable on first launch)",
+        R"(- You can also re-import them manually from the settings menu)",
+        R"(- Fixed Discord integration being retarded)",
+        R"(- Linux: Fixed crash when osu!folder wasn't set)",
+    };
     changelogs.push_back(v36_04);
 
     CHANGELOG v36_03;
     v36_03.title = "36.03 (2024-11-24)";
-    v36_03.changes.emplace_back("- Added checkbox to disable auto-updater");
-    v36_03.changes.emplace_back("- Added Discord Rich Presence integration");
-    v36_03.changes.emplace_back("- Fixed live pp calculations");
-    v36_03.changes.emplace_back("- Updated neosu icon");
+    v36_03.changes = {
+        R"(- Added checkbox to disable auto-updater)",
+        R"(- Added Discord Rich Presence integration)",
+        R"(- Fixed live pp calculations)",
+        R"(- Updated neosu icon)",
+    };
     changelogs.push_back(v36_03);
 
     CHANGELOG v36_02;
     v36_02.title = "36.02 (2024-11-16)";
-    v36_02.changes.emplace_back("- Added toast notifications");
-    v36_02.changes.emplace_back("- Updated star/pp algorithms (thanks @Khangaroo and @McKay)");
-    v36_02.changes.emplace_back("- Updated osu! version to b20241030");
+    v36_02.changes = {
+        R"(- Added toast notifications)",
+        R"(- Updated star/pp algorithms (thanks @Khangaroo and @McKay))",
+        R"(- Updated osu! version to b20241030)",
+    };
     changelogs.push_back(v36_02);
 
     CHANGELOG v36_01;
     v36_01.title = "36.01 (2024-09-25)";
-    v36_01.changes.emplace_back("- Fixed crash when opening song browser");
+    v36_01.changes = {
+        R"(- Fixed crash when opening song browser)",
+    };
     changelogs.push_back(v36_01);
 
     CHANGELOG v36_00;
     v36_00.title = "36.00 (2024-09-24)";
-    v36_00.changes.emplace_back("- Added \"Actual Flashlight\" mod");
-    v36_00.changes.emplace_back("- Added \"Rank Achieved\" sort option");
-    v36_00.changes.emplace_back("- Added BPM song grouping");
-    v36_00.changes.emplace_back("- Added keybind to open skin selection menu");
-    v36_00.changes.emplace_back("- Added option to change pitch based on hit accuracy");
-    v36_00.changes.emplace_back("- Added retry/watch buttons on score screen");
-    v36_00.changes.emplace_back("- Added slider instafade setting");
-    v36_00.changes.emplace_back("- Fixed \"Personal Best\" score button not being clickable");
-    v36_00.changes.emplace_back("- Fixed local scores not saving avatar");
-    v36_00.changes.emplace_back("- Fixed song buttons not always displaying best grade");
-    v36_00.changes.emplace_back("- Fixed map settings (like local offset) not getting saved");
-    v36_00.changes.emplace_back("- Fixed Nightcore getting auto-selected instead of Double Time in some cases");
-    v36_00.changes.emplace_back("- Improved loudness normalization");
-    v36_00.changes.emplace_back("- Merged pp calculation optimizations from McOsu");
-    v36_00.changes.emplace_back("- Optimized database loading");
-    v36_00.changes.emplace_back("- Removed custom HP drain (use nofail instead)");
-    v36_00.changes.emplace_back("- Removed mandala mod, random mod");
-    v36_00.changes.emplace_back("- Removed rosu-pp");
-    v36_00.changes.emplace_back("- Updated osu! version to b20240820.1");
-    v36_00.changes.emplace_back("- Linux: Fixed \"Skin.ini\" failing to load");
-    v36_00.changes.emplace_back("- Windows: Fixed collections/maps/scores not getting saved");
+    v36_00.changes = {
+        R"(- Added "Actual Flashlight" mod)",
+        R"(- Added "Rank Achieved" sort option)",
+        R"(- Added BPM song grouping)",
+        R"(- Added keybind to open skin selection menu)",
+        R"(- Added option to change pitch based on hit accuracy)",
+        R"(- Added retry/watch buttons on score screen)",
+        R"(- Added slider instafade setting)",
+        R"(- Fixed "Personal Best" score button not being clickable)",
+        R"(- Fixed local scores not saving avatar)",
+        R"(- Fixed song buttons not always displaying best grade)",
+        R"(- Fixed map settings (like local offset) not getting saved)",
+        R"(- Fixed Nightcore getting auto-selected instead of Double Time in some cases)",
+        R"(- Improved loudness normalization)",
+        R"(- Merged pp calculation optimizations from McOsu)",
+        R"(- Optimized database loading)",
+        R"(- Removed custom HP drain (use nofail instead))",
+        R"(- Removed mandala mod, random mod)",
+        R"(- Removed rosu-pp)",
+        R"(- Updated osu! version to b20240820.1)",
+        R"(- Linux: Fixed "Skin.ini" failing to load)",
+        R"(- Windows: Fixed collections/maps/scores not getting saved)",
+    };
     changelogs.push_back(v36_00);
 
     CHANGELOG v35_09;
     v35_09.title = "35.09 (2024-07-03)";
-    v35_09.changes.emplace_back("- Added keybind to toggle current map background");
-    v35_09.changes.emplace_back("- Fixed beatmaps not getting selected properly in some cases");
-    v35_09.changes.emplace_back("- Fixed crash when osu! folder couldn't be found");
-    v35_09.changes.emplace_back("- Fixed mod selection not being restored properly");
-    v35_09.changes.emplace_back("- Fixed skin selection menu being drawn behind back button");
+    v35_09.changes = {
+        R"(- Added keybind to toggle current map background)",
+        R"(- Fixed beatmaps not getting selected properly in some cases)",
+        R"(- Fixed crash when osu! folder couldn't be found)",
+        R"(- Fixed mod selection not being restored properly)",
+        R"(- Fixed skin selection menu being drawn behind back button)",
+    };
     changelogs.push_back(v35_09);
 
     CHANGELOG v35_08;
     v35_08.title = "35.08 (2024-06-28)";
-    v35_08.changes.emplace_back("- Added ability to import .osk and .osz files (drop them onto the neosu window)");
-    v35_08.changes.emplace_back(
-        "- Added persistent map database (downloaded or imported maps stay after restarting the game)");
-    v35_08.changes.emplace_back("- Added skin folder");
-    v35_08.changes.emplace_back("- Now publishing 32-bit releases (for PCs running Windows 7)");
-    v35_08.changes.emplace_back("- Fixed songs failing to restart");
+    v35_08.changes = {
+        R"(- Added ability to import .osk and .osz files (drop them onto the neosu window))",
+        R"(- Added persistent map database (downloaded or imported maps stay after restarting the game))",
+        R"(- Added skin folder)",
+        R"(- Now publishing 32-bit releases (for PCs running Windows 7))",
+        R"(- Fixed songs failing to restart)",
+    };
     changelogs.push_back(v35_08);
 
     CHANGELOG v35_07;
     v35_07.title = "35.07 (2024-06-27)";
-    v35_07.changes.emplace_back("- Added sort_skins_by_name convar");
-    v35_07.changes.emplace_back("- Added setting to prevent servers from replacing the main menu logo");
-    v35_07.changes.emplace_back("- Chat: added missing chat commands");
-    v35_07.changes.emplace_back("- Chat: added missing keyboard shortcuts");
-    v35_07.changes.emplace_back("- Chat: added support for user links");
-    v35_07.changes.emplace_back("- Chat: improved map link support");
-    v35_07.changes.emplace_back("- Fixed freeze when switching between songs in song browser");
-    v35_07.changes.emplace_back("- Lowered audio latency for default (not ASIO/WASAPI) output");
+    v35_07.changes = {
+        R"(- Added sort_skins_by_name convar)",
+        R"(- Added setting to prevent servers from replacing the main menu logo)",
+        R"(- Chat: added missing chat commands)",
+        R"(- Chat: added missing keyboard shortcuts)",
+        R"(- Chat: added support for user links)",
+        R"(- Chat: improved map link support)",
+        R"(- Fixed freeze when switching between songs in song browser)",
+        R"(- Lowered audio latency for default (not ASIO/WASAPI) output)",
+    };
     changelogs.push_back(v35_07);
 
     CHANGELOG v35_06;
     v35_06.title = "35.06 (2024-06-17)";
-    v35_06.changes.emplace_back("- Added cursor trail customization settings");
-    v35_06.changes.emplace_back("- Added instafade checkbox");
-    v35_06.changes.emplace_back("- Added more UI sounds");
-    v35_06.changes.emplace_back("- Added submit_after_pause convar");
-    v35_06.changes.emplace_back("- Chat: added support for /me command");
-    v35_06.changes.emplace_back("- Chat: added support for links");
-    v35_06.changes.emplace_back("- Chat: added support for map links (auto-downloads)");
-    v35_06.changes.emplace_back("- Chat: added support for multiplayer invite links");
-    v35_06.changes.emplace_back("- FPS counter will now display worst frametime instead of current frametime");
-    v35_06.changes.emplace_back("- Improved song browser performance");
-    v35_06.changes.emplace_back("- Skins are now sorted alphabetically, ignoring meme characters");
-    v35_06.changes.emplace_back("- Unlocked osu_drain_kill convar");
+    v35_06.changes = {
+        R"(- Added cursor trail customization settings)",
+        R"(- Added instafade checkbox)",
+        R"(- Added more UI sounds)",
+        R"(- Added submit_after_pause convar)",
+        R"(- Chat: added support for /me command)",
+        R"(- Chat: added support for links)",
+        R"(- Chat: added support for map links (auto-downloads))",
+        R"(- Chat: added support for multiplayer invite links)",
+        R"(- FPS counter will now display worst frametime instead of current frametime)",
+        R"(- Improved song browser performance)",
+        R"(- Skins are now sorted alphabetically, ignoring meme characters)",
+        R"(- Unlocked osu_drain_kill convar)",
+    };
     changelogs.push_back(v35_06);
 
     CHANGELOG v35_05;
     v35_05.title = "35.05 (2024-06-13)";
-    v35_05.changes.emplace_back("- Fixed Artist/Creator/Title sorting to be in A-Z order");
-    v35_05.changes.emplace_back("- Improved sound engine reliability");
-    v35_05.changes.emplace_back("- Removed herobrine");
+    v35_05.changes = {
+        R"(- Fixed Artist/Creator/Title sorting to be in A-Z order)",
+        R"(- Improved sound engine reliability)",
+        R"(- Removed herobrine)",
+    };
     changelogs.push_back(v35_05);
 
     CHANGELOG v35_04;
     v35_04.title = "35.04 (2024-06-11)";
-    v35_04.changes.emplace_back("- Changed \"Open Skins folder\" button to open the currently selected skin's folder");
-    v35_04.changes.emplace_back("- Fixed master volume control not working on exclusive WASAPI");
-    v35_04.changes.emplace_back("- Fixed screenshots failing to save");
-    v35_04.changes.emplace_back("- Fixed skins with non-ANSI folder names failing to open on Windows");
-    v35_04.changes.emplace_back("- Fixed sliderslide and spinnerspin sounds not looping");
-    v35_04.changes.emplace_back("- Improved sound engine reliability");
-    v35_04.changes.emplace_back("- Re-added strain graphs");
-    v35_04.changes.emplace_back(
-        "- Removed sliderhead fadeout animation (set osu_slider_sliderhead_fadeout to 1 for old behavior)");
+    v35_04.changes = {
+        R"(- Changed "Open Skins folder" button to open the currently selected skin's folder)",
+        R"(- Fixed master volume control not working on exclusive WASAPI)",
+        R"(- Fixed screenshots failing to save)",
+        R"(- Fixed skins with non-ANSI folder names failing to open on Windows)",
+        R"(- Fixed sliderslide and spinnerspin sounds not looping)",
+        R"(- Improved sound engine reliability)",
+        R"(- Re-added strain graphs)",
+        R"(- Removed sliderhead fadeout animation (set osu_slider_sliderhead_fadeout to 1 for old behavior))",
+    };
     changelogs.push_back(v35_04);
 
     CHANGELOG v35_03;
     v35_03.title = "35.03 (2024-06-10)";
-    v35_03.changes.emplace_back("- Added SoundEngine auto-restart settings");
-    v35_03.changes.emplace_back("- Disabled FPoSu noclip by default");
-    v35_03.changes.emplace_back("- Fixed auto mod staying on after Ctrl+clicking a map");
-    v35_03.changes.emplace_back("- Fixed downloads sometimes failing on Windows");
-    v35_03.changes.emplace_back("- Fixed recent score times not being visible in leaderboards");
-    v35_03.changes.emplace_back("- Fixed restarting map while watching a replay");
-    v35_03.changes.emplace_back("- Improved sound engine reliability");
-    v35_03.changes.emplace_back("- Re-added win_snd_wasapi_exclusive convar");
-    v35_03.changes.emplace_back(
-        "- User mods will no longer change when watching a replay or joining a multiplayer room");
+    v35_03.changes = {
+        R"(- Added SoundEngine auto-restart settings)",
+        R"(- Disabled FPoSu noclip by default)",
+        R"(- Fixed auto mod staying on after Ctrl+clicking a map)",
+        R"(- Fixed downloads sometimes failing on Windows)",
+        R"(- Fixed recent score times not being visible in leaderboards)",
+        R"(- Fixed restarting map while watching a replay)",
+        R"(- Improved sound engine reliability)",
+        R"(- Re-added win_snd_wasapi_exclusive convar)",
+        R"(- User mods will no longer change when watching a replay or joining a multiplayer room)",
+    };
     changelogs.push_back(v35_03);
 
     CHANGELOG v35_02;
     v35_02.title = "35.02 (2024-06-08)";
-    v35_02.changes.emplace_back("- Fixed online leaderboards displaying incorrect values");
+    v35_02.changes = {
+        R"(- Fixed online leaderboards displaying incorrect values)",
+    };
     changelogs.push_back(v35_02);
 
     CHANGELOG v35_01;
     v35_01.title = "35.01 (2024-06-08)";
-    v35_01.changes.emplace_back("- Added ability to get spectated");
-    v35_01.changes.emplace_back("- Added use_https convar (to support plain HTTP servers)");
-    v35_01.changes.emplace_back(
-        "- Added restart_sound_engine_before_playing convar (\"fixes\" sound engine lagging after a while)");
-    v35_01.changes.emplace_back("- Fixed chat channels being unread after joining");
-    v35_01.changes.emplace_back("- Fixed flashlight mod");
-    v35_01.changes.emplace_back("- Fixed FPoSu mode");
-    v35_01.changes.emplace_back("- Fixed playfield borders not being visible");
-    v35_01.changes.emplace_back("- Fixed sound engine not being restartable during gameplay or while paused");
-    v35_01.changes.emplace_back("- Fixed missing window icon");
-    v35_01.changes.emplace_back("- Hid password cvar from console command list");
-    v35_01.changes.emplace_back("- Now making 64-bit MSVC builds");
-    v35_01.changes.emplace_back("- Now using rosu-pp for some pp calculations");
-    v35_01.changes.emplace_back("- Removed DirectX, Software, Vulkan renderers");
-    v35_01.changes.emplace_back("- Removed OpenCL support");
-    v35_01.changes.emplace_back("- Removed user stats screen");
+    v35_01.changes = {
+        R"(- Added ability to get spectated)",
+        R"(- Added use_https convar (to support plain HTTP servers))",
+        R"(- Added restart_sound_engine_before_playing convar ("fixes" sound engine lagging after a while))",
+        R"(- Fixed chat channels being unread after joining)",
+        R"(- Fixed flashlight mod)",
+        R"(- Fixed FPoSu mode)",
+        R"(- Fixed playfield borders not being visible)",
+        R"(- Fixed sound engine not being restartable during gameplay or while paused)",
+        R"(- Fixed missing window icon)",
+        R"(- Hid password cvar from console command list)",
+        R"(- Now making 64-bit MSVC builds)",
+        R"(- Now using rosu-pp for some pp calculations)",
+        R"(- Removed DirectX, Software, Vulkan renderers)",
+        R"(- Removed OpenCL support)",
+        R"(- Removed user stats screen)",
+    };
     changelogs.push_back(v35_01);
 
     CHANGELOG v35_00;
     v35_00.title = "35.00 (2024-05-05)";
-    v35_00.changes.emplace_back("- Renamed 'McOsu Multiplayer' to 'neosu'");
-    v35_00.changes.emplace_back("- Added option to normalize loudness across songs");
-    v35_00.changes.emplace_back("- Added server logo to main menu button");
-    v35_00.changes.emplace_back("- Added instant_replay_duration convar");
-    v35_00.changes.emplace_back("- Added ability to remove beatmaps from osu!stable collections (only affects neosu)");
-    v35_00.changes.emplace_back("- Allowed singleplayer cheats when the server doesn't accept score submissions");
-    v35_00.changes.emplace_back("- Changed scoreboard name color to red for friends");
-    v35_00.changes.emplace_back("- Changed default instant replay key to F2 to avoid conflicts with mod selector");
-    v35_00.changes.emplace_back("- Disabled score submission when mods are toggled mid-game");
-    v35_00.changes.emplace_back("- Fixed ALT key not working on linux");
-    v35_00.changes.emplace_back("- Fixed chat layout updating while chat was hidden");
-    v35_00.changes.emplace_back("- Fixed experimental mods not getting set while watching replays");
-    v35_00.changes.emplace_back("- Fixed FPoSu camera not following cursor while watching replays");
-    v35_00.changes.emplace_back("- Fixed FPoSu mod not being included in score data");
-    v35_00.changes.emplace_back("- Fixed level bar always being at 0%");
-    v35_00.changes.emplace_back("- Fixed music pausing on first song database load");
-    v35_00.changes.emplace_back("- Fixed not being able to adjust volume while song database was loading");
-    v35_00.changes.emplace_back("- Fixed pause button not working after cancelling database load");
-    v35_00.changes.emplace_back("- Fixed replay playback starting too fast");
-    v35_00.changes.emplace_back("- Fixed restarting SoundEngine not kicking the player out of play mode");
-    v35_00.changes.emplace_back("- Improved audio engine");
-    v35_00.changes.emplace_back("- Improved overall stability");
-    v35_00.changes.emplace_back("- Optimized song database loading speed (a lot)");
-    v35_00.changes.emplace_back("- Optimized collection processing speed");
-    v35_00.changes.emplace_back("- Removed support for the Nintendo Switch");
-    v35_00.changes.emplace_back("- Updated protocol version");
+    v35_00.changes = {
+        R"(- Renamed 'McOsu Multiplayer' to 'neosu')",
+        R"(- Added option to normalize loudness across songs)",
+        R"(- Added server logo to main menu button)",
+        R"(- Added instant_replay_duration convar)",
+        R"(- Added ability to remove beatmaps from osu!stable collections (only affects neosu))",
+        R"(- Allowed singleplayer cheats when the server doesn't accept score submissions)",
+        R"(- Changed scoreboard name color to red for friends)",
+        R"(- Changed default instant replay key to F2 to avoid conflicts with mod selector)",
+        R"(- Disabled score submission when mods are toggled mid-game)",
+        R"(- Fixed ALT key not working on linux)",
+        R"(- Fixed chat layout updating while chat was hidden)",
+        R"(- Fixed experimental mods not getting set while watching replays)",
+        R"(- Fixed FPoSu camera not following cursor while watching replays)",
+        R"(- Fixed FPoSu mod not being included in score data)",
+        R"(- Fixed level bar always being at 0%)",
+        R"(- Fixed music pausing on first song database load)",
+        R"(- Fixed not being able to adjust volume while song database was loading)",
+        R"(- Fixed pause button not working after cancelling database load)",
+        R"(- Fixed replay playback starting too fast)",
+        R"(- Fixed restarting SoundEngine not kicking the player out of play mode)",
+        R"(- Improved audio engine)",
+        R"(- Improved overall stability)",
+        R"(- Optimized song database loading speed (a lot))",
+        R"(- Optimized collection processing speed)",
+        R"(- Removed support for the Nintendo Switch)",
+        R"(- Updated protocol version)",
+    };
     changelogs.push_back(v35_00);
 
     CHANGELOG v34_10;
     v34_10.title = "34.10 (2024-04-14)";
-    v34_10.changes.emplace_back("- Fixed replays not saving/submitting correctly");
-    v34_10.changes.emplace_back("- Fixed scores, collections and stars/pp cache not saving correctly");
+    v34_10.changes = {
+        R"(- Fixed replays not saving/submitting correctly)",
+        R"(- Fixed scores, collections and stars/pp cache not saving correctly)",
+    };
     changelogs.push_back(v34_10);
 
     CHANGELOG v34_09;
     v34_09.title = "34.09 (2024-04-13)";
-    v34_09.changes.emplace_back("- Added replay viewer");
-    v34_09.changes.emplace_back("- Added instant replay (press F1 while paused or after failing)");
-    v34_09.changes.emplace_back("- Added option to disable in-game scoreboard animations");
-    v34_09.changes.emplace_back("- Added start_first_main_menu_song_at_preview_point convar (it does what it says)");
-    v34_09.changes.emplace_back("- Added extra slot to in-game scoreboard");
-    v34_09.changes.emplace_back("- Fixed hitobjects being hittable after failing");
-    v34_09.changes.emplace_back("- Fixed login packet sending incorrect adapters list");
-    v34_09.changes.emplace_back("- Removed VR support");
-    v34_09.changes.emplace_back("- Updated protocol and database version to b20240411.1");
+    v34_09.changes = {
+        R"(- Added replay viewer)",
+        R"(- Added instant replay (press F1 while paused or after failing))",
+        R"(- Added option to disable in-game scoreboard animations)",
+        R"(- Added start_first_main_menu_song_at_preview_point convar (it does what it says))",
+        R"(- Added extra slot to in-game scoreboard)",
+        R"(- Fixed hitobjects being hittable after failing)",
+        R"(- Fixed login packet sending incorrect adapters list)",
+        R"(- Removed VR support)",
+        R"(- Updated protocol and database version to b20240411.1)",
+    };
     changelogs.push_back(v34_09);
 
     CHANGELOG v34_08;
     v34_08.title = "34.08 (2024-03-30)";
-    v34_08.changes.emplace_back("- Added animations for the in-game scoreboard");
-    v34_08.changes.emplace_back("- Added option to always pick Nightcore mod first");
-    v34_08.changes.emplace_back("- Added osu_animation_speed_override cheat convar (code by Givikap120)");
-    v34_08.changes.emplace_back(
-        "- Added flashlight_always_hard convar to lock flashlight radius to the 200+ combo size");
-    v34_08.changes.emplace_back("- Allowed scores to submit when using mirror mods");
-    v34_08.changes.emplace_back("- Now playing a random song on game launch");
-    v34_08.changes.emplace_back("- Small UI improvements");
-    v34_08.changes.emplace_back("- Updated protocol and database version to b20240330.2");
+    v34_08.changes = {
+        R"(- Added animations for the in-game scoreboard)",
+        R"(- Added option to always pick Nightcore mod first)",
+        R"(- Added osu_animation_speed_override cheat convar (code by Givikap120))",
+        R"(- Added flashlight_always_hard convar to lock flashlight radius to the 200+ combo size)",
+        R"(- Allowed scores to submit when using mirror mods)",
+        R"(- Now playing a random song on game launch)",
+        R"(- Small UI improvements)",
+        R"(- Updated protocol and database version to b20240330.2)",
+    };
     changelogs.push_back(v34_08);
 
     CHANGELOG v34_07;
     v34_07.title = "34.07 (2024-03-28)";
-    v34_07.changes.emplace_back("- Added Flashlight mod");
-    v34_07.changes.emplace_back("- Fixed a few bugs");
+    v34_07.changes = {
+        R"(- Added Flashlight mod)",
+        R"(- Fixed a few bugs)",
+    };
     changelogs.push_back(v34_07);
 
     CHANGELOG v34_06;
     v34_06.title = "34.06 (2024-03-12)";
-    v34_06.changes.emplace_back("- Fixed pausing not working correctly");
+    v34_06.changes = {
+        R"(- Fixed pausing not working correctly)",
+    };
     changelogs.push_back(v34_06);
 
     CHANGELOG v34_05;
     v34_05.title = "34.05 (2024-03-12)";
-    v34_05.changes.emplace_back("- Added support for ASIO output");
-    v34_05.changes.emplace_back("- Disabled ability to fail when using Relax (online)");
-    v34_05.changes.emplace_back("- Enabled non-vanilla mods (disables score submission)");
-    v34_05.changes.emplace_back(
-        "- Fixed speed modifications not getting applied to song previews when switching songs");
-    v34_05.changes.emplace_back("- Improved Nightcore/Daycore audio quality");
-    v34_05.changes.emplace_back("- Improved behavior of speed modifier mod selection");
-    v34_05.changes.emplace_back("- Improved WASAPI output latency");
+    v34_05.changes = {
+        R"(- Added support for ASIO output)",
+        R"(- Disabled ability to fail when using Relax (online))",
+        R"(- Enabled non-vanilla mods (disables score submission))",
+        R"(- Fixed speed modifications not getting applied to song previews when switching songs)",
+        R"(- Improved Nightcore/Daycore audio quality)",
+        R"(- Improved behavior of speed modifier mod selection)",
+        R"(- Improved WASAPI output latency)",
+    };
     changelogs.push_back(v34_05);
 
     CHANGELOG v34_04;
     v34_04.title = "34.04 (2024-03-03)";
-    v34_04.changes.emplace_back("- Fixed replays having incorrect tickrate when using speed modifying mods (again)");
-    v34_04.changes.emplace_back("- Fixed auto-updater not working");
-    v34_04.changes.emplace_back("- Fixed scores getting submitted for 0-score plays");
-    v34_04.changes.emplace_back("- Replay frames will now be written for slider ticks/ends");
-    v34_04.changes.emplace_back("- When using Relax, replay frames will now also be written for every hitcircle");
-    v34_04.changes.emplace_back("- Improved beatmap database loading performance");
-    v34_04.changes.emplace_back("- Improved build process");
+    v34_04.changes = {
+        R"(- Fixed replays having incorrect tickrate when using speed modifying mods (again))",
+        R"(- Fixed auto-updater not working)",
+        R"(- Fixed scores getting submitted for 0-score plays)",
+        R"(- Replay frames will now be written for slider ticks/ends)",
+        R"(- When using Relax, replay frames will now also be written for every hitcircle)",
+        R"(- Improved beatmap database loading performance)",
+        R"(- Improved build process)",
+    };
     changelogs.push_back(v34_04);
 
     CHANGELOG v34_03;
     v34_03.title = "34.03 (2024-02-29)";
-    v34_03.changes.emplace_back("- Fixed replays having incorrect tickrate when using speed modifying mods");
+    v34_03.changes = {
+        R"(- Fixed replays having incorrect tickrate when using speed modifying mods)",
+    };
     changelogs.push_back(v34_03);
 
     CHANGELOG v34_02;
     v34_02.title = "34.02 (2024-02-27)";
-    v34_02.changes.emplace_back("- Added score submission (for servers that allow it via the x-mcosu-features header)");
-    v34_02.changes.emplace_back("- Added [quit] indicator next to users who quit a match");
-    v34_02.changes.emplace_back("- Made main menu shuffle through songs instead of looping over the same one");
-    v34_02.changes.emplace_back("- Fixed \"No records set!\" banner display");
-    v34_02.changes.emplace_back("- Fixed \"Server has restarted\" loop after a login error");
-    v34_02.changes.emplace_back("- Fixed chat being force-hid during breaks and before map start");
-    v34_02.changes.emplace_back("- Fixed chat not supporting expected keyboard navigation");
-    v34_02.changes.emplace_back("- Fixed text selection for password field");
-    v34_02.changes.emplace_back("- Fixed version header not being sent on login");
+    v34_02.changes = {
+        R"(- Added score submission (for servers that allow it via the x-mcosu-features header))",
+        R"(- Added [quit] indicator next to users who quit a match)",
+        R"(- Made main menu shuffle through songs instead of looping over the same one)",
+        R"(- Fixed "No records set!" banner display)",
+        R"(- Fixed "Server has restarted" loop after a login error)",
+        R"(- Fixed chat being force-hid during breaks and before map start)",
+        R"(- Fixed chat not supporting expected keyboard navigation)",
+        R"(- Fixed text selection for password field)",
+        R"(- Fixed version header not being sent on login)",
+    };
     changelogs.push_back(v34_02);
 
     CHANGELOG v34_01;
     v34_01.title = "34.01 (2024-02-18)";
-    v34_01.changes.emplace_back("- Added ability to close chat channels with /close");
-    v34_01.changes.emplace_back("- Added \"Force Start\" button to avoid host accidentally starting the match");
-    v34_01.changes.emplace_back("- Disabled force start when there are only two players in the room");
-    v34_01.changes.emplace_back(
-        "- Made tab button switch between endpoint, username and password fields in options menu");
-    v34_01.changes.emplace_back("- Fixed not being visible on peppy client when starting a match as host");
-    v34_01.changes.emplace_back("- Fixed Daycore, Nightcore and Perfect mod selection");
-    v34_01.changes.emplace_back("- Fixed mod selection sound playing twice");
-    v34_01.changes.emplace_back("- Fixed client not realizing when it gets kicked from a room");
-    v34_01.changes.emplace_back("- Fixed room settings not updating immediately");
-    v34_01.changes.emplace_back("- Fixed login failing with \"No account by the username '?' exists.\"");
-    v34_01.changes.emplace_back("- Removed Steam Workshop button");
+    v34_01.changes = {
+        R"(- Added ability to close chat channels with /close)",
+        R"(- Added "Force Start" button to avoid host accidentally starting the match)",
+        R"(- Disabled force start when there are only two players in the room)",
+        R"(- Made tab button switch between endpoint, username and password fields in options menu)",
+        R"(- Fixed not being visible on peppy client when starting a match as host)",
+        R"(- Fixed Daycore, Nightcore and Perfect mod selection)",
+        R"(- Fixed mod selection sound playing twice)",
+        R"(- Fixed client not realizing when it gets kicked from a room)",
+        R"(- Fixed room settings not updating immediately)",
+        R"(- Fixed login failing with "No account by the username '?' exists.")",
+        R"(- Removed Steam Workshop button)",
+    };
     changelogs.push_back(v34_01);
 
     CHANGELOG v34_00;
     v34_00.title = "34.00 (2024-02-16)";
-    v34_00.changes.emplace_back("- Added ability to connect to servers using Bancho protocol");
-    v34_00.changes.emplace_back("- Added ability to see, join and play in multiplayer rooms");
-    v34_00.changes.emplace_back("- Added online leaderboards");
-    v34_00.changes.emplace_back("- Added chat");
-    v34_00.changes.emplace_back("- Added automatic map downloads for multiplayer rooms");
-    v34_00.changes.emplace_back("");
-    v34_00.changes.emplace_back("");
-    v34_00.changes.emplace_back("");
-    v34_00.changes.emplace_back("");
-    v34_00.changes.emplace_back("");
+    v34_00.changes = {
+        R"(- Added ability to connect to servers using Bancho protocol)",
+        R"(- Added ability to see, join and play in multiplayer rooms)",
+        R"(- Added online leaderboards)",
+        R"(- Added chat)",
+        R"(- Added automatic map downloads for multiplayer rooms)",
+        R"()",
+        R"()",
+        R"()",
+        R"()",
+        R"()",
+    };
     changelogs.push_back(v34_00);
 
     this->addAllChangelogs(std::move(changelogs));
