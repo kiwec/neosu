@@ -1230,21 +1230,23 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
     this->addSubSection_("Offset Adjustment");
     {
-        this->addSlider_("Universal Offset:", -300.0f, 300.0f, &cv::universal_offset)
+        this->addSlider_("Scaled Offset:", -300.0f, 300.0f, &cv::universal_offset)
             ->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangeIntMS>(this))
             ->setKeyDelta(1);
 
         auto *label1 = static_cast<UILabel *>(this->elemContainers.back()->baseElems[0].get());
-        label1->setTooltipText("Behaves the same as Universal Offset in osu! (is multiplied by playback rate).");
+        label1->setTooltipText("Behaves the same as \"Universal Offset\" in osu! (is multiplied by playback rate).");
     }
 
     {
-        this->addSlider_("Universal Offset (unscaled):", -300.0f, 300.0f, &cv::universal_offset_norate)
+        this->addSlider_("Unscaled Offset:", -300.0f, 300.0f, &cv::universal_offset_norate)
             ->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangeIntMS>(this))
             ->setKeyDelta(1);
 
         auto *label1 = static_cast<UILabel *>(this->elemContainers.back()->baseElems[0].get());
-        label1->setTooltipText("Universal Offset, but unaffected by rate adjustments.\nUse this if you feel like you need to use a local offset on every map.");
+        label1->setTooltipText(
+            "\"Universal Offset\", but unaffected by rate adjustments.\n+15 unscaled offset is the same as using -15 "
+            "local offset on every map.");
     }
 
     this->addSubSection_("Gameplay");
