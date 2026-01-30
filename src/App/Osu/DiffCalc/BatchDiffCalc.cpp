@@ -1,10 +1,10 @@
-// Copyright (c) 2024, kiwec & 2025, WH, All rights reserved.
+// Copyright (c) 2024, kiwec & 2025-2026, WH, All rights reserved.
 
 // - Groups all work by beatmap MD5 hash so each .osu file is loaded exactly once
 // - Within each beatmap, groups scores by mod parameters (AR/CS/OD/speed/etc.) so
 //   difficulty attributes are calculated once per unique parameter set
 
-#include "DBRecalculator.h"
+#include "BatchDiffCalc.h"
 
 #include "Database.h"
 #include "DatabaseBeatmap.h"
@@ -25,24 +25,26 @@ namespace cv {
 extern ConVar debug_pp;
 }
 
-namespace DBRecalculator {
+namespace BatchDiffCalc {
 
 struct internal {
     static void update_score_in_db(const FinishedScore& score, f64 pp, f64 total_stars, f64 aim_stars, f64 speed_stars);
     static void collect_outdated_db_diffs(const Sync::stop_token& stoken, std::vector<BeatmapDifficulty*>& outdiffs);
 };
 
+// TODO: it might make more sense to instead pass this out from a general "get_results"
+// instead of strangely doing this separately vs. beatmap calculation
 void internal::update_score_in_db(const FinishedScore& score, f64 pp, f64 total_stars, f64 aim_stars, f64 speed_stars) {
     Sync::unique_lock lk(db->scores_mtx);
     auto it = db->getScoresMutable().find(score.beatmap_hash);
     if(it == db->getScoresMutable().end()) return;
 
-    if(auto scorevecIt = std::ranges::find(it->second, score); scorevecIt != it->second.end()) {
-        scorevecIt->ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
-        scorevecIt->ppv2_score = pp;
-        scorevecIt->ppv2_total_stars = total_stars;
-        scorevecIt->ppv2_aim_stars = aim_stars;
-        scorevecIt->ppv2_speed_stars = speed_stars;
+    if(auto scoreIt = std::ranges::find(it->second, score); scoreIt != it->second.end()) {
+        scoreIt->ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
+        scoreIt->ppv2_score = pp;
+        scoreIt->ppv2_total_stars = total_stars;
+        scoreIt->ppv2_aim_stars = aim_stars;
+        scoreIt->ppv2_speed_stars = speed_stars;
         db->scores_changed.store(true, std::memory_order_release);
     }
 }
@@ -192,10 +194,11 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
                                                         .c300 = score.num300s,
                                                         .c100 = score.num100s,
                                                         .c50 = score.num50s,
-                                                        .legacyTotalScore = (u32)score.score};
+                                                        .legacyTotalScore = (u32)score.score,
+                                                        .isMcOsuImported = score.is_mcosu_imported()};
 
         // mcosu scores use a different scorev1 algorithm
-        const f64 pp = DifficultyCalculator::calculatePPv2(ppv2params, score.is_mcosu_imported());
+        const f64 pp = DifficultyCalculator::calculatePPv2(ppv2params);
         internal::update_score_in_db(score, pp, total_stars, attributes.AimDifficulty, attributes.SpeedDifficulty);
         if(pp <= 0.f) {
             ++errored_count;
@@ -510,4 +513,4 @@ std::optional<std::vector<MapResult>> try_get_map_results() {
     return moved;
 }
 
-}  // namespace DBRecalculator
+}  // namespace BatchDiffCalc

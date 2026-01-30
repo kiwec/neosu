@@ -238,9 +238,10 @@ void run_thread(const Sync::stop_token& stoken) {
                 .c300 = rqt.num300s,
                 .c100 = rqt.num100s,
                 .c50 = rqt.num50s,
-                .legacyTotalScore = rqt.legacyTotalScore};
+                .legacyTotalScore = rqt.legacyTotalScore,
+                .isMcOsuImported = rqt.scoreFromMcOsu};
 
-            computed_info->info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams, rqt.scoreFromMcOsu);
+            computed_info->info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
             {
                 Sync::unique_lock cache_lock(cache_mtx);

@@ -609,7 +609,9 @@ f64 DifficultyCalculator::calculateScoreV1SpinnerScore(f64 spinnerDuration) {
     return score;
 }
 
-f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams &cpar, bool isMcOsuImported) {
+f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams &cpar) {
+    const bool isMcOsuImported = cpar.isMcOsuImported;
+
     // NOTE: depends on active mods + OD + AR
 
     if(cpar.c300 < 0) cpar.c300 = cpar.numHitObjects - cpar.c100 - cpar.c50 - cpar.misses;

@@ -3791,7 +3791,8 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
                                                         .c300 = num300s,
                                                         .c100 = num100s,
                                                         .c50 = num50s,
-                                                        .legacyTotalScore = legacyTotalScore};
+                                                        .legacyTotalScore = legacyTotalScore,
+                                                        .isMcOsuImported = false};
 
     const f32 pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 

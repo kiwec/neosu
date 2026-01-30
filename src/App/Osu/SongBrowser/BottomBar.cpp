@@ -5,7 +5,7 @@
 #include "OsuConVars.h"
 #include "Engine.h"
 #include "LoudnessCalcThread.h"
-#include "DBRecalculator.h"
+#include "BatchDiffCalc.h"
 #include "Mouse.h"
 #include "OptionsOverlay.h"
 #include "UIBackButton.h"
@@ -228,9 +228,9 @@ void draw() {
     McFont* font = engine->getDefaultFont();
     i32 calcx = osu->getUserButton()->getPos().x + osu->getUserButton()->getSize().x + 20;
     i32 calcy = osu->getUserButton()->getPos().y + 15;
-    if(DBRecalculator::get_maps_total() > 0) {
-        UString msg = fmt::format("Calculating stars ({}/{}) ...", DBRecalculator::get_maps_processed(),
-                                  DBRecalculator::get_maps_total());
+    if(BatchDiffCalc::get_maps_total() > 0) {
+        UString msg = fmt::format("Calculating stars ({}/{}) ...", BatchDiffCalc::get_maps_processed(),
+                                  BatchDiffCalc::get_maps_total());
         g->pushTransform();
         g->translate(calcx, calcy);
         g->drawString(font, msg);
@@ -264,8 +264,8 @@ void draw() {
         g->popTransform();
         calcy += font->getHeight() + 10;
     }
-    const auto calc_total = DBRecalculator::get_scores_total();
-    const auto calc_computed = DBRecalculator::get_scores_processed();
+    const auto calc_total = BatchDiffCalc::get_scores_total();
+    const auto calc_computed = BatchDiffCalc::get_scores_processed();
     if(calc_total > 0 && calc_computed < calc_total) {
         UString msg = fmt::format("Converting scores ({}/{}) ...", calc_computed, calc_total);
         g->pushTransform();

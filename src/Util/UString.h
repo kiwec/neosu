@@ -183,8 +183,8 @@ class UString {
                                      std::optional<int> endOpt = std::nullopt) const noexcept;
 
     // iterators for range-based for loops
-    [[nodiscard]] constexpr const auto begin() const noexcept { return this->sUnicode.begin(); }
-    [[nodiscard]] constexpr const auto end() const noexcept { return this->sUnicode.end(); }
+    [[nodiscard]] constexpr auto begin() const noexcept { return this->sUnicode.begin(); }
+    [[nodiscard]] constexpr auto end() const noexcept { return this->sUnicode.end(); }
     [[nodiscard]] constexpr auto cbegin() const noexcept { return this->sUnicode.cbegin(); }
     [[nodiscard]] constexpr auto cend() const noexcept { return this->sUnicode.cend(); }
 

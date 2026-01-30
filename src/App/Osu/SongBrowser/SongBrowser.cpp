@@ -22,7 +22,7 @@
 #include "Osu.h"
 #include "OsuConVars.h"
 
-#include "DBRecalculator.h"
+#include "BatchDiffCalc.h"
 #include "AsyncPPCalculator.h"
 #include "LoudnessCalcThread.h"
 
@@ -519,7 +519,7 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
 }
 
 SongBrowser::~SongBrowser() {
-    DBRecalculator::abort_calc();
+    BatchDiffCalc::abort_calc();
     AsyncPPC::set_map(nullptr);
     VolNormalization::abort();
     this->checkHandleKillBackgroundSearchMatcher();
@@ -896,13 +896,13 @@ void SongBrowser::update(CBaseUIEventCtx &c) {
     BottomBar::update(c);
 
     // map star/bpm/other calc
-    if(DBRecalculator::running()) {
-        std::vector<DBRecalculator::MapResult> results;
-        if(DBRecalculator::is_finished()) {
-            DBRecalculator::abort_calc();  // join thread
-            results = DBRecalculator::get_map_results();
+    if(BatchDiffCalc::running()) {
+        std::vector<BatchDiffCalc::MapResult> results;
+        if(BatchDiffCalc::is_finished()) {
+            BatchDiffCalc::abort_calc();  // join thread
+            results = BatchDiffCalc::get_map_results();
         } else {
-            auto maybe_result = DBRecalculator::try_get_map_results();
+            auto maybe_result = BatchDiffCalc::try_get_map_results();
             if(maybe_result.has_value()) {
                 results = maybe_result.value();
             }
@@ -938,9 +938,9 @@ void SongBrowser::update(CBaseUIEventCtx &c) {
             }
             uniqueSetsForDiffs.clear();
         }
-    } else if(DBRecalculator::running() && DBRecalculator::is_finished()) {
+    } else if(BatchDiffCalc::running() && BatchDiffCalc::is_finished()) {
         // if there was never anything to do just make sure to join the thread
-        DBRecalculator::abort_calc();
+        BatchDiffCalc::abort_calc();
     }
 
     // auto-download

@@ -336,10 +336,11 @@ class DifficultyCalculator {
         i32 c50;
 
         u32 legacyTotalScore;
+        bool isMcOsuImported; // mcosu scores use a different scorev1 algorithm
     };
 
     // pp, fully static
-    static f64 calculatePPv2(PPv2CalcParams &cparams, bool isMcOsuImported = false);
+    static f64 calculatePPv2(PPv2CalcParams &cparams);
 
     // misc public utils
     [[nodiscard]] static f64 getScoreV1ScoreMultiplier(ModFlags flags, f64 speedOverride, bool mcosu = false);

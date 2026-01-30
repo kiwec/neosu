@@ -28,7 +28,7 @@ neosu_SOURCES = \
 	src/App/Osu/Database.cpp \
 	src/App/Osu/DatabaseBeatmap.cpp \
 	src/App/Osu/DiffCalc/AsyncPPCalculator.cpp \
-	src/App/Osu/DiffCalc/DBRecalculator.cpp \
+	src/App/Osu/DiffCalc/BatchDiffCalc.cpp \
 	src/App/Osu/DiffCalc/DifficultyCalculator.cpp \
 	src/App/Osu/DiffCalc/LivePPCalc.cpp \
 	src/App/Osu/Downloader.cpp \

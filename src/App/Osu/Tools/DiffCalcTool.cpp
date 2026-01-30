@@ -274,7 +274,8 @@ int entrypoint(int argc_, char *argv_[]) {
                                                   .c300 = -1,
                                                   .c100 = 0,
                                                   .c50 = 0,
-                                                  .legacyTotalScore = 0};
+                                                  .legacyTotalScore = 0,
+                                                  .isMcOsuImported = false};
 
     const double pp = DifficultyCalculator::calculatePPv2(ppParams);
 

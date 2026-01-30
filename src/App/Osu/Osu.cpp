@@ -55,7 +55,7 @@
 #include "Skin.h"
 #include "AsyncPPCalculator.h"
 #include "SongBrowser/LoudnessCalcThread.h"
-#include "DiffCalc/DBRecalculator.h"
+#include "DiffCalc/BatchDiffCalc.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
@@ -435,7 +435,7 @@ Osu::~Osu() {
     soundEngine->setDeviceChangeBeforeCallback({});
     soundEngine->setDeviceChangeAfterCallback({});
 
-    DBRecalculator::abort_calc();
+    BatchDiffCalc::abort_calc();
     AsyncPPC::set_map(nullptr);
     VolNormalization::shutdown();
     BANCHO::Net::cleanup_networking();

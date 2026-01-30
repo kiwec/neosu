@@ -19,7 +19,7 @@
 #include "ResourceManager.h"
 #include "AsyncPPCalculator.h"
 #include "SongBrowser/LoudnessCalcThread.h"
-#include "DiffCalc/DBRecalculator.h"
+#include "DiffCalc/BatchDiffCalc.h"
 #include "SongBrowser/SongBrowser.h"
 #include "Timing.h"
 #include "UI.h"
@@ -218,7 +218,7 @@ void Database::AsyncDBLoader::init() {
         db->loading_progress = 1.0f;
 
         // will find maps/scores needing recalc dynamically
-        DBRecalculator::start_calc();
+        BatchDiffCalc::start_calc();
         VolNormalization::start_calc(db->loudness_to_calc);
 
         this->setReady(true);
@@ -273,7 +273,7 @@ void Database::startLoader() {
     this->destroyLoader();
 
     // stop threads that rely on database content
-    DBRecalculator::abort_calc();
+    BatchDiffCalc::abort_calc();
     AsyncPPC::set_map(nullptr);
     VolNormalization::abort();
 
@@ -338,7 +338,7 @@ Database::~Database() {
                                          ResourceDestroyFlags::RDF_NODELETE);  // don't delete a unique_ptr
     }
 
-    DBRecalculator::abort_calc();
+    BatchDiffCalc::abort_calc();
     AsyncPPC::set_map(nullptr);
     VolNormalization::abort();
     this->loudness_to_calc.clear();
@@ -408,7 +408,7 @@ void Database::update() {
                 this->loading_progress = 1.0f;
 
                 // will find maps/scores needing recalc dynamically
-                DBRecalculator::start_calc();
+                BatchDiffCalc::start_calc();
                 VolNormalization::start_calc(this->loudness_to_calc);
 
                 break;
@@ -700,7 +700,7 @@ Database::PlayerStats Database::calculatePlayerStats(const std::string &playerNa
     const bool scoresChanged = this->scores_changed.load(std::memory_order_acquire);
     const bool returnCached =
         playerName == this->prevPlayerStats.name.utf8View() &&
-        (!scoresChanged || (!DBRecalculator::scores_finished() && !engine->throttledShouldRun(60)));
+        (!scoresChanged || (!BatchDiffCalc::scores_finished() && !engine->throttledShouldRun(60)));
     if(returnCached) {
         return this->prevPlayerStats;
     }
@@ -2517,7 +2517,7 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
         auto res = map->loadMetadata();
         if(!res.error.errc) {
             if(diffcalc_immediately) {
-                // TODO: get rid of this, just use DBRecalculator
+                // TODO: get rid of this, just use BatchDiffCalc
                 map->calcNomodStarsSlow(std::move(res));
             }
             diffs->push_back(std::move(map));

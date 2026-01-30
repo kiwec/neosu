@@ -211,7 +211,8 @@ struct LivePPCalc::LivePPCalcImpl {
                 .c300 = p.nb_300s,
                 .c100 = p.nb_100s,
                 .c50 = p.nb_50s,
-                .legacyTotalScore = (u32)p.legacy_total_score};
+                .legacyTotalScore = (u32)p.legacy_total_score,
+                .isMcOsuImported = false};
 
             // HACKHACK: for auto, just ignore reality and calculate maximum pp of a perfect play up until this point
             // this allows calculation after seeking and dropping combo

@@ -1,5 +1,5 @@
 #pragma once
-// Copyright (c) 2024, kiwec & 2025, WH, All rights reserved.
+// Copyright (c) 2024, kiwec & 2025-2026, WH, All rights reserved.
 #include "types.h"
 
 #include <optional>
@@ -11,10 +11,8 @@ class DatabaseBeatmap;
 using BeatmapDifficulty = DatabaseBeatmap;
 using BeatmapSet = DatabaseBeatmap;
 
-struct FinishedScore;
-
 // Recalculates outdated/legacy scores and beatmaps imported from databases asynchronously.
-namespace DBRecalculator {
+namespace BatchDiffCalc {
 
 struct MapResult {
     BeatmapDifficulty* map{};
@@ -49,4 +47,4 @@ void abort_calc();
 [[nodiscard]] std::optional<std::vector<MapResult>> try_get_map_results();
 
 struct internal;
-}  // namespace DBRecalculator
+}  // namespace BatchDiffCalc
