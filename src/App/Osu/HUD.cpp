@@ -33,6 +33,7 @@
 #include "UIAvatar.h"
 #include "VertexArrayObject.h"
 #include "score.h"
+#include "Sound.h"
 
 #include "shaders.h"
 
@@ -1748,6 +1749,21 @@ void HUD::drawProgressBar(float percent, bool waiting) {
 }
 
 void HUD::drawStatistics(HUDStats s) const {
+    static const auto getOffsetStatText = []() -> UString {
+        const auto &bmi = osu->getMapInterface();
+        if(!bmi || !bmi->getMusic() || !bmi->getBeatmap()) return "";
+
+        const i32 uniScaled = (i32)(cv::universal_offset.getFloat() * bmi->getSpeedMultiplier());
+        const i32 uniUnscaled = cv::universal_offset_norate.getInt();
+        const i32 inherent = bmi->getMusic()->getRateBasedStreamDelayMS();
+        const i32 local = bmi->getBeatmap()->getLocalOffset();
+        const i32 online = bmi->getBeatmap()->getOnlineOffset();
+        const i32 total = uniScaled + uniUnscaled - inherent - local - online;
+        return fmt::format("strt: {} off: {}ms (({}us*{:.1f}spd)+{}uu-{}auto-{}l-{}lo)",
+                           cv::snd_soloud_offset_compensation_strategy.getInt(), total, cv::universal_offset.getFloat(),
+                           bmi->getSpeedMultiplier(), uniUnscaled, inherent, local, online);
+    };
+
     McFont *font = osu->getTitleFont();
 
     float scale = cv::hud_statistics_scale.getFloat() * cv::hud_scale.getFloat();
@@ -1782,6 +1798,9 @@ void HUD::drawStatistics(HUDStats s) const {
 
             g->translate((-xOffset), (-yOffset) + yDelta);
         };
+
+        // debugging
+        if(cv::draw_statistics_audio_offset.getBool()) addStatistic(getOffsetStatText(), 0, 0);
 
         if(cv::draw_statistics_pp.getBool())
             addStatistic(
@@ -2217,7 +2236,7 @@ void HUD::drawInputOverlay(int numK1, int numK2, int numM1, int numM2) {
     const float oScale = inputoverlayBackground->getResolutionScale() *
                          1.6f;  // for converting harcoded osu offset pixels to screen pixels
     const float offsetScale = Osu::getRectScale(vec2(1.0f, 1.0f),
-                                                 1.0f);  // for scaling the x/y offset convars relative to screen size
+                                                1.0f);  // for scaling the x/y offset convars relative to screen size
 
     const float xStartOffset = cv::hud_inputoverlay_offset_x.getFloat() * offsetScale;
     const float yStartOffset = cv::hud_inputoverlay_offset_y.getFloat() * offsetScale;

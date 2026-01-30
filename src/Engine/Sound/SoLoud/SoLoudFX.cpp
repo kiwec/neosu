@@ -748,13 +748,31 @@ void SoundTouchFilterInstance::updateSTLatency()
 	mSTOutputSequence = mSoundTouch->getSetting(SETTING_NOMINAL_OUTPUT_SEQUENCE);
 	mSTInputSequence =  mSoundTouch->getSetting(SETTING_NOMINAL_INPUT_SEQUENCE);
 
-	// const auto initSecs = static_cast<double>(mSTInitialLatency) / static_cast<double>(mParent->mBaseSamplerate);
-	const auto inputSecs = static_cast<double>(mSTInputSequence) / static_cast<double>(mParent->mBaseSamplerate);
-	// const auto outputSecs = static_cast<double>(mSTOutputSequence) / static_cast<double>(mParent->mBaseSamplerate);
+	const auto initSecs = static_cast<double>(mSTInitialLatency) / static_cast<double>(mParent->mBaseSamplerate);
+	// const auto inputSecs = static_cast<double>(mSTInputSequence) / static_cast<double>(mParent->mBaseSamplerate);
+	const auto outputSecs = static_cast<double>(mSTOutputSequence) / static_cast<double>(mParent->mBaseSamplerate);
 	ST_DEBUG_LOG("Got new init latency: {} output seq: {} input seq: {} mBaseSampleRate: {} mSTBaseRatelatencySeconds: {}", mSTInitialLatency, mSTOutputSequence, mSTInputSequence, mParent->mBaseSamplerate, mSTBaseRateLatencySeconds);
 
-	// this doesn't really make sense but is the only thing that works
-	mSTLatencySeconds.store(inputSecs, std::memory_order_release);
+	const int strategy = cv::snd_soloud_offset_compensation_strategy.getInt();
+	double resultSeconds = 0.0;
+	if (strategy == 0 /* naive (nothing ) */)
+	{
+	}
+	else if (std::abs(strategy) == 1 /* SoundTouch algorithm */)
+	{
+		resultSeconds = initSecs - (outputSecs / 2.0);
+	}
+	else if(std::abs(strategy) == 2 /* "bullshit" "algorithm" */)
+	{
+		resultSeconds = initSecs;
+	}
+
+	if (strategy < 0) // scale by rate
+	{
+		resultSeconds *= mSoundTouchSpeed;
+	}
+
+	mSTLatencySeconds.store(resultSeconds, std::memory_order_release);
 }
 
 void SoundTouchFilterInstance::reSynchronize()

@@ -285,6 +285,7 @@ CONVAR(draw_statistics_pp, false, CLIENT | SKINS | SERVER);
 CONVAR(draw_statistics_sliderbreaks, false, CLIENT | SKINS | SERVER);
 CONVAR(draw_statistics_totalstars, false, CLIENT | SKINS | SERVER);
 CONVAR(draw_statistics_ur, false, CLIENT | SKINS | SERVER);
+CONVAR(draw_statistics_audio_offset, false, CLIENT); // DEBUG
 CONVAR(draw_target_heatmap, true, CLIENT | SKINS | SERVER);
 CONVAR(hud_accuracy_scale, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(hud_combo_scale, 1.0f, CLIENT | SKINS | SERVER);
