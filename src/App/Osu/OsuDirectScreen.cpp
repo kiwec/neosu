@@ -328,8 +328,6 @@ OsuDirectScreen::OsuDirectScreen() : bg_mgr(std::make_unique<MapBGManager>()) {
     this->results->setVerticalScrolling(true);
     this->results->grabs_clicks = false;
     this->addBaseUIElement(this->results);
-
-    this->onResolutionChange(osu->getVirtScreenSize());
 }
 
 OsuDirectScreen::~OsuDirectScreen() {
@@ -355,6 +353,8 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
     ScreenBackable::setVisible(visible);
 
     if(visible) {
+        this->onResolutionChange(osu->getVirtScreenSize());
+
         this->search_bar->clear();
         this->search_bar->focus();
     } else {

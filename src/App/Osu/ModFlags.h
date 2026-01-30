@@ -60,6 +60,11 @@ enum class ModFlags : u64 {
     NoKeylock = 1ULL << 44,
     NoPausing = 1ULL << 45,
 
+    // Reserved
+    SliderHeadAccuracy = 1ULL << 46,
+    SliderTailAccuracy = 1ULL << 47,
+    DKS = 1ULL << 48,
+
     // Non-submittable
     NoHP = 1ULL << 62,
     Autoplay = 1ULL << 63
