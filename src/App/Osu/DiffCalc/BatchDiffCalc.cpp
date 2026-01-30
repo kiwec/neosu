@@ -346,10 +346,10 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
             // mod combo indices: [hidden=false, hidden=true]
             u8 combo_idx[2];
         };
-        static constexpr ArCsVariant VARIANTS[] = {
-            {1.0f, 1.0f, {0, 2}},  // BASE: None(0), HD(2)
-            {1.4f, 1.3f, {1, 4}},  // HR: HR(1), HD|HR(4)
-            {0.5f, 0.5f, {3, 5}},  // EZ: EZ(3), HD|EZ(5)
+        static constexpr std::array VARIANTS{
+            ArCsVariant{1.0f, 1.0f, {0, 2}},  // BASE: None(0), HD(2)
+            ArCsVariant{1.4f, 1.3f, {1, 4}},  // HR: HR(1), HD|HR(4)
+            ArCsVariant{0.5f, 0.5f, {3, 5}},  // EZ: EZ(3), HD|EZ(5)
         };
 
         for(u8 speed_idx = 0; speed_idx < DiffStars::SPEEDS_NUM; speed_idx++) {
@@ -412,12 +412,15 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
                         static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(star_params));
 
                     ctx.diffobj_cache = std::move(star_params.cachedDiffObjects);
-                    ctx.diffobj_cache->clear();
 
                     result.star_ratings.values[flat_idx] = stars;
 
                     if(stoken.stop_requested()) return;
                 }
+
+                // clear after both HD iterations; the HD=1 call reuses the
+                // cache built by HD=0 since hidden only affects final rating
+                ctx.diffobj_cache->clear();
             }
         }
 
