@@ -505,7 +505,7 @@ $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).ta
 	$(if $(SDL3_STATIC),$(SED) -i -e 's|#ifdef SDL_DYNAMIC_API.*|#if 1|' -e 's|#error.*Nope.*|#define SDL_DYNAMIC_API 0|' src/dynapi/SDL_dynapi.h,true) && \
 	$(SED) -i 's|KMSDRM_gbm_surface_release_buffer.*next_bo.*|//\0|' src/video/kmsdrm/SDL_kmsdrmvideo.c && \
 	patch -Np1<$(BUILD_MISCDIR)/SDL3-Use-RIDEV_NOLEGACY-for-Windows-raw-mouse-input.patch && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" \
+	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		$(if $(ENABLE_ASAN),-DSDL_ASAN=ON,) \
@@ -589,7 +589,7 @@ $(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built: $(DEPS_CACHE)/SoLoud-$(SOLOUD_VER
 	$(MKDIR_P) $(DEPS_PREFIX) $(DEPS_PREFIX)/include $(DEPS_PREFIX)/lib/pkgconfig $(DEPS_PREFIX)/SoLoud/build
 	$(TAR) xf $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz -C $(DEPS_PREFIX)/SoLoud --strip-components=1 && \
 	cd $(DEPS_PREFIX)/SoLoud && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" \
+	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
@@ -619,7 +619,7 @@ $(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built: $(DEPS_CACHE)/SoundTouch-
 	cd $(DEPS_PREFIX)/SoundTouch && \
 	patch -Np1<$(BUILD_MISCDIR)/SoundTouch-AVX-patches.patch && \
 	$(SED) -i -e 's|MAX_BPM_VALID 190|MAX_BPM_VALID 1000|' -e 's|MAX_BPM_RANGE 200|MAX_BPM_RANGE 300|' include/BPMDetect.h && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" \
+	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
@@ -695,7 +695,7 @@ $(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built: $(DEPS_CACHE)/libjpeg-$(LIBJPEG
 	$(MKDIR_P) $(DEPS_PREFIX)/libjpeg/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/libjpeg-$(LIBJPEG_VERSION).tar.gz -C $(DEPS_PREFIX)/libjpeg --strip-components=1 && \
 	cd $(DEPS_PREFIX)/libjpeg && \
-	PKG_CONFIG="$(PKG_CONFIG)" \
+	PKG_CONFIG="$(PKG_CONFIG)" CC="$(CC)" CXX="$(CXX)" \
 	LDFLAGS="$(LDFLAGS)" $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
@@ -847,7 +847,7 @@ $(DEPS_PREFIX)/fmt-$(FMT_VERSION).built: $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz
 	$(MKDIR_P) $(DEPS_PREFIX)/fmt/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz -C $(DEPS_PREFIX)/fmt --strip-components=1 && \
 	cd $(DEPS_PREFIX)/fmt && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) $(FMT_EXTRA_BUILDFLAGS)" \
+	PKG_CONFIG="$(PKG_CONFIG)" CC="$(CC)" CXX="$(CXX)" LDFLAGS="$(LDFLAGS) $(FMT_EXTRA_BUILDFLAGS)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-DCMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-DCMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
@@ -918,7 +918,7 @@ $(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built: $(DEPS_CACHE)/nsync-$(NSYNC_VERSION
 	$(SED) -i 's|Windows.h|windows.h|' platform/win32/atomic.h && \
 	$(SED) -i 's|Windows.h|windows.h|' platform/win32/platform_c++11_os.h && \
 	$(SED) -i -e 's|.*"/TP".*||' -e 's|install (TARGETS nsync EXPORT nsync|\0 OPTIONAL|' CMakeLists.txt && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) -xnone" \
+	PKG_CONFIG="$(PKG_CONFIG)" CC="$(CC)" CXX="$(CXX)" LDFLAGS="$(LDFLAGS) -xnone" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-DCMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-DCMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
@@ -994,7 +994,7 @@ $(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built: $(DEPS_CACHE)/simdutf-$(SIMDUTF
 	$(MKDIR_P) $(DEPS_PREFIX)/simdutf/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz -C $(DEPS_PREFIX)/simdutf --strip-components=1 && \
 	cd $(DEPS_PREFIX)/simdutf && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) $(SIMDUTF_EXTRA_BUILDFLAGS)" \
+	PKG_CONFIG="$(PKG_CONFIG)" CC="$(CC)" CXX="$(CXX)" LDFLAGS="$(LDFLAGS) $(SIMDUTF_EXTRA_BUILDFLAGS)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
@@ -1038,7 +1038,7 @@ $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built: $(DEPS_CACHE)/liblzma-$(LZMA_VERSI
 	$(MKDIR_P) $(DEPS_PREFIX)/liblzma/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/liblzma-$(LZMA_VERSION).tar.gz -C $(DEPS_PREFIX)/liblzma --strip-components=1 && \
 	cd $(DEPS_PREFIX)/liblzma && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" \
+	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
@@ -1083,7 +1083,7 @@ $(DEPS_PREFIX)/ctre-$(CTRE_VERSION).built: $(DEPS_CACHE)/ctre-$(CTRE_VERSION).ta
 	$(MKDIR_P) $(DEPS_PREFIX)/ctre/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/ctre-$(CTRE_VERSION).tar.gz -C $(DEPS_PREFIX)/ctre --strip-components=1 && \
 	cd $(DEPS_PREFIX)/ctre && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" \
+	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
