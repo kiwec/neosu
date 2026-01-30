@@ -61,6 +61,17 @@ struct Exporter final {
         }
 
         void init() override {
+            // we *could* (maybe) be called here if osu has shut down/is shutting down
+            // so check this explicitly and abort everything if so
+            // (probably only in -testapp mode if shutting down osu but not engine)
+            if(!(ui && ui->getNotificationOverlay())) {
+                this->reload_pending = false;
+                this->export_queue_real.clear();
+                this->notification_queue.clear();
+                this->setReady(true);
+                this->setAsyncReady(true);
+                return;
+            }
             this->export_queue_real.clear();
             for(const auto &[msg, succeeded, cb] : this->notification_queue) {
                 ui->getNotificationOverlay()->addToast(msg, succeeded ? SUCCESS_TOAST : ERROR_TOAST, cb);
@@ -120,8 +131,9 @@ struct Exporter final {
                 if(this->isInterrupted()) return finish();
 
                 std::string export_folder_sub =
-                    single_archive ? export_folder_top + fmt::format("temp-{:%F-%H-%M-%S}/", fmt::gmtime(std::time(nullptr)))
-                                   : export_folder_top;
+                    single_archive
+                        ? export_folder_top + fmt::format("temp-{:%F-%H-%M-%S}/", fmt::gmtime(std::time(nullptr)))
+                        : export_folder_top;
 
                 if(single_archive) {
                     if(!Environment::createDirectory(export_folder_sub)) {
