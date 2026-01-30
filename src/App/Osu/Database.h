@@ -8,6 +8,7 @@
 #include "score.h"
 #include "SyncMutex.h"
 #include "Hashing.h"
+#include "DiffCalc/DiffStars.h"
 
 #include <atomic>
 #include <set>
@@ -36,7 +37,7 @@ class DatabaseBeatmap;
 using BeatmapDifficulty = DatabaseBeatmap;
 using BeatmapSet = DatabaseBeatmap;
 
-#define NEOSU_MAPS_DB_VERSION 20251225
+#define NEOSU_MAPS_DB_VERSION 20260130
 #define NEOSU_SCORE_DB_VERSION 20240725
 
 class Database;
@@ -177,6 +178,10 @@ class Database final {
 
     Hash::flat::map<MD5Hash, MapOverrides> peppy_overrides;
     std::vector<BeatmapDifficulty *> loudness_to_calc;
+
+    mutable Sync::shared_mutex star_ratings_mtx;
+    Hash::flat::map<MD5Hash, DiffStars::Ratings> star_ratings;
+    [[nodiscard]] f32 get_star_rating(const MD5Hash &hash, ModFlags flags, f32 speed) const;
 
    private:
     friend bool Collections::load_all();

@@ -93,6 +93,16 @@ bool Database::sortScoreByPP(const FinishedScore &a, const FinishedScore &b) {
     return false;  // equivalent
 }
 
+f32 Database::get_star_rating(const MD5Hash &hash, ModFlags flags, f32 speed) const {
+    if(uSz idx = DiffStars::index_of(flags, speed); idx != DiffStars::INVALID_MODCOMBO) {
+        Sync::shared_lock lk(this->star_ratings_mtx);
+        if(const auto &it = this->star_ratings.find(hash); it != this->star_ratings.end()) {
+            return it->second.values[idx];
+        }
+    }
+    return 0.f;
+}
+
 // static helper
 std::string Database::getDBPath(DatabaseType db_type) {
     static_assert(DatabaseType::LAST == DatabaseType::STABLE_MAPS, "add missing case to getDBPath");
@@ -1258,6 +1268,20 @@ void Database::loadMaps() {
                     this->peppy_overrides[map_md5] = over;
                 }
             }
+
+            // star ratings section
+            if(version >= 20260130) {
+                u32 nb_star_entries = neosu_maps.read<u32>();
+                Sync::unique_lock lock(this->star_ratings_mtx);
+                for(u32 i = 0; i < nb_star_entries; i++) {
+                    MD5Hash hash;
+                    (void)neosu_maps.read_hash(hash);
+                    DiffStars::Ratings ratings;
+                    (void)neosu_maps.read_bytes(reinterpret_cast<u8 *>(ratings.values.data()),
+                                                sizeof(f32) * DiffStars::NUM_ENTRIES);
+                    this->star_ratings[hash] = ratings;
+                }
+            }
         }
         this->bytes_processed += neosu_maps.total_size;
         this->neosu_maps_loaded = true;
@@ -1822,8 +1846,21 @@ void Database::saveMaps() {
         }
     }
 
+    // star ratings section
+    u32 nb_star_entries = 0;
+    {
+        Sync::shared_lock lock(this->star_ratings_mtx);
+        maps.write<u32>(this->star_ratings.size());
+        for(const auto &[hash, ratings] : this->star_ratings) {
+            maps.write_hash(hash);
+            maps.write_bytes(reinterpret_cast<const u8 *>(ratings.values.data()), sizeof(f32) * DiffStars::NUM_ENTRIES);
+            nb_star_entries++;
+        }
+    }
+
     t.update();
-    debugLog("Saved {:d} maps (+ {:d} overrides) in {:f} seconds.", nb_diffs_saved, nb_overrides, t.getElapsedTime());
+    debugLog("Saved {:d} maps (+ {:d} overrides, {:d} star ratings) in {:f} seconds.", nb_diffs_saved, nb_overrides,
+             nb_star_entries, t.getElapsedTime());
 }
 
 void Database::findDatabases() {

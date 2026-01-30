@@ -3,8 +3,11 @@
 // - Groups all work by beatmap MD5 hash so each .osu file is loaded exactly once
 // - Within each beatmap, groups scores by mod parameters (AR/CS/OD/speed/etc.) so
 //   difficulty attributes are calculated once per unique parameter set
+// - Pre-calculates star ratings for 54 common mod combinations per beatmap
+//   (9 speeds x 6 mod combos: None, HR, HD, EZ, HD|HR, HD|EZ)
 
 #include "BatchDiffCalc.h"
+#include "DiffStars.h"
 
 #include "Database.h"
 #include "DatabaseBeatmap.h"
@@ -44,13 +47,13 @@ struct internal {
 
 void internal::collect_outdated_db_diffs(const Sync::stop_token& stoken, std::vector<BeatmapDifficulty*>& outdiffs) {
     Sync::shared_lock readlock(db->beatmap_difficulties_mtx);
+    Sync::shared_lock sr_lock(db->star_ratings_mtx);
     for(const auto& [_, diff] : db->beatmap_difficulties) {
         if(stoken.stop_requested()) break;
-        if(diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION) {
+        if(diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION || !db->star_ratings.contains(diff->getMD5())) {
             outdiffs.push_back(diff);
         }
     }
-    return;
 }
 
 namespace {
@@ -101,7 +104,7 @@ struct MapResult {
     u32 nb_circles{};
     u32 nb_sliders{};
     u32 nb_spinners{};
-    f32 star_rating{};
+    DiffStars::Ratings star_ratings{};
     u32 min_bpm{};
     u32 max_bpm{};
     u32 avg_bpm{};
@@ -323,57 +326,103 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
         return;
     }
 
-    // process map calculation (nomod stars, BPM, object counts)
+    // process map calculation (multi-mod star ratings, BPM, object counts)
     if(item.needs_map_calc) {
-        // first loadDifficultyHitObjects call calculates slider times and sets sliderTimesCalculated
-        auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(primitives, item.map->getAR(), item.map->getCS(), 1.f,
-                                                                 false, stoken);
-
         MapResult result{.map = item.map,
-                         .length_ms = diffres.playableLength,
                          .nb_circles = primitives.numCircles,
                          .nb_sliders = primitives.numSliders,
                          .nb_spinners = primitives.numSpinners};
 
-        if(stoken.stop_requested()) return;
+        const f32 base_ar = item.map->getAR();
+        const f32 base_cs = item.map->getCS();
+        const f32 base_od = item.map->getOD();
+        const f32 base_hp = item.map->getHP();
 
-        if(!diffres.error.errc) {
-            DifficultyCalculator::BeatmapDiffcalcData diffcalc_data{.sortedHitObjects = diffres.diffobjects,
-                                                                    .CS = item.map->getCS(),
-                                                                    .HP = item.map->getHP(),
-                                                                    .AR = item.map->getAR(),
-                                                                    .OD = item.map->getOD(),
-                                                                    .hidden = false,
-                                                                    .relax = false,
-                                                                    .autopilot = false,
-                                                                    .touchDevice = false,
-                                                                    .speedMultiplier = 1.f,
-                                                                    .breakDuration = primitives.totalBreakDuration,
-                                                                    .playableLength = diffres.playableLength};
+        // AR/CS/OD/HP variant: {multiplier for AR/OD/HP, multiplier for CS}
+        // BASE=nomod, HR=1.4x (CS=1.3x), EZ=0.5x
+        struct ArCsVariant {
+            f32 ar_od_hp_mul;
+            f32 cs_mul;
+            // mod combo indices: [hidden=false, hidden=true]
+            u8 combo_idx[2];
+        };
+        static constexpr ArCsVariant VARIANTS[] = {
+            {1.0f, 1.0f, {0, 2}},  // BASE: None(0), HD(2)
+            {1.4f, 1.3f, {1, 4}},  // HR: HR(1), HD|HR(4)
+            {0.5f, 0.5f, {3, 5}},  // EZ: EZ(3), HD|EZ(5)
+        };
 
-            DifficultyCalculator::DifficultyAttributes attributes{};
+        for(u8 speed_idx = 0; speed_idx < DiffStars::SPEEDS_NUM; speed_idx++) {
+            if(stoken.stop_requested()) return;
+            const f32 speed = DiffStars::SPEEDS[speed_idx];
 
-            DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = std::move(ctx.diffobj_cache),
-                                                             .outAttributes = attributes,
-                                                             .beatmapData = diffcalc_data,
-                                                             .outAimStrains = nullptr,
-                                                             .outSpeedStrains = nullptr,
-                                                             .incremental = nullptr,
-                                                             .upToObjectIndex = -1,
-                                                             .cancelCheck = stoken};
+            for(const auto& var : VARIANTS) {
+                if(stoken.stop_requested()) return;
 
-            result.star_rating = static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(star_params));
+                const f32 ar = std::clamp(base_ar * var.ar_od_hp_mul, 0.f, 10.f);
+                const f32 cs = std::clamp(base_cs * var.cs_mul, 0.f, 10.f);
+                const f32 od = std::clamp(base_od * var.ar_od_hp_mul, 0.f, 10.f);
+                const f32 hp = std::clamp(base_hp * var.ar_od_hp_mul, 0.f, 10.f);
 
-            ctx.diffobj_cache = std::move(star_params.cachedDiffObjects);
-            ctx.diffobj_cache->clear();
+                // first call (speed_idx==0, BASE variant) calculates slider times
+                auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(primitives, ar, cs, speed, false, stoken);
+                if(stoken.stop_requested()) return;
 
-            if(result.star_rating <= 0.f) {
-                errored_count.fetch_add(1, std::memory_order_relaxed);
+                // capture length from the first diffres (nomod 1x)
+                if(speed_idx == 0 && &var == &VARIANTS[0]) {
+                    result.length_ms = diffres.playableLength;
+                }
+
+                if(diffres.error.errc) {
+                    logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}",
+                               item.map->getMD5(), item.map->sFilePath);
+                    continue;
+                }
+
+                for(u8 HD = 0; HD < 2; HD++) {
+                    const u8 combo_idx = var.combo_idx[HD];
+                    const u8 flat_idx = speed_idx * DiffStars::NUM_MOD_COMBOS + combo_idx;
+
+                    DifficultyCalculator::BeatmapDiffcalcData diffcalc_data{
+                        .sortedHitObjects = diffres.diffobjects,
+                        .CS = cs,
+                        .HP = hp,
+                        .AR = ar,
+                        .OD = od,
+                        .hidden = (HD == 1),
+                        .relax = false,
+                        .autopilot = false,
+                        .touchDevice = false,
+                        .speedMultiplier = speed,
+                        .breakDuration = primitives.totalBreakDuration,
+                        .playableLength = diffres.playableLength};
+
+                    DifficultyCalculator::DifficultyAttributes attributes{};
+
+                    DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = std::move(ctx.diffobj_cache),
+                                                                     .outAttributes = attributes,
+                                                                     .beatmapData = diffcalc_data,
+                                                                     .outAimStrains = nullptr,
+                                                                     .outSpeedStrains = nullptr,
+                                                                     .incremental = nullptr,
+                                                                     .upToObjectIndex = -1,
+                                                                     .cancelCheck = stoken};
+
+                    const f32 stars =
+                        static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(star_params));
+
+                    ctx.diffobj_cache = std::move(star_params.cachedDiffObjects);
+                    ctx.diffobj_cache->clear();
+
+                    result.star_ratings.values[flat_idx] = stars;
+
+                    if(stoken.stop_requested()) return;
+                }
             }
-        } else {
+        }
+
+        if(result.star_ratings.values[DiffStars::NOMOD_1X_INDEX] <= 0.f) {
             errored_count.fetch_add(1, std::memory_order_relaxed);
-            logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}", item.map->getMD5(),
-                       item.map->sFilePath);
         }
 
         if(stoken.stop_requested()) return;
@@ -580,7 +629,7 @@ bool update_mainthread() {
                 map->iNumSliders = res.nb_sliders;
                 map->iNumSpinners = res.nb_spinners;
                 map->iLengthMS = std::max(map->iLengthMS, res.length_ms);
-                map->fStarsNomod = res.star_rating;
+                map->fStarsNomod = res.star_ratings.values[DiffStars::NOMOD_1X_INDEX];
                 map->iMinBPM = res.min_bpm;
                 map->iMaxBPM = res.max_bpm;
                 map->iMostCommonBPM = res.avg_bpm;
@@ -588,6 +637,13 @@ bool update_mainthread() {
                 if(map->type == DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) {
                     db->peppy_overrides[map->getMD5()] = map->get_overrides();
                 }
+            }
+        }
+
+        {
+            Sync::unique_lock slk(db->star_ratings_mtx);
+            for(const auto& res : pending_maps) {
+                db->star_ratings[res.map->getMD5()] = res.star_ratings;
             }
         }
 
