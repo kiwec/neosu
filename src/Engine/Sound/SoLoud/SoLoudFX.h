@@ -54,6 +54,9 @@ public:
 	result seek(time aSeconds, float *mScratch, unsigned int mScratchSize) override;
 	result rewind() override;
 
+	// accurate position tracking
+	[[nodiscard]] time getInternalLatency() const;
+
 private:
 	// buffer management
 	void ensureBufferSize(unsigned int samples);
@@ -64,6 +67,7 @@ private:
 
 	// buffer synchronization and positioning
 	void reSynchronize();
+	void updateSTLatency();
 
 	void requestSettingUpdate(float speed, float pitch);
 
@@ -71,6 +75,17 @@ private:
 	SLFXStream *mParent;                                  // parent filter
 	std::unique_ptr<AudioSourceInstance> mSourceInstance; // source instance to process
 	std::unique_ptr<soundtouch::SoundTouch> mSoundTouch;  // soundtouch processor
+
+	// soundtouch setting cache for calculting offset trailing behind source stream
+	unsigned int mSTInitialLatency;
+	unsigned int mSTOutputSequence;
+	unsigned int mSTInputSequence;
+
+	// latency for 1.0x speed/pitch at default settings (set once at init)
+	double mSTBaseRateLatencySeconds;
+
+	// this is derived from the above, it doesn't change very often so it makes sense to keep it cached as well
+	std::atomic<double> mSTLatencySeconds;
 
 	float mSoundTouchSpeed;
 	float mSoundTouchPitch;
@@ -124,6 +139,9 @@ public:
 	// utility methods
 	double getLength();
 	std::string getDecoder();
+
+	// accurate position access for active instance
+	time getInternalLatency() const;
 
 protected:
 	friend class SoundTouchFilterInstance;

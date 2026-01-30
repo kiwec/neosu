@@ -592,10 +592,10 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
     }
 
     // playing music, get dynamic pulse amount
-    const i32 curMusicPos = (i32)music->getPositionMS() +
-                            (i32)(cv::universal_offset.getFloat() * selectedMap->getSpeedMultiplier()) +
-                            cv::universal_offset_norate.getInt() - map->getLocalOffset() - map->getOnlineOffset() -
-                            (map->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
+    const i32 curMusicPos =
+        (i32)music->getPositionMS() + (i32)(cv::universal_offset.getFloat() * selectedMap->getSpeedMultiplier()) +
+        cv::universal_offset_norate.getInt() - music->getRateBasedStreamDelayMS() - map->getLocalOffset() -
+        map->getOnlineOffset() - (map->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
 
     DatabaseBeatmap::TIMING_INFO t = map->getTimingInfoForTime(curMusicPos);
 

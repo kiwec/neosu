@@ -195,6 +195,13 @@ float SLFXStream::getPitchFactor() const
 	return mPitchFactor;
 }
 
+time SLFXStream::getInternalLatency() const
+{
+	if (mActiveInstance.load(std::memory_order_seq_cst))
+		return mActiveInstance.load(std::memory_order_seq_cst)->getInternalLatency();
+	return 0.0;
+}
+
 // WavStream-compatibility methods
 result SLFXStream::load(const char *aFilename)
 {
@@ -344,6 +351,11 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
       mParent(aParent),
       mSourceInstance(nullptr),
       mSoundTouch(nullptr),
+      mSTInitialLatency(0),
+      mSTOutputSequence(0),
+      mSTInputSequence(0),
+      mSTBaseRateLatencySeconds(0),
+      mSTLatencySeconds(0.0),
       mSoundTouchSpeed(1.0f),
       mSoundTouchPitch(1.0f),
       mNeedsSettingUpdate(false),
@@ -387,6 +399,13 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 				mSoundTouch->setSetting(SETTING_SEEKWINDOW_MS, 30);
 				mSoundTouch->setSetting(SETTING_OVERLAP_MS, 6);
 
+				// initialize latency at base speed for comparison later
+				{
+					const double initLatency = mSoundTouch->getSetting(SETTING_INITIAL_LATENCY) / static_cast<double>(mBaseSamplerate);
+					const double initOutputSequence = mSoundTouch->getSetting(SETTING_NOMINAL_OUTPUT_SEQUENCE) / static_cast<double>(mBaseSamplerate);
+					mSTBaseRateLatencySeconds = initLatency - (initOutputSequence / 2.0);
+				}
+
 				// set the actual speed and pitch factors
 				mSoundTouch->setTempo(mParent->mSpeedFactor);
 				// convert pitch factor to semitones to match BASS behavior
@@ -399,13 +418,11 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 				ST_DEBUG_LOG("SoundTouch: Initialized with speed={:f}, pitch={:f}", mSoundTouchSpeed, mSoundTouchPitch);
 				ST_DEBUG_LOG("SoundTouch: Version: {:s}", mSoundTouch->getVersionString());
 
-				const double InitialSTLatencySamples = mSoundTouch->getSetting(SETTING_INITIAL_LATENCY);
-				const double STOutputSequenceSamples = mSoundTouch->getSetting(SETTING_NOMINAL_OUTPUT_SEQUENCE);
-				const double STLatencySeconds = std::max(0.0, (static_cast<double>(InitialSTLatencySamples) - (static_cast<double>(STOutputSequenceSamples) / 2.0)) /
-														static_cast<double>(mBaseSamplerate));
+				// sync cache latency info for offset calc
+				updateSTLatency();
 
 				ST_DEBUG_LOG("SoundTouch: Initial latency: {:} samples ({:.1f}ms), Output sequence: {:} samples, Average latency: {:.1f}ms",
-				             InitialSTLatencySamples, (InitialSTLatencySamples * 1000.0f) / mBaseSamplerate, STOutputSequenceSamples, STLatencySeconds * 1000.0);
+				             mSTInitialLatency, (mSTInitialLatency * 1000.0f) / mBaseSamplerate, mSTOutputSequence, mSTLatencySeconds * 1000.0);
 			}
 		}
 	}
@@ -515,11 +532,8 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 
 	if (logThisCall && mProcessingCounter % 100 == 0)
 		ST_DEBUG_LOG("Position: mStreamPosition={:.3f}s, init_latency={:}, input_seq={}, output_seq={:}, avg_latency={:.1f}ms, ratio={:.3f}", mStreamPosition,
-					mSoundTouch->getSetting(SETTING_INITIAL_LATENCY), mSoundTouch->getSetting(SETTING_NOMINAL_INPUT_SEQUENCE),
-					mSoundTouch->getSetting(SETTING_NOMINAL_OUTPUT_SEQUENCE),
-					std::max(0.0, (static_cast<double>(mSoundTouch->getSetting(SETTING_INITIAL_LATENCY)) -
-								  (static_cast<double>(mSoundTouch->getSetting(SETTING_NOMINAL_OUTPUT_SEQUENCE)) / 2.0)) / static_cast<double>(mBaseSamplerate)) * 1000.0,
-					mSoundTouch->getInputOutputSampleRatio());
+		             mSTInitialLatency, mSTInputSequence, mSTOutputSequence, mSTLatencySeconds * 1000.0,
+		             mSoundTouch->getInputOutputSampleRatio());
 
 	// update SoundTouch parameters if they've changed, after the last getAudio chunk has played out with the old speed
 	bool updatePitchOrSpeed = false;
@@ -556,6 +570,8 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 			// this should not be possible here
 			debugLog("DEBUG: we are not compensating pitch, but mSoundTouchSpeed ({}) != 1.0!", mSoundTouchSpeed);
 		}
+
+		updateSTLatency();
 	}
 
 	if (logThisCall)
@@ -629,6 +645,11 @@ void SoundTouchFilterInstance::requestSettingUpdate(float speed, float pitch)
 		mNeedsSettingUpdate = true;
 }
 
+time SoundTouchFilterInstance::getInternalLatency() const
+{
+	return mSTLatencySeconds.load(std::memory_order_acquire);
+}
+
 void SoundTouchFilterInstance::ensureBufferSize(unsigned int samples)
 {
 	if (samples > mBufferSize)
@@ -664,7 +685,7 @@ unsigned int SoundTouchFilterInstance::feedSoundTouch(unsigned int targetBufferL
 	// read in power-of-two chunks from the source until we have enough samples ready in soundtouch
 	// NOMINAL_INPUT_SEQUENCE will be smaller for lower rates (less source data needed for the same amount of output samples), and
 	// vice versa for higher rates
-	unsigned int chunkSize = mSoundTouch->getSetting(SETTING_NOMINAL_INPUT_SEQUENCE);
+	unsigned int chunkSize = mSTInputSequence;
 	if (chunkSize < 32U)
 		chunkSize = 32U;
 	else if (chunkSize & (chunkSize - 1))
@@ -715,12 +736,34 @@ unsigned int SoundTouchFilterInstance::feedSoundTouch(unsigned int targetBufferL
 	return currentSamples;
 }
 
+void SoundTouchFilterInstance::updateSTLatency()
+{
+	if (!mSoundTouch)
+	{
+		mSTLatencySeconds.store(0.0, std::memory_order_release);
+		return;
+	}
+
+	mSTInitialLatency = mSoundTouch->getSetting(SETTING_INITIAL_LATENCY);
+	mSTOutputSequence = mSoundTouch->getSetting(SETTING_NOMINAL_OUTPUT_SEQUENCE);
+	mSTInputSequence =  mSoundTouch->getSetting(SETTING_NOMINAL_INPUT_SEQUENCE);
+
+	// const auto initSecs = static_cast<double>(mSTInitialLatency) / static_cast<double>(mParent->mBaseSamplerate);
+	const auto inputSecs = static_cast<double>(mSTInputSequence) / static_cast<double>(mParent->mBaseSamplerate);
+	// const auto outputSecs = static_cast<double>(mSTOutputSequence) / static_cast<double>(mParent->mBaseSamplerate);
+	ST_DEBUG_LOG("Got new init latency: {} output seq: {} input seq: {} mBaseSampleRate: {} mSTBaseRatelatencySeconds: {}", mSTInitialLatency, mSTOutputSequence, mSTInputSequence, mParent->mBaseSamplerate, mSTBaseRateLatencySeconds);
+
+	// this doesn't really make sense but is the only thing that works
+	mSTLatencySeconds.store(inputSecs, std::memory_order_release);
+}
+
 void SoundTouchFilterInstance::reSynchronize()
 {
 	// clear SoundTouch buffers to reset its internal state
 	if (mSoundTouch)
 	{
 		mSoundTouch->clear();
+		updateSTLatency();
 	}
 
 	if (mSourceInstance)

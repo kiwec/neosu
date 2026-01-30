@@ -43,6 +43,10 @@ class SoLoudSound final : public Sound {
     u64 getLengthUS() const override;
     float getSpeed() const override;
     float getPitch() const override;
+
+    // i.e. we are hearing audio Xms later than if we had no rate changing filter applied
+    i32 getRateBasedStreamDelayMS() const override;
+
     inline float getFrequency() const override { return this->fFrequency; }
 
     bool isPlaying() const override;
