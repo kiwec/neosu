@@ -46,8 +46,7 @@ void Resource::setName(std::string_view name) {
 // separate helper for possible reload with new path
 bool Resource::doPathFixup(std::string& input) {
     bool file_found = true;
-    if(File::existsCaseInsensitive(input) != File::FILETYPE::FILE)  // modifies the input string if found
-    {
+    if(File::existsCaseInsensitive(input) != File::FILETYPE::FILE) {  // modifies the input string if found
         debugLog("Resource Warning: File {:s} does not exist!", input);
         file_found = false;
     }

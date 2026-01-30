@@ -41,6 +41,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Added button to import McOsu collections/scores/settings from Steam)",
         R"(- Added Linux ARM64 releases)",
         R"(- Added asio_freq convar to allow custom sample rates on BASSASIO)",
+        R"(- Added universal_offset_norate convar and options menu option to set a constant, unscaled music offset)",
         R"(- SoLoud fixes/improvements:)",
         R"(  - Improved audio offset behavior to better match BASS (fixed desync when changing rates))",
         R"(  - Optimized rate changing to help with audio crackling on lower-end setups or small buffer sizes)",

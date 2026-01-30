@@ -86,6 +86,7 @@ neosu_SOURCES = \
 	src/App/Osu/UICheckbox.cpp \
 	src/App/Osu/UIContextMenu.cpp \
 	src/App/Osu/UIIcon.cpp \
+	src/App/Osu/UILabel.cpp \
 	src/App/Osu/UIModSelectorModButton.cpp \
 	src/App/Osu/UIPauseMenuButton.cpp \
 	src/App/Osu/UIRankingScreenInfoLabel.cpp \

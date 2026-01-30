@@ -7,7 +7,6 @@
 #include "ConVarHandler.h"
 #include "CBaseUICheckbox.h"
 #include "CBaseUIContainer.h"
-#include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
 #include "CBaseUITextbox.h"
 #include "Chat.h"
@@ -32,6 +31,7 @@
 #include "UISearchOverlay.h"
 #include "UISlider.h"
 #include "UIBackButton.h"
+#include "UILabel.h"
 
 #include "LoudnessCalcThread.h"
 #include "NetworkHandler.h"
@@ -1229,9 +1229,23 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     effectsVolumeSlider->setKeyDelta(0.01f);
 
     this->addSubSection_("Offset Adjustment");
-    CBaseUISlider *offsetSlider = this->addSlider_("Universal Offset:", -300.0f, 300.0f, &cv::universal_offset);
-    offsetSlider->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangeIntMS>(this));
-    offsetSlider->setKeyDelta(1);
+    {
+        this->addSlider_("Universal Offset:", -300.0f, 300.0f, &cv::universal_offset)
+            ->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangeIntMS>(this))
+            ->setKeyDelta(1);
+
+        auto *label1 = static_cast<UILabel *>(this->elemContainers.back()->baseElems[0].get());
+        label1->setTooltipText("Behaves the same as Universal Offset in osu! (is multiplied by playback rate).");
+    }
+
+    {
+        this->addSlider_("Universal Offset (unscaled):", -300.0f, 300.0f, &cv::universal_offset_norate)
+            ->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangeIntMS>(this))
+            ->setKeyDelta(1);
+
+        auto *label1 = static_cast<UILabel *>(this->elemContainers.back()->baseElems[0].get());
+        label1->setTooltipText("Universal Offset, but unaffected by rate adjustments.");
+    }
 
     this->addSubSection_("Gameplay");
     this->addCheckboxTooltip_("Boost hitsound volume",
@@ -3954,7 +3968,8 @@ UISlider *OptionsOverlayImpl::addSlider(const UString &text, float min, float ma
     }
     this->options->container.addBaseUIElement(slider);
 
-    auto *label1 = new CBaseUILabel(0, 0, this->options->getSize().x, 50, text, text);
+    // UILabel vs UISlider: UILabel allows tooltips
+    auto *label1 = new UILabel(0, 0, this->options->getSize().x, 50, text, text);
     label1->setDrawFrame(false);
     label1->setDrawBackground(false);
     label1->setWidthToContent();
@@ -3962,7 +3977,7 @@ UISlider *OptionsOverlayImpl::addSlider(const UString &text, float min, float ma
     label1->setRelSizeX(label1->getSize().x);
     this->options->container.addBaseUIElement(label1);
 
-    auto *label2 = new CBaseUILabel(0, 0, this->options->getSize().x, 50, "", "8.81");
+    auto *label2 = new UILabel(0, 0, this->options->getSize().x, 50, "", "8.81");
     label2->setDrawFrame(false);
     label2->setDrawBackground(false);
     label2->setWidthToContent();

@@ -965,7 +965,8 @@ CONVAR(ui_scale_to_dpi_minimum_width, 2200, CLIENT | SKINS | SERVER,
 CONVAR(ui_top_ranks_max, 200, CLIENT | SKINS | SERVER,
        "maximum number of displayed scores, to keep the ui/scrollbar manageable");
 CONVAR(ui_window_shadow_radius, 13.0f, CLIENT | SKINS | SERVER);
-CONVAR(universal_offset, 0.0f, CLIENT);
+CONVAR(universal_offset, 0.0f, CLIENT, "rate-dependent offset for music (multiplied by playback speed)");
+CONVAR(universal_offset_norate, 0.0f, CLIENT, "rate-independent offset for music");
 CONVAR(use_https, true, CLIENT);
 CONVAR(use_ppv3, false, CLIENT | SKINS | SERVER, "use ppv3 instead of ppv2 (experimental)");
 CONVAR(user_draw_accuracy, true, CLIENT | SKINS | SERVER);
