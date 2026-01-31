@@ -304,7 +304,6 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
       mSTInitialLatency(0),
       mSTOutputSequence(0),
       mSTInputSequence(0),
-      mSTBaseRateLatencySeconds(0),
       mSTLatencySeconds(0.0),
       mSoundTouchSpeed(1.0f),
       mSoundTouchPitch(1.0f),
@@ -345,15 +344,6 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
                 mSoundTouch->setSetting(SETTING_SEQUENCE_MS, 15);  // wtf should these numbers be?
                 mSoundTouch->setSetting(SETTING_SEEKWINDOW_MS, 30);
                 mSoundTouch->setSetting(SETTING_OVERLAP_MS, 6);
-
-                // initialize latency at base speed for comparison later
-                {
-                    const double initLatency =
-                        mSoundTouch->getSetting(SETTING_INITIAL_LATENCY) / static_cast<double>(mBaseSamplerate);
-                    const double initOutputSequence =
-                        mSoundTouch->getSetting(SETTING_NOMINAL_OUTPUT_SEQUENCE) / static_cast<double>(mBaseSamplerate);
-                    mSTBaseRateLatencySeconds = initLatency - (initOutputSequence / 2.0);
-                }
 
                 // set the actual speed and pitch factors
                 mSoundTouch->setTempo(mParent->mSpeedFactor);
@@ -662,28 +652,22 @@ void SoundTouchFilterInstance::updateSTLatency() {
     mSTOutputSequence = mSoundTouch->getSetting(SETTING_NOMINAL_OUTPUT_SEQUENCE);
     mSTInputSequence = mSoundTouch->getSetting(SETTING_NOMINAL_INPUT_SEQUENCE);
 
-    const auto initSecs = static_cast<double>(mSTInitialLatency) / static_cast<double>(mParent->mBaseSamplerate);
-    const auto inputSecs = static_cast<double>(mSTInputSequence) / static_cast<double>(mParent->mBaseSamplerate);
-    const auto outputSecs = static_cast<double>(mSTOutputSequence) / static_cast<double>(mParent->mBaseSamplerate);
-    ST_DEBUG_LOG(
-        "Got new init latency: {} output seq: {} input seq: {} mBaseSampleRate: {} mSTBaseRatelatencySeconds: {}",
-        mSTInitialLatency, mSTOutputSequence, mSTInputSequence, mParent->mBaseSamplerate, mSTBaseRateLatencySeconds);
+    const double sr = static_cast<double>(mParent->mBaseSamplerate);
 
-    const int strategy = cv::snd_soloud_offset_compensation_strategy.getInt();
+    // WSOLA pipeline delay: (INITIAL_LATENCY - OUTPUT_SEQUENCE) * speed / sampleRate.
+    // in steady state, TDStretch holds (sampleReq - nominalSkip) input samples in its FIFO.
+    // multiplying by speed converts from pipeline wall-clock time to source time, matching
+    // mStreamPosition which tracks source time (advanced by buffertime * speed in the mixer).
+    // this only covers the SoundTouch component; engine-level delays (position caching,
+    // interpolator smoothing, audio queue depth) add a few more ms, dependent on system buffer size.
     double resultSeconds = 0.0;
-    if(strategy == 0 /* naive (nothing ) */) {
-    } else if(std::abs(strategy) == 1 /* SoundTouch algorithm */) {
-        resultSeconds = initSecs - (outputSecs / 2.0);
-    } else if(std::abs(strategy) == 2 /* "bullshit1" "algorithm" */) {
-        resultSeconds = inputSecs;
-    } else if(std::abs(strategy) == 3 /* "bullshit2" "algorithm" */) {
-        resultSeconds = initSecs;
+    if(cv::snd_soloud_offset_compensation_strategy.getInt() != 0) {
+        const double pipelineSamples = static_cast<double>(mSTInitialLatency) - static_cast<double>(mSTOutputSequence);
+        resultSeconds = pipelineSamples * static_cast<double>(mSoundTouchSpeed) / sr;
     }
 
-    if(strategy < 0)  // scale by rate
-    {
-        resultSeconds *= mSoundTouchSpeed;
-    }
+    ST_DEBUG_LOG("ST latency: speed={:.2f} compensation={:.2f}ms (initLat={} inSeq={} outSeq={})", mSoundTouchSpeed,
+                 resultSeconds * 1000.0, mSTInitialLatency, mSTInputSequence, mSTOutputSequence);
 
     mSTLatencySeconds.store(resultSeconds, std::memory_order_release);
 }

@@ -131,9 +131,8 @@ CONVAR(snd_force_load_unknown, false, CLIENT, "force loading of assumed invalid 
 CONVAR(snd_freq, 44100, CLIENT | NOSAVE, "output sampling rate in Hz");
 CONVAR(snd_soloud_buffer, 0, CLIENT | NOSAVE, "SoLoud audio device buffer size (recommended to leave this on 0/auto)");
 CONVAR(snd_soloud_backend, "MiniAudio"sv, CLIENT, R"(SoLoud backend, "MiniAudio" or "SDL3" (MiniAudio is default))");
-CONVAR(
-    snd_soloud_offset_compensation_strategy, -2, CLIENT,
-    R"(For debugging (negative values scale by rate): 0 = naive (no auto offset), 1 = SoundTouch recommended, 2 = bullshit1, 3 = bullshit2)");
+CONVAR(snd_soloud_offset_compensation_strategy, 1, CLIENT,
+       R"(For debugging: 0 = naive (no auto offset), anything else = WSOLA pipeline model)");
 CONVAR(snd_sanity_simultaneous_limit, 128, CLIENT | NOSAVE,
        "The maximum number of overlayable sounds that are allowed to be active at once");
 CONVAR(snd_soloud_resampler, "linear", CLIENT,

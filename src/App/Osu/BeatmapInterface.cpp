@@ -2562,7 +2562,9 @@ void BeatmapInterface::update2() {
         }
 
         // ugh. force update all hitobjects while waiting (necessary because of pvs optimization)
-        i32 curPos = this->iCurMusicPos + (i32)(cv::universal_offset.getFloat() * this->getSpeedMultiplier()) +
+        i32 curPos = this->iCurMusicPos +
+                     (i32)((cv::universal_offset.getFloat() + cv::universal_offset_hardcoded_blamepeppy.getFloat()) *
+                           this->getSpeedMultiplier()) +
                      cv::universal_offset_norate.getInt() - this->music->getRateBasedStreamDelayMS() -
                      this->beatmap->getLocalOffset() - this->beatmap->getOnlineOffset() -
                      (this->beatmap->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
@@ -2637,7 +2639,9 @@ void BeatmapInterface::update2() {
 
     // update timing (with offsets)
     this->iCurMusicPosWithOffsets = this->iCurMusicPos;
-    this->iCurMusicPosWithOffsets += (i32)(cv::universal_offset.getFloat() * this->getSpeedMultiplier());
+    this->iCurMusicPosWithOffsets +=
+        (i32)((cv::universal_offset.getFloat() + cv::universal_offset_hardcoded_blamepeppy.getFloat()) *
+              this->getSpeedMultiplier());
     this->iCurMusicPosWithOffsets += cv::universal_offset_norate.getInt();
     this->iCurMusicPosWithOffsets -= this->music->getRateBasedStreamDelayMS();
     this->iCurMusicPosWithOffsets -= this->beatmap->getLocalOffset();

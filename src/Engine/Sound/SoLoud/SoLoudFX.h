@@ -81,9 +81,6 @@ private:
 	unsigned int mSTOutputSequence;
 	unsigned int mSTInputSequence;
 
-	// latency for 1.0x speed/pitch at default settings (set once at init)
-	double mSTBaseRateLatencySeconds;
-
 	// this is derived from the above, it doesn't change very often so it makes sense to keep it cached as well
 	std::atomic<double> mSTLatencySeconds;
 

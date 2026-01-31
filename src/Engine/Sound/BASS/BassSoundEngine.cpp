@@ -83,8 +83,8 @@ BassSoundEngine::BassSoundEngine() : SoundEngine() {
 }
 
 BassSoundEngine::~BassSoundEngine() {
-    if(!!this->restartCBs[0]) {
-        this->restartCBs[0]();
+    if(this->bInitSuccess) {
+        this->shutdown();
     }
     BassManager::cleanup();
 }
