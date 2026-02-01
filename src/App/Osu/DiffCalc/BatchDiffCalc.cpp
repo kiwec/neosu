@@ -446,7 +446,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
                                                                      .cancelCheck = stoken,
                                                                      .outRawDifficulty = &raw_diff};
 
-                    result.star_ratings.values[flat_idx] =
+                    result.star_ratings[flat_idx] =
                         static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(star_params));
 
                     ctx.diffobj_cache = std::move(star_params.cachedDiffObjects);
@@ -458,7 +458,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
                     // so we skip DiffObject construction, strain calc, and calculate_difficulty.
                     const u8 hd_flat_idx = speed_idx * DiffStars::NUM_MOD_COMBOS + var.combo_idx[1];
                     diffcalc_data.hidden = true;
-                    result.star_ratings.values[hd_flat_idx] =
+                    result.star_ratings[hd_flat_idx] =
                         static_cast<f32>(DifficultyCalculator::recomputeStarRating(raw_diff, diffcalc_data));
                 }
 
@@ -466,7 +466,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
             }
         }
 
-        if(result.star_ratings.values[DiffStars::NOMOD_1X_INDEX] <= 0.f) {
+        if(result.star_ratings[DiffStars::NOMOD_1X_INDEX] <= 0.f) {
             errored_count.fetch_add(1, std::memory_order_relaxed);
         }
 
@@ -674,7 +674,7 @@ bool update_mainthread() {
                 map->iNumSliders = res.nb_sliders;
                 map->iNumSpinners = res.nb_spinners;
                 map->iLengthMS = std::max(map->iLengthMS, res.length_ms);
-                map->fStarsNomod = res.star_ratings.values[DiffStars::NOMOD_1X_INDEX];
+                map->fStarsNomod = res.star_ratings[DiffStars::NOMOD_1X_INDEX];
                 map->iMinBPM = res.min_bpm;
                 map->iMaxBPM = res.max_bpm;
                 map->iMostCommonBPM = res.avg_bpm;

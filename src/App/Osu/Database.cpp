@@ -97,7 +97,7 @@ f32 Database::get_star_rating(const MD5Hash &hash, ModFlags flags, f32 speed) co
     if(uSz idx = DiffStars::index_of(flags, speed); idx != DiffStars::INVALID_MODCOMBO) {
         Sync::shared_lock lk(this->star_ratings_mtx);
         if(const auto &it = this->star_ratings.find(hash); it != this->star_ratings.end()) {
-            return it->second.values[idx];
+            return it->second[idx];
         }
     }
     return 0.f;
@@ -1300,8 +1300,8 @@ void Database::loadMaps() {
                         MD5Hash hash;
                         (void)neosu_maps.read_hash_digest(hash);
                         DiffStars::Ratings ratings;
-                        (void)neosu_maps.read_bytes(reinterpret_cast<u8 *>(ratings.values.data()),
-                                                    sizeof(f32) * DiffStars::NUM_ENTRIES);
+                        (void)neosu_maps.read_bytes(reinterpret_cast<u8 *>(ratings.data()),
+                                                    sizeof(f32) * DiffStars::NUM_PRECALC_RATINGS);
                         this->star_ratings.emplace(hash, ratings);
                     }
                 } else {
@@ -1887,7 +1887,7 @@ void Database::saveMaps() {
         maps.write<u32>(this->star_ratings.size());
         for(const auto &[hash, ratings] : this->star_ratings) {
             maps.write_hash_digest(hash);
-            maps.write_bytes(reinterpret_cast<const u8 *>(ratings.values.data()), sizeof(f32) * DiffStars::NUM_ENTRIES);
+            maps.write_bytes(reinterpret_cast<const u8 *>(ratings.data()), sizeof(f32) * DiffStars::NUM_PRECALC_RATINGS);
             nb_star_entries++;
         }
     }

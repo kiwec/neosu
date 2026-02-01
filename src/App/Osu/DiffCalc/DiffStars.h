@@ -22,8 +22,8 @@ static_assert(SPEEDS_NUM == SPEEDS.size());
 //  4 = HD|HR
 //  5 = HD|EZ
 inline constexpr uSz NUM_MOD_COMBOS = 6;
-inline constexpr uSz NUM_ENTRIES = SPEEDS_NUM * NUM_MOD_COMBOS;  // 54
-inline constexpr uSz NOMOD_1X_INDEX = _1_0 * NUM_MOD_COMBOS;     // speed_idx=3 (1.0) * 6 + combo=0 (None) = 18
+inline constexpr uSz NUM_PRECALC_RATINGS = SPEEDS_NUM * NUM_MOD_COMBOS;  // 54
+inline constexpr uSz NOMOD_1X_INDEX = _1_0 * NUM_MOD_COMBOS;             // speed_idx=3 (1.0) * 6 + combo=0 (None) = 18
 
 enum MOD_COMBO_INDEX : u8 { INVALID_MODCOMBO = 0xFF };
 inline MOD_COMBO_INDEX mod_combo_index(ModFlags flags) {
@@ -66,8 +66,6 @@ inline MOD_COMBO_INDEX index_of(ModFlags flags, f32 speed) {
     return static_cast<MOD_COMBO_INDEX>(si * NUM_MOD_COMBOS + mi);
 }
 
-struct Ratings {
-    std::array<f32, NUM_ENTRIES> values{};
-};
+using Ratings = std::array<f32, NUM_PRECALC_RATINGS>;
 
 }  // namespace DiffStars
