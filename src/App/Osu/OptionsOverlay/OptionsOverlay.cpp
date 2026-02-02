@@ -1210,10 +1210,8 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
     this->addSubSection_("Volume");
 
-    if(Env::cfg(AUD::BASS) && soundEngine->getTypeId() == SoundEngine::BASS) {
-        this->addCheckbox_("Normalize loudness across songs", &cv::normalize_loudness)
-            ->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onLoudnessNormalizationToggle>(this));
-    }
+    this->addCheckbox_("Normalize loudness across songs", &cv::normalize_loudness)
+        ->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onLoudnessNormalizationToggle>(this));
 
     CBaseUISlider *masterVolumeSlider = this->addSlider_("Master:", 0.0f, 1.0f, &cv::volume_master, 70.0f);
     masterVolumeSlider->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSliderChangePercent>(this));

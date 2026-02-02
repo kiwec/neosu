@@ -35,7 +35,7 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v42_01;
     v42_01.title = "42.01 (" CHANGELOG_TIMESTAMP ")";
     v42_01.changes = {
-        R"()",
+        R"(- Added loudness normalization for SoLoud)",
     };
     changelogs.push_back(v42_01);
 

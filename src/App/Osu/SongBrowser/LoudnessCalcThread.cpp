@@ -18,7 +18,16 @@
 #include "BassManager.h"
 #endif
 
+#ifdef MCENGINE_FEATURE_SOLOUD
+#include "soloud_wavstream.h"
+#include "soloud_loudness.h"
+#include "soloud_file.h"
+#include "soloud_error.h"
+#include "File.h"
+#endif
+
 #include <atomic>
+#include <unordered_map>
 #include <utility>
 
 struct VolNormalization::LoudnessCalcThread {
@@ -26,14 +35,11 @@ struct VolNormalization::LoudnessCalcThread {
    public:
     std::atomic<u32> nb_computed{0};
     std::atomic<u32> nb_total{0};
-#ifdef MCENGINE_FEATURE_BASS
-   public:
+
     LoudnessCalcThread(std::vector<DatabaseBeatmap *> maps_to_calc) {
         this->maps = std::move(maps_to_calc);
         this->nb_total = this->maps.size() + 1;
-        if(soundEngine->getTypeId() == SoundEngine::BASS) {  // TODO
-            this->thr = Sync::jthread([this](const Sync::stop_token &stoken) { return this->run(stoken); });
-        }
+        this->thr = Sync::jthread([this](const Sync::stop_token &stoken) { return this->run(stoken); });
     }
 
     ~LoudnessCalcThread() = default;
@@ -44,8 +50,24 @@ struct VolNormalization::LoudnessCalcThread {
 
     void run(const Sync::stop_token &stoken) {
         McThread::set_current_thread_name(US_("loudness_calc"));
-        McThread::set_current_thread_prio(McThread::Priority::LOW);  // reset priority
+        McThread::set_current_thread_prio(McThread::Priority::LOW);
 
+#ifdef MCENGINE_FEATURE_BASS
+        if(soundEngine->getTypeId() == SoundEngine::BASS) {
+            run_bass(stoken);
+            return;
+        }
+#endif
+#ifdef MCENGINE_FEATURE_SOLOUD
+        if(soundEngine->getTypeId() == SoundEngine::SOLOUD) {
+            run_soloud(stoken);
+            return;
+        }
+#endif
+    }
+
+#ifdef MCENGINE_FEATURE_BASS
+    void run_bass(const Sync::stop_token &stoken) {
         UString last_song = "";
         f32 last_loudness = 0.f;
         std::array<f32, 44100> buf{};
@@ -130,22 +152,82 @@ struct VolNormalization::LoudnessCalcThread {
 
         this->nb_computed++;
     }
-#else  // TODO:
-    LoudnessCalcThread(std::vector<DatabaseBeatmap *> maps_to_calc) { (void)maps_to_calc; }
+#endif
+
+#ifdef MCENGINE_FEATURE_SOLOUD
+    void run_soloud(const Sync::stop_token &stoken) {
+        std::string last_song = "";
+        f32 last_loudness = 0.f;
+
+        SoLoud::WavStream ws(true /* prefer ffmpeg (faster) */);
+        ws.setLooping(false);
+        ws.setAutoStop(true);
+
+        for(auto map : this->maps) {
+            while(osu->shouldPauseBGThreads() && !stoken.stop_requested()) {
+                Timing::sleepMS(100);
+            }
+            Timing::sleep(0);
+
+            if(stoken.stop_requested()) return;
+            if(map->loudness.load(std::memory_order_acquire) != 0.f) continue;
+            const std::string song = map->getFullSoundFilePath();
+            if(song == last_song) {
+                map->loudness = last_loudness;
+                this->nb_computed++;
+                continue;
+            }
+
+            FILE *fp = File::fopen_c(song.c_str(), "rb");
+            if(!fp) {
+                if(cv::debug_snd.getBool()) {
+                    debugLog("Failed to open '{:s}' for loudness calc", song.c_str());
+                }
+                this->nb_computed++;
+                continue;
+            }
+
+            SoLoud::DiskFile df(fp);
+            if(ws.loadFile(&df) != SoLoud::SO_NO_ERROR) {
+                if(cv::debug_snd.getBool()) {
+                    debugLog("Failed to decode '{:s}' for loudness calc", song.c_str());
+                }
+                this->nb_computed++;
+                continue;
+            }
+
+            f32 integrated_loudness = 0.f;
+            SoLoud::result ret = SoLoud::Loudness::integratedLoudness(ws, integrated_loudness);
+
+            if(ret != SoLoud::SO_NO_ERROR || integrated_loudness == -HUGE_VAL) {
+                debugLog("No loudness information available for '{:s}' {}", song.c_str(),
+                         ret != SoLoud::SO_NO_ERROR ? "(decode error)" : "(silent song?)");
+
+                integrated_loudness = std::clamp<f32>(cv::loudness_fallback.getFloat(), -16.f, 0.f);
+            }
+
+            map->loudness = integrated_loudness;
+            db->update_overrides(map);
+            last_loudness = integrated_loudness;
+            last_song = song;
+
+            this->nb_computed++;
+        }
+
+        this->nb_computed++;
+    }
 #endif
 };
 
 void VolNormalization::loudness_cb() {
     // Restart loudness calc.
     VolNormalization::abort();
-    if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return;  // TODO
     if(db && cv::normalize_loudness.getBool()) {
         VolNormalization::start_calc(db->loudness_to_calc);
     }
 }
 
 u32 VolNormalization::get_computed_instance() {
-    if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return 0;  // TODO
     u32 x = 0;
     for(const auto &thr : this->threads) {
         x += thr->nb_computed.load(std::memory_order_acquire);
@@ -154,7 +236,6 @@ u32 VolNormalization::get_computed_instance() {
 }
 
 u32 VolNormalization::get_total_instance() {
-    if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return 0;  // TODO
     u32 x = 0;
     for(const auto &thr : this->threads) {
         x += thr->nb_total.load(std::memory_order_acquire);
@@ -163,28 +244,47 @@ u32 VolNormalization::get_total_instance() {
 }
 
 void VolNormalization::start_calc_instance(const std::vector<DatabaseBeatmap *> &maps_to_calc) {
-    if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return;  // TODO
     this->abort_instance();
     if(maps_to_calc.empty()) return;
     if(!cv::normalize_loudness.getBool()) return;
 
+    // group maps by audio file so each file is only decoded once
+    // (due to diffs in a beatmapset sharing the samea audio file)
+    std::unordered_map<std::string, std::vector<DatabaseBeatmap *>> by_file;
+    by_file.reserve(maps_to_calc.size());
+    for(auto map : maps_to_calc) {
+        by_file[map->getFullSoundFilePath()].push_back(map);
+    }
+
+    // flatten into a list of groups, then distribute whole groups across threads
+    // so no audio file is split between threads
+    std::vector<std::vector<DatabaseBeatmap *>> groups;
+    groups.reserve(by_file.size());
+    for(auto &[_, maps] : by_file) {
+        groups.push_back(std::move(maps));
+    }
+
     i32 nb_threads = cv::loudness_calc_threads.getInt();
     if(nb_threads <= 0) {
         // dividing by 2 still burns cpu if hyperthreading is enabled, let's keep it at a sane amount of threads
-        nb_threads = std::max(McThread::get_logical_cpu_count() / 3, 1);
+        nb_threads = std::max((McThread::get_logical_cpu_count() - 1) / 2, 1);
     }
-    if(maps_to_calc.size() < nb_threads) nb_threads = maps_to_calc.size();
-    int chunk_size = maps_to_calc.size() / nb_threads;
-    int remainder = maps_to_calc.size() % nb_threads;
+    if(groups.size() < (size_t)nb_threads) nb_threads = groups.size();
+    int chunk_size = groups.size() / nb_threads;
+    int remainder = groups.size() % nb_threads;
 
-    auto it = maps_to_calc.begin();
+    auto it = groups.begin();
     for(int i = 0; i < nb_threads; i++) {
         int cur_chunk_size = chunk_size + (i < remainder ? 1 : 0);
 
-        auto chunk = std::vector<DatabaseBeatmap *>(it, it + cur_chunk_size);
+        std::vector<DatabaseBeatmap *> chunk;
+        for(int j = 0; j < cur_chunk_size; j++) {
+            auto &group = *(it + j);
+            chunk.insert(chunk.end(), group.begin(), group.end());
+        }
         it += cur_chunk_size;
 
-        this->threads.emplace_back(std::make_unique<LoudnessCalcThread>(chunk));
+        this->threads.emplace_back(std::make_unique<LoudnessCalcThread>(std::move(chunk)));
     }
 }
 

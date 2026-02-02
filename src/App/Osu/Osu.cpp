@@ -2020,8 +2020,8 @@ void Osu::audioRestartCallbackAfter() {
         ui->getOptionsOverlay()->scheduleLayoutUpdate();
     }
 
-    // resume loudness calc (only implemented for bass currently)
-    if(db && Env::cfg(AUD::BASS) && soundEngine->getTypeId() == SoundEngine::BASS) {
+    // resume loudness calc
+    if(db) {
         VolNormalization::start_calc(db->loudness_to_calc);
     }
 }
