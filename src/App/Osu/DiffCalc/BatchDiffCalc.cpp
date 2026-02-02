@@ -194,24 +194,23 @@ void process_score_group(const BeatmapDifficulty* map, const ModParams& params, 
     group_results.reserve(scores.size());
 
     for(auto* sw : scores) {
-        DifficultyCalculator::PPv2CalcParams ppv2params{
-            .attributes = attributes,
-            .modFlags = sw->score.mods.flags,
-            .timescale = sw->score.mods.speed,
-            .ar = params.ar,
-            .od = params.od,
-            .numHitObjects = (i32)(primitives.getNumObjects()),
-            .numCircles = (i32)primitives.numCircles,
-            .numSliders = (i32)primitives.numSliders,
-            .numSpinners = (i32)primitives.numSpinners,
-            .maxPossibleCombo = (i32)diffres.getTotalMaxCombo(),
-            .combo = sw->score.comboMax,
-            .misses = sw->score.numMisses,
-            .c300 = sw->score.num300s,
-            .c100 = sw->score.num100s,
-            .c50 = sw->score.num50s,
-            .legacyTotalScore = (u32)sw->score.score,
-            .isMcOsuImported = sw->score.is_mcosu_imported()};
+        DifficultyCalculator::PPv2CalcParams ppv2params{.attributes = attributes,
+                                                        .modFlags = sw->score.mods.flags,
+                                                        .timescale = sw->score.mods.speed,
+                                                        .ar = params.ar,
+                                                        .od = params.od,
+                                                        .numHitObjects = (i32)(primitives.getNumObjects()),
+                                                        .numCircles = (i32)primitives.numCircles,
+                                                        .numSliders = (i32)primitives.numSliders,
+                                                        .numSpinners = (i32)primitives.numSpinners,
+                                                        .maxPossibleCombo = (i32)diffres.getTotalMaxCombo(),
+                                                        .combo = sw->score.comboMax,
+                                                        .misses = sw->score.numMisses,
+                                                        .c300 = sw->score.num300s,
+                                                        .c100 = sw->score.num100s,
+                                                        .c50 = sw->score.num50s,
+                                                        .legacyTotalScore = (u32)sw->score.score,
+                                                        .isMcOsuImported = sw->score.is_mcosu_imported()};
 
         // mcosu scores use a different scorev1 algorithm
         const f64 pp = DifficultyCalculator::calculatePPv2(ppv2params);
@@ -374,8 +373,8 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
             }
 
             if(diffres.error.errc) {
-                logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}",
-                           item.map->getMD5(), item.map->sFilePath);
+                logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}", item.map->getMD5(),
+                           item.map->sFilePath);
                 continue;
             }
 
@@ -646,30 +645,35 @@ void abort_calc() {
     score_results.clear();
 }
 
-bool update_mainthread() {
-    if(!running()) return true;
-
+namespace {
+struct MainThreadUpdateCtx {
     std::vector<MapResult> pending_maps;
     std::vector<ScoreResult> pending_scores;
+    Hash::flat::set<BeatmapSet*> unique_parents;
+} updbuf;  // avoid doing too many reallocations with temporary vectors
+
+}  // namespace
+
+bool update_mainthread() {
+    if(!running()) return true;
 
     {
         Sync::unique_lock lock(results_mutex, Sync::try_to_lock);
         if(!lock.owns_lock()) return true;
-        pending_maps = std::move(map_results);
-        pending_scores = std::move(score_results);
+        updbuf.pending_maps = std::move(map_results);
+        updbuf.pending_scores = std::move(score_results);
         map_results.clear();
         score_results.clear();
     }
 
     // apply map results
-    if(!pending_maps.empty()) {
-        Hash::flat::set<BeatmapSet*> unique_sets;
-
+    if(const uSz num_pending = updbuf.pending_maps.size(); num_pending > 0) {
+        updbuf.unique_parents.reserve(num_pending);
         {
             Sync::unique_lock lock(db->peppy_overrides_mtx);
-            for(const auto& res : pending_maps) {
+            for(const auto& res : updbuf.pending_maps) {
                 auto* map = res.map;
-                unique_sets.insert(map->getParentSet());
+                updbuf.unique_parents.insert(map->getParentSet());
                 map->iNumCircles = res.nb_circles;
                 map->iNumSliders = res.nb_sliders;
                 map->iNumSpinners = res.nb_spinners;
@@ -687,7 +691,7 @@ bool update_mainthread() {
 
         {
             Sync::unique_lock slk(db->star_ratings_mtx);
-            for(const auto& res : pending_maps) {
+            for(const auto& res : updbuf.pending_maps) {
                 auto& ptr = db->star_ratings[res.map->getMD5()];
                 if(!ptr) ptr = std::make_unique<StarPrecalc::SRArray>();
                 *ptr = res.star_ratings;
@@ -695,14 +699,18 @@ bool update_mainthread() {
             }
         }
 
-        for(auto* set : unique_sets) {
+        for(auto* set : updbuf.unique_parents) {
             set->updateRepresentativeValues();
         }
+
+        updbuf.pending_maps.clear();
+        updbuf.unique_parents.clear();
     }
 
     // apply score results
-    if(!pending_scores.empty()) {
-        internal::flush_score_results(pending_scores);
+    if(!updbuf.pending_scores.empty()) {
+        internal::flush_score_results(updbuf.pending_scores);
+        updbuf.pending_scores.clear();
     }
 
     return !is_finished();
