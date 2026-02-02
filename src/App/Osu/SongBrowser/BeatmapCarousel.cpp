@@ -73,7 +73,7 @@ void BeatmapCarousel::update(CBaseUIEventCtx &c) {
         }
 
         if(g_songbrowser->bSongBrowserRightClickScrolling) {
-            const f64 mouseYPos = std::clamp(0.0f, mouse->getPos().y - 2.0f - this->getPos().y, this->getSize().y);
+            const f64 mouseYPos = std::clamp(mouse->getPos().y - 2.0f - this->getPos().y, 0.f, this->getSize().y);
             const f64 mouseYPct = std::abs(mouseYPos / this->getSize().y);
             // scroll slightly more towards each extreme, to compensate for upper/lower bounds of the
             // carousel being possibly hidden behind other elements and very close to the edge of the screen
