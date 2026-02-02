@@ -1752,11 +1752,6 @@ void Database::loadMaps() {
     this->beatmapsets = std::move(this->temp_loading_beatmapsets);
     this->temp_loading_beatmapsets.clear();
 
-    this->importTimer->update();
-    debugLog("peppy+neosu maps: loading took {:f} seconds ({:d} peppy, {:d} neosu, {:d} maps total)",
-             this->importTimer->getElapsedTime(), nb_peppy_maps, nb_neosu_maps, nb_peppy_maps + nb_neosu_maps);
-    debugLog("Found {:d} overrides; {:d} maps need loudness recalc", nb_overrides, this->loudness_to_calc.size());
-
     // link each diff's star_ratings pointer to its entry in the star_ratings map
     {
         Sync::shared_lock sr_lock(this->star_ratings_mtx);
@@ -1767,6 +1762,11 @@ void Database::loadMaps() {
             }
         }
     }
+
+    this->importTimer->update();
+    debugLog("peppy+neosu maps: loading took {:f} seconds ({:d} peppy, {:d} neosu, {:d} maps total)",
+             this->importTimer->getElapsedTime(), nb_peppy_maps, nb_neosu_maps, nb_peppy_maps + nb_neosu_maps);
+    debugLog("Found {:d} overrides; {:d} maps need loudness recalc", nb_overrides, this->loudness_to_calc.size());
 }
 
 void Database::saveMaps() {

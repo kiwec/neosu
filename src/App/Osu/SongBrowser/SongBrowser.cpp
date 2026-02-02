@@ -365,6 +365,8 @@ SongBrowser::GlobalSongBrowserCtorDtor::~GlobalSongBrowserCtorDtor() {
 }
 
 SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
+    this->lastDiffSortModIndex = DiffStars::active_idx;
+
     // build carousel first
     this->carousel = std::make_unique<BeatmapCarousel>(0.f, 0.f, 0.f, 0.f, "Carousel");
     neosu::sbr::g_carousel = this->carousel.get();
@@ -884,6 +886,15 @@ extern const u32 PP_ALGORITHM_VERSION;
 }
 
 void SongBrowser::update(CBaseUIEventCtx &c) {
+    // flush diffcalc results to database
+    // do this even if not visible, but not during gameplay
+    if(!osu->isInGameplay()) {
+        if(!BatchDiffCalc::update_mainthread()) {
+            // just clean up if we are finished
+            BatchDiffCalc::abort_calc();
+        }
+    }
+
     if(!this->bVisible) return;
 
     this->localBestContainer->update(c);
@@ -895,10 +906,10 @@ void SongBrowser::update(CBaseUIEventCtx &c) {
 
     BottomBar::update(c);
 
-    // flush diffcalc results to database
-    if(!BatchDiffCalc::update_mainthread()) {
-        // just clean up if we are finished
-        BatchDiffCalc::abort_calc();
+    // handle changed mods resort
+    if(this->lastDiffSortModIndex != DiffStars::active_idx) {
+        this->onSortChange(cv::songbrowser_sortingtype.getString());
+        this->lastDiffSortModIndex = DiffStars::active_idx;
     }
 
     // auto-download
@@ -3182,17 +3193,23 @@ void SongBrowser::onSortChange(const UString &text, int id) {
 }
 
 void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::optional<SortType> &sortMethod) {
-    const bool sortingChanged = this->curSortMethod != sortMethod.value_or(this->curSortMethod);
+    const SortType newSortMethod = sortMethod.value_or(this->curSortMethod);
+    const bool sortingChanged = this->curSortMethod != newSortMethod;
     const bool groupingChanged = this->curGroup != group;
 
-    if(!this->bSongButtonsNeedSorting && !sortingChanged && !groupingChanged && !this->visibleSongButtons.empty()) {
+    const bool diffSortChanged = (newSortMethod == SortType::DIFFICULTY || group == GroupType::DIFFICULTY) &&
+                                 this->lastDiffSortModIndex != DiffStars::active_idx;
+
+    if(!this->bSongButtonsNeedSorting && !sortingChanged && !groupingChanged && !diffSortChanged &&
+       !this->visibleSongButtons.empty()) {
         return;
     }
 
     this->curGroup = group;
-    this->curSortMethod = sortMethod.value_or(this->curSortMethod);
+    this->curSortMethod = newSortMethod;
+    this->lastDiffSortModIndex = DiffStars::active_idx;
 
-    if(this->bSongButtonsNeedSorting || sortingChanged) {
+    if(this->bSongButtonsNeedSorting || sortingChanged || diffSortChanged) {
         // lazy update grade
         if(this->curSortMethod == SortType::RANKACHIEVED) {
             for(SongButton *songButton : this->parentButtons) {
@@ -3241,8 +3258,7 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
                 this->visibleSongButtons.push_back(unq.get());
             }
 
-            // only sort if switching TO this group/sorting method (not from it)
-            if(groupingChanged || sortingChanged) {
+            if(groupingChanged || sortingChanged || diffSortChanged) {
                 for(const auto &button : *collBtns) {
                     auto &children = button->getChildren();
                     if(!children.empty()) {

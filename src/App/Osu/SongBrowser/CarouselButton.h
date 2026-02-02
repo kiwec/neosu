@@ -87,6 +87,8 @@ class CarouselButton : public CBaseUIButton {
     [[nodiscard]] inline bool isSearchMatch() const { return this->bIsSearchMatch.load(std::memory_order_relaxed); }
 
    protected:
+    [[nodiscard]] bool childrenNeedSorting() const;
+
     void drawMenuButtonBackground();
 
     virtual void onSelected(bool /*wasSelected*/, SelOpts /*opts*/) { ; }
@@ -121,11 +123,14 @@ class CarouselButton : public CBaseUIButton {
     float fCenterOffsetAnimation{0.f};
     float fCenterOffsetVelocityAnimation{0.f};
 
+    u8 lastChildSortDiffStarsIdx{-1};
+
     std::atomic<bool> bIsSearchMatch{true};
 
     bool bHideIfSelected{false};
     bool bSelected{false};
     bool bChildrenNeedSorting{true};
+
     bool bWasAnimationEverStarted{false};
 
     MOVE_AWAY_STATE moveAwayState{MOVE_AWAY_STATE::MOVE_CENTER};

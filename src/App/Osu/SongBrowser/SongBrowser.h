@@ -258,6 +258,7 @@ class SongBrowser final : public ScreenBackable {
 
     GroupType curGroup{GroupType::NO_GROUPING};
     SortType curSortMethod{SortType::ARTIST};
+    u8 lastDiffSortModIndex;
 
     // top bar left
     CBaseUIContainer *topbarLeft;
