@@ -273,7 +273,7 @@ class DatabaseBeatmap final {
         u32 numCircles{0};
         u32 numSliders{0};
         u32 numSpinners{0};
-        u32 numHitobjects{0};
+        [[nodiscard]] inline u32 getNumObjects() const { return numCircles + numSliders + numSpinners; }
 
         u32 totalBreakDuration{0};
 
@@ -483,7 +483,9 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline int getMaxBPM() const { return this->iMaxBPM; }
     [[nodiscard]] inline int getMostCommonBPM() const { return this->iMostCommonBPM; }
 
-    [[nodiscard]] inline int getNumObjects() const { return this->iNumObjects; }
+    [[nodiscard]] inline int getNumObjects() const {
+        return this->iNumCircles + this->iNumSliders + this->iNumSpinners;
+    }
     [[nodiscard]] inline int getNumCircles() const { return this->iNumCircles; }
     [[nodiscard]] inline int getNumSliders() const { return this->iNumSliders; }
     [[nodiscard]] inline int getNumSpinners() const { return this->iNumSpinners; }
@@ -566,14 +568,12 @@ class DatabaseBeatmap final {
     int iMaxBPM{0};
     int iMostCommonBPM{0};
 
-    int iNumObjects{0};
     int iNumCircles{0};
     int iNumSliders{0};
     int iNumSpinners{0};
 
     // custom data (not necessary, not part of the beatmap file, and not precomputed)
     std::atomic<f32> loudness{0.f};
-    u32 totalBreakDuration{0};  // necessary for ppv2 calc (initialized after loadMetadata)
 
     // this is from metadata but put here for struct layout purposes
     u8 iVersion{128};  // e.g. "osu file format v12" -> 12

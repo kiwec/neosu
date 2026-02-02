@@ -918,7 +918,7 @@ class ChangelogLabel final : public CBaseUIButton {
         {
             g->translate((int)(this->getPos().x + this->getSize().x / 2.0f - this->fStringWidth / 2.0f),
                          (int)(this->getPos().y + this->getSize().y / 2.0f + this->fStringHeight / 2.0f));
-            g->drawString(this->font, this->sText);
+            g->drawString(this->font, this->getText());
         }
         g->popTransform();
     }

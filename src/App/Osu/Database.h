@@ -53,6 +53,26 @@ struct alignas(1) DB_TIMINGPOINT {
 
 using HashToScoreMap = Hash::flat::map<MD5Hash, std::vector<FinishedScore>>;
 
+// // TODO: we are redundantly storing MD5Hashes for each MD5Hash->{data} map
+// // with 150k difficulties, we are potentially redundantly storing them:
+// // 1. peppy_overrides
+// // 2. scores (local)
+// // 3. online_scores
+// // 4. star_ratings
+// // 5. beatmap_difficulties
+// // 6. inside each BeatmapDifficulty itself
+// // 150,000 diffs * 32 bytes * 6 duplications = 24MB
+// // PLUS: FinishedScore itself stores an MD5Hash of the associated beatmap inside of it! so if we have 50k scores, that's another
+// // 50,000 * 32 bytes = 1.6MB
+// //
+// struct DiffHashExtraData {
+//     BeatmapDifficulty *diff{nullptr};                                    // the BeatmapDifficulty this MD5Hash points to
+//     std::unique_ptr<std::vector<FinishedScore>> local_scores{nullptr};   // all local scores stored for this diff
+//     std::unique_ptr<std::vector<FinishedScore>> online_scores{nullptr};  // all online scores stored for this diff
+//     std::unique_ptr<StarPrecalc::SRArray> star_ratings{nullptr};         // stored star ratings
+//     std::unique_ptr<MapOverrides> overrides{nullptr};  // stored peppy_overrides (only relevant for PEPPY_DIFFICULTYs)
+// };
+
 class Database final {
     NOCOPY_NOMOVE(Database)
    public:

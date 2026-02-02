@@ -1187,7 +1187,6 @@ void Database::loadMaps() {
                     diff->iNumCircles = iNumCircles;
                     diff->iNumSliders = iNumSliders;
                     diff->iNumSpinners = iNumSpinners;
-                    diff->iNumObjects = iNumCircles + iNumSliders + iNumSpinners;
                     diff->fStarsNomod = fStarsNomod;
 
                     diff->iMinBPM = iMinBPM;
@@ -1581,7 +1580,6 @@ void Database::loadMaps() {
                     map->iPreviewTime = previewTime;
                     map->last_modification_time = last_modification_time;
 
-                    map->iNumObjects = numCircles + numSliders + numSpinners;
                     map->iNumCircles = numCircles;
                     map->iNumSliders = numSliders;
                     map->iNumSpinners = numSpinners;

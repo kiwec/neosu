@@ -132,11 +132,11 @@ class RankingScreenScrollDownInfoButton final : public CBaseUIButton {
             g->translate(2, 2);
             g->setColor(Color(0xff000000).setA(this->fAlpha));
 
-            g->drawString(this->font, this->sText);
+            g->drawString(this->font, this->getText());
             g->translate(-2, -2);
             g->setColor(Color(0xffffffff).setA(this->fAlpha));
 
-            g->drawString(this->font, this->sText);
+            g->drawString(this->font, this->getText());
         }
         g->popTransform();
     }

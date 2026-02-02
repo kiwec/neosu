@@ -89,7 +89,7 @@ void UserCard::draw() {
         g->scale(scale, scale);
         g->translate((int)(this->getPos().x + iconWidth + usernamePaddingLeft), yCounter);
         g->setColor(0xffffffff);
-        g->drawString(usernameFont, this->sText);
+        g->drawString(usernameFont, this->getText());
     }
     g->popTransform();
     g->popClipRect();
@@ -179,8 +179,8 @@ void UserCard::draw() {
 
             const vec2 backgroundSize =
                 vec2(performanceDeltaStringWidth + border, deltaFont->getHeight() * scale + border * 3);
-            const vec2 pos =
-                vec2(this->getPos().x + this->getSize().x - performanceDeltaStringWidth - border, this->getPos().y + border);
+            const vec2 pos = vec2(this->getPos().x + this->getSize().x - performanceDeltaStringWidth - border,
+                                  this->getPos().y + border);
             const vec2 textPos = vec2(pos.x, pos.y + deltaFont->getHeight() * scale);
 
             // background (to ensure readability even with stupid long usernames)
@@ -214,14 +214,14 @@ void UserCard::update(CBaseUIEventCtx &c) {
     const bool is_online = (this->user_id > 0) || (this->user_id < -10000);
     if(is_online) {
         const UserInfo *my = BANCHO::User::get_user_info(this->user_id, true);
-        this->sText = my->name;
+        this->setText(my->name);
 
         static i64 total_score = 0;
         if(total_score != my->total_score) {
             total_score = my->total_score;
         }
     } else {
-        this->sText = BanchoState::get_username().c_str();
+        this->setText(BanchoState::get_username().c_str());
     }
 
     // calculatePlayerStats() does nothing unless username changed or scores changed
@@ -239,7 +239,7 @@ void UserCard::updateUserStats() {
     const bool is_online = (this->user_id > 0) || (this->user_id < -10000);
     const bool is_self = !is_online || (this->user_id == BanchoState::get_uid());
     if(is_self && !BanchoState::can_submit_scores()) {
-        stats = db->calculatePlayerStats(this->sText.toUtf8());
+        stats = db->calculatePlayerStats(this->getText().toUtf8());
     } else {
         const UserInfo *my = BANCHO::User::get_user_info(this->user_id, true);
 

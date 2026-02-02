@@ -60,7 +60,7 @@ class ConsoleBoxSuggestionButton : public CBaseUIButton {
 
    protected:
     void drawText() override {
-        if(this->font == nullptr || this->sText.length() < 1) return;
+        if(this->font == nullptr || this->getText().length() < 1) return;
 
         if(cv::consolebox_draw_helptext.getBool()) {
             if(this->sHelpText.length() > 0) {

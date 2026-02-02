@@ -46,12 +46,13 @@ void CBaseUICheckbox::draw() {
     const int innerBlockSizeOffset = 2 * innerBlockPosOffset - 1;
     g->drawRect(this->getPos().x + blockBorder, this->getPos().y + blockBorder, blockSize, blockSize);
     if(this->bChecked)
-        g->fillRect(this->getPos().x + blockBorder + innerBlockPosOffset, this->getPos().y + blockBorder + innerBlockPosOffset,
-                    blockSize - innerBlockSizeOffset, blockSize - innerBlockSizeOffset);
+        g->fillRect(this->getPos().x + blockBorder + innerBlockPosOffset,
+                    this->getPos().y + blockBorder + innerBlockPosOffset, blockSize - innerBlockSizeOffset,
+                    blockSize - innerBlockSizeOffset);
 
     // draw text
     const int shadowOffset = std::round(1.0f * dpiScale);
-    if(this->font != nullptr && this->sText.length() > 0) {
+    if(this->font != nullptr && this->getText().length() > 0) {
         // g->pushClipRect(McRect(this->getPos().x + 1, this->getPos().y + 1, this->getSize().x - 1, this->getSize().y - 1));
 
         g->setColor(this->textColor);
@@ -64,11 +65,11 @@ void CBaseUICheckbox::draw() {
 
             g->translate(shadowOffset, shadowOffset);
             g->setColor(0xff212121);
-            g->drawString(this->font, this->sText);
+            g->drawString(this->font, this->getText());
 
             g->translate(-shadowOffset, -shadowOffset);
             g->setColor(this->textColor);
-            g->drawString(this->font, this->sText);
+            g->drawString(this->font, this->getText());
         }
         g->popTransform();
 

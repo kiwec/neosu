@@ -25,7 +25,9 @@ CBaseUIButton::CBaseUIButton(float xPos, float yPos, float xSize, float ySize, U
     this->textColor = argb(255, 255, 255, 255);
     this->textBrightColor = this->textDarkColor = argb(0, 0, 0, 0);
 
-    this->setText(std::move(text));
+    if(!text.isEmpty()) {
+        this->setText(std::move(text));
+    }
 }
 
 void CBaseUIButton::draw() {
@@ -59,7 +61,8 @@ void CBaseUIButton::draw() {
 }
 
 void CBaseUIButton::drawText() {
-    if(this->font == nullptr || !this->isVisible() || !this->isVisibleOnScreen() || this->sText.length() < 1) return;
+    if(this->font == nullptr || !this->isVisible() || !this->isVisibleOnScreen() || this->getText().length() < 1)
+        return;
 
     const int shadowOffset = std::round(1.f * ((float)this->font->getDPI() / 96.f));  // NOTE: abusing font dpi
 
@@ -89,13 +92,13 @@ void CBaseUIButton::drawText() {
             if(this->bDrawShadow) {
                 g->translate(shadowOffset, shadowOffset);
                 g->setColor(this->textDarkColor ? this->textDarkColor : Colors::invert(this->textColor));
-                g->drawString(this->font, this->sText);
+                g->drawString(this->font, this->getText());
                 g->translate(-shadowOffset, -shadowOffset);
             }
 
             // top
             g->setColor(this->textBrightColor ? this->textBrightColor : this->textColor);
-            g->drawString(this->font, this->sText);
+            g->drawString(this->font, this->getText());
         }
         g->popTransform();
     }
@@ -116,8 +119,8 @@ void CBaseUIButton::drawHoverRect(int distance) {
 void CBaseUIButton::onMouseUpInside(bool left, bool right) { this->onClicked(left, right); }
 
 void CBaseUIButton::onClicked(bool left, bool right) {
-    if(clickCallback) {
-        clickCallback(this, left, right);
+    if(this->clickCallback && (*this->clickCallback)) {
+        (*this->clickCallback)(this, left, right);
     }
 }
 
@@ -125,5 +128,5 @@ void CBaseUIButton::updateStringMetrics() {
     if(this->font == nullptr) return;
 
     this->fStringHeight = this->font->getHeight();
-    this->fStringWidth = this->font->getStringWidth(this->sText);
+    this->fStringWidth = this->font->getStringWidth(this->getText());
 }

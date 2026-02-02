@@ -46,7 +46,8 @@ void UIButton::draw() {
 
     buttonMiddle->bind();
     {
-        g->drawQuad((int)this->getPos().x + (int)leftWidth, (int)this->getPos().y, (int)middleWidth, (int)this->getSize().y);
+        g->drawQuad((int)this->getPos().x + (int)leftWidth, (int)this->getPos().y, (int)middleWidth,
+                    (int)this->getSize().y);
     }
     buttonMiddle->unbind();
 
@@ -134,7 +135,8 @@ CBaseUIButton *UIButtonVertical::setSizeToContent(int horizontalBorderSize, int 
 }
 
 void UIButtonVertical::drawText() {
-    if(this->font == nullptr || !this->isVisible() || !this->isVisibleOnScreen() || this->sText.length() < 1) return;
+    if(this->font == nullptr || !this->isVisible() || !this->isVisibleOnScreen() || this->getText().length() < 1)
+        return;
 
     const int shadowOffset = std::round(1.f * ((float)this->font->getDPI() / 96.f));  // NOTE: abusing font dpi
 
@@ -152,13 +154,13 @@ void UIButtonVertical::drawText() {
         if(this->bDrawShadow) {
             g->translate(shadowOffset, shadowOffset);
             g->setColor(this->textDarkColor ? this->textDarkColor : Colors::invert(this->textColor));
-            g->drawString(this->font, this->sText);
+            g->drawString(this->font, this->getText());
             g->translate(-shadowOffset, -shadowOffset);
         }
 
         // top
         g->setColor(this->textBrightColor ? this->textBrightColor : this->textColor);
-        g->drawString(this->font, this->sText);
+        g->drawString(this->font, this->getText());
     }
     g->popTransform();
 }

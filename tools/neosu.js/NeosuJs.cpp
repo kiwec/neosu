@@ -78,7 +78,7 @@ struct Beatmap {
                                                     .timescale = score.mods.speed,
                                                     .ar = score.mods.get_naive_ar(this->AR),
                                                     .od = score.mods.get_naive_od(this->OD),
-                                                    .numHitObjects = static_cast<int>(this->primitives.numHitobjects),
+                                                    .numHitObjects = static_cast<int>(this->primitives.getNumObjects()),
                                                     .numCircles = static_cast<int>(this->primitives.numCircles),
                                                     .numSliders = static_cast<int>(this->primitives.numSliders),
                                                     .numSpinners = static_cast<int>(this->primitives.numSpinners),

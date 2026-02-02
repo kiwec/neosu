@@ -7,6 +7,7 @@
 #include "UString.h"
 
 #include <utility>
+#include <memory>
 
 // convar callback to avoid hammering atomic convar reads
 namespace CBaseUIDebug {
@@ -37,7 +38,9 @@ class CBaseUIElement : public KeyboardListener {
     NOCOPY_NOMOVE(CBaseUIElement)
    public:
     CBaseUIElement(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "")
-        : sName(std::move(name)), rect(xPos, yPos, xSize, ySize), relRect(this->rect) {}
+        : sName(name.isEmpty() ? nullptr : std::make_unique<UString>(std::move(name))),
+          rect(xPos, yPos, xSize, ySize),
+          relRect(this->rect) {}
     ~CBaseUIElement() override = default;
 
     // main
@@ -50,7 +53,7 @@ class CBaseUIElement : public KeyboardListener {
     void onChar(KeyboardEvent &e) override { (void)e; }
 
     // getters
-    [[nodiscard]] constexpr const UString &getName() const { return this->sName; }
+    [[nodiscard]] constexpr const UString &getName() const { return this->sName ? *this->sName : emptyUString; }
 
     [[nodiscard]] constexpr const McRect &getRect() const { return this->rect; }
 
@@ -153,7 +156,15 @@ class CBaseUIElement : public KeyboardListener {
         return this;
     }
     virtual CBaseUIElement *setName(UString name) {
-        this->sName = std::move(name);
+        if(!name.isEmpty()) {
+            if(this->sName) {
+                *this->sName = std::move(name);
+            } else {
+                this->sName = std::make_unique<UString>(std::move(name));
+            }
+        } else {
+            this->sName.reset();
+        }
         return this;
     }
     virtual CBaseUIElement *setHandleLeftMouse(bool handle) {
@@ -187,7 +198,8 @@ class CBaseUIElement : public KeyboardListener {
     virtual void onMouseUpOutside(bool /*left*/ = true, bool /*right*/ = false) { ; }
 
     // vars
-    UString sName;
+    static constexpr UString emptyUString{US_("")};
+    std::unique_ptr<UString> sName;  // not worth storing a full name for each element when it's usually empty
 
     // position and size
     McRect rect;

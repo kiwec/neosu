@@ -109,7 +109,7 @@ relRect:            {}
 mouseInsideCheck:   {:02b}
 mouseUpCheck:       {:02b}
 ==== END UI ELEMENT DEBUG ====)",
-           fmt::ptr(this), currentFrame, this->sName, this->bVisible, this->bActive, this->bBusy, this->bEnabled,
+           fmt::ptr(this), currentFrame, this->getName(), this->bVisible, this->bActive, this->bBusy, this->bEnabled,
            this->bKeepActive, this->bMouseInside, this->bHandleLeftMouse, this->bHandleRightMouse, this->rect,
            this->relRect, this->mouseInsideCheck, this->mouseUpCheck);
 }

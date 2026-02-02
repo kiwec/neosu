@@ -1267,16 +1267,12 @@ f32 BeatmapInterface::getOD() const {
 u32 BeatmapInterface::getBreakDurationTotal() const {
     if(unlikely(!this->beatmap && this->breaks.empty())) return 0;
 
-    if(this->beatmap)
-        return this->beatmap->totalBreakDuration;
-    else {
-        u32 breakDurationTotal = 0;
-        for(auto i : this->breaks) {
-            breakDurationTotal += (u32)(i.endTime - i.startTime);
-        }
-
-        return breakDurationTotal;
+    u32 breakDurationTotal = 0;
+    for(auto i : this->breaks) {
+        breakDurationTotal += (u32)(i.endTime - i.startTime);
     }
+
+    return breakDurationTotal;
 }
 
 DatabaseBeatmap::BREAK BeatmapInterface::getBreakForTimeRange(i64 startMS, i64 positionMS, i64 endMS) const {

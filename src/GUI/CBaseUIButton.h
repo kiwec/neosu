@@ -22,20 +22,23 @@ class CBaseUIButton : public CBaseUIElement {
 
     void click(bool left = true, bool right = false) { this->onClicked(left, right); }
 
+    using CBaseUIButtonClickCB = std::function<void(CBaseUIButton *, bool, bool)>;
+
     template <typename Callable>
     CBaseUIButton *setClickCallback(Callable &&cb) {
         using CBType = std::decay_t<Callable>;
 
         if constexpr(std::is_invocable_v<CBType, CBaseUIButton *, bool, bool>) {
-            this->clickCallback = std::forward<Callable>(cb);
+            this->clickCallback = std::make_unique<CBaseUIButtonClickCB>(std::forward<Callable>(cb));
         } else if constexpr(std::is_invocable_v<CBType, bool, bool>) {
-            this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *, bool left, bool right) {
-                cb(left, right);
-            };
+            this->clickCallback = std::make_unique<CBaseUIButtonClickCB>(
+                [cb = std::forward<Callable>(cb)](CBaseUIButton *, bool left, bool right) { cb(left, right); });
         } else if constexpr(std::is_invocable_v<CBType, CBaseUIButton *>) {
-            this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *btn, bool, bool) { cb(btn); };
+            this->clickCallback = std::make_unique<CBaseUIButtonClickCB>(
+                [cb = std::forward<Callable>(cb)](CBaseUIButton *btn, bool, bool) { cb(btn); });
         } else if constexpr(std::is_invocable_v<CBType>) {
-            this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *, bool, bool) { cb(); };
+            this->clickCallback = std::make_unique<CBaseUIButtonClickCB>(
+                [cb = std::forward<Callable>(cb)](CBaseUIButton *, bool, bool) { cb(); });
         } else if constexpr(SA::is_delegate_v<CBType>) {
             using traits = SA::delegate_traits<CBType>;
             using FirstArg = typename traits::template nth_arg<0>;
@@ -44,13 +47,15 @@ class CBaseUIButton : public CBaseUIElement {
                 "Delegate first argument must be a pointer to CBaseUIButton or derived");
 
             if constexpr(traits::arity == 1) {
-                this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *btn, bool, bool) {
-                    cb(static_cast<FirstArg>(btn));
-                };
+                this->clickCallback = std::make_unique<CBaseUIButtonClickCB>(
+                    [cb = std::forward<Callable>(cb)](CBaseUIButton *btn, bool, bool) {
+                        cb(static_cast<FirstArg>(btn));
+                    });
             } else if constexpr(traits::arity == 3) {
-                this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *btn, bool left, bool right) {
-                    cb(static_cast<FirstArg>(btn), left, right);
-                };
+                this->clickCallback = std::make_unique<CBaseUIButtonClickCB>(
+                    [cb = std::forward<Callable>(cb)](CBaseUIButton *btn, bool left, bool right) {
+                        cb(static_cast<FirstArg>(btn), left, right);
+                    });
             } else {
                 static_assert(Env::always_false_v<Callable>, "Unsupported delegate arity for derived button callback");
             }
@@ -102,10 +107,19 @@ class CBaseUIButton : public CBaseUIElement {
     }
 
     CBaseUIButton *setText(UString text) {
-        this->sText = std::move(text);
+        if(!text.isEmpty()) {
+            if(this->sText) {
+                *this->sText = std::move(text);
+            } else {
+                this->sText = std::make_unique<UString>(std::move(text));
+            }
+        } else {
+            this->sText.reset();
+        }
         this->updateStringMetrics();
         return this;
     }
+
     CBaseUIButton *setFont(McFont *font) {
         this->font = font;
         this->updateStringMetrics();
@@ -125,7 +139,9 @@ class CBaseUIButton : public CBaseUIElement {
     [[nodiscard]] inline Color getFrameColor() const { return this->frameColor; }
     [[nodiscard]] inline Color getBackgroundColor() const { return this->backgroundColor; }
     [[nodiscard]] inline Color getTextColor() const { return this->textColor; }
-    [[nodiscard]] inline const UString &getText() const { return this->sText; }
+    [[nodiscard]] inline const UString &getText() const {
+        return this->sText ? *this->sText : CBaseUIElement::emptyUString;
+    }
     [[nodiscard]] inline McFont *getFont() const { return this->font; }
 
     // events
@@ -141,15 +157,17 @@ class CBaseUIButton : public CBaseUIElement {
 
     void updateStringMetrics();
 
-    UString sText;
+    // same as CBaseUIElement::sName, only store if non-empty
+    // UStrings have a lot of overhead (~64 bytes) even if empty
+    std::unique_ptr<UString> sText{nullptr};
 
     // callbacks, either void, with ourself as the argument, or with the held left/right buttons
-    std::function<void(CBaseUIButton *, bool, bool)> clickCallback;
+    std::unique_ptr<CBaseUIButtonClickCB> clickCallback{nullptr};
 
     McFont *font;
 
-    float fStringWidth;
-    float fStringHeight;
+    float fStringWidth{0.f};
+    float fStringHeight{0.f};
 
     Color frameColor;
     Color backgroundColor;

@@ -74,7 +74,6 @@ class SongButton : public CarouselButton {
     [[nodiscard]] inline std::vector<SongDifficultyButton *> &childDiffBtns() {
         return reinterpret_cast<std::vector<SongDifficultyButton *> &>(this->children);
     }
-    DatabaseBeatmap *representativeBeatmap{nullptr};
 
     float fThumbnailFadeInTime{0.0f};
     void onOpenBeatmapFolderClicked();

@@ -191,8 +191,8 @@ void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept {
     SF(sSource)            SF(sTags)         SF(sBackgroundImageFileName) SF(sAudioFileName)  SF(iID)               SF(iLengthMS)
     SF(iLocalOffset)       SF(iOnlineOffset) SF(iSetID)                   SF(iPreviewTime)    SF(fAR)               SF(fCS)
     SF(fHP)                SF(fOD)           SF(fStackLeniency)           SF(fSliderTickRate) SF(fSliderMultiplier) SF(ppv2Version)
-    SF(fStarsNomod)        SF(iMinBPM)       SF(iMaxBPM)                  SF(iMostCommonBPM)  SF(iNumObjects)       SF(iNumCircles)
-    SF(iNumSliders)        SF(iNumSpinners)  SF(totalBreakDuration)       SF(iVersion)        SF(type)              SF(bEmptyArtistUnicode)
+    SF(fStarsNomod)        SF(iMinBPM)       SF(iMaxBPM)                  SF(iMostCommonBPM)  SF(iNumCircles)
+    SF(iNumSliders)        SF(iNumSpinners)  SF(iVersion)                 SF(type)            SF(bEmptyArtistUnicode)
     SF(bEmptyTitleUnicode) SF(do_not_store)  SF(draw_background)
 #undef SF
         // clang-format on
@@ -213,7 +213,7 @@ void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept {
 
 DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
     // clang-format off
-    : COPYOTHER(sMD5Hash),            COPYOTHER(parentSet),                COPYOTHER(timingpoints),             COPYOTHER(sFolder),
+    : COPYOTHER(sMD5Hash),            COPYOTHER(parentSet),                COPYOTHER(timingpoints),     COPYOTHER(sFolder),
       COPYOTHER(sFilePath),           COPYOTHER(last_modification_time),   COPYOTHER(sTitle),
       COPYOTHER(sTitleUnicode),       COPYOTHER(sArtist),                  COPYOTHER(sArtistUnicode),
       COPYOTHER(sCreator),            COPYOTHER(sDifficultyName),          COPYOTHER(sSource),
@@ -224,8 +224,7 @@ DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
       COPYOTHER(fOD),                 COPYOTHER(fStackLeniency),           COPYOTHER(fSliderTickRate),
       COPYOTHER(fSliderMultiplier),   COPYOTHER(ppv2Version),              COPYOTHER(fStarsNomod),
       COPYOTHER(iMinBPM),             COPYOTHER(iMaxBPM),                  COPYOTHER(iMostCommonBPM),
-      COPYOTHER(iNumObjects),         COPYOTHER(iNumCircles),              COPYOTHER(iNumSliders),
-      COPYOTHER(iNumSpinners),        ATOMICOTHER(loudness),               COPYOTHER(totalBreakDuration),
+      COPYOTHER(iNumCircles),         COPYOTHER(iNumSliders),              COPYOTHER(iNumSpinners),     ATOMICOTHER(loudness),
       COPYOTHER(iVersion),            ATOMICOTHER(md5_init),               COPYOTHER(type),
       COPYOTHER(bEmptyArtistUnicode), COPYOTHER(bEmptyTitleUnicode),       COPYOTHER(do_not_store),
       COPYOTHER(draw_background) {
@@ -253,9 +252,9 @@ DatabaseBeatmap::DatabaseBeatmap(DatabaseBeatmap &&other) noexcept
       COPYOTHER(fHP),                COPYOTHER(fOD),                 COPYOTHER(fStackLeniency),
       COPYOTHER(fSliderTickRate),    COPYOTHER(fSliderMultiplier),   COPYOTHER(ppv2Version),
       COPYOTHER(fStarsNomod),        COPYOTHER(iMinBPM),             COPYOTHER(iMaxBPM),
-      COPYOTHER(iMostCommonBPM),     COPYOTHER(iNumObjects),         COPYOTHER(iNumCircles),
+      COPYOTHER(iMostCommonBPM),     COPYOTHER(iNumCircles),
       COPYOTHER(iNumSliders),        COPYOTHER(iNumSpinners),        ATOMICOTHER(loudness),
-      COPYOTHER(totalBreakDuration), COPYOTHER(iVersion),            ATOMICOTHER(md5_init),
+      COPYOTHER(iVersion),           ATOMICOTHER(md5_init),
       COPYOTHER(type),               COPYOTHER(bEmptyArtistUnicode), COPYOTHER(bEmptyTitleUnicode),
       COPYOTHER(do_not_store),       COPYOTHER(draw_background) {
     // clang-format on
@@ -771,8 +770,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
     c.numCircles = c.hitcircles.size();
     c.numSliders = c.sliders.size();
     c.numSpinners = c.spinners.size();
-    c.numHitobjects = c.numCircles + c.numSliders + c.numSpinners;
-    if(c.numHitobjects > BEATMAP_MAX_NUM_HITOBJECTS) {
+    if(c.getNumObjects() > BEATMAP_MAX_NUM_HITOBJECTS) {
         c.error.errc = LoadError::TOOMANY_HITOBJECTS;
         return c;
     }
@@ -1374,8 +1372,6 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
 
     std::vector<DatabaseBeatmap::TIMINGPOINT> tempTimingpoints;
 
-    std::vector<BREAK> breaks;
-
     // load metadata
     bool foundAR = false;
 
@@ -1472,11 +1468,10 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
                 bool haveFilename = this->sBackgroundImageFileName.length() > 2;
 
                 std::string str;
-                i64 type{-1}, startTime, endTime;
-                if(Parsing::parse(curLine, &type, ',', &startTime, ',', &endTime) && (type == 2)) {
-                    BREAK b{.startTime = startTime, .endTime = endTime};
-                    breaks.push_back(b);
-                } else if(!haveFilename && Parsing::parse(curLine, &type, ',', &startTime, ',', &str) && (type == 0)) {
+                i64 type{-1};
+                if(!haveFilename &&
+                   Parsing::parse(curLine, &type, ',', Parsing::skip<i64> /* skip start time */, ',', &str) &&
+                   (type == 0)) {
                     this->sBackgroundImageFileName = str;
                     haveFilename = true;
                 }
@@ -1500,13 +1495,6 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
     }
     if(SString::is_wspace_only(this->sArtistUnicode)) {
         this->bEmptyArtistUnicode = true;
-    }
-
-    // calculate total break duration
-    if(this->totalBreakDuration == 0) {
-        for(const auto &brk : breaks) {
-            this->totalBreakDuration += (u32)(brk.endTime - brk.startTime);
-        }
     }
 
     // general sanity checks
@@ -1589,7 +1577,6 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
     databaseBeatmap->fSliderTickRate = c.sliderTickRate;
     databaseBeatmap->fStackLeniency = c.stackLeniency;
     databaseBeatmap->iVersion = c.version;
-    databaseBeatmap->totalBreakDuration = c.totalBreakDuration;
 
     // check if we have any timingpoints at all
     if(databaseBeatmap->timingpoints.size() == 0) {
@@ -1598,13 +1585,12 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
     }
 
     // update numObjects
-    databaseBeatmap->iNumObjects = c.numHitobjects;
     databaseBeatmap->iNumCircles = c.numCircles;
     databaseBeatmap->iNumSliders = c.numSliders;
     databaseBeatmap->iNumSpinners = c.numSpinners;
 
     // check if we have any hitobjects at all
-    if(databaseBeatmap->iNumObjects < 1) {
+    if(databaseBeatmap->getNumObjects() < 1) {
         result.error.errc = LoadError::NO_OBJECTS;
         return result;
     }

@@ -228,7 +228,7 @@ void run_thread(const Sync::stop_token& stoken) {
                 .timescale = rqt.speedOverride,
                 .ar = rqt.AR,
                 .od = rqt.OD,
-                .numHitObjects = map_for_rqt->iNumObjects,
+                .numHitObjects = map_for_rqt->getNumObjects(),
                 .numCircles = map_for_rqt->iNumCircles,
                 .numSliders = map_for_rqt->iNumSliders,
                 .numSpinners = map_for_rqt->iNumSpinners,

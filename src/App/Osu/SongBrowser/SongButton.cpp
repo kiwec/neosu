@@ -64,11 +64,11 @@ void SongButton::draw() {
 
     CarouselButton::draw();
 
-    if(this->representativeBeatmap &&  // delay requesting the image itself a bit
+    if(this->databaseBeatmap &&  // delay requesting the image itself a bit
        this->fVisibleFor >= ((std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f)) / 4.f)) {
         // draw background image
         this->drawBeatmapBackgroundThumbnail(
-            osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->representativeBeatmap));
+            osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->databaseBeatmap));
     }
 
     if(this->grade != ScoreGrade::N) this->drawGrade();
@@ -106,11 +106,11 @@ void SongButton::update(CBaseUIEventCtx &c) {
     // no children visible
     if(!bottomChild) return;
 
-    const auto *currentRepresentativeBeatmap = this->representativeBeatmap;
+    const auto *currentRepresentativeBeatmap = this->databaseBeatmap;
     auto *newRepresentativeBeatmap = bottomChild->getDatabaseBeatmap();
 
     if(currentRepresentativeBeatmap == nullptr || currentRepresentativeBeatmap != newRepresentativeBeatmap) {
-        this->representativeBeatmap = newRepresentativeBeatmap;
+        this->databaseBeatmap = newRepresentativeBeatmap;
     }
 }
 
@@ -192,9 +192,7 @@ void SongButton::drawTitle(float deselectedAlpha, bool forceSelectedStyle) {
                                                         : osu->getSkin()->c_song_select_inactive_text);
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
-    const UString title{this->representativeBeatmap ? this->representativeBeatmap->getTitle()
-                        : this->databaseBeatmap     ? this->databaseBeatmap->getTitle()
-                                                    : US_("")};
+    const UString title{this->databaseBeatmap ? this->databaseBeatmap->getTitle() : US_("")};
 
     g->pushTransform();
     {
@@ -217,13 +215,8 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
                                                         : osu->getSkin()->c_song_select_inactive_text);
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
-    const std::string &artist{this->representativeBeatmap
-                                  ? this->representativeBeatmap->getArtist()
-                                  : (this->databaseBeatmap ? this->databaseBeatmap->getArtist() : "")};
-
-    const std::string &mapper{this->representativeBeatmap
-                                  ? this->representativeBeatmap->getCreator()
-                                  : (this->databaseBeatmap ? this->databaseBeatmap->getCreator() : "")};
+    const std::string &artist{this->databaseBeatmap ? this->databaseBeatmap->getArtist() : ""};
+    const std::string &mapper{this->databaseBeatmap ? this->databaseBeatmap->getCreator() : ""};
 
     g->pushTransform();
     {

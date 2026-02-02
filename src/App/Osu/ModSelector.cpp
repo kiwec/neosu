@@ -62,7 +62,7 @@ class ModSelectorOverrideSliderDescButton final : public CBaseUIButton {
 
    private:
     void drawText() override {
-        if(this->font != nullptr && this->sText.length() > 0) {
+        if(this->font != nullptr && this->getText().length() > 0) {
             float xPosAdd = this->getSize().x / 2.0f - this->fStringWidth / 2.0f;
 
             // g->pushClipRect(McRect(this->getPos(), this->getSize()));
@@ -72,7 +72,7 @@ class ModSelectorOverrideSliderDescButton final : public CBaseUIButton {
                 {
                     g->translate((int)(this->getPos().x + (xPosAdd)),
                                  (int)(this->getPos().y + this->getSize().y / 2.0f + this->fStringHeight / 2.0f));
-                    g->drawString(this->font, this->sText);
+                    g->drawString(this->font, this->getText());
                 }
                 g->popTransform();
             }

@@ -195,7 +195,7 @@ void process_score_group(const BeatmapDifficulty* map, const ModParams& params, 
             .timescale = sw->score.mods.speed,
             .ar = params.ar,
             .od = params.od,
-            .numHitObjects = (i32)(primitives.numCircles + primitives.numSliders + primitives.numSpinners),
+            .numHitObjects = (i32)(primitives.getNumObjects()),
             .numCircles = (i32)primitives.numCircles,
             .numSliders = (i32)primitives.numSliders,
             .numSpinners = (i32)primitives.numSpinners,
@@ -579,7 +579,6 @@ bool update_mainthread() {
                 map->iNumCircles = res.nb_circles;
                 map->iNumSliders = res.nb_sliders;
                 map->iNumSpinners = res.nb_spinners;
-                map->iNumObjects = res.nb_circles + res.nb_sliders + res.nb_spinners;
                 map->iLengthMS = std::max(map->iLengthMS, res.length_ms);
                 map->fStarsNomod = res.star_rating;
                 map->iMinBPM = res.min_bpm;

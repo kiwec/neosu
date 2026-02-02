@@ -264,7 +264,7 @@ int entrypoint(int argc_, char *argv_[]) {
                                                   .timescale = speedMultiplier,
                                                   .ar = settings.AR,
                                                   .od = settings.OD,
-                                                  .numHitObjects = static_cast<int>(primitives.numHitobjects),
+                                                  .numHitObjects = static_cast<int>(primitives.getNumObjects()),
                                                   .numCircles = static_cast<int>(primitives.numCircles),
                                                   .numSliders = static_cast<int>(primitives.numSliders),
                                                   .numSpinners = static_cast<int>(primitives.numSpinners),
@@ -292,7 +292,7 @@ int entrypoint(int argc_, char *argv_[]) {
     std::cout << "  CS: " << settings.CS << '\n';
     std::cout << "  OD: " << settings.OD << '\n';
     std::cout << "  HP: " << settings.HP << '\n';
-    std::cout << "  objects: " << primitives.numHitobjects << " (" << primitives.numCircles << "c + "
+    std::cout << "  objects: " << primitives.getNumObjects() << " (" << primitives.numCircles << "c + "
               << primitives.numSliders << "s + " << primitives.numSpinners << "sp)\n";
     std::cout << "  max combo: " << diffResult.getTotalMaxCombo() << '\n';
 
