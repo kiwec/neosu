@@ -265,8 +265,8 @@ bool SongBrowser::sort_by_difficulty(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
-    float stars1 = aPtr->getStarsNomod();
-    float stars2 = bPtr->getStarsNomod();
+    float stars1 = aPtr->getStarRating(DiffStars::active_idx);
+    float stars2 = bPtr->getStarRating(DiffStars::active_idx);
     if(stars1 != stars2) return stars1 < stars2;
 
     float diff1 = (aPtr->getAR() + 1) * (aPtr->getCS() + 1) * (aPtr->getHP() + 1) * (aPtr->getOD() + 1) *
@@ -863,7 +863,7 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
     DatabaseBeatmap *best_diff = nullptr;
     const auto &diffs = beatmapset->getDifficulties();
     for(auto &diff : diffs) {
-        if(!best_diff || diff->getStarsNomod() > best_diff->getStarsNomod()) {
+        if(!best_diff || diff->getStarRating(DiffStars::active_idx) > best_diff->getStarRating(DiffStars::active_idx)) {
             best_diff = diff.get();
         }
     }
@@ -1541,7 +1541,7 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset, bool initialSongBrowserLoad)
         (*this->hashToDiffButton)[diff->getMD5()] = diff_btn;
 
         if(doDiffCollBtns) {
-            const float stars_tmp = diff->getStarsNomod();
+            const float stars_tmp = diff->getStarRating(DiffStars::active_idx);
             const int index = std::clamp<int>(
                 (std::isfinite(stars_tmp) && stars_tmp >= static_cast<float>(std::numeric_limits<int>::min()) &&
                  stars_tmp <= static_cast<float>(std::numeric_limits<int>::max()))
@@ -2194,7 +2194,7 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                                         compareValue = diff->getLengthMS() / 1000.0f;
                                         break;
                                     case STARS:
-                                        compareValue = std::round(diff->getStarsNomod() * 100.0f) /
+                                        compareValue = std::round(diff->getStarRating(DiffStars::active_idx) * 100.0f) /
                                                        100.0f;  // round to 2 decimal places
                                         break;
                                     case CREATOR:

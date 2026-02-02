@@ -161,7 +161,6 @@ void DatabaseBeatmap::updateRepresentativeValues() noexcept {
     this->fAR = 0.0f;
     this->fOD = 0.0f;
     this->fHP = 0.0f;
-    this->fStarsNomod = 0.0f;
     this->iMinBPM = 9001;
     this->iMaxBPM = 0;
     this->iMostCommonBPM = 0;
@@ -173,7 +172,6 @@ void DatabaseBeatmap::updateRepresentativeValues() noexcept {
         if(diff->getAR() > this->fAR) this->fAR = diff->getAR();
         if(diff->getHP() > this->fHP) this->fHP = diff->getHP();
         if(diff->getOD() > this->fOD) this->fOD = diff->getOD();
-        if(diff->getStarsNomod() > this->fStarsNomod) this->fStarsNomod = diff->getStarsNomod();
         if(diff->getMinBPM() < this->iMinBPM) this->iMinBPM = diff->getMinBPM();
         if(diff->getMaxBPM() > this->iMaxBPM) this->iMaxBPM = diff->getMaxBPM();
         if(diff->getMostCommonBPM() > this->iMostCommonBPM) this->iMostCommonBPM = diff->getMostCommonBPM();
@@ -191,7 +189,7 @@ void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept {
     SF(sSource)            SF(sTags)         SF(sBackgroundImageFileName) SF(sAudioFileName)  SF(iID)               SF(iLengthMS)
     SF(iLocalOffset)       SF(iOnlineOffset) SF(iSetID)                   SF(iPreviewTime)    SF(fAR)               SF(fCS)
     SF(fHP)                SF(fOD)           SF(fStackLeniency)           SF(fSliderTickRate) SF(fSliderMultiplier) SF(ppv2Version)
-    SF(fStarsNomod)        SF(iMinBPM)       SF(iMaxBPM)                  SF(iMostCommonBPM)  SF(iNumCircles)
+    SF(fStarsNomod)        SF(star_ratings)  SF(iMinBPM)                  SF(iMaxBPM)         SF(iMostCommonBPM)    SF(iNumCircles)
     SF(iNumSliders)        SF(iNumSpinners)  SF(iVersion)                 SF(type)            SF(bEmptyArtistUnicode)
     SF(bEmptyTitleUnicode) SF(do_not_store)  SF(draw_background)
 #undef SF
@@ -223,11 +221,12 @@ DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
       COPYOTHER(fAR),                 COPYOTHER(fCS),                      COPYOTHER(fHP),
       COPYOTHER(fOD),                 COPYOTHER(fStackLeniency),           COPYOTHER(fSliderTickRate),
       COPYOTHER(fSliderMultiplier),   COPYOTHER(ppv2Version),              COPYOTHER(fStarsNomod),
-      COPYOTHER(iMinBPM),             COPYOTHER(iMaxBPM),                  COPYOTHER(iMostCommonBPM),
-      COPYOTHER(iNumCircles),         COPYOTHER(iNumSliders),              COPYOTHER(iNumSpinners),     ATOMICOTHER(loudness),
-      COPYOTHER(iVersion),            ATOMICOTHER(md5_init),               COPYOTHER(type),
-      COPYOTHER(bEmptyArtistUnicode), COPYOTHER(bEmptyTitleUnicode),       COPYOTHER(do_not_store),
-      COPYOTHER(draw_background) {
+      COPYOTHER(star_ratings),        COPYOTHER(iMinBPM),                  COPYOTHER(iMaxBPM),
+      COPYOTHER(iMostCommonBPM),      COPYOTHER(iNumCircles),
+      COPYOTHER(iNumSliders),         COPYOTHER(iNumSpinners),             ATOMICOTHER(loudness),
+      COPYOTHER(iVersion),            ATOMICOTHER(md5_init),
+      COPYOTHER(type),                COPYOTHER(bEmptyArtistUnicode),      COPYOTHER(bEmptyTitleUnicode),
+      COPYOTHER(do_not_store),        COPYOTHER(draw_background) {
     // clang-format on
 
     if(other.difficulties) {
@@ -251,8 +250,8 @@ DatabaseBeatmap::DatabaseBeatmap(DatabaseBeatmap &&other) noexcept
       COPYOTHER(iPreviewTime),       COPYOTHER(fAR),                 COPYOTHER(fCS),
       COPYOTHER(fHP),                COPYOTHER(fOD),                 COPYOTHER(fStackLeniency),
       COPYOTHER(fSliderTickRate),    COPYOTHER(fSliderMultiplier),   COPYOTHER(ppv2Version),
-      COPYOTHER(fStarsNomod),        COPYOTHER(iMinBPM),             COPYOTHER(iMaxBPM),
-      COPYOTHER(iMostCommonBPM),     COPYOTHER(iNumCircles),
+      COPYOTHER(fStarsNomod),        COPYOTHER(star_ratings),        COPYOTHER(iMinBPM),
+      COPYOTHER(iMaxBPM),            COPYOTHER(iMostCommonBPM),      COPYOTHER(iNumCircles),
       COPYOTHER(iNumSliders),        COPYOTHER(iNumSpinners),        ATOMICOTHER(loudness),
       COPYOTHER(iVersion),           ATOMICOTHER(md5_init),
       COPYOTHER(type),               COPYOTHER(bEmptyArtistUnicode), COPYOTHER(bEmptyTitleUnicode),

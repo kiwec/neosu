@@ -68,4 +68,7 @@ inline MOD_COMBO_INDEX index_of(ModFlags flags, f32 speed) {
 
 using Ratings = std::array<f32, NUM_PRECALC_RATINGS>;
 
+// currently active mod combination index, updated by Osu::updateMods()
+inline u8 active_idx = NOMOD_1X_INDEX;
+
 }  // namespace DiffStars

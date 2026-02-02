@@ -8,6 +8,7 @@
 #include "noinclude.h"
 #include "Vectors.h"
 #include "FixedSizeArray.h"
+#include "DiffStars.h"
 
 // TODO: make these utilities available without all of these ifdefs (move all diffcalc things to a lightweight separate directory)
 #ifndef BUILD_TOOLS_ONLY
@@ -477,7 +478,18 @@ class DatabaseBeatmap final {
 
     // precomputed data
 
-    [[nodiscard]] inline float getStarsNomod() const { return this->fStarsNomod; }
+    [[nodiscard]] inline float getStarsNomod() const {
+        return this->star_ratings ? (*this->star_ratings)[DiffStars::NOMOD_1X_INDEX] : this->fStarsNomod;
+    }
+    [[nodiscard]] inline float getStarRating(u8 idx) const {
+        if(this->star_ratings) return (*this->star_ratings)[idx];
+        if(this->difficulties) {
+            float mx = 0.f;
+            for(const auto &d : *this->difficulties) mx = std::max(mx, d->getStarRating(idx));
+            return mx;
+        }
+        return idx == DiffStars::NOMOD_1X_INDEX ? this->fStarsNomod : 0.f;
+    }
 
     [[nodiscard]] inline int getMinBPM() const { return this->iMinBPM; }
     [[nodiscard]] inline int getMaxBPM() const { return this->iMaxBPM; }
@@ -563,6 +575,7 @@ class DatabaseBeatmap final {
     // precomputed data (can-run-without-but-nice-to-have data)
     u32 ppv2Version{0};  // necessary for knowing if stars are up to date
     float fStarsNomod{0.f};
+    DiffStars::Ratings *star_ratings{nullptr};  // points into Database::star_ratings map (stable via unique_ptr)
 
     int iMinBPM{0};
     int iMaxBPM{0};

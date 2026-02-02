@@ -688,7 +688,10 @@ bool update_mainthread() {
         {
             Sync::unique_lock slk(db->star_ratings_mtx);
             for(const auto& res : pending_maps) {
-                db->star_ratings[res.map->getMD5()] = res.star_ratings;
+                auto& ptr = db->star_ratings[res.map->getMD5()];
+                if(!ptr) ptr = std::make_unique<DiffStars::Ratings>();
+                *ptr = res.star_ratings;
+                res.map->star_ratings = ptr.get();
             }
         }
 

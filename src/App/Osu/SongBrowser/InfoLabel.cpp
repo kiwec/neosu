@@ -302,7 +302,7 @@ void InfoLabel::setFromBeatmap(const DatabaseBeatmap *map) {
     this->setAR(map->getAR());
     this->setOD(map->getOD());
     this->setHP(map->getHP());
-    this->setStars(map->getStarsNomod());
+    this->setStars(map->getStarRating(DiffStars::active_idx));
 
     this->setLocalOffset(map->getLocalOffset());
     this->setOnlineOffset(map->getOnlineOffset());

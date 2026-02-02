@@ -589,8 +589,7 @@ void RoomScreen::on_map_change() {
             this->map_attributes2->setText(attributes2);
             this->map_attributes2->setSizeToContent(0, 0);
 
-            // TODO @kiwec: calc actual star rating on the fly and update
-            auto stars = fmt::format("Star rating: {:.2f}*", beatmap->getStarsNomod());
+            auto stars = fmt::format("Star rating: {:.2f}*", beatmap->getStarRating(DiffStars::active_idx));
             this->map_stars->setText(stars);
             this->map_stars->setSizeToContent(0, 0);
             this->ready_btn->is_loading = false;

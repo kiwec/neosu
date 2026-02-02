@@ -180,7 +180,7 @@ class Database final {
     std::vector<BeatmapDifficulty *> loudness_to_calc;
 
     mutable Sync::shared_mutex star_ratings_mtx;
-    Hash::flat::map<MD5Hash, DiffStars::Ratings> star_ratings;
+    Hash::flat::map<MD5Hash, std::unique_ptr<DiffStars::Ratings>> star_ratings;
     [[nodiscard]] f32 get_star_rating(const MD5Hash &hash, ModFlags flags, f32 speed) const;
 
    private:

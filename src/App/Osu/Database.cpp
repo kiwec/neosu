@@ -97,7 +97,7 @@ f32 Database::get_star_rating(const MD5Hash &hash, ModFlags flags, f32 speed) co
     if(uSz idx = DiffStars::index_of(flags, speed); idx != DiffStars::INVALID_MODCOMBO) {
         Sync::shared_lock lk(this->star_ratings_mtx);
         if(const auto &it = this->star_ratings.find(hash); it != this->star_ratings.end()) {
-            return it->second[idx];
+            return (*it->second)[idx];
         }
     }
     return 0.f;
@@ -1299,10 +1299,10 @@ void Database::loadMaps() {
                     for(u32 i = 0; i < nb_star_entries; i++) {
                         MD5Hash hash;
                         (void)neosu_maps.read_hash_digest(hash);
-                        DiffStars::Ratings ratings;
-                        (void)neosu_maps.read_bytes(reinterpret_cast<u8 *>(ratings.data()),
+                        auto ratings = std::make_unique<DiffStars::Ratings>();
+                        (void)neosu_maps.read_bytes(reinterpret_cast<u8 *>(ratings->data()),
                                                     sizeof(f32) * DiffStars::NUM_PRECALC_RATINGS);
-                        this->star_ratings.emplace(hash, ratings);
+                        this->star_ratings.emplace(hash, std::move(ratings));
                     }
                 } else {
                     // layout changed; skip stored data, recalc will be triggered
@@ -1756,6 +1756,17 @@ void Database::loadMaps() {
     debugLog("peppy+neosu maps: loading took {:f} seconds ({:d} peppy, {:d} neosu, {:d} maps total)",
              this->importTimer->getElapsedTime(), nb_peppy_maps, nb_neosu_maps, nb_peppy_maps + nb_neosu_maps);
     debugLog("Found {:d} overrides; {:d} maps need loudness recalc", nb_overrides, this->loudness_to_calc.size());
+
+    // link each diff's star_ratings pointer to its entry in the star_ratings map
+    {
+        Sync::shared_lock sr_lock(this->star_ratings_mtx);
+        Sync::shared_lock diff_lock(this->beatmap_difficulties_mtx);
+        for(const auto &[hash, diff] : this->beatmap_difficulties) {
+            if(auto it = this->star_ratings.find(hash); it != this->star_ratings.end()) {
+                diff->star_ratings = it->second.get();
+            }
+        }
+    }
 }
 
 void Database::saveMaps() {
@@ -1887,7 +1898,8 @@ void Database::saveMaps() {
         maps.write<u32>(this->star_ratings.size());
         for(const auto &[hash, ratings] : this->star_ratings) {
             maps.write_hash_digest(hash);
-            maps.write_bytes(reinterpret_cast<const u8 *>(ratings.data()), sizeof(f32) * DiffStars::NUM_PRECALC_RATINGS);
+            maps.write_bytes(reinterpret_cast<const u8 *>(ratings->data()),
+                             sizeof(f32) * DiffStars::NUM_PRECALC_RATINGS);
             nb_star_entries++;
         }
     }
