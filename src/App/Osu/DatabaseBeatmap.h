@@ -63,6 +63,7 @@ using std::stop_token;
 #include <string_view>
 #include <memory>
 #include <functional>
+#include <cassert>
 
 // purpose:
 // 1) contain all infos which are ALWAYS kept in memory for beatmaps
@@ -478,6 +479,7 @@ class DatabaseBeatmap final {
         return this->star_ratings ? (*this->star_ratings)[DiffStars::NOMOD_1X_INDEX] : this->fStarsNomod;
     }
     [[nodiscard]] inline float getStarRating(u8 idx) const {
+        assert(idx < DiffStars::NUM_PRECALC_RATINGS);
         if(this->star_ratings) return (*this->star_ratings)[idx];
         if(this->difficulties) {
             float mx = 0.f;

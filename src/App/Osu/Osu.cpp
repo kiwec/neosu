@@ -760,7 +760,7 @@ void Osu::updateMods() {
 
     {
         auto idx = DiffStars::index_of(this->score->mods.flags, this->score->mods.speed);
-        DiffStars::active_idx = (idx != DiffStars::INVALID_MODCOMBO) ? idx : DiffStars::NOMOD_1X_INDEX;
+        DiffStars::active_idx = (idx != DiffStars::INVALID_MODCOMBO) ? (u8)idx : DiffStars::NOMOD_1X_INDEX;
     }
 
     if(this->isInPlayMode()) {

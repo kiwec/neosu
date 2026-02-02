@@ -344,17 +344,17 @@ void CarouselButton::setMoveAwayState(CarouselButton::MOVE_AWAY_STATE moveAwaySt
 }
 
 void CarouselButton::setChildren(std::vector<SongButton *> children) {
-    this->lastChildSortDiffStarsIdx = -1;
+    this->lastChildSortDiffStarsIdx = 0xFF;
     this->children = std::move(children);
 }
 
 void CarouselButton::addChild(SongButton *child) {
-    this->lastChildSortDiffStarsIdx = -1;
+    this->lastChildSortDiffStarsIdx = 0xFF;
     this->children.push_back(child);
 }
 
 void CarouselButton::addChildren(std::vector<SongButton *> children) {
-    this->lastChildSortDiffStarsIdx = -1;
+    this->lastChildSortDiffStarsIdx = 0xFF;
     this->children.insert(this->children.end(), std::make_move_iterator(children.begin()),
                           std::make_move_iterator(children.end()));
 }
