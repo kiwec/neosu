@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <utility>
+#include <cinttypes>
 
 #include "AnimationHandler.h"
 #include "BanchoUsers.h"
@@ -688,7 +689,7 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
     this->sScoreUsername = UString(sc.playerName.c_str());
 
     char fmtbuf[256]{};
-    int fmted = std::snprintf(&fmtbuf[0], sizeof(fmtbuf), "Score: %'zu (%'dx%s)", sc.score, sc.comboMax, comboSuffix);
+    int fmted = std::snprintf(&fmtbuf[0], sizeof(fmtbuf), "Score: %'" PRIu64 " (%'dx%s)", sc.score, sc.comboMax, comboSuffix);
     this->sScoreScore = {&fmtbuf[0], fmted >= 0 && fmted < sizeof(fmtbuf) ? fmted : 0};
 
     if(f64 pp = sc.get_pp(); pp == -1.0) {

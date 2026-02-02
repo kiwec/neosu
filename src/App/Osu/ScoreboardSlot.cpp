@@ -12,6 +12,8 @@
 #include "SkinImage.h"
 #include "UI.h"
 
+#include <cinttypes>
+
 ScoreboardSlot::ScoreboardSlot(const SCORE_ENTRY &score, int index) {
     this->avatar = std::make_unique<UIAvatar>(score.player_id, 0.f, 0.f, 0.f, 0.f);
     this->score = score;
@@ -180,7 +182,7 @@ void ScoreboardSlot::draw() {
             // other conditions fall through to scorev1
             default: {
                 char scorebuf[256]{};
-                int written = std::snprintf(&scorebuf[0], sizeof(scorebuf), "%'zu", this->score.score);
+                int written = std::snprintf(&scorebuf[0], sizeof(scorebuf), "%'" PRIu64 "", this->score.score);
                 wincond_based_scoretext = {&scorebuf[0], written >= 0 && written < sizeof(scorebuf) ? written : 0};
             } break;
         }
