@@ -32,8 +32,16 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v42_02;
+    v42_02.title = "42.02 (" CHANGELOG_TIMESTAMP ")";
+    v42_02.changes = {
+        R"(- Added initial support for pre-calculating star rating for various mod/rate combinations)",
+        R"(  - Currently included: 9 rates between 0.75x and 1.5x, and for each rate, 6 unique mod combinations (valid combos of nomod/HR/HD/EZ))",
+    };
+    changelogs.push_back(v42_02);
+
     CHANGELOG v42_01;
-    v42_01.title = "42.01 (" CHANGELOG_TIMESTAMP ")";
+    v42_01.title = "42.01 (2026-02-03)";
     v42_01.changes = {
         R"(- Added loudness normalization for SoLoud)",
         R"(- Added -headless launch option to start without a visible window)",
