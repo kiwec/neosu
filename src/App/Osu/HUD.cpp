@@ -1748,7 +1748,7 @@ void HUD::drawProgressBar(float percent, bool waiting) {
     g->popTransform();
 }
 
-void HUD::drawStatistics(HUDStats s) const {
+void HUD::drawStatistics(const HUDStats &s) const {
     static const auto getOffsetStatText = []() -> UString {
         const auto &bmi = osu->getMapInterface();
         if(!bmi || !bmi->getMusic() || !bmi->getBeatmap()) return "";
@@ -1843,26 +1843,26 @@ void HUD::drawStatistics(HUDStats s) const {
                          cv::hud_statistics_bpm_offset_y.getInt());
 
         if(cv::draw_statistics_ar.getBool()) {
-            s.ar = std::round(s.ar * 100.0f) / 100.0f;
-            addStatistic(fmt::format("AR: {:g}"_cf, s.ar), cv::hud_statistics_ar_offset_x.getInt(),
+            float AR = std::round(s.ar * 100.0f) / 100.0f;
+            addStatistic(fmt::format("AR: {:g}"_cf, AR), cv::hud_statistics_ar_offset_x.getInt(),
                          cv::hud_statistics_ar_offset_y.getInt());
         }
 
         if(cv::draw_statistics_cs.getBool()) {
-            s.cs = std::round(s.cs * 100.0f) / 100.0f;
-            addStatistic(fmt::format("CS: {:g}"_cf, s.cs), cv::hud_statistics_cs_offset_x.getInt(),
+            float CS = std::round(s.cs * 100.0f) / 100.0f;
+            addStatistic(fmt::format("CS: {:g}"_cf, CS), cv::hud_statistics_cs_offset_x.getInt(),
                          cv::hud_statistics_cs_offset_y.getInt());
         }
 
         if(cv::draw_statistics_od.getBool()) {
-            s.od = std::round(s.od * 100.0f) / 100.0f;
-            addStatistic(fmt::format("OD: {:g}"_cf, s.od), cv::hud_statistics_od_offset_x.getInt(),
+            float OD = std::round(s.od * 100.0f) / 100.0f;
+            addStatistic(fmt::format("OD: {:g}"_cf, OD), cv::hud_statistics_od_offset_x.getInt(),
                          cv::hud_statistics_od_offset_y.getInt());
         }
 
         if(cv::draw_statistics_hp.getBool()) {
-            s.hp = std::round(s.hp * 100.0f) / 100.0f;
-            addStatistic(fmt::format("HP: {:g}"_cf, s.hp), cv::hud_statistics_hp_offset_x.getInt(),
+            float HP = std::round(s.hp * 100.0f) / 100.0f;
+            addStatistic(fmt::format("HP: {:g}"_cf, HP), cv::hud_statistics_hp_offset_x.getInt(),
                          cv::hud_statistics_hp_offset_y.getInt());
         }
 

@@ -139,7 +139,9 @@ void ScoreboardSlot::draw() {
     // draw combo
     g->pushTransform();
     {
-        UString comboString = fmt::format("{}x", fmt::group_digits(this->score.maxCombo));
+        char combobuf[256]{};
+        int written = std::snprintf(&combobuf[0], sizeof(combobuf), "%'d", this->score.maxCombo);
+        const UString comboString{&combobuf[0], written >= 0 && written < sizeof(combobuf) ? written : 0};
         const float stringWidth = font_normal->getStringWidth(comboString);
 
         g->scale(scoreScale, scoreScale);
@@ -177,7 +179,9 @@ void ScoreboardSlot::draw() {
             } break;
             // other conditions fall through to scorev1
             default: {
-                wincond_based_scoretext = fmt::format("{}", fmt::group_digits(this->score.score));
+                char scorebuf[256]{};
+                int written = std::snprintf(&scorebuf[0], sizeof(scorebuf), "%'zu", this->score.score);
+                wincond_based_scoretext = {&scorebuf[0], written >= 0 && written < sizeof(scorebuf) ? written : 0};
             } break;
         }
 

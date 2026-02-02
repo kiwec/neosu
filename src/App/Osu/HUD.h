@@ -241,7 +241,7 @@ class HUD final : public UIScreen {
     void drawHitErrorBarInt(float hitWindow300, float hitWindow100, float hitWindow50, float hitWindowMiss);
     void drawHitErrorBarInt2(vec2 center, int ur);
     void drawProgressBar(float percent, bool waiting);
-    void drawStatistics(HUDStats stats) const;
+    void drawStatistics(const HUDStats &stats) const;
     void drawTargetHeatmap(float hitcircleDiameter);
     void drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 beatmapStartTimePlayable,
                                f32 beatmapPercentFinishedPlayable, const std::vector<BREAK> &breaks);
