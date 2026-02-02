@@ -8,7 +8,7 @@
 #include "noinclude.h"
 #include "Vectors.h"
 #include "FixedSizeArray.h"
-#include "DiffStars.h"
+#include "StarPrecalc.h"
 
 // TODO: make these utilities available without all of these ifdefs (move all diffcalc things to a lightweight separate directory)
 #ifndef BUILD_TOOLS_ONLY
@@ -477,7 +477,7 @@ class DatabaseBeatmap final {
 
     // TODO: return "closest computed" SR? for queries while calculating
     [[nodiscard]] inline f32 getStarRating(u8 idx) const {
-        assert(idx < DiffStars::NUM_PRECALC_RATINGS);
+        assert(idx < StarPrecalc::NUM_PRECALC_RATINGS);
         if(this->star_ratings) {
             const f32 sr_array_stars{(*this->star_ratings)[idx]};
             return sr_array_stars <= 0.f ? this->fStarsNomod : sr_array_stars;
@@ -491,7 +491,7 @@ class DatabaseBeatmap final {
         return this->fStarsNomod;
     }
 
-    [[nodiscard]] inline f32 getStarsNomod() const { return this->getStarRating(DiffStars::NOMOD_1X_INDEX); }
+    [[nodiscard]] inline f32 getStarsNomod() const { return this->getStarRating(StarPrecalc::NOMOD_1X_INDEX); }
 
     [[nodiscard]] inline int getMinBPM() const { return this->iMinBPM; }
     [[nodiscard]] inline int getMaxBPM() const { return this->iMaxBPM; }
@@ -577,7 +577,7 @@ class DatabaseBeatmap final {
     // precomputed data (can-run-without-but-nice-to-have data)
     u32 ppv2Version{0};  // necessary for knowing if stars are up to date
     float fStarsNomod{0.f};
-    DiffStars::Ratings *star_ratings{nullptr};  // points into Database::star_ratings map (stable via unique_ptr)
+    StarPrecalc::SRArray *star_ratings{nullptr};  // points into Database::star_ratings map (stable via unique_ptr)
 
     int iMinBPM{0};
     int iMaxBPM{0};

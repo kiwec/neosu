@@ -1,33 +1,15 @@
-#pragma once
-// pre-calculated star ratings for common mod combinations
+// Copyright (c) 2026, WH, All rights reserved.
+#include "StarPrecalc.h"
 
 #include "ModFlags.h"
-#include "types.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstdio>
 
-namespace DiffStars {
+namespace StarPrecalc {
 
-enum SPEEDS_ENUM : u8 { SPEEDS_MIN, _0_75 = SPEEDS_MIN, _0_8, _0_9, _1_0, _1_1, _1_2, _1_3, _1_4, _1_5, SPEEDS_NUM };
-inline constexpr std::array SPEEDS{0.75f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f};
-static_assert(SPEEDS_NUM == SPEEDS.size());
-
-// mod combo indices:
-//  0 = None
-//  1 = HR
-//  2 = HD
-//  3 = EZ
-//  4 = HD|HR
-//  5 = HD|EZ
-inline constexpr uSz NUM_MOD_COMBOS = 6;
-inline constexpr uSz NUM_PRECALC_RATINGS = SPEEDS_NUM * NUM_MOD_COMBOS;  // 54
-inline constexpr uSz NOMOD_1X_INDEX = _1_0 * NUM_MOD_COMBOS;             // speed_idx=3 (1.0) * 6 + combo=0 (None) = 18
-
-enum MOD_COMBO_INDEX : u8 { INVALID_MODCOMBO = 0xFF };
-inline MOD_COMBO_INDEX mod_combo_index(ModFlags flags) {
+MOD_COMBO_INDEX mod_combo_index(ModFlags flags) {
     using namespace flags::operators;
     using enum ModFlags;
 
@@ -50,7 +32,7 @@ inline MOD_COMBO_INDEX mod_combo_index(ModFlags flags) {
 }
 
 // never fail, return closest
-inline uSz speed_index(f32 speed) {
+uSz speed_index(f32 speed) {
     auto it = std::ranges::lower_bound(SPEEDS, speed);
     if(it == SPEEDS.begin()) return 0;
     if(it == SPEEDS.end()) return SPEEDS.size() - 1;
@@ -59,18 +41,7 @@ inline uSz speed_index(f32 speed) {
     return (speed - *prev <= *it - speed) ? std::distance(SPEEDS.begin(), prev) : std::distance(SPEEDS.begin(), it);
 }
 
-inline MOD_COMBO_INDEX index_of(ModFlags flags, f32 speed) {
-    const uSz si = speed_index(speed);
-    const uSz mi = mod_combo_index(flags);
-    if(mi == INVALID_MODCOMBO) return INVALID_MODCOMBO;
-
-    return static_cast<MOD_COMBO_INDEX>(si * NUM_MOD_COMBOS + mi);
-}
-
-inline const char *dbgstr_idx(u8 idx) {
-    static constexpr std::array MOD_NAMES{"NM", "HR", "HD", "EZ", "HDHR", "HDEZ"};
-    static constexpr std::array SPEED_NAMES{"0.75", "0.8", "0.9", "1.0", "1.1", "1.2", "1.3", "1.4", "1.5"};
-
+const char *dbgstr_idx(u8 idx) {
     static thread_local std::array<char, 16> buf{};
     static thread_local u8 last_idx{0xFF};
 
@@ -89,9 +60,4 @@ inline const char *dbgstr_idx(u8 idx) {
     return buf.data();
 }
 
-using Ratings = std::array<f32, NUM_PRECALC_RATINGS>;
-
-// currently active mod combination index, updated by Osu::updateMods()
-inline u8 active_idx = NOMOD_1X_INDEX;
-
-}  // namespace DiffStars
+}  // namespace StarPrecalc

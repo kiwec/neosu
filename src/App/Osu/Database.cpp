@@ -94,7 +94,7 @@ bool Database::sortScoreByPP(const FinishedScore &a, const FinishedScore &b) {
 }
 
 f32 Database::get_star_rating(const MD5Hash &hash, ModFlags flags, f32 speed) const {
-    if(uSz idx = DiffStars::index_of(flags, speed); idx != DiffStars::INVALID_MODCOMBO) {
+    if(uSz idx = StarPrecalc::index_of(flags, speed); idx != StarPrecalc::INVALID_MODCOMBO) {
         Sync::shared_lock lk(this->star_ratings_mtx);
         if(const auto &it = this->star_ratings.find(hash); it != this->star_ratings.end()) {
             return (*it->second)[idx];
@@ -1290,7 +1290,7 @@ void Database::loadMaps() {
                 const u32 nb_star_entries = neosu_maps.read<u32>();
                 const uSz stored_entries = stored_speeds * stored_combos;
                 const bool layout_matches =
-                    (stored_speeds == DiffStars::SPEEDS_NUM && stored_combos == DiffStars::NUM_MOD_COMBOS);
+                    (stored_speeds == StarPrecalc::SPEEDS_NUM && stored_combos == StarPrecalc::NUM_MOD_COMBOS);
 
                 if(layout_matches) {
                     Sync::unique_lock lock(this->star_ratings_mtx);
@@ -1298,15 +1298,15 @@ void Database::loadMaps() {
                     for(u32 i = 0; i < nb_star_entries; i++) {
                         MD5Hash hash;
                         (void)neosu_maps.read_hash_digest(hash);
-                        auto ratings = std::make_unique<DiffStars::Ratings>();
+                        auto ratings = std::make_unique<StarPrecalc::SRArray>();
                         (void)neosu_maps.read_bytes(reinterpret_cast<u8 *>(ratings->data()),
-                                                    sizeof(f32) * DiffStars::NUM_PRECALC_RATINGS);
+                                                    sizeof(f32) * StarPrecalc::NUM_PRECALC_RATINGS);
                         this->star_ratings.emplace(hash, std::move(ratings));
                     }
                 } else {
                     // layout changed; skip stored data, recalc will be triggered
                     debugLog("star ratings layout changed (stored {}x{}, current {}x{}), skipping", stored_speeds,
-                             stored_combos, (u8)DiffStars::SPEEDS_NUM, (uSz)DiffStars::NUM_MOD_COMBOS);
+                             stored_combos, (u8)StarPrecalc::SPEEDS_NUM, (uSz)StarPrecalc::NUM_MOD_COMBOS);
                     for(u32 i = 0; i < nb_star_entries; i++) {
                         neosu_maps.skip_bytes(sizeof(MD5Hash) + sizeof(f32) * stored_entries);
                     }
@@ -1892,13 +1892,13 @@ void Database::saveMaps() {
     u32 nb_star_entries = 0;
     {
         Sync::shared_lock lock(this->star_ratings_mtx);
-        maps.write<u8>(DiffStars::SPEEDS_NUM);
-        maps.write<u8>(DiffStars::NUM_MOD_COMBOS);
+        maps.write<u8>(StarPrecalc::SPEEDS_NUM);
+        maps.write<u8>(StarPrecalc::NUM_MOD_COMBOS);
         maps.write<u32>(this->star_ratings.size());
         for(const auto &[hash, ratings] : this->star_ratings) {
             maps.write_hash_digest(hash);
             maps.write_bytes(reinterpret_cast<const u8 *>(ratings->data()),
-                             sizeof(f32) * DiffStars::NUM_PRECALC_RATINGS);
+                             sizeof(f32) * StarPrecalc::NUM_PRECALC_RATINGS);
             nb_star_entries++;
         }
     }

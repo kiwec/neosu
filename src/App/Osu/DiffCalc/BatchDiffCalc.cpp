@@ -7,7 +7,7 @@
 //   (9 speeds x 6 mod combos: None, HR, HD, EZ, HD|HR, HD|EZ)
 
 #include "BatchDiffCalc.h"
-#include "DiffStars.h"
+#include "StarPrecalc.h"
 
 #include "Database.h"
 #include "DatabaseBeatmap.h"
@@ -104,7 +104,7 @@ struct MapResult {
     u32 nb_circles{};
     u32 nb_sliders{};
     u32 nb_spinners{};
-    DiffStars::Ratings star_ratings{};
+    StarPrecalc::SRArray star_ratings{};
     u32 min_bpm{};
     u32 max_bpm{};
     u32 avg_bpm{};
@@ -393,9 +393,9 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
                 }
             }
 
-            for(u8 speed_idx = 0; speed_idx < DiffStars::SPEEDS_NUM; speed_idx++) {
+            for(u8 speed_idx = 0; speed_idx < StarPrecalc::SPEEDS_NUM; speed_idx++) {
                 if(stoken.stop_requested()) return;
-                const f32 speed = DiffStars::SPEEDS[speed_idx];
+                const f32 speed = StarPrecalc::SPEEDS[speed_idx];
                 const f64 inv_speed = 1.0 / (f64)speed;
 
                 // rescale timing fields from base values for this speed
@@ -417,7 +417,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
 
                 // HD=0: full calculation, saving raw difficulty values
                 {
-                    const u8 flat_idx = speed_idx * DiffStars::NUM_MOD_COMBOS + var.combo_idx[0];
+                    const u8 flat_idx = speed_idx * StarPrecalc::NUM_MOD_COMBOS + var.combo_idx[0];
 
                     DifficultyCalculator::BeatmapDiffcalcData diffcalc_data{
                         .sortedHitObjects = diffres.diffobjects,
@@ -456,7 +456,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
                     // HD=1: recompute star rating from cached raw difficulty values.
                     // strains are identical (hidden only affects the final rating transform),
                     // so we skip DiffObject construction, strain calc, and calculate_difficulty.
-                    const u8 hd_flat_idx = speed_idx * DiffStars::NUM_MOD_COMBOS + var.combo_idx[1];
+                    const u8 hd_flat_idx = speed_idx * StarPrecalc::NUM_MOD_COMBOS + var.combo_idx[1];
                     diffcalc_data.hidden = true;
                     result.star_ratings[hd_flat_idx] =
                         static_cast<f32>(DifficultyCalculator::recomputeStarRating(raw_diff, diffcalc_data));
@@ -466,7 +466,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
             }
         }
 
-        if(result.star_ratings[DiffStars::NOMOD_1X_INDEX] <= 0.f) {
+        if(result.star_ratings[StarPrecalc::NOMOD_1X_INDEX] <= 0.f) {
             errored_count.fetch_add(1, std::memory_order_relaxed);
         }
 
@@ -674,7 +674,7 @@ bool update_mainthread() {
                 map->iNumSliders = res.nb_sliders;
                 map->iNumSpinners = res.nb_spinners;
                 map->iLengthMS = std::max(map->iLengthMS, res.length_ms);
-                map->fStarsNomod = res.star_ratings[DiffStars::NOMOD_1X_INDEX];
+                map->fStarsNomod = res.star_ratings[StarPrecalc::NOMOD_1X_INDEX];
                 map->iMinBPM = res.min_bpm;
                 map->iMaxBPM = res.max_bpm;
                 map->iMostCommonBPM = res.avg_bpm;
@@ -689,7 +689,7 @@ bool update_mainthread() {
             Sync::unique_lock slk(db->star_ratings_mtx);
             for(const auto& res : pending_maps) {
                 auto& ptr = db->star_ratings[res.map->getMD5()];
-                if(!ptr) ptr = std::make_unique<DiffStars::Ratings>();
+                if(!ptr) ptr = std::make_unique<StarPrecalc::SRArray>();
                 *ptr = res.star_ratings;
                 res.map->star_ratings = ptr.get();
             }

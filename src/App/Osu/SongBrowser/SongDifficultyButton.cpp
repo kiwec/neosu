@@ -95,7 +95,7 @@ void SongDifficultyButton::draw() {
 
     // draw stars
     // NOTE: stars can sometimes be infinity! (e.g. broken osu!.db database)
-    float stars = this->databaseBeatmap->getStarRating(DiffStars::active_idx);
+    float stars = this->databaseBeatmap->getStarRating(StarPrecalc::active_idx);
     if(stars > 0) {
         const float starOffsetY = (size.y * 0.85);
         const float starWidth = (size.y * 0.2);

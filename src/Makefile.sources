@@ -31,6 +31,7 @@ neosu_SOURCES = \
 	src/App/Osu/DiffCalc/BatchDiffCalc.cpp \
 	src/App/Osu/DiffCalc/DifficultyCalculator.cpp \
 	src/App/Osu/DiffCalc/LivePPCalc.cpp \
+	src/App/Osu/DiffCalc/StarPrecalc.cpp \
 	src/App/Osu/Downloader.cpp \
 	src/App/Osu/GameRules.cpp \
 	src/App/Osu/HUD.cpp \

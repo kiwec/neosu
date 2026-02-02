@@ -7,8 +7,9 @@
 #include "UString.h"
 #include "score.h"
 #include "SyncMutex.h"
+
 #include "Hashing.h"
-#include "DiffCalc/DiffStars.h"
+#include "DiffCalc/StarPrecalc.h"
 
 #include <atomic>
 #include <set>
@@ -181,7 +182,7 @@ class Database final {
     bool bPendingBatchDiffCalc{false};
 
     mutable Sync::shared_mutex star_ratings_mtx;
-    Hash::flat::map<MD5Hash, std::unique_ptr<DiffStars::Ratings>> star_ratings;
+    Hash::flat::map<MD5Hash, std::unique_ptr<StarPrecalc::SRArray>> star_ratings;
     [[nodiscard]] f32 get_star_rating(const MD5Hash &hash, ModFlags flags, f32 speed) const;
 
    private:

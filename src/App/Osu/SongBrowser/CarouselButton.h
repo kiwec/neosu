@@ -123,7 +123,7 @@ class CarouselButton : public CBaseUIButton {
     float fCenterOffsetAnimation{0.f};
     float fCenterOffsetVelocityAnimation{0.f};
 
-    u8 lastChildSortDiffStarsIdx{0xFF};
+    u8 lastChildSortStarPrecalcIdx{0xFF};
 
     std::atomic<bool> bIsSearchMatch{true};
 
