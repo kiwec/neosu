@@ -32,8 +32,15 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v42_01;
+    v42_01.title = "42.01 (" CHANGELOG_TIMESTAMP ")";
+    v42_01.changes = {
+        R"()",
+    };
+    changelogs.push_back(v42_01);
+
     CHANGELOG v42_00;
-    v42_00.title = "42.00 (" CHANGELOG_TIMESTAMP ")";
+    v42_00.title = "42.00 (2026-01-30)";
     v42_00.changes = {
         R"(- Added Song Browser right click->Export Collection and Export Beatmapset)",
         R"(  - Note that all of the difficulties from the beatmapset in a collection will be archived, not just the difficulty in the collection itself.)",
