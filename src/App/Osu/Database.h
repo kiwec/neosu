@@ -7,6 +7,7 @@
 #include "UString.h"
 #include "score.h"
 #include "SyncMutex.h"
+#include "Hashing.h"
 
 #include <atomic>
 #include <set>

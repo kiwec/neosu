@@ -61,7 +61,7 @@ void ByteBufferedFile::Reader::set_error(const std::string &error_msg) {
 }
 
 // TODO: error handling is wildly incorrect/dubious
-bool ByteBufferedFile::Reader::read_hash(MD5Hash &inout) {
+bool ByteBufferedFile::Reader::read_hash_chars(MD5String &inout) {
     if(this->error_flag) {
         return false;
     }
@@ -77,7 +77,7 @@ bool ByteBufferedFile::Reader::read_hash(MD5Hash &inout) {
     u32 extra = 0;
     if(len > 32) {
         // just continue, don't set error flag
-        debugLog("WARNING: Expected 32 bytes for hash, got {}!", len);
+        debugLog("WARNING: Expected 32 bytes for hash string, got {}!", len);
         extra = len - 32;
         len = 32;
 
@@ -87,7 +87,51 @@ bool ByteBufferedFile::Reader::read_hash(MD5Hash &inout) {
     assert(len <= 32);  // shut up gcc PLEASE
     if(this->read_bytes(reinterpret_cast<u8 *>(inout.data()), len) != len) {
         // just continue, don't set error flag
-        debugLog("WARNING: failed to read {} bytes to obtain hash.", len);
+        debugLog("WARNING: failed to read {} bytes to obtain hash string.", len);
+        extra = len;
+
+        success = false;
+    }
+
+    this->skip_bytes(extra);
+
+    return success;
+}
+
+bool ByteBufferedFile::Reader::read_hash_chars(MD5Hash &inout) {
+    MD5String temp;
+    bool ret = read_hash_chars(temp);
+    inout = temp;
+    return ret;
+}
+
+bool ByteBufferedFile::Reader::read_hash_digest(MD5Hash &inout) {
+    if(this->error_flag) {
+        return false;
+    }
+
+    u8 empty_check = this->read<u8>();
+    if(empty_check == 0) {
+        return false;
+    }
+
+    bool success = true;
+
+    u32 len = this->read_uleb128();
+    u32 extra = 0;
+    if(len > 16) {
+        // just continue, don't set error flag
+        debugLog("WARNING: Expected 16 bytes for hash digest, got {}!", len);
+        extra = len - 16;
+        len = 16;
+
+        success = false;
+    }
+
+    assert(len <= 16);  // shut up gcc PLEASE
+    if(this->read_bytes(reinterpret_cast<u8 *>(inout.data()), len) != len) {
+        // just continue, don't set error flag
+        debugLog("WARNING: failed to read {} bytes to obtain hash digest.", len);
         extra = len;
 
         success = false;
@@ -199,14 +243,24 @@ void ByteBufferedFile::Writer::set_error(const std::string &error_msg) {
     }
 }
 
-void ByteBufferedFile::Writer::write_hash(const MD5Hash &hash) {
+void ByteBufferedFile::Writer::write_hash_chars(const MD5String &hash_str) {
     if(this->error_flag) {
         return;
     }
 
     this->write<u8>(0x0B);
-    this->write<u8>(0x20);
-    this->write_bytes(reinterpret_cast<const u8 *>(hash.data()), 32);
+    this->write<u8>(hash_str.size());
+    this->write_bytes(reinterpret_cast<const u8 *>(hash_str.data()), hash_str.size());
+}
+
+void ByteBufferedFile::Writer::write_hash_digest(const MD5Hash &hash_digest) {
+    if(this->error_flag) {
+        return;
+    }
+
+    this->write<u8>(0x0B);
+    this->write<u8>(hash_digest.size());
+    this->write_bytes(reinterpret_cast<const u8 *>(hash_digest.data()), hash_digest.size());
 }
 
 void ByteBufferedFile::Writer::flush() {
@@ -280,7 +334,7 @@ bool ByteBufferedFile::Writer::write_string_isnull(const char *str) {
 }
 
 void ByteBufferedFile::Writer::write_string_nonnull(const char *str, uSz len) {
-    u8 empty_check = 11;
+    u8 empty_check = 0x0B;
     this->write<u8>(empty_check);
 
     this->write_uleb128(len);

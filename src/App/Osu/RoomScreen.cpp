@@ -110,7 +110,7 @@ bool UIModList::isVisible() { return !!*this->flags; }
         element->onResized();                                   \
         element->setSizeToContent(x_padding, y_padding);        \
         element->setPos(10.f * osu->getUIScale(), settings_y);  \
-        this->settings->container.addBaseUIElement(element);   \
+        this->settings->container.addBaseUIElement(element);    \
         settings_y += element->getSize().y;                     \
     } while(0)
 
@@ -124,7 +124,7 @@ bool UIModList::isVisible() { return !!*this->flags; }
         button->setSizeToContent(button_padding, button_padding);                             \
         button->setPos(label->getSize().x + 20.f * osu->getUIScale(),                         \
                        label->getPos().y + (label->getSize().y - button->getSize().y) / 2.f); \
-        this->settings->container.addBaseUIElement(button);                                  \
+        this->settings->container.addBaseUIElement(button);                                   \
     } while(0)
 
 #define PAD(x)                               \
@@ -562,8 +562,8 @@ void RoomScreen::on_map_change() {
     // Results screen has map background and such showing, so prevent map from changing while we're on it.
     if(ui->getRankingScreen()->isVisible()) return;
 
-    debugLog("Map changed to ID {:d}, MD5 {:s}: {:s}", BanchoState::room.map_id, BanchoState::room.map_md5.string(),
-             BanchoState::room.map_name);
+    debugLog("Map changed to ID {:d}, MD5 {:s}: {:s}", BanchoState::room.map_id,
+             BanchoState::room.map_md5, BanchoState::room.map_name);
     this->ready_btn->is_loading = true;
 
     // Deselect current map
@@ -872,7 +872,7 @@ void RoomScreen::onSelectMapClicked() {
     packet.id = OUTP_MATCH_CHANGE_SETTINGS;
     BanchoState::room.map_id = -1;
     BanchoState::room.map_name = "";
-    BanchoState::room.map_md5 = "";
+    BanchoState::room.map_md5 = {};
     BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 }

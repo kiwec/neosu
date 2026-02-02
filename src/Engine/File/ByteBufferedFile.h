@@ -11,6 +11,7 @@
 #include "noinclude.h"
 #include "types.h"
 
+struct MD5String;
 struct MD5Hash;
 
 // don't do something stupid like:
@@ -169,7 +170,9 @@ class ByteBufferedFile {
         [[nodiscard]] constexpr bool good() const { return !this->error_flag; }
         [[nodiscard]] constexpr std::string_view error() const { return this->last_error; }
 
-        [[nodiscard]] bool read_hash(MD5Hash &inout);  // read into a given buffer directly
+        [[nodiscard]] bool read_hash_chars(MD5String &hash_str_inout);  // read into a given buffer directly
+        [[nodiscard]] bool read_hash_chars(MD5Hash &hash_digest_inout);
+        [[nodiscard]] bool read_hash_digest(MD5Hash &hash_digest_inout);
         bool read_string(std::string &inout);
         [[nodiscard]] std::string read_string();
         [[nodiscard]] u32 read_uleb128();
@@ -207,7 +210,8 @@ class ByteBufferedFile {
 
         void flush();
         void write_bytes(const u8 *bytes, uSz n);
-        void write_hash(const MD5Hash &hash);
+        void write_hash_chars(const MD5String &hash_str);
+        void write_hash_digest(const MD5Hash &hash_digest);
         void write_uleb128(u32 num);
         inline void write_string(const char *str) {
             if(this->write_string_isnull(str)) return;

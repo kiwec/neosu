@@ -47,8 +47,8 @@ std::string Packet::read_stdstring() {
 
 UString Packet::read_ustring() { return this->read_stdstring(); }
 
-MD5Hash Packet::read_hash() {
-    MD5Hash hash;
+MD5String Packet::read_hash_chars() {
+    MD5String hash;
 
     u8 empty_check = this->read<u8>();
     if(empty_check == 0) return hash;
@@ -56,6 +56,21 @@ MD5Hash Packet::read_hash() {
     u32 len = this->read_uleb128();
     if(len > 32) {
         len = 32;
+    }
+
+    this->read_bytes((u8 *)hash.data(), len);
+    return hash;
+}
+
+MD5Hash Packet::read_hash_digest() {
+    MD5Hash hash;
+
+    u8 empty_check = this->read<u8>();
+    if(empty_check == 0) return hash;
+
+    u32 len = this->read_uleb128();
+    if(len > 16) {
+        len = 16;
     }
 
     this->read_bytes((u8 *)hash.data(), len);
@@ -103,10 +118,16 @@ void Packet::write_uleb128(u32 num) {
     }
 }
 
-void Packet::write_hash(const MD5Hash &hash) {
+void Packet::write_hash_chars(const MD5String &hash_str) {
     this->write<u8>(0x0B);
-    this->write<u8>(0x20);
-    this->write_bytes((u8 *)hash.data(), 32);
+    this->write<u8>(hash_str.length());
+    this->write_bytes((u8 *)hash_str.data(), hash_str.length());
+}
+
+void Packet::write_hash_digest(const MD5Hash &hash_digest) {
+    this->write<u8>(0x0B);
+    this->write<u8>(hash_digest.length());
+    this->write_bytes((u8 *)hash_digest.data(), hash_digest.length());
 }
 
 bool Packet::write_string_isnull(const char *str) {
@@ -119,7 +140,7 @@ bool Packet::write_string_isnull(const char *str) {
 }
 
 void Packet::write_string_nonnull(const char *str, size_t len) {
-    const u8 empty_check = 11;
+    const u8 empty_check = 0x0B;
     this->write<u8>(empty_check);
 
     this->write_uleb128(len);

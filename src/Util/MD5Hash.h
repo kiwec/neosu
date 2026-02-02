@@ -15,6 +15,7 @@ namespace flat = ankerl::unordered_dense;
 #endif
 
 class UString;
+using MD5Byte = unsigned char;
 
 #if defined(__GNUC__) && !defined(__clang__) && (defined(__MINGW32__) || defined(__MINGW64__))
 // inexplicably broken in unpredictable ways with mingw-gcc
@@ -23,28 +24,76 @@ class UString;
 #define ALIGNED_TO(x) alignas(x)
 #endif
 
-struct ALIGNED_TO(16) MD5Hash final {
-    MD5Hash() = default;
-    MD5Hash(const char *str);
-    constexpr MD5Hash(std::array<char, 32> charray) { this->hash = charray; }
+struct ALIGNED_TO(16) MD5String final : public std::array<char, 32> {
+    using array::array;
+    MD5String(const char *str);
+    MD5String() : array() {}
 
-    // NOTE: not null-terminated
-    [[nodiscard]] inline char *data() { return this->hash.data(); }
-    [[nodiscard]] inline const char *data() const { return this->hash.data(); }
+    static constexpr MD5String digest_to_md5chars(const std::array<MD5Byte, 16> &digest) {
+        MD5String out;
+        for(unsigned long long i = 0; i < 16; i++) {
+            out[i * 2] = "0123456789abcdef"[digest[i] >> 4];
+            out[i * 2 + 1] = "0123456789abcdef"[digest[i] & 0xf];
+        }
+        return out;
+    }
 
-    [[nodiscard]] inline std::string_view string() const { return {this->hash.begin(), this->hash.end()}; }
+    static constexpr std::array<MD5Byte, 16> md5chars_to_digest(const std::array<char, 32> &charray) {
+        static constexpr const auto nibble = [](char c) -> MD5Byte {
+            if(c >= '0' && c <= '9') return c - '0';
+            if(c >= 'a' && c <= 'f') return c - 'a' + 10;
+            if(c >= 'A' && c <= 'F') return c - 'A' + 10;
+            return 0;
+        };
 
-    [[nodiscard]] inline size_t length() const { return this->hash.size(); }
-    [[nodiscard]] inline bool operator==(const MD5Hash &other) const { return this->hash == other.hash; }
-    [[nodiscard]] inline bool operator==(const std::string &other) const { return this->string() == other; }
+        std::array<MD5Byte, 16> digest;
+        for(unsigned long long i = 0; i < 16; i++) {
+            digest[i] = (nibble((charray)[i * 2]) << 4) | nibble((charray)[i * 2 + 1]);
+        }
+        return digest;
+    }
+
+    constexpr MD5String(const std::array<MD5Byte, 16> &digest) : array(digest_to_md5chars(digest)) {}
+
+    [[nodiscard]] constexpr size_t length() const { return this->size(); }
+    [[nodiscard]] constexpr std::array<MD5Byte, 16> bytes() const { return md5chars_to_digest(*this); }
+    [[nodiscard]] constexpr std::string_view string() const { return {this->begin(), this->end()}; }
+
+    inline void clear() { std::memset(this->data(), 0, this->size() * sizeof(char)); }
+
+    [[nodiscard]] inline bool empty() const {
+        for(auto byte : *this) {
+            if(!!byte) return false;
+        }
+        return true;
+    }
+};
+
+struct ALIGNED_TO(16) MD5Hash final : public std::array<MD5Byte, 16> {
+    using array::array;
+
+    MD5Hash() : array() {}
+    MD5Hash(const char *str) : array(MD5String{str}.bytes()) {}
+    constexpr MD5Hash(const MD5String &charray) : array(charray.bytes()) {}
+    constexpr MD5Hash(const std::array<char, 32> &charray) : array(MD5String::md5chars_to_digest(charray)) {}
+
+    [[nodiscard]] constexpr size_t length() const { return this->size(); }
+
+    [[nodiscard]] constexpr inline MD5String to_chars() const { return MD5String{*this}; }
+    [[nodiscard]] inline bool operator==(const std::string &other) const {
+        return this->to_chars().string() == other;
+    }
     [[nodiscard]] bool operator==(const UString &other) const;
 
-    inline void clear() { this->hash = {}; }
+    inline void clear() { std::memset(this->data(), 0, this->size() * sizeof(MD5Byte)); }
 
     // you'd have to be extremely unlucky to have an MD5 of all zeros
-    [[nodiscard]] inline bool empty() const { return this->hash == std::array<char, 32>{}; }
-
-    std::array<char, 32> hash{};
+    [[nodiscard]] inline bool empty() const {
+        for(auto byte : *this) {
+            if(!!byte) return false;
+        }
+        return true;
+    }
 
     static const MD5Hash sentinel;
 };
@@ -58,9 +107,17 @@ constexpr inline MD5Hash MD5Hash::sentinel{std::array<char, 32>{                
 #undef ALIGNED_TO
 
 namespace std {
+
+template <>
+struct hash<MD5String> {
+    size_t operator()(const MD5String &md5) const noexcept { return hash<string_view>{}(md5.string()); }
+};
+
 template <>
 struct hash<MD5Hash> {
-    size_t operator()(const MD5Hash &md5) const { return std::hash<std::string_view>()(md5.string()); }
+    size_t operator()(const MD5Hash &md5) const noexcept {
+        return hash<string_view>{}(string_view(reinterpret_cast<const char *>(md5.data()), md5.size()));
+    }
 };
 }  // namespace std
 
@@ -68,27 +125,31 @@ struct hash<MD5Hash> {
 
 namespace fmt {
 template <>
-struct formatter<MD5Hash> : formatter<string_view> {
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext &ctx) const {
-        return ctx.begin();
-    }
-
+struct formatter<MD5String> : formatter<string_view> {
     template <typename FormatContext>
-    auto format(const MD5Hash &ustr, FormatContext &ctx) const noexcept {
-        return formatter<string_view>::format(ustr.string(), ctx);
+    auto format(const MD5String &md5, FormatContext &ctx) const noexcept {
+        return formatter<string_view>::format(md5.string(), ctx);
+    }
+};
+
+template <>
+struct formatter<MD5Hash> : formatter<MD5String> {
+    template <typename FormatContext>
+    auto format(const MD5Hash &md5dig, FormatContext &ctx) const noexcept {
+        return formatter<MD5String>::format(MD5String{md5dig}, ctx);
     }
 };
 }  // namespace fmt
 
 template <>
-struct Hash::flat::hash<MD5Hash> {
+struct Hash::flat::hash<MD5Hash> : Hash::flat::hash<std::string_view> {
     using is_avalanching = void;
 
-    [[nodiscard]] auto operator()(const MD5Hash &md5) const noexcept -> uint64_t {
-        return detail::wyhash::hash(md5.data(), md5.length());
+    size_t operator()(const MD5Hash &md5) const noexcept {
+        return Hash::flat::hash<std::string_view>{}(std::string_view(reinterpret_cast<const char *>(md5.data()), md5.size()));
     }
 };
+
 #endif
 
 #endif

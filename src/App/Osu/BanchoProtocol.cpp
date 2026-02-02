@@ -22,7 +22,7 @@ Room::Room(Packet &packet) {
     this->map_name = packet.read_stdstring();
     this->map_id = packet.read<i32>();
 
-    this->map_md5 = packet.read_hash();
+    this->map_md5 = packet.read_hash_chars();
 
     this->nb_players = 0;
     for(auto &slot : this->slots) {
@@ -65,7 +65,7 @@ void Room::pack(Packet &packet) {
     packet.write_string(this->password);
     packet.write_string(this->map_name);
     packet.write<i32>(this->map_id);
-    packet.write_hash(this->map_md5);
+    packet.write_hash_chars(this->map_md5);
     for(auto &slot : this->slots) {
         packet.write<u8>(slot.status);
     }

@@ -2781,7 +2781,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
             if(!reselectMap) {
                 // FIXME: why does this happen? every time i see this log, the md5hash is from a map that we never load in
                 // from the database... where are we loading these stray .osu files from
-                debugLog("failed to get reselect map for {}", BeatmapInterface::loading_reselect_map.string());
+                debugLog("failed to get reselect map for {}", BeatmapInterface::loading_reselect_map);
             }
         }
 

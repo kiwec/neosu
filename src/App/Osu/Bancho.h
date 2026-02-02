@@ -29,7 +29,7 @@ struct BanchoState final {
     BanchoState(BanchoState &&) = delete;
 
     static std::string endpoint;
-    static MD5Hash pw_md5;
+    static MD5String pw_md5;
     static std::array<u8, 32> oauth_challenge;
     static std::array<u8, 32> oauth_verifier;
     static bool is_oauth;

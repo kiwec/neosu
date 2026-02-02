@@ -53,7 +53,7 @@
 // some of these are atomic due to multithreaded access
 std::string BanchoState::endpoint;
 std::string BanchoState::username;
-MD5Hash BanchoState::pw_md5;
+MD5String BanchoState::pw_md5;
 
 bool BanchoState::is_oauth{false};
 bool BanchoState::fully_supports_neosu{false};
@@ -323,7 +323,7 @@ void BanchoState::handle_packet(Packet &packet) {
             user->stats_tms = Timing::getTicksMS();
             user->action = action;
             user->info_text = packet.read_stdstring();
-            user->map_md5 = packet.read_hash();
+            user->map_md5 = packet.read_hash_chars();
             user->mods = packet.read<LegacyFlags>();
             user->mode = (GameMode)packet.read<u8>();
             user->map_id = packet.read<i32>();
@@ -867,20 +867,20 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case INP_REQUEST_MAP: {
-            auto md5 = packet.read_hash();
+            MD5String md5 = packet.read_hash_chars();
 
             auto map = db->getBeatmapDifficulty(md5);
             if(!map) {
                 // Incredibly rare, but this can happen if you enter song browser
                 // on a difficulty the server doesn't have, then instantly refresh.
-                debugLog("Server requested difficulty {} but we don't have it!", md5.string());
+                debugLog("Server requested difficulty {} but we don't have it!", md5);
                 break;
             }
 
             // craft submission url now, file read may complete after auth params changed
             auto scheme = cv::use_https.getBool() ? "https://" : "http://";
             auto url = fmt::format("{}osu.{}/web/neosu-submit-map.php", scheme, BanchoState::endpoint);
-            url.append(fmt::format("?hash={}", md5.string()));
+            url.append(fmt::format("?hash={}", md5));
             BANCHO::Api::append_auth_params(url);
 
             auto file_path = map->getFilePath();
@@ -890,12 +890,12 @@ void BanchoState::handle_packet(Packet &packet) {
                 if(!networkHandler) return;  // quit if we got called while shutting down
 
                 if(osu_file.empty()) {
-                    debugLog("Failed to get map file data for md5: {} path: {}", md5.string(), file_path);
+                    debugLog("Failed to get map file data for md5: {} path: {}", md5, file_path);
                     return;
                 }
-                auto md5_check = crypto::hash::md5_hex((u8 *)osu_file.data(), osu_file.size());
+                const MD5String md5_check = crypto::hash::md5_hex((u8 *)osu_file.data(), osu_file.size());
                 if(md5 != md5_check) {
-                    debugLog("After loading map {}, we got different md5 {}!", md5.string(), md5_check.string());
+                    debugLog("After loading map {}, we got different md5 {}!", md5, md5_check);
                     return;
                 }
 
@@ -903,7 +903,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 Mc::Net::RequestOptions options{
                     .user_agent = "osu!",
                     .mime_parts{Mc::Net::RequestOptions::MimePart{
-                        .filename = fmt::format("{}.osu", md5.string()),
+                        .filename = fmt::format("{}.osu", md5),
                         .name = "osu_file",
                         .data = std::move(osu_file),
                     }},
@@ -915,7 +915,7 @@ void BanchoState::handle_packet(Packet &packet) {
 
             // run async callback
             if(!map->getMapFileAsync(std::move(callback))) {
-                debugLog("Immediately failed to get map file data for md5: {} path: {}", md5.string(), file_path);
+                debugLog("Immediately failed to get map file data for md5: {} path: {}", md5, file_path);
             }
 
             break;
@@ -965,23 +965,23 @@ std::string BanchoState::build_login_packet() {
     req.append("0|");
 
     const char *osu_path = Environment::getPathToSelf().c_str();
-    MD5Hash osu_path_md5 = crypto::hash::md5_hex((u8 *)osu_path, strlen(osu_path));
+    MD5String osu_path_md5 = crypto::hash::md5_hex((u8 *)osu_path, strlen(osu_path));
 
     // XXX: Should get MAC addresses from network adapters
     // NOTE: Not sure how the MD5 is computed - does it include final "." ?
     const char *adapters = "runningunderwine";
-    MD5Hash adapters_md5 = crypto::hash::md5_hex((u8 *)adapters, strlen(adapters));
+    MD5String adapters_md5 = crypto::hash::md5_hex((u8 *)adapters, strlen(adapters));
 
     // XXX: Should remove '|' from the disk UUID just to be safe
-    MD5Hash disk_md5 =
+    MD5String disk_md5 =
         crypto::hash::md5_hex((u8 *)BanchoState::get_disk_uuid().c_str(), BanchoState::get_disk_uuid().length());
 
     // XXX: Not implemented, I'm lazy so just reusing disk signature
-    MD5Hash install_md5 =
+    MD5String install_md5 =
         crypto::hash::md5_hex((u8 *)BanchoState::get_install_id().c_str(), BanchoState::get_install_id().length());
 
-    BanchoState::client_hashes = fmt::format("{:s}:{:s}:{:s}:{:s}:{:s}:", osu_path_md5.string(), adapters,
-                                             adapters_md5.string(), install_md5.string(), disk_md5.string());
+    BanchoState::client_hashes =
+        fmt::format("{:s}:{:s}:{:s}:{:s}:{:s}:", osu_path_md5, adapters, adapters_md5, install_md5, disk_md5);
 
     req.append(BanchoState::client_hashes.c_str());
     req.append("|");

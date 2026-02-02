@@ -24,7 +24,8 @@ struct Packet {
     std::string read_stdstring();
     UString read_ustring();
     void skip_string();
-    MD5Hash read_hash();
+    MD5String read_hash_chars();
+    MD5Hash read_hash_digest();
 
     template <typename T>
     T read() {
@@ -40,7 +41,8 @@ struct Packet {
     }
 
     void write_uleb128(u32 num);
-    void write_hash(const MD5Hash &hash);
+    void write_hash_chars(const MD5String &hash_str);
+    void write_hash_digest(const MD5Hash &hash_digest);
 
     inline void write_string(const char *str) {
         if(this->write_string_isnull(str)) return;

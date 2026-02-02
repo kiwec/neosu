@@ -167,7 +167,7 @@ Database::DatabaseType Database::getDBType(std::string_view db_path) {
             MD5Hash dummy_md5;
             u32 nb_beatmaps = score_db.read<u32>();
             for(uSz i = 0; i < nb_beatmaps; i++) {
-                (void)score_db.read_hash(dummy_md5);  // TODO: validate
+                (void)score_db.read_hash_chars(dummy_md5);  // TODO: validate
                 u32 nb_scores = score_db.read<u32>();
                 for(u32 j = 0; j < nb_scores; j++) {
                     /* u8 gamemode = */ score_db.skip<u8>();         // could check for 0xA9, but better method below
@@ -986,8 +986,8 @@ void Database::loadMaps() {
                         neosu_maps.skip_string();  // sDifficultyName
                         neosu_maps.skip_string();  // sSource
                         neosu_maps.skip_string();  // sTags
-                        MD5Hash md5hash;
-                        (void)neosu_maps.read_hash(md5hash);  // TODO: validate
+                        MD5Hash md5;
+                        (void)neosu_maps.read_hash_chars(md5);  // TODO: validate
                         // other fixed-sized fields in the middle... try adding new stuff at the end so this doesn't break in the future
                         neosu_maps.skip_bytes(sizeof(f32) + sizeof(f32) + sizeof(f32) + sizeof(f32) + sizeof(f64) +
                                               sizeof(u32) + sizeof(u64) + sizeof(i16) + sizeof(i16) + sizeof(u16) +
@@ -1013,8 +1013,7 @@ void Database::loadMaps() {
                             neosu_maps.skip<u32>();
                         }
 
-                        logIfCV(debug_db, "skipped iSetID==-1 beatmap with hash {} load idx: {},{}", md5hash.string(),
-                                i, j);
+                        logIfCV(debug_db, "skipped iSetID==-1 beatmap with hash {} load idx: {},{}", md5, i, j);
                     }
                     continue;
                 }
@@ -1052,7 +1051,7 @@ void Database::loadMaps() {
 
                     MD5Hash diff_hash;
                     // TODO: properly validate and skip beatmaps with invalid hashes
-                    (void)neosu_maps.read_hash(diff_hash);
+                    (void)neosu_maps.read_hash_chars(diff_hash);
 
                     f32 fAR = neosu_maps.read<f32>();
                     f32 fCS = neosu_maps.read<f32>();
@@ -1153,8 +1152,7 @@ void Database::loadMaps() {
                             }
                             if(tempiID != -1 && tempiID == iID) {
                                 osu_filename = osufile_nameonly;
-                                debugLog("found fixed .osu filename {} iID {} hash {}", osu_filename, iID,
-                                         diff_hash.string());
+                                debugLog("found fixed .osu filename {} iID {} hash {}", osu_filename, iID, diff_hash);
                                 break;
                             }
                         }
@@ -1235,7 +1233,7 @@ void Database::loadMaps() {
                 for(uSz i = 0; i < nb_overrides; i++) {
                     MapOverrides over;
                     MD5Hash map_md5;
-                    (void)neosu_maps.read_hash(map_md5);  // TODO: validate
+                    (void)neosu_maps.read_hash_chars(map_md5);  // TODO: validate
                     over.local_offset = neosu_maps.read<i16>();
                     over.online_offset = neosu_maps.read<i16>();
                     over.star_rating = neosu_maps.read<f32>();
@@ -1337,10 +1335,10 @@ void Database::loadMaps() {
                 std::string audioFileName = dbr.read_string();
 
                 MD5Hash md5hash;
-                (void)dbr.read_hash(md5hash);  // TODO: validate
+                (void)dbr.read_hash_chars(md5hash);  // TODO: validate
 
                 logIfCV(debug_db, "Reading osu!.db beatmap {:d}/{:d} md5hash {} ...", (i + 1),
-                        this->num_beatmaps_to_load, md5hash.string());
+                        this->num_beatmaps_to_load, md5hash);
 
                 bool overrides_found = false;
                 MapOverrides override;
@@ -1515,11 +1513,11 @@ void Database::loadMaps() {
                     // TODO: move this somewhere else or put it in peppy overrides or something
                     // "temporary" fix (extremely rare edge case so maybe it's not that important)
                     if(Environment::fileExists(fullFilePath)) {
-                        std::array<u8, 16> md5digest{};
+                        MD5Hash md5digest;
                         crypto::hash::md5_f(fullFilePath, md5digest.data());
-                        if(md5digest != std::array<u8, 16>{}) {
-                            md5hash = MD5Hash{crypto::conv::encodehex(md5digest).c_str()};
-                            logIfCV(debug_db, "Manually calculated hash {} for {}", md5hash.string(), fullFilePath);
+                        if(!md5digest.empty()) {
+                            md5hash = md5digest;
+                            logIfCV(debug_db, "Manually calculated hash {} for {}", md5hash, fullFilePath);
                         } else {
                             logIfCV(debug_db, "Failed to recalculate corrupt hash {}", fullFilePath);
                         }
@@ -1769,7 +1767,7 @@ void Database::saveMaps() {
             maps.write_string(diff->sDifficultyName);
             maps.write_string(diff->sSource);
             maps.write_string(diff->sTags);
-            maps.write_hash(diff->getMD5());
+            maps.write_hash_chars(diff->getMD5());
             maps.write<f32>(diff->fAR);
             maps.write<f32>(diff->fCS);
             maps.write<f32>(diff->fHP);
@@ -1815,7 +1813,7 @@ void Database::saveMaps() {
         Sync::shared_lock lock(this->peppy_overrides_mtx);
         maps.write<u32>(this->peppy_overrides.size());
         for(const auto &[hash, override] : this->peppy_overrides) {
-            maps.write_hash(hash);
+            maps.write_hash_chars(hash);
             maps.write<i16>(override.local_offset);
             maps.write<i16>(override.online_offset);
             maps.write<f32>(override.star_rating);
@@ -1958,7 +1956,7 @@ void Database::loadScores(std::string_view dbPath) {
 
     for(u32 b = 0; b < nb_beatmaps; b++) {
         MD5Hash beatmap_hash;
-        (void)dbr.read_hash(beatmap_hash);  // TODO: validate
+        (void)dbr.read_hash_chars(beatmap_hash);  // TODO: validate
 
         u32 nb_beatmap_scores = dbr.read<u32>();
 
@@ -2041,7 +2039,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
             f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
             this->loading_progress = std::clamp(progress_float, 0.01, 0.99);
             MD5Hash md5hash;
-            (void)dbr.read_hash(md5hash);  // TODO: validate
+            (void)dbr.read_hash_chars(md5hash);  // TODO: validate
             u32 nb_scores = dbr.read<u32>();
 
             for(u32 s = 0; s < nb_scores; s++) {
@@ -2136,19 +2134,20 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
             f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
             this->loading_progress = std::clamp(progress_float, 0.01, 0.99);
 
-            MD5Hash md5hash;
-            (void)dbr.read_hash(md5hash);  // TODO: validate
-            const int numScores = dbr.read<int32_t>();
-
-            if(md5hash.length() < 32) {
-                debugLog("WARNING: Invalid score on beatmap {} with md5hash.length() = {}!", b, md5hash.length());
+            const std::string md5hash_str = dbr.read_string();
+            if(md5hash_str.length() < 32) {
+                debugLog("WARNING: Invalid score on beatmap {:d} with md5hash_str.length() = {:d}!", b,
+                         md5hash_str.length());
                 continue;
-            } else if(md5hash.length() > 32) {
+            } else if(md5hash_str.length() > 32) {
                 debugLog("ERROR: Corrupt score database/entry detected, stopping.");
                 break;
             }
 
-            logIfCV(debug_db, "Beatmap[{}]: md5hash = {:s}, numScores = {}", b, md5hash.string(), numScores);
+            MD5Hash md5hash{md5hash_str.c_str()};
+
+            const int numScores = dbr.read<int32_t>();
+            logIfCV(debug_db, "Beatmap[{}]: md5hash = {:s}, numScores = {}", b, md5hash, numScores);
 
             for(u32 s = 0; s < numScores; s++) {
                 const auto gamemode = dbr.read<uint8_t>();  // NOTE: abused as isImportedLegacyScore flag (because I
@@ -2169,7 +2168,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                     }
                     dbr.skip_bytes(bytesToSkipUntilNextScore);
                     dbr.skip_string();  // experimentalMods
-                    logIfCV(debug_db, "skipped score {} (already loaded from neosu_scores.db)", md5hash.string());
+                    logIfCV(debug_db, "skipped score {} (already loaded from neosu_scores.db)", md5hash);
                     continue;
                 }
 
@@ -2316,7 +2315,7 @@ void Database::loadPeppyScores(std::string_view dbPath) {
 
     char client_str[15] = "peppy-YYYYMMDD";
     for(u32 b = 0; b < nb_beatmaps; b++) {
-        std::string md5hash_str = dbr.read_string();
+        const std::string md5hash_str = dbr.read_string();
         if(md5hash_str.length() < 32) {
             debugLog("WARNING: Invalid score on beatmap {:d} with md5hash_str.length() = {:d}!", b,
                      md5hash_str.length());
@@ -2442,7 +2441,7 @@ void Database::saveScores() {
             break;
         }
 
-        dbr.write_hash(hash);
+        dbr.write_hash_chars(hash);
         dbr.write<u32>(scorevec.size());
 
         for(const auto &score : scorevec) {

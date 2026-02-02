@@ -6,7 +6,7 @@
 #include <vector>
 
 class UString;
-struct MD5Hash;
+struct MD5String;
 
 namespace crypto {
 
@@ -65,7 +65,7 @@ void sha256_f(std::string_view file_path, u8* hash);
 void md5_f(std::string_view file_path, u8* hash);
 
 // computes digest and returns a 32-wide array of chars of the hex
-MD5Hash md5_hex(const u8* msg, size_t msg_len);
+MD5String md5_hex(const u8* msg, size_t msg_len);
 
 }  // namespace hash
 

@@ -113,7 +113,7 @@ void setBanchoStatus(const char* info_text, Action action) {
     packet.id = OUTP_CHANGE_ACTION;
     packet.write<u8>((u8)action);
     packet.write_string(fancy_text);
-    packet.write_hash(map_md5);
+    packet.write_hash_chars(map_md5);
     packet.write<LegacyFlags>(ui->getModSelector()->getModFlags());
     packet.write<u8>(0);  // osu!std
     packet.write<i32>(map_id);
@@ -134,7 +134,7 @@ void updateBanchoMods() {
     packet.id = OUTP_CHANGE_ACTION;
     packet.write<u8>((u8)last_action);
     packet.write_string(last_status);
-    packet.write_hash(map_md5);
+    packet.write_hash_chars(map_md5);
     packet.write<LegacyFlags>(ui->getModSelector()->getModFlags());
     packet.write<u8>(0);  // osu!std
     packet.write<i32>(map_id);

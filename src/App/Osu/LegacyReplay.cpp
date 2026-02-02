@@ -218,7 +218,7 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
     if(score.peppy_replay_tms > 0) {
         auto osu_folder = cv::osu_folder.getString();
         auto path =
-            fmt::format("{:s}/Data/r/{:s}-{:d}.osr", osu_folder, score.beatmap_hash.string(), score.peppy_replay_tms);
+            fmt::format("{:s}/Data/r/{:s}-{:d}.osr", osu_folder, score.beatmap_hash, score.peppy_replay_tms);
 
         replay_file = File::fopen_c(path.c_str(), "rb");
         if(replay_file == nullptr) goto cleanup;

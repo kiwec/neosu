@@ -2,7 +2,7 @@
 #include "UString.h"
 #include "Engine.h"
 
-MD5Hash::MD5Hash(const char *str) {
+MD5String::MD5String(const char *str) {
     assert(str);
 
     const size_t len = strnlen(str, 33);
@@ -14,12 +14,12 @@ MD5Hash::MD5Hash(const char *str) {
     if(len != 32) {
         engine->showMessageErrorFatal(
             u"Programmer Error",
-            fmt::format("Tried to construct an MD5Hash from\na string with length != 32.\n{} length {}", str, len));
+            fmt::format("Tried to construct an MD5String from\na string with length != 32.\n{} length {}", str, len));
         fubar_abort();
         return;
     }
 
-    memcpy(this->hash.data(), str, 32);
+    memcpy(this->data(), str, 32);
 }
 
-bool MD5Hash::operator==(const UString &other) const { return this->string() == other.utf8View(); }
+bool MD5Hash::operator==(const UString &other) const { return this->to_chars().string() == other.utf8View(); }

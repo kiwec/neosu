@@ -148,7 +148,7 @@ void process_score_group(const BeatmapDifficulty* map, const ModParams& params, 
     if(diffres.error.errc) {
         const u32 item_failed_scores = scores.size();
         errored_count.fetch_add(item_failed_scores, std::memory_order_relaxed);
-        logFailure(diffres.error, "loadDifficultyHitObjects map hash {} map path {}", map->getMD5().string(),
+        logFailure(diffres.error, "loadDifficultyHitObjects map hash {} map path {}", map->getMD5(),
                    map->getFilePath());
         scores_processed.fetch_add(item_failed_scores, std::memory_order_relaxed);
         return;
@@ -311,7 +311,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
     if(primitives.error.errc) {
         const u32 item_failed_scores = item.scores.size();
         errored_count.fetch_add(item_failed_scores, std::memory_order_relaxed);
-        logFailure(primitives.error, "loadPrimitiveObjects map hash: {} map path: {}", item.map->getMD5().string(),
+        logFailure(primitives.error, "loadPrimitiveObjects map hash: {} map path: {}", item.map->getMD5(),
                    item.map->sFilePath);
         if(item.needs_map_calc) {
             errored_count.fetch_add(1, std::memory_order_relaxed);
@@ -372,7 +372,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
             }
         } else {
             errored_count.fetch_add(1, std::memory_order_relaxed);
-            logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}", item.map->getMD5().string(),
+            logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}", item.map->getMD5(),
                        item.map->sFilePath);
         }
 

@@ -244,7 +244,7 @@ void InfoLabel::update(CBaseUIEventCtx &c) {
                 tooltipOverlay->addLine(
                     fmt::format("OPM: {:d}, CPM: {:d}, SPM: {:d}"_cf, (i32)opm, (i32)cpm, (i32)spm));
                 tooltipOverlay->addLine(fmt::format("ID: {:d}, SetID: {:d}"_cf, bmDiff2->getID(), bmDiff2->getSetID()));
-                tooltipOverlay->addLine(fmt::format("MD5: {:s}"_cf, bmDiff2->getMD5().string()));
+                tooltipOverlay->addLine(fmt::format("MD5: {:s}"_cf, bmDiff2->getMD5()));
                 // mostly for debugging
                 if(keyboard->isShiftDown()) {
                     tooltipOverlay->addLine(fmt::format("Title: {:s}"_cf, bmDiff2->getTitleLatin()));

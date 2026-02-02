@@ -114,8 +114,8 @@ bool load_peppy(std::string_view peppy_collections_path) {
         collection.peppy_maps.reserve(nb_maps);
 
         for(u32 m = 0; m < nb_maps; m++) {
-            MD5Hash map_hash;
-            (void)peppy_collections.read_hash(map_hash);  // TODO: validate
+            MD5String map_hash;
+            (void)peppy_collections.read_hash_chars(map_hash);  // TODO: validate
 
             collection.maps.insert(map_hash);
             collection.peppy_maps.insert(map_hash);
@@ -158,8 +158,8 @@ bool load_mcneosu(std::string_view neosu_collections_path) {
 
         collection.deleted_maps.reserve(nb_deleted_maps);
         for(u32 d = 0; d < nb_deleted_maps; d++) {
-            MD5Hash map_hash;
-            (void)neosu_collections.read_hash(map_hash);  // TODO: validate
+            MD5String map_hash;
+            (void)neosu_collections.read_hash_chars(map_hash);  // TODO: validate
 
             collection.maps.erase(map_hash);
             collection.deleted_maps.insert(map_hash);
@@ -171,8 +171,8 @@ bool load_mcneosu(std::string_view neosu_collections_path) {
         collection.neosu_maps.reserve(nb_maps);
 
         for(u32 m = 0; m < nb_maps; m++) {
-            MD5Hash map_hash;
-            (void)neosu_collections.read_hash(map_hash);  // TODO: validate
+            MD5String map_hash;
+            (void)neosu_collections.read_hash_chars(map_hash);  // TODO: validate
 
             collection.maps.insert(map_hash);
             collection.neosu_maps.insert(map_hash);
@@ -239,13 +239,13 @@ bool save_collections() {
         u32 nb_deleted = collection.deleted_maps.size();
         db.write<u32>(nb_deleted);
         for(const auto& mapmd5 : collection.deleted_maps) {
-            db.write_hash(mapmd5);
+            db.write_hash_chars(mapmd5);
         }
 
         u32 nb_neosu = collection.neosu_maps.size();
         db.write<u32>(nb_neosu);
         for(const auto& mapmd5 : collection.neosu_maps) {
-            db.write_hash(mapmd5);
+            db.write_hash_chars(mapmd5);
         }
     }
 

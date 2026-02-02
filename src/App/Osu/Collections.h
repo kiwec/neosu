@@ -2,6 +2,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 
 #include "MD5Hash.h"
+#include "Hashing.h"
 
 #include <vector>
 
