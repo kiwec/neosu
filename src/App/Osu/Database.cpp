@@ -1377,31 +1377,24 @@ void Database::loadMaps() {
 
                 f32 nomod_star_rating = 0.0f;
                 if(osu_db_version >= 20140609) {
+                    u64 out_tmp = 0;
+
                     // https://osu.ppy.sh/home/changelog/stable40/20250108.3
                     const u32 sr_field_size = osu_db_version < 20250108 ? sizeof(f64) : sizeof(f32);
 
                     const auto num_std_star_ratings = dbr.read<u32>();
-                    if(sr_field_size == sizeof(f64)) {  // older format
-                        for(uSz s = 0; s < num_std_star_ratings; s++) {
-                            dbr.skip<u8>();  // 0x08 ObjType
-                            auto mods = dbr.read<u32>();
-                            dbr.skip<u8>();  // 0x0c ObjType
-                            if(mods == 0 && nomod_star_rating == 0.f) {
-                                nomod_star_rating = static_cast<f32>(dbr.read<f64>());
-                            } else {
-                                dbr.skip<f64>();
+                    for(uSz s = 0; s < num_std_star_ratings; s++) {
+                        dbr.skip<u8>();  // 0x08 ObjType
+                        auto mods = dbr.read<u32>();
+                        dbr.skip<u8>();  // 0x0c ObjType
+                        if(mods == 0 && nomod_star_rating == 0.f) {
+                            if(dbr.read_bytes(reinterpret_cast<u8 *>(&out_tmp), sr_field_size)) {
+                                nomod_star_rating = sr_field_size == sizeof(f64)
+                                                        ? static_cast<f32>(static_cast<f64>(out_tmp))
+                                                        : static_cast<f32>(out_tmp);
                             }
-                        }
-                    } else {
-                        for(uSz s = 0; s < num_std_star_ratings; s++) {
-                            dbr.skip<u8>();  // 0x08 ObjType
-                            auto mods = dbr.read<u32>();
-                            dbr.skip<u8>();  // 0x0c ObjType
-                            if(mods == 0 && nomod_star_rating == 0.f) {
-                                nomod_star_rating = dbr.read<f32>();
-                            } else {
-                                dbr.skip<f32>();
-                            }
+                        } else {
+                            dbr.skip_bytes(sr_field_size);
                         }
                     }
 
