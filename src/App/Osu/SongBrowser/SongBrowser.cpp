@@ -1556,7 +1556,7 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset, bool initialSongBrowserLoad)
         assert(diff);  // we just added it
 
         // map each difficulty hash to its button
-        (*this->hashToDiffButton)[diff->getMD5()] = diff_btn;
+        this->hashToDiffButton->emplace(diff->getMD5(), diff_btn);
 
         if(doDiffCollBtns) {
             const float stars_tmp = diff->getStarRating(StarPrecalc::active_idx);

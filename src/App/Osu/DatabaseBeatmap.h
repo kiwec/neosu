@@ -63,7 +63,6 @@ using std::stop_token;
 #include <string_view>
 #include <memory>
 #include <functional>
-#include <cassert>
 
 // purpose:
 // 1) contain all infos which are ALWAYS kept in memory for beatmaps
@@ -475,21 +474,9 @@ class DatabaseBeatmap final {
 
     // precomputed data
 
-    // TODO: return "closest computed" SR? for queries while calculating
-    [[nodiscard]] inline f32 getStarRating(u8 idx) const {
-        assert(idx < StarPrecalc::NUM_PRECALC_RATINGS);
-        if(this->star_ratings) {
-            const f32 sr_array_stars{(*this->star_ratings)[idx]};
-            return sr_array_stars <= 0.f ? this->fStarsNomod : sr_array_stars;
-        }
-        if(this->difficulties) {  // we are a beatmapset, get max sr of child difficulty
-            f32 mx = 0.f;
-            for(const auto &d : *this->difficulties) mx = std::max(mx, d->getStarRating(idx));
-            return mx;
-        }
-        // falls back to nomod stars right now...
-        return this->fStarsNomod;
-    }
+    // TODO: return "closest computed" SR for queries while calculating
+    // falls back to nomod stars ATM
+    [[nodiscard]] f32 getStarRating(u8 idx) const;
 
     [[nodiscard]] inline f32 getStarsNomod() const { return this->getStarRating(StarPrecalc::NOMOD_1X_INDEX); }
 
@@ -589,6 +576,10 @@ class DatabaseBeatmap final {
 
     // custom data (not necessary, not part of the beatmap file, and not precomputed)
     std::atomic<f32> loudness{0.f};
+
+    // cache for SR queries to avoid array lookup and a bunch of conditionals
+    mutable f32 last_queried_sr{0.f};
+    mutable u8 last_queried_sr_idx{0xFF};
 
     // this is from metadata but put here for struct layout purposes
     u8 iVersion{128};  // e.g. "osu file format v12" -> 12

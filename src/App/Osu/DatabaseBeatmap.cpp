@@ -7,6 +7,7 @@
 
 #include <source_location>
 #include <utility>
+#include <cassert>
 
 #ifndef BUILD_TOOLS_ONLY
 
@@ -23,7 +24,6 @@
 #include "AsyncIOHandler.h"
 #include "crypto.h"
 
-#include <cassert>
 #include <algorithm>
 #include <sys/stat.h>
 
@@ -190,7 +190,8 @@ void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept {
     SF(iLocalOffset)       SF(iOnlineOffset) SF(iSetID)                   SF(iPreviewTime)    SF(fAR)               SF(fCS)
     SF(fHP)                SF(fOD)           SF(fStackLeniency)           SF(fSliderTickRate) SF(fSliderMultiplier) SF(ppv2Version)
     SF(fStarsNomod)        SF(star_ratings)  SF(iMinBPM)                  SF(iMaxBPM)         SF(iMostCommonBPM)    SF(iNumCircles)
-    SF(iNumSliders)        SF(iNumSpinners)  SF(iVersion)                 SF(type)            SF(bEmptyArtistUnicode)
+    SF(iNumSliders)        SF(iNumSpinners)  SF(last_queried_sr)          SF(last_queried_sr_idx)
+    SF(iVersion)           SF(type)          SF(bEmptyArtistUnicode)
     SF(bEmptyTitleUnicode) SF(do_not_store)  SF(draw_background)
 #undef SF
         // clang-format on
@@ -224,6 +225,7 @@ DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
       COPYOTHER(star_ratings),        COPYOTHER(iMinBPM),                  COPYOTHER(iMaxBPM),
       COPYOTHER(iMostCommonBPM),      COPYOTHER(iNumCircles),
       COPYOTHER(iNumSliders),         COPYOTHER(iNumSpinners),             ATOMICOTHER(loudness),
+      COPYOTHER(last_queried_sr),     COPYOTHER(last_queried_sr_idx),
       COPYOTHER(iVersion),            ATOMICOTHER(md5_init),
       COPYOTHER(type),                COPYOTHER(bEmptyArtistUnicode),      COPYOTHER(bEmptyTitleUnicode),
       COPYOTHER(do_not_store),        COPYOTHER(draw_background) {
@@ -253,6 +255,7 @@ DatabaseBeatmap::DatabaseBeatmap(DatabaseBeatmap &&other) noexcept
       COPYOTHER(fStarsNomod),        COPYOTHER(star_ratings),        COPYOTHER(iMinBPM),
       COPYOTHER(iMaxBPM),            COPYOTHER(iMostCommonBPM),      COPYOTHER(iNumCircles),
       COPYOTHER(iNumSliders),        COPYOTHER(iNumSpinners),        ATOMICOTHER(loudness),
+      COPYOTHER(last_queried_sr),    COPYOTHER(last_queried_sr_idx),
       COPYOTHER(iVersion),           ATOMICOTHER(md5_init),
       COPYOTHER(type),               COPYOTHER(bEmptyArtistUnicode), COPYOTHER(bEmptyTitleUnicode),
       COPYOTHER(do_not_store),       COPYOTHER(draw_background) {
@@ -1308,6 +1311,58 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoint
     }
 
     return ti;
+}
+
+f32 DatabaseBeatmap::getStarRating(u8 idx) const {
+    if(idx == this->last_queried_sr_idx && this->last_queried_sr > 0.f) {
+        return this->last_queried_sr;
+    }
+
+    assert(idx < StarPrecalc::NUM_PRECALC_RATINGS);
+    f32 ret = 0.f;
+
+    if(this->difficulties) {  // we are a beatmapset, get max sr of child difficulty
+        f32 maxdiff = 0.f;
+        f32 max_cached_sr = -1.f;
+        for(const auto &d : *this->difficulties) {
+            if(f32 diffsr = d->getStarRating(idx); diffsr > maxdiff) {
+                maxdiff = diffsr;
+                // check if we cached it
+                if(d->last_queried_sr_idx == idx && d->last_queried_sr == diffsr) {
+                    max_cached_sr = diffsr;
+                }
+            }
+        }
+
+        ret = maxdiff;
+
+        // cache max child diff sr if the max child already had it cached
+        if(max_cached_sr == maxdiff) {
+            this->last_queried_sr = ret;
+            this->last_queried_sr_idx = idx;
+        }
+    } else if(this->star_ratings) {
+        const f32 sr_array_stars{(*this->star_ratings)[idx]};
+
+        // cache the result if we had a valid one (and they aren't outdated)
+        if(sr_array_stars > 0.f) {
+            ret = sr_array_stars;
+            if(this->ppv2Version == DiffCalc::PP_ALGORITHM_VERSION) {
+                this->last_queried_sr = ret;
+                this->last_queried_sr_idx = idx;
+            }
+        } else {
+            // fall back to nomod stars
+            // TODO: return "closest computed" SR for queries while calculating
+            ret = this->fStarsNomod;
+            this->last_queried_sr_idx = 0xFF;
+            this->last_queried_sr = 0.f;
+        }
+    } else {
+        ret = this->fStarsNomod;
+    }
+
+    return ret;
 }
 
 #ifndef BUILD_TOOLS_ONLY
