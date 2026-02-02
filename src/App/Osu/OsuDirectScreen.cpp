@@ -209,7 +209,7 @@ void OnlineMapListing::draw() {
             download_progress = 0.f;
 
             std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", this->meta.set_id);
-            const auto set = db->addBeatmapSet(mapset_path, this->meta.set_id, true);
+            const auto set = db->addBeatmapSet(mapset_path, this->meta.set_id);
             if(set) {
                 this->installed = true;
 

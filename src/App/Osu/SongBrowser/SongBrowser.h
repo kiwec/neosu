@@ -244,6 +244,7 @@ class SongBrowser final : public ScreenBackable {
     void onSortChange(const UString &text, int id = -1);
 
     void rebuildAfterGroupOrSortChange(GroupType group, const std::optional<SortType> &sortMethod = std::nullopt);
+    void rebucketDifficultyCollections();
 
     void onSelectionMode();
     void onSelectionMods();

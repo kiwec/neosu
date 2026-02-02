@@ -415,7 +415,7 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float* pr
     if(*progress != 1.f) return nullptr;
 
     std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
-    db->addBeatmapSet(mapset_path, set_id, true);
+    db->addBeatmapSet(mapset_path, set_id);
     debugLog("Finished loading beatmapset {:d}.", set_id);
 
     beatmap = db->getBeatmapDifficulty(beatmap_md5);
@@ -493,7 +493,7 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
     if(*progress != 1.f) return nullptr;
 
     std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
-    db->addBeatmapSet(mapset_path, -1, true);
+    db->addBeatmapSet(mapset_path);
     debugLog("Finished loading beatmapset {:d}.", set_id);
 
     beatmap = db->getBeatmapDifficulty(beatmap_id);

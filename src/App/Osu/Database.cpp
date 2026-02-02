@@ -383,7 +383,6 @@ void Database::update() {
 
                 this->addBeatmapSet(fullBeatmapPath,          //
                                     -1,                       // no set id override
-                                    false,                    // no diffcalc immediately
                                     !this->raw_load_is_neosu  // is_peppy
                 );
             }
@@ -454,11 +453,10 @@ void Database::save() {
 // NOTE: Should currently only be used for neosu beatmapsets! e.g. from maps/ folder
 //       See loadRawBeatmap()
 //       (unless is_peppy is specified, in which case we're loading a raw osu folder and not saving the things we loaded)
-BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override,
-                                    bool diffcalc_immediately, bool is_peppy) {
+BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override, bool is_peppy) {
     // TODO: deduplication logic
     // needs to handle different loading states that we might be in currently
-    std::unique_ptr<BeatmapSet> mapset = this->loadRawBeatmap(beatmapFolderPath, diffcalc_immediately, is_peppy);
+    std::unique_ptr<BeatmapSet> mapset = this->loadRawBeatmap(beatmapFolderPath, is_peppy);
     if(mapset == nullptr) return nullptr;
 
     BeatmapSet *raw_mapset = mapset.get();
@@ -484,6 +482,7 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
         this->beatmapsets.push_back(std::move(mapset));
 
         ui->getSongBrowser()->addBeatmapSet(raw_mapset);
+        this->bPendingBatchDiffCalc = true;  // picked up by SongBrowser::update
     } else {
         // FIXME: this is just completely wrong, this vector cant just be appended to like that here
         this->temp_loading_beatmapsets.push_back(std::move(mapset));
@@ -2567,8 +2566,7 @@ void Database::saveScores() {
     debugLog("Saved {:d} scores in {:f} seconds.", nb_scores, (Timing::getTimeReal() - startTime));
 }
 
-std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately,
-                                                     bool is_peppy) {
+std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapPath, bool is_peppy) {
     logIfCV(debug_db, "beatmap path: {:s}", beatmapPath);
 
     // try loading all diffs
@@ -2590,10 +2588,6 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
             is_peppy ? DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY : DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
         auto res = map->loadMetadata();
         if(!res.error.errc) {
-            if(diffcalc_immediately) {
-                // TODO: get rid of this, just use BatchDiffCalc
-                map->calcNomodStarsSlow(std::move(res));
-            }
             diffs->push_back(std::move(map));
         } else {
             lastError = res.error;

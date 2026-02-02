@@ -890,8 +890,15 @@ void SongBrowser::update(CBaseUIEventCtx &c) {
     // do this even if not visible, but not during gameplay
     if(!osu->isInGameplay()) {
         if(!BatchDiffCalc::update_mainthread()) {
-            // just clean up if we are finished
             BatchDiffCalc::abort_calc();
+            this->lastDiffSortModIndex = 0xFF;     // force re-sort with final ratings
+            this->bSongButtonsNeedSorting = true;  // prevent early-return in rebuild
+        }
+
+        // deferred batch calc for newly imported maps
+        if(!BatchDiffCalc::running() && db->bPendingBatchDiffCalc) {
+            db->bPendingBatchDiffCalc = false;
+            BatchDiffCalc::start_calc();
         }
     }
 
@@ -3192,6 +3199,27 @@ void SongBrowser::onSortChange(const UString &text, int id) {
     }
 }
 
+void SongBrowser::rebucketDifficultyCollections() {
+    if(this->difficultyCollectionButtons.size() != 12) return;
+
+    for(auto &btn : this->difficultyCollectionButtons) btn->setChildren({});
+
+    for(auto *parentBtn : this->parentButtons) {
+        for(auto *child : parentBtn->getChildren()) {
+            auto *diff = child->getDatabaseBeatmap();
+            if(!diff) continue;
+            const float stars = diff->getStarRating(DiffStars::active_idx);
+            const int idx =
+                std::clamp<int>((std::isfinite(stars) && stars >= static_cast<float>(std::numeric_limits<int>::min()) &&
+                                 stars <= static_cast<float>(std::numeric_limits<int>::max()))
+                                    ? static_cast<int>(stars)
+                                    : 0,
+                                0, 11);
+            this->difficultyCollectionButtons[idx]->addChild(child);
+        }
+    }
+}
+
 void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::optional<SortType> &sortMethod) {
     const SortType newSortMethod = sortMethod.value_or(this->curSortMethod);
     const bool sortingChanged = this->curSortMethod != newSortMethod;
@@ -3253,6 +3281,10 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
         }
     } else {
         if(auto *collBtns = getCollectionButtonsForGroup(group)) {
+            if(group == GroupType::DIFFICULTY) {
+                this->rebucketDifficultyCollections();
+            }
+
             this->visibleSongButtons.reserve(collBtns->size());
             for(const auto &unq : *collBtns) {
                 this->visibleSongButtons.push_back(unq.get());

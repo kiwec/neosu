@@ -387,10 +387,6 @@ class DatabaseBeatmap final {
         return loadGameplay(this, beatmap, std::move(preloadedMetadata), outPrimitivesCopy);
     }
 
-    // for one-off calculations
-    // must have loaded metadata already
-    bool calcNomodStarsSlow(LOAD_META_RESULT metadata);
-
     [[nodiscard]] MapOverrides get_overrides() const;
 
     inline void setLocalOffset(i16 localOffset) { this->iLocalOffset = localOffset; }
