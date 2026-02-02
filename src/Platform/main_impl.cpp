@@ -121,8 +121,11 @@ SDL_AppResult SDLMain::initialize() {
     m_engine->loadApp();
 
     // make window visible now, after we loaded the config and set the wanted window size & fullscreen state
-    SDL_ShowWindow(m_window);
-    SDL_RaiseWindow(m_window);
+    // (unless running headless, then just never show the window)
+    if(!getLaunchArgs().contains("-headless")) {
+        SDL_ShowWindow(m_window);
+        SDL_RaiseWindow(m_window);
+    }
 
     syncWindow();
 
