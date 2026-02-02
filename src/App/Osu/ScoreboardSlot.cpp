@@ -142,7 +142,7 @@ void ScoreboardSlot::draw() {
     g->pushTransform();
     {
         char combobuf[256]{};
-        int written = std::snprintf(&combobuf[0], sizeof(combobuf), "%'d", this->score.maxCombo);
+        int written = std::snprintf(&combobuf[0], sizeof(combobuf), "%'dx", this->score.maxCombo);
         const UString comboString{&combobuf[0], written >= 0 && written < sizeof(combobuf) ? written : 0};
         const float stringWidth = font_normal->getStringWidth(comboString);
 
