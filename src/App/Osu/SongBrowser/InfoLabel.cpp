@@ -54,7 +54,7 @@ InfoLabel::InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name)
     this->fAR = 5.0f;
     this->fOD = 5.0f;
     this->fHP = 5.0f;
-    this->fStars = 5.0f;
+    this->fStarsNomod = 5.0f;
 
     this->iLocalOffset = 0;
     this->iOnlineOffset = 0;
@@ -302,7 +302,7 @@ void InfoLabel::setFromBeatmap(const DatabaseBeatmap *map) {
     this->setAR(map->getAR());
     this->setOD(map->getOD());
     this->setHP(map->getHP());
-    this->setStars(map->getStarRating(DiffStars::active_idx));
+    this->setStarsNomod(map->getStarsNomod());
 
     this->setLocalOffset(map->getLocalOffset());
     this->setOnlineOffset(map->getOnlineOffset());
@@ -359,7 +359,7 @@ UString InfoLabel::buildDiffInfoString() const {
     const f32 OD = pf->getOverallDifficultyForSpeedMultiplier();
     const f32 HP = pf->getHP();
 
-    const f32 nomodStars = this->fStars;
+    const f32 nomodStars = this->fStarsNomod;
     f32 modStars = nomodStars;
     f32 modPp = 0.f;
 

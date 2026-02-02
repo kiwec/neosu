@@ -33,7 +33,7 @@ class InfoLabel final : public CBaseUIButton {
     inline void setAR(f32 AR) { this->fAR = AR; }
     inline void setOD(f32 OD) { this->fOD = OD; }
     inline void setHP(f32 HP) { this->fHP = HP; }
-    inline void setStars(f32 stars) { this->fStars = stars; }
+    inline void setStarsNomod(f32 stars) { this->fStarsNomod = stars; }
 
     void setLocalOffset(i32 localOffset) { this->iLocalOffset = localOffset; }
     void setOnlineOffset(i32 onlineOffset) { this->iOnlineOffset = onlineOffset; }
@@ -78,7 +78,7 @@ class InfoLabel final : public CBaseUIButton {
     f32 fAR;
     f32 fOD;
     f32 fHP;
-    f32 fStars;
+    f32 fStarsNomod;
 
     i32 iLocalOffset;
     i32 iOnlineOffset;
