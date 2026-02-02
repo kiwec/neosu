@@ -247,6 +247,8 @@ void InfoLabel::update(CBaseUIEventCtx &c) {
                 tooltipOverlay->addLine(fmt::format("MD5: {:s}"_cf, bmDiff2->getMD5()));
                 // mostly for debugging
                 if(keyboard->isShiftDown()) {
+                    tooltipOverlay->addLine(fmt::format("Active precalc: {:02X}={:s}", DiffStars::active_idx, DiffStars::dbgstr_idx(DiffStars::active_idx)));
+
                     tooltipOverlay->addLine(fmt::format("Title: {:s}"_cf, bmDiff2->getTitleLatin()));
                     tooltipOverlay->addLine(fmt::format("TitleUnicode: {:s}"_cf, bmDiff2->getTitleUnicode()));
                     tooltipOverlay->addLine(fmt::format("Artist: {:s}"_cf, bmDiff2->getArtistLatin()));

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
 
 namespace DiffStars {
 
@@ -64,6 +65,28 @@ inline MOD_COMBO_INDEX index_of(ModFlags flags, f32 speed) {
     if(mi == INVALID_MODCOMBO) return INVALID_MODCOMBO;
 
     return static_cast<MOD_COMBO_INDEX>(si * NUM_MOD_COMBOS + mi);
+}
+
+inline const char *dbgstr_idx(u8 idx) {
+    static constexpr std::array MOD_NAMES{"NM", "HR", "HD", "EZ", "HDHR", "HDEZ"};
+    static constexpr std::array SPEED_NAMES{"0.75", "0.8", "0.9", "1.0", "1.1", "1.2", "1.3", "1.4", "1.5"};
+
+    static thread_local std::array<char, 16> buf{};
+    static thread_local u8 last_idx{0xFF};
+
+    if(last_idx == idx) {
+        return buf.data();
+    }
+
+    last_idx = idx;
+
+    if(idx >= NUM_PRECALC_RATINGS) {
+        std::snprintf(buf.data(), buf.size(), "invalid");
+        return buf.data();
+    }
+
+    std::snprintf(buf.data(), buf.size(), "%s@%sx", MOD_NAMES[idx % NUM_MOD_COMBOS], SPEED_NAMES[idx / NUM_MOD_COMBOS]);
+    return buf.data();
 }
 
 using Ratings = std::array<f32, NUM_PRECALC_RATINGS>;
