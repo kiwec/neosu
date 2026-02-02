@@ -11,7 +11,7 @@
 class CBaseUISlider : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUISlider)
    public:
-    CBaseUISlider(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "");
+    CBaseUISlider(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = {});
     ~CBaseUISlider() override = default;
 
     void draw() override;

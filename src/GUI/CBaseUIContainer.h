@@ -5,7 +5,7 @@
 class CBaseUIContainer : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUIContainer)
    public:
-    CBaseUIContainer(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "");
+    CBaseUIContainer(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = {});
     ~CBaseUIContainer() override;
 
     virtual void freeElements();

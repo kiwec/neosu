@@ -9,21 +9,17 @@
 #include "ResourceManager.h"
 #include "Font.h"
 
-CBaseUIButton::CBaseUIButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
-    : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
+CBaseUIButton::CBaseUIButton(std::nullptr_t notext, float xPos, float yPos, float xSize, float ySize)
+    : CBaseUIElement(xPos, yPos, xSize, ySize, notext) {
     // this->grabs_clicks = true; // shouldn't this be set?
 
     this->font = engine->getDefaultFont();
+}
 
-    // settings
-    this->bDrawFrame = true;
-    this->bDrawBackground = true;
+CBaseUIButton::CBaseUIButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
+    : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
 
-    // colors
-    this->frameColor = argb(255, 255, 255, 255);
-    this->backgroundColor = argb(255, 0, 0, 0);
-    this->textColor = argb(255, 255, 255, 255);
-    this->textBrightColor = this->textDarkColor = argb(0, 0, 0, 0);
+    this->font = engine->getDefaultFont();
 
     if(!text.isEmpty()) {
         this->setText(std::move(text));

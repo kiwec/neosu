@@ -10,7 +10,7 @@
 class CBaseUIScrollView : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUIScrollView)
    public:
-    CBaseUIScrollView(f32 xPos = 0, f32 yPos = 0, f32 xSize = 0, f32 ySize = 0, const UString &name = "");
+    CBaseUIScrollView(f32 xPos = 0, f32 yPos = 0, f32 xSize = 0, f32 ySize = 0, const UString &name = {});
     ~CBaseUIScrollView() override;
 
     void invalidate();
@@ -125,7 +125,7 @@ class CBaseUIScrollView : public CBaseUIElement {
         NOCOPY_NOMOVE(CBaseUIScrollViewContainer)
        public:
         using CBaseUIContainer::CBaseUIContainer;
-        CBaseUIScrollViewContainer(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "");
+        CBaseUIScrollViewContainer(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = {});
         CBaseUIScrollViewContainer() = delete;
         ~CBaseUIScrollViewContainer() override;
 

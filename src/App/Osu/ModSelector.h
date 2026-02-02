@@ -90,7 +90,7 @@ class ModSelector final : public UIScreen {
     UIModSelectorModButton *getModButtonOnGrid(int x, int y);
 
     OVERRIDE_SLIDER addOverrideSlider(UString text, const UString &labelText, ConVar *cvar, float min, float max,
-                                      UString tooltipText = "", ConVar *lockCvar = nullptr);
+                                      UString tooltipText = {}, ConVar *lockCvar = nullptr);
     void onOverrideSliderChange(CBaseUISlider *slider);
     void onOverrideSliderLockChange(CBaseUICheckbox *checkbox);
     void onOverrideARSliderDescClicked(CBaseUIButton *button);

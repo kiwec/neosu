@@ -4,8 +4,8 @@
 
 class UILabel final : public CBaseUILabel {
    public:
-    UILabel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "",
-            const UString &text = "")
+    UILabel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = {},
+            const UString &text = {})
         : CBaseUILabel(xPos, yPos, xSize, ySize, std::move(name), text) {}
 
     void update(CBaseUIEventCtx &c) override;

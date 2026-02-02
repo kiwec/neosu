@@ -9,7 +9,7 @@ class McFont;
 class CBaseUITextbox : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUITextbox)
    public:
-    CBaseUITextbox(float xPos = 0.0f, float yPos = 0.0f, float xSize = 0.0f, float ySize = 0.0f, UString name = "");
+    CBaseUITextbox(float xPos = 0.0f, float yPos = 0.0f, float xSize = 0.0f, float ySize = 0.0f, UString name = {});
     ~CBaseUITextbox() override = default;
 
     void draw() override;

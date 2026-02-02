@@ -196,7 +196,7 @@ struct OptionsOverlayImpl final {
     // elements
     void addSpacer();
     CBaseUILabel *addSection(const UString &text);
-    CBaseUILabel *addSubSection(const UString &text, UString searchTags = "");
+    CBaseUILabel *addSubSection(const UString &text, UString searchTags = {});
     CBaseUILabel *addLabel(const UString &text);
     UIButton *addButton(const UString &text);
     OptionsElement *addButton(const UString &text, const UString &labelText, bool withResetButton = false);
@@ -205,7 +205,7 @@ struct OptionsOverlayImpl final {
                                          bool withResetButton = false);
     KeyBindButton *addKeyBindButton(const UString &text, ConVar *cvar);
     CBaseUICheckbox *addCheckbox(const UString &text, ConVar *cvar);
-    CBaseUICheckbox *addCheckbox(const UString &text, const UString &tooltipText = "", ConVar *cvar = nullptr);
+    CBaseUICheckbox *addCheckbox(const UString &text, const UString &tooltipText = {}, ConVar *cvar = nullptr);
     OptionsElement *addButtonCheckbox(const UString &buttontext, const UString &cbxtooltip);
     UISlider *addSlider(const UString &text, float min = 0.0f, float max = 1.0f, ConVar *cvar = nullptr,
                         float label1Width = 0.0f, bool allowOverscale = false, bool allowUnderscale = false);

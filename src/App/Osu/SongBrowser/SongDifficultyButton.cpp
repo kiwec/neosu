@@ -24,9 +24,9 @@
 
 using namespace neosu::sbr;
 
-SongDifficultyButton::SongDifficultyButton(float xPos, float yPos, float xSize, float ySize, UString name,
+SongDifficultyButton::SongDifficultyButton(float xPos, float yPos, float xSize, float ySize, 
                                            BeatmapDifficulty* diff, SongButton* parentSongButton)
-    : SongButton(xPos, yPos, xSize, ySize, std::move(name)) {
+    : SongButton(xPos, yPos, xSize, ySize) {
     // must exist and be a difficulty
     assert(diff && diff->getDifficulties().empty());
 

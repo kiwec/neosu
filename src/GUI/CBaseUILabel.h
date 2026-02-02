@@ -8,8 +8,8 @@ class McFont;
 class CBaseUILabel : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUILabel)
    public:
-    CBaseUILabel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "",
-                 const UString &text = "");
+    CBaseUILabel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = {},
+                 const UString &text = {});
     ~CBaseUILabel() override = default;
 
     void draw() override;

@@ -603,7 +603,7 @@ void BanchoState::handle_packet(Packet &packet) {
             auto msg = ChatMessage{
                 .tms = time(nullptr),
                 .author_id = 0,
-                .author_name = US_(""),
+                .author_name = {},
                 .text = US_("Joined channel."),
             };
             ui->getChat()->addChannel(name, true);
@@ -1022,7 +1022,7 @@ void BanchoState::update_channel(const std::string &name, const std::string &top
             auto msg = ChatMessage{
                 .tms = time(nullptr),
                 .author_id = 0,
-                .author_name = US_(""),
+                .author_name = {},
                 .text = fmt::format("{:s}: {:s}", name, topic),
             };
             ui->getChat()->addMessage(BanchoState::is_oauth ? "#neosu" : "#osu", msg, false);

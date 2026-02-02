@@ -48,7 +48,7 @@ void UserCard2::draw() {
 
     g->pushClipRect(McRect(this->getPos(), this->getSize()));
 
-    UString status_text = US_("");
+    UString status_text = {};
     switch(this->info->action) {
         using enum Action;
         case IDLE:

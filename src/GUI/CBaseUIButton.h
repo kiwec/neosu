@@ -14,8 +14,9 @@ class McFont;
 class CBaseUIButton : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUIButton)
    public:
-    CBaseUIButton(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "",
-                  UString text = "");
+    CBaseUIButton(std::nullptr_t notext, float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0);
+    CBaseUIButton(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = {},
+                  UString text = {});
     ~CBaseUIButton() override = default;
 
     void draw() override;
@@ -169,15 +170,16 @@ class CBaseUIButton : public CBaseUIElement {
     float fStringWidth{0.f};
     float fStringHeight{0.f};
 
-    Color frameColor;
-    Color backgroundColor;
-    Color textColor;
-    Color textBrightColor;
-    Color textDarkColor;
+    Color frameColor{argb(255, 255, 255, 255)};
+    Color backgroundColor{argb(255, 0, 0, 0)};
+    Color textColor{argb(255, 255, 255, 255)};
+    Color textBrightColor{argb(0, 0, 0, 0)};
+    Color textDarkColor{argb(0, 0, 0, 0)};
 
+    // settings
     TEXT_JUSTIFICATION textJustification{TEXT_JUSTIFICATION::CENTERED};
 
-    bool bDrawFrame;
-    bool bDrawBackground;
+    bool bDrawFrame{true};
+    bool bDrawBackground{true};
     bool bDrawShadow{true};
 };

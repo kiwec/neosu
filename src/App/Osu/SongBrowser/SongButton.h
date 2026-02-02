@@ -15,10 +15,10 @@ class SongButton : public CarouselButton {
     NOCOPY_NOMOVE(SongButton)
    protected:
     // only for SongDifficultyButton as a passthrough (unnecessary inheritance...?)
-    SongButton(float xPos, float yPos, float xSize, float ySize, UString name);
+    SongButton(float xPos, float yPos, float xSize, float ySize);
 
    public:
-    SongButton(float xPos, float yPos, float xSize, float ySize, UString name, BeatmapSet *beatmapSet);
+    SongButton(float xPos, float yPos, float xSize, float ySize, BeatmapSet *beatmapSet);
     SongButton() = delete;
     ~SongButton() override;
 

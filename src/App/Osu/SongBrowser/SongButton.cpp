@@ -28,11 +28,11 @@
 using namespace neosu::sbr;
 
 // passthrough for SongDifficultyButton
-SongButton::SongButton(float xPos, float yPos, float xSize, float ySize, UString name)
-    : CarouselButton(xPos, yPos, xSize, ySize, std::move(name)) {}
+SongButton::SongButton(float xPos, float yPos, float xSize, float ySize)
+    : CarouselButton(xPos, yPos, xSize, ySize, nullptr) {}
 
-SongButton::SongButton(float xPos, float yPos, float xSize, float ySize, UString name, BeatmapSet *beatmapSet)
-    : SongButton(xPos, yPos, xSize, ySize, std::move(name)) {
+SongButton::SongButton(float xPos, float yPos, float xSize, float ySize, BeatmapSet *beatmapSet)
+    : SongButton(xPos, yPos, xSize, ySize) {
     assert(beatmapSet && !beatmapSet->getDifficulties().empty());
 
     this->databaseBeatmap = beatmapSet;
@@ -45,7 +45,7 @@ SongButton::SongButton(float xPos, float yPos, float xSize, float ySize, UString
 
     this->children.reserve(diffs.size());
     for(auto &diff : diffs) {
-        this->children.emplace_back(new SongDifficultyButton(0, 0, 0, 0, "", diff.get(), this));
+        this->children.emplace_back(new SongDifficultyButton(0, 0, 0, 0, diff.get(), this));
     }
 
     this->updateLayoutEx();

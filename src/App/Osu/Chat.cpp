@@ -987,7 +987,7 @@ void Chat::addSystemMessage(UString msg) {
     this->addMessage(this->selected_channel->name, ChatMessage{
                                                        .tms = time(nullptr),
                                                        .author_id = 0,
-                                                       .author_name = US_(""),
+                                                       .author_name = {},
                                                        .text = std::move(msg),
                                                    });
 }

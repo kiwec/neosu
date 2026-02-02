@@ -25,25 +25,30 @@ using namespace neosu::sbr;
 
 // Color Button::inactiveDifficultyBackgroundColor = argb(255, 0, 150, 236); // blue
 
-CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize, UString name)
-    : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
+CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize, std::nullptr_t nullp)
+    : CBaseUIButton(nullp, xPos, yPos, xSize, ySize) {
     this->setHandleRightMouse(true);
 
     this->font = osu->getSongBrowserFont();
 
     this->bVisible = false;
-    this->bSelected = false;
-    this->bHideIfSelected = false;
 
     this->fTargetRelPosY = yPos;
-    this->fOffsetPercent = 0.0f;
-    this->fHoverOffsetAnimation = 0.0f;
-    this->fCenterOffsetAnimation = 0.0f;
-    this->fCenterOffsetVelocityAnimation = 0.0f;
-    this->bIsSearchMatch = true;
 
-    this->fHoverMoveAwayAnimation = 0.0f;
-    this->moveAwayState = MOVE_AWAY_STATE::MOVE_CENTER;
+    const float scale = Osu::getUIScale(baseOsuPixelsScale) * Osu::getUIScale();
+    actualScaledOffsetWithMargin = vec::ceil(vec2{(int)marginPixelsX, (int)(marginPixelsY)} * scale);
+    this->rect.setSize(vec::ceil(baseSize * scale));
+}
+
+CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize, UString name)
+    : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name)) {
+    this->setHandleRightMouse(true);
+
+    this->font = osu->getSongBrowserFont();
+
+    this->bVisible = false;
+
+    this->fTargetRelPosY = yPos;
 
     const float scale = Osu::getUIScale(baseOsuPixelsScale) * Osu::getUIScale();
     actualScaledOffsetWithMargin = vec::ceil(vec2{(int)marginPixelsX, (int)(marginPixelsY)} * scale);

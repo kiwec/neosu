@@ -37,8 +37,12 @@ struct CBaseUIEventCtx {
 class CBaseUIElement : public KeyboardListener {
     NOCOPY_NOMOVE(CBaseUIElement)
    public:
-    CBaseUIElement(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "")
-        : sName(name.isEmpty() ? nullptr : std::make_unique<UString>(std::move(name))),
+    static constexpr UString emptyUString{US_("")};
+    CBaseUIElement(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, std::nullptr_t = {})
+        : rect(xPos, yPos, xSize, ySize), relRect(this->rect) {}
+
+    CBaseUIElement(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = {})
+        : sName(likely(name.isEmpty()) ? nullptr : std::make_unique<UString>(std::move(name))),
           rect(xPos, yPos, xSize, ySize),
           relRect(this->rect) {}
     ~CBaseUIElement() override = default;
@@ -198,8 +202,7 @@ class CBaseUIElement : public KeyboardListener {
     virtual void onMouseUpOutside(bool /*left*/ = true, bool /*right*/ = false) { ; }
 
     // vars
-    static constexpr UString emptyUString{US_("")};
-    std::unique_ptr<UString> sName;  // not worth storing a full name for each element when it's usually empty
+    std::unique_ptr<UString> sName{nullptr};  // not worth storing a full name for each element when it's usually empty
 
     // position and size
     McRect rect;

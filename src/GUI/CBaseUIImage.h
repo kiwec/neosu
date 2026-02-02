@@ -8,7 +8,7 @@ class Image;
 class CBaseUIImage : public CBaseUIElement {
    public:
     CBaseUIImage(const std::string &imageResourceName = "", float xPos = 0, float yPos = 0, float xSize = 0,
-                 float ySize = 0, UString name = "");
+                 float ySize = 0, UString name = {});
     ~CBaseUIImage() override { ; }
 
     void draw() override;

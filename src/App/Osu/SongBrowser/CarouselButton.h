@@ -30,7 +30,8 @@ class CarouselButton : public CBaseUIButton {
     }
 
    public:
-    CarouselButton(float xPos, float yPos, float xSize, float ySize, UString name);
+    CarouselButton(float xPos, float yPos, float xSize, float ySize, std::nullptr_t = {});
+    CarouselButton(float xPos, float yPos, float xSize, float ySize, UString name = {});
     ~CarouselButton() override;
     void deleteAnimations();
 
@@ -114,18 +115,18 @@ class CarouselButton : public CBaseUIButton {
     std::vector<SongButton *> children;
 
     float fTargetRelPosY;
-    float fOffsetPercent;
-    float fHoverOffsetAnimation;
-    float fHoverMoveAwayAnimation;
-    float fCenterOffsetAnimation;
-    float fCenterOffsetVelocityAnimation;
+    float fOffsetPercent{0.f};
+    float fHoverOffsetAnimation{0.f};
+    float fHoverMoveAwayAnimation{0.f};
+    float fCenterOffsetAnimation{0.f};
+    float fCenterOffsetVelocityAnimation{0.f};
 
-    std::atomic<bool> bIsSearchMatch;
+    std::atomic<bool> bIsSearchMatch{true};
 
-    bool bHideIfSelected;
-    bool bSelected;
+    bool bHideIfSelected{false};
+    bool bSelected{false};
     bool bChildrenNeedSorting{true};
     bool bWasAnimationEverStarted{false};
 
-    MOVE_AWAY_STATE moveAwayState;
+    MOVE_AWAY_STATE moveAwayState{MOVE_AWAY_STATE::MOVE_CENTER};
 };

@@ -9,7 +9,7 @@ class SongDifficultyButton final : public SongButton {
    private:
     // only allow construction through parent song button (as child)
     friend class SongButton;
-    SongDifficultyButton(float xPos, float yPos, float xSize, float ySize, UString name, BeatmapDifficulty *diff,
+    SongDifficultyButton(float xPos, float yPos, float xSize, float ySize, BeatmapDifficulty *diff,
                          SongButton *parentSongButton);
 
    public:

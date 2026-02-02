@@ -17,7 +17,7 @@ class UIContextMenu final : public CBaseUIScrollView {
     void clampToRightScreenEdge();
 
    public:
-    UIContextMenu(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "",
+    UIContextMenu(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = {},
                   CBaseUIScrollView *parent = nullptr);
 
     void draw() override;

@@ -1521,7 +1521,7 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset, bool initialSongBrowserLoad)
     const bool doLengthCollBtns = initialSongBrowserLoad || likely(this->lengthCollectionButtons.size() == 7);
 
     // always create parent button for the set
-    auto *parentButton = new SongButton(250.f, 250.f + db->getBeatmapSets().size() * 50.f, 200.f, 50.f, "", mapset);
+    auto *parentButton = new SongButton(250.f, 250.f + db->getBeatmapSets().size() * 50.f, 200.f, 50.f, mapset);
     this->parentButtons.push_back(parentButton);
 
     // add mapset to all necessary groups

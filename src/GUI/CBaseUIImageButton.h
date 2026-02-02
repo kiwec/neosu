@@ -5,7 +5,7 @@
 class CBaseUIImageButton : public CBaseUIButton {
    public:
     CBaseUIImageButton(std::string imageResourceName = "", float xPos = 0, float yPos = 0, float xSize = 0,
-                       float ySize = 0, UString name = "");
+                       float ySize = 0, UString name = {});
     ~CBaseUIImageButton() override { ; }
 
     void draw() override;

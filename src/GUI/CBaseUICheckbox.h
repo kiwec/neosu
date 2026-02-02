@@ -5,8 +5,8 @@
 
 class CBaseUICheckbox : public CBaseUIButton {
    public:
-    CBaseUICheckbox(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "",
-                    UString text = "");
+    CBaseUICheckbox(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = {},
+                    UString text = {});
     ~CBaseUICheckbox() override { ; }
 
     void draw() override;

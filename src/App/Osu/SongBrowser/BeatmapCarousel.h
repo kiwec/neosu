@@ -8,7 +8,7 @@ class SongBrowser;
 class BeatmapCarousel final : public CBaseUIScrollView {
     NOCOPY_NOMOVE(BeatmapCarousel)
    public:
-    BeatmapCarousel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "");
+    BeatmapCarousel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = {});
     ~BeatmapCarousel() override;
 
     void onKeyUp(KeyboardEvent &e) override;
