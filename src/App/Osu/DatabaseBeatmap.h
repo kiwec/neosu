@@ -475,19 +475,23 @@ class DatabaseBeatmap final {
 
     // precomputed data
 
-    [[nodiscard]] inline float getStarsNomod() const {
-        return this->star_ratings ? (*this->star_ratings)[DiffStars::NOMOD_1X_INDEX] : this->fStarsNomod;
-    }
-    [[nodiscard]] inline float getStarRating(u8 idx) const {
+    // TODO: return "closest computed" SR? for queries while calculating
+    [[nodiscard]] inline f32 getStarRating(u8 idx) const {
         assert(idx < DiffStars::NUM_PRECALC_RATINGS);
-        if(this->star_ratings) return (*this->star_ratings)[idx];
-        if(this->difficulties) {
-            float mx = 0.f;
+        if(this->star_ratings) {
+            const f32 sr_array_stars{(*this->star_ratings)[idx]};
+            return sr_array_stars <= 0.f ? this->fStarsNomod : sr_array_stars;
+        }
+        if(this->difficulties) {  // we are a beatmapset, get max sr of child difficulty
+            f32 mx = 0.f;
             for(const auto &d : *this->difficulties) mx = std::max(mx, d->getStarRating(idx));
             return mx;
         }
-        return idx == DiffStars::NOMOD_1X_INDEX ? this->fStarsNomod : 0.f;
+        // falls back to nomod stars right now...
+        return this->fStarsNomod;
     }
+
+    [[nodiscard]] inline f32 getStarsNomod() const { return this->getStarRating(DiffStars::NOMOD_1X_INDEX); }
 
     [[nodiscard]] inline int getMinBPM() const { return this->iMinBPM; }
     [[nodiscard]] inline int getMaxBPM() const { return this->iMaxBPM; }
