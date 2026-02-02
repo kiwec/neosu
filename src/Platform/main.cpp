@@ -144,10 +144,16 @@ MAIN_FUNC /* int argc, char *argv[] */
     SetConsoleOutputCP(65001 /*CP_UTF8*/);
 #endif
 
-    // set locale for e.g. fmt::format("{:L}") to work as expected without explicitly setting it
-    if(std::setlocale(LC_ALL, "") != nullptr) {  // need this check to avoid std::locale{""} not being exception-safe
+// set locale for e.g. fmt::format("{:L}") to work as expected without explicitly setting it
+#if (defined(__MINGW32__) || defined(__MINGW64__)) && defined(__GLIBCXX__)
+    // MinGW's libstdc++ locale support is broken (only "C" locale works).
+    // just set the C locale for things like strtod(), but don't touch std::locale.
+    std::setlocale(LC_ALL, "");
+#else
+    if(!!std::setlocale(LC_ALL, "")) {
         std::locale::global(std::locale{""});
     }
+#endif
 
 #ifdef WITH_LIVEPP
     debugLog("Starting Live++");
