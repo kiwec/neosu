@@ -222,6 +222,7 @@ add_external_project(sdl3
         -DSDL_IBUS=OFF
         -DSDL_TEST_LIBRARY=OFF
         -DSDL_TESTS=OFF
+        -DSDL_OFFSCREEN=ON
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 

@@ -145,7 +145,7 @@ MAIN_FUNC /* int argc, char *argv[] */
 #endif
 
     // set locale for e.g. fmt::format("{:L}") to work as expected without explicitly setting it
-    if (std::setlocale(LC_ALL, "") != nullptr) { // need this check to avoid std::locale{""} not being exception-safe
+    if(std::setlocale(LC_ALL, "") != nullptr) {  // need this check to avoid std::locale{""} not being exception-safe
         std::locale::global(std::locale{""});
     }
 
@@ -217,8 +217,10 @@ MAIN_FUNC /* int argc, char *argv[] */
         McThread::on_thread_init();
     }
 
+    const bool headless = arg_map.contains("-headless");
+
     // now set up spdlog logging
-    Logger::init(arg_map.contains("-console"));
+    Logger::init(headless || arg_map.contains("-console"));
     atexit(Logger::shutdown);
 
 #if defined(_WIN32)
@@ -260,6 +262,12 @@ MAIN_FUNC /* int argc, char *argv[] */
         // and disable it otherwise, but until then, this is the simplest workaround.
         // followup in main_impl.cpp::SDLMain::configureEvents()
         SDL_SetHintWithPriority(SDL_HINT_IME_IMPLEMENTED_UI, "candidates,composition", SDL_HINT_NORMAL);
+    }
+
+    if(headless) {
+        // use the offscreen video driver if we're going to run in headless mode
+        // (does not create a visible window)
+        SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
     }
 
     if(!SDL_Init(SDL_INIT_VIDEO))  // other subsystems can be init later
