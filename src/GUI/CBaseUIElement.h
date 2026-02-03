@@ -37,7 +37,7 @@ struct CBaseUIEventCtx {
 class CBaseUIElement : public KeyboardListener {
     NOCOPY_NOMOVE(CBaseUIElement)
    public:
-    static constexpr UString emptyUString{US_("")};
+    static inline const UString emptyUString{US_("")};
     CBaseUIElement(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, std::nullptr_t = {})
         : rect(xPos, yPos, xSize, ySize), relRect(this->rect) {}
 
