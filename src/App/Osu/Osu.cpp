@@ -1998,7 +1998,7 @@ void Osu::audioRestartCallbackBefore() {
 // the actual reset will be sandwiched between these during restart
 // part 2 of callback
 void Osu::audioRestartCallbackAfter() {
-    if(ui && this->skin) {
+    if(ui && ui->getOptionsOverlay() && this->skin) {
         ui->getOptionsOverlay()->onOutputDeviceChange();
         this->skin->reloadSounds();
 
