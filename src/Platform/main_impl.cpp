@@ -142,8 +142,6 @@ SDL_AppResult SDLMain::initialize() {
         return SDL_APP_FAILURE;
     }
 
-    m_interop->setup_system_integrations();  // only does anything for windows atm
-
     // disable (filter) some SDL events we don't care about
     configureEvents();
 
@@ -153,6 +151,10 @@ SDL_AppResult SDLMain::initialize() {
     if(!m_engine || m_engine->isShuttingDown()) {
         return SDL_APP_FAILURE;
     }
+
+    // set up platform-specific integrations (IPC, hotkeys, etc.)
+    // must be after engine creation since it may use networkHandler
+    m_interop->setup_system_integrations();
 
     // set up live-resize event callback
     if constexpr(Env::cfg(OS::WINDOWS) && !Env::cfg(FEAT::MAINCB)) {

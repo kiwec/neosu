@@ -106,6 +106,7 @@ struct Response {
 };
 
 using AsyncCallback = std::function<void(Response response)>;
+using IPCCallback = std::function<void(std::vector<std::string>)>;
 
 class NetworkHandler {
     NOCOPY_NOMOVE(NetworkHandler)
@@ -124,13 +125,16 @@ class NetworkHandler {
     // (should be able to just choose the implementation based off of http(s):// or ws(s):// protocol prefix)
     std::shared_ptr<WSInstance> initWebsocket(const WSOptions& options);
 
+    // IPC socket for instance detection (Linux)
+    void setIPCSocket(int fd, IPCCallback callback);
+
    private:
     // callback update tick
     friend class ::Engine;
     void update();
 
     friend struct NetworkImpl;
-    StaticPImpl<NetworkImpl, 640> pImpl;  // implementation details
+    StaticPImpl<NetworkImpl, 704> pImpl;  // implementation details
 };
 
 }  // namespace NeoNet

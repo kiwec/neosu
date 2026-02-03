@@ -144,7 +144,7 @@ bool NeosuEnvInterop::handle_cmdline_args(const std::vector<std::string> &args) 
     return need_to_reload_database;
 }
 
-#ifdef _WIN32
+#ifdef MCENGINE_PLATFORM_WINDOWS
 
 #include "Engine.h"
 #include "SString.h"
@@ -511,7 +511,105 @@ void neosu::handleExistingWindow(int argc, char *argv[]) {
     }
 }
 
-#else  // not implemented
+#elif defined(MCENGINE_PLATFORM_LINUX)
+
+#include "NetworkHandler.h"
+#include "SString.h"
+
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <cerrno>
+#include <cstddef>
+#include <cstdlib>
+
+namespace {
+// stored globally so it can be passed to NetworkHandler after it's created
+int g_ipc_socket_fd = -1;
+
+// abstract socket name (leading null byte)
+constexpr char IPC_SOCKET_NAME[] = "\0neosu-instance";
+constexpr size_t IPC_SOCKET_NAME_LEN = sizeof(IPC_SOCKET_NAME) - 1;  // exclude trailing null from sizeof
+}  // namespace
+
+void NeosuEnvInterop::setup_system_integrations() {
+    if(g_ipc_socket_fd < 0) return;
+
+    // set up the IPC callback to handle incoming arguments
+    networkHandler->setIPCSocket(g_ipc_socket_fd, [this](const std::vector<std::string> &args) {
+        this->handle_cmdline_args(args);
+        this->env_p->restoreWindow();
+    });
+}
+
+namespace neosu {
+void handleExistingWindow(int argc, char *argv[]) {
+    // create abstract unix socket for instance detection
+    int sock_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if(sock_fd < 0) {
+        debugLog("IPC: failed to create socket: {}", strerror(errno));
+        return;
+    }
+
+    sockaddr_un addr{};
+    addr.sun_family = AF_UNIX;
+    memcpy(addr.sun_path, IPC_SOCKET_NAME, IPC_SOCKET_NAME_LEN);
+
+    // try to bind, if it fails with EADDRINUSE, another instance is running
+    socklen_t addr_len = offsetof(sockaddr_un, sun_path) + IPC_SOCKET_NAME_LEN;
+    if(bind(sock_fd, reinterpret_cast<sockaddr *>(&addr), addr_len) < 0) {
+        if(errno == EADDRINUSE) {
+            // another instance is running, connect to it and send our args
+            if(connect(sock_fd, reinterpret_cast<sockaddr *>(&addr), addr_len) == 0) {
+                // calculate total size of args
+                u32 total_size = 0;
+                for(int i = 0; i < argc; i++) {
+                    total_size += strlen(argv[i]) + 1;
+                }
+
+                if(total_size > 0 && total_size < 4096) {
+                    // send size header
+                    send(sock_fd, &total_size, sizeof(total_size), 0);
+
+                    // send null-separated arguments
+                    for(int i = 0; i < argc; i++) {
+                        size_t len = strlen(argv[i]) + 1;
+                        send(sock_fd, argv[i], len, 0);
+                    }
+
+                    // wait for acknowledgment (with timeout via select)
+                    fd_set fds;
+                    FD_ZERO(&fds);
+                    FD_SET(sock_fd, &fds);
+                    timeval tv{.tv_sec = 5, .tv_usec = 0};
+
+                    if(select(sock_fd + 1, &fds, nullptr, nullptr, &tv) > 0) {
+                        char ack = 0;
+                        recv(sock_fd, &ack, 1, 0);
+                    }
+                }
+            }
+            close(sock_fd);
+            std::exit(0);
+        } else {
+            close(sock_fd);
+            return;
+        }
+    }
+
+    // bind succeeded. we're the first instance, so start listening
+    if(listen(sock_fd, 5) < 0) {
+        close(sock_fd);
+        return;
+    }
+
+    // store for later use by setup_system_integrations
+    g_ipc_socket_fd = sock_fd;
+}
+}  // namespace neosu
+
+#else  // other platforms - not implemented
+
 void NeosuEnvInterop::setup_system_integrations() { return; }
 
 namespace neosu {
