@@ -265,8 +265,8 @@ bool SongBrowser::sort_by_difficulty(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
-    float stars1 = aPtr->getStarsNomod();
-    float stars2 = bPtr->getStarsNomod();
+    float stars1 = aPtr->getStarRating(StarPrecalc::active_idx);
+    float stars2 = bPtr->getStarRating(StarPrecalc::active_idx);
     if(stars1 != stars2) return stars1 < stars2;
 
     float diff1 = (aPtr->getAR() + 1) * (aPtr->getCS() + 1) * (aPtr->getHP() + 1) * (aPtr->getOD() + 1) *
@@ -365,6 +365,8 @@ SongBrowser::GlobalSongBrowserCtorDtor::~GlobalSongBrowserCtorDtor() {
 }
 
 SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
+    this->lastDiffSortModIndex = StarPrecalc::active_idx;
+
     // build carousel first
     this->carousel = std::make_unique<BeatmapCarousel>(0.f, 0.f, 0.f, 0.f, "Carousel");
     neosu::sbr::g_carousel = this->carousel.get();
@@ -863,7 +865,7 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
     DatabaseBeatmap *best_diff = nullptr;
     const auto &diffs = beatmapset->getDifficulties();
     for(auto &diff : diffs) {
-        if(!best_diff || diff->getStarsNomod() > best_diff->getStarsNomod()) {
+        if(!best_diff || diff->getStarRating(StarPrecalc::active_idx) > best_diff->getStarRating(StarPrecalc::active_idx)) {
             best_diff = diff.get();
         }
     }
@@ -884,6 +886,22 @@ extern const u32 PP_ALGORITHM_VERSION;
 }
 
 void SongBrowser::update(CBaseUIEventCtx &c) {
+    // flush diffcalc results to database
+    // do this even if not visible, but not during gameplay
+    if(!osu->isInGameplay()) {
+        if(!BatchDiffCalc::update_mainthread()) {
+            BatchDiffCalc::abort_calc();
+            this->lastDiffSortModIndex = 0xFF;     // force re-sort with final ratings
+            this->bSongButtonsNeedSorting = true;  // prevent early-return in rebuild
+        }
+
+        // deferred batch calc for newly imported maps
+        if(!BatchDiffCalc::running() && db->bPendingBatchDiffCalc) {
+            db->bPendingBatchDiffCalc = false;
+            BatchDiffCalc::start_calc();
+        }
+    }
+
     if(!this->bVisible) return;
 
     this->localBestContainer->update(c);
@@ -895,10 +913,10 @@ void SongBrowser::update(CBaseUIEventCtx &c) {
 
     BottomBar::update(c);
 
-    // flush diffcalc results to database
-    if(!BatchDiffCalc::update_mainthread()) {
-        // just clean up if we are finished
-        BatchDiffCalc::abort_calc();
+    // handle changed mods resort
+    if(this->lastDiffSortModIndex != StarPrecalc::active_idx) {
+        this->onSortChange(cv::songbrowser_sortingtype.getString());
+        this->lastDiffSortModIndex = StarPrecalc::active_idx;
     }
 
     // auto-download
@@ -1538,10 +1556,10 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset, bool initialSongBrowserLoad)
         assert(diff);  // we just added it
 
         // map each difficulty hash to its button
-        (*this->hashToDiffButton)[diff->getMD5()] = diff_btn;
+        this->hashToDiffButton->emplace(diff->getMD5(), diff_btn);
 
         if(doDiffCollBtns) {
-            const float stars_tmp = diff->getStarsNomod();
+            const float stars_tmp = diff->getStarRating(StarPrecalc::active_idx);
             const int index = std::clamp<int>(
                 (std::isfinite(stars_tmp) && stars_tmp >= static_cast<float>(std::numeric_limits<int>::min()) &&
                  stars_tmp <= static_cast<float>(std::numeric_limits<int>::max()))
@@ -2194,7 +2212,7 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                                         compareValue = diff->getLengthMS() / 1000.0f;
                                         break;
                                     case STARS:
-                                        compareValue = std::round(diff->getStarsNomod() * 100.0f) /
+                                        compareValue = std::round(diff->getStarRating(StarPrecalc::active_idx) * 100.0f) /
                                                        100.0f;  // round to 2 decimal places
                                         break;
                                     case CREATOR:
@@ -3181,18 +3199,45 @@ void SongBrowser::onSortChange(const UString &text, int id) {
     }
 }
 
+void SongBrowser::rebucketDifficultyCollections() {
+    if(this->difficultyCollectionButtons.size() != 12) return;
+
+    for(auto &btn : this->difficultyCollectionButtons) btn->setChildren({});
+
+    for(auto *parentBtn : this->parentButtons) {
+        for(auto *child : parentBtn->getChildren()) {
+            auto *diff = child->getDatabaseBeatmap();
+            if(!diff) continue;
+            const float stars = diff->getStarRating(StarPrecalc::active_idx);
+            const int idx =
+                std::clamp<int>((std::isfinite(stars) && stars >= static_cast<float>(std::numeric_limits<int>::min()) &&
+                                 stars <= static_cast<float>(std::numeric_limits<int>::max()))
+                                    ? static_cast<int>(stars)
+                                    : 0,
+                                0, 11);
+            this->difficultyCollectionButtons[idx]->addChild(child);
+        }
+    }
+}
+
 void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::optional<SortType> &sortMethod) {
-    const bool sortingChanged = this->curSortMethod != sortMethod.value_or(this->curSortMethod);
+    const SortType newSortMethod = sortMethod.value_or(this->curSortMethod);
+    const bool sortingChanged = this->curSortMethod != newSortMethod;
     const bool groupingChanged = this->curGroup != group;
 
-    if(!this->bSongButtonsNeedSorting && !sortingChanged && !groupingChanged && !this->visibleSongButtons.empty()) {
+    const bool diffSortChanged = (newSortMethod == SortType::DIFFICULTY || group == GroupType::DIFFICULTY) &&
+                                 this->lastDiffSortModIndex != StarPrecalc::active_idx;
+
+    if(!this->bSongButtonsNeedSorting && !sortingChanged && !groupingChanged && !diffSortChanged &&
+       !this->visibleSongButtons.empty()) {
         return;
     }
 
     this->curGroup = group;
-    this->curSortMethod = sortMethod.value_or(this->curSortMethod);
+    this->curSortMethod = newSortMethod;
+    this->lastDiffSortModIndex = StarPrecalc::active_idx;
 
-    if(this->bSongButtonsNeedSorting || sortingChanged) {
+    if(this->bSongButtonsNeedSorting || sortingChanged || diffSortChanged) {
         // lazy update grade
         if(this->curSortMethod == SortType::RANKACHIEVED) {
             for(SongButton *songButton : this->parentButtons) {
@@ -3236,13 +3281,16 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
         }
     } else {
         if(auto *collBtns = getCollectionButtonsForGroup(group)) {
+            if(group == GroupType::DIFFICULTY) {
+                this->rebucketDifficultyCollections();
+            }
+
             this->visibleSongButtons.reserve(collBtns->size());
             for(const auto &unq : *collBtns) {
                 this->visibleSongButtons.push_back(unq.get());
             }
 
-            // only sort if switching TO this group/sorting method (not from it)
-            if(groupingChanged || sortingChanged) {
+            if(groupingChanged || sortingChanged || diffSortChanged) {
                 for(const auto &button : *collBtns) {
                     auto &children = button->getChildren();
                     if(!children.empty()) {

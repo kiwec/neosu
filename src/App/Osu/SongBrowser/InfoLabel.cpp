@@ -54,7 +54,7 @@ InfoLabel::InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name)
     this->fAR = 5.0f;
     this->fOD = 5.0f;
     this->fHP = 5.0f;
-    this->fStars = 5.0f;
+    this->fStarsNomod = 5.0f;
 
     this->iLocalOffset = 0;
     this->iOnlineOffset = 0;
@@ -247,6 +247,8 @@ void InfoLabel::update(CBaseUIEventCtx &c) {
                 tooltipOverlay->addLine(fmt::format("MD5: {:s}"_cf, bmDiff2->getMD5()));
                 // mostly for debugging
                 if(keyboard->isShiftDown()) {
+                    tooltipOverlay->addLine(fmt::format("Active precalc: {:#02x}={:s}", StarPrecalc::active_idx, StarPrecalc::dbgstr_idx(StarPrecalc::active_idx)));
+
                     tooltipOverlay->addLine(fmt::format("Title: {:s}"_cf, bmDiff2->getTitleLatin()));
                     tooltipOverlay->addLine(fmt::format("TitleUnicode: {:s}"_cf, bmDiff2->getTitleUnicode()));
                     tooltipOverlay->addLine(fmt::format("Artist: {:s}"_cf, bmDiff2->getArtistLatin()));
@@ -302,7 +304,7 @@ void InfoLabel::setFromBeatmap(const DatabaseBeatmap *map) {
     this->setAR(map->getAR());
     this->setOD(map->getOD());
     this->setHP(map->getHP());
-    this->setStars(map->getStarsNomod());
+    this->setStarsNomod(map->getStarsNomod());
 
     this->setLocalOffset(map->getLocalOffset());
     this->setOnlineOffset(map->getOnlineOffset());
@@ -359,7 +361,7 @@ UString InfoLabel::buildDiffInfoString() const {
     const f32 OD = pf->getOverallDifficultyForSpeedMultiplier();
     const f32 HP = pf->getHP();
 
-    const f32 nomodStars = this->fStars;
+    const f32 nomodStars = this->fStarsNomod;
     f32 modStars = nomodStars;
     f32 modPp = 0.f;
 

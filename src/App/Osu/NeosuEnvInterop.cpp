@@ -96,7 +96,7 @@ bool NeosuEnvInterop::handle_osz(const char *osz_path) {
         return false;
     }
 
-    BeatmapSet *set = db->addBeatmapSet(mapset_dir, set_id, true);
+    BeatmapSet *set = db->addBeatmapSet(mapset_dir, set_id);
     if(!set) {
         ui->getNotificationOverlay()->addToast(US_("Failed to import beatmapset"), ERROR_TOAST);
         return false;

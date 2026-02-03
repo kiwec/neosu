@@ -93,6 +93,16 @@ bool Database::sortScoreByPP(const FinishedScore &a, const FinishedScore &b) {
     return false;  // equivalent
 }
 
+f32 Database::get_star_rating(const MD5Hash &hash, ModFlags flags, f32 speed) const {
+    if(uSz idx = StarPrecalc::index_of(flags, speed); idx != StarPrecalc::INVALID_MODCOMBO) {
+        Sync::shared_lock lk(this->star_ratings_mtx);
+        if(const auto &it = this->star_ratings.find(hash); it != this->star_ratings.end()) {
+            return (*it->second)[idx];
+        }
+    }
+    return 0.f;
+}
+
 // static helper
 std::string Database::getDBPath(DatabaseType db_type) {
     static_assert(DatabaseType::LAST == DatabaseType::STABLE_MAPS, "add missing case to getDBPath");
@@ -373,7 +383,6 @@ void Database::update() {
 
                 this->addBeatmapSet(fullBeatmapPath,          //
                                     -1,                       // no set id override
-                                    false,                    // no diffcalc immediately
                                     !this->raw_load_is_neosu  // is_peppy
                 );
             }
@@ -444,11 +453,10 @@ void Database::save() {
 // NOTE: Should currently only be used for neosu beatmapsets! e.g. from maps/ folder
 //       See loadRawBeatmap()
 //       (unless is_peppy is specified, in which case we're loading a raw osu folder and not saving the things we loaded)
-BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override,
-                                    bool diffcalc_immediately, bool is_peppy) {
+BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override, bool is_peppy) {
     // TODO: deduplication logic
     // needs to handle different loading states that we might be in currently
-    std::unique_ptr<BeatmapSet> mapset = this->loadRawBeatmap(beatmapFolderPath, diffcalc_immediately, is_peppy);
+    std::unique_ptr<BeatmapSet> mapset = this->loadRawBeatmap(beatmapFolderPath, is_peppy);
     if(mapset == nullptr) return nullptr;
 
     BeatmapSet *raw_mapset = mapset.get();
@@ -474,6 +482,7 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
         this->beatmapsets.push_back(std::move(mapset));
 
         ui->getSongBrowser()->addBeatmapSet(raw_mapset);
+        this->bPendingBatchDiffCalc = true;  // picked up by SongBrowser::update
     } else {
         // FIXME: this is just completely wrong, this vector cant just be appended to like that here
         this->temp_loading_beatmapsets.push_back(std::move(mapset));
@@ -987,7 +996,12 @@ void Database::loadMaps() {
                         neosu_maps.skip_string();  // sSource
                         neosu_maps.skip_string();  // sTags
                         MD5Hash md5;
-                        (void)neosu_maps.read_hash_chars(md5);  // TODO: validate
+                        if(version >= 20260202) {
+                            // storing as the raw digest bytes past this ver
+                            (void)neosu_maps.read_hash_digest(md5);  // TODO: validate
+                        } else {
+                            (void)neosu_maps.read_hash_chars(md5);  // TODO: validate
+                        }
                         // other fixed-sized fields in the middle... try adding new stuff at the end so this doesn't break in the future
                         neosu_maps.skip_bytes(sizeof(f32) + sizeof(f32) + sizeof(f32) + sizeof(f32) + sizeof(f64) +
                                               sizeof(u32) + sizeof(u64) + sizeof(i16) + sizeof(i16) + sizeof(u16) +
@@ -1051,7 +1065,12 @@ void Database::loadMaps() {
 
                     MD5Hash diff_hash;
                     // TODO: properly validate and skip beatmaps with invalid hashes
-                    (void)neosu_maps.read_hash_chars(diff_hash);
+                    if(version >= 20260202) {
+                        // storing as the raw digest bytes past this ver
+                        (void)neosu_maps.read_hash_digest(diff_hash);
+                    } else {
+                        (void)neosu_maps.read_hash_chars(diff_hash);
+                    }
 
                     f32 fAR = neosu_maps.read<f32>();
                     f32 fCS = neosu_maps.read<f32>();
@@ -1233,7 +1252,12 @@ void Database::loadMaps() {
                 for(uSz i = 0; i < nb_overrides; i++) {
                     MapOverrides over;
                     MD5Hash map_md5;
-                    (void)neosu_maps.read_hash_chars(map_md5);  // TODO: validate
+                    if(version >= 20260202) {
+                        // storing as the raw digest bytes past this ver
+                        (void)neosu_maps.read_hash_digest(map_md5);  // TODO: validate
+                    } else {
+                        (void)neosu_maps.read_hash_chars(map_md5);  // TODO: validate
+                    }
                     over.local_offset = neosu_maps.read<i16>();
                     over.online_offset = neosu_maps.read<i16>();
                     over.star_rating = neosu_maps.read<f32>();
@@ -1256,6 +1280,36 @@ void Database::loadMaps() {
                         over.ppv2_version = neosu_maps.read<u32>();
                     }
                     this->peppy_overrides[map_md5] = over;
+                }
+            }
+
+            // star ratings section
+            if(version >= 20260202) {
+                const uSz stored_speeds = neosu_maps.read<u8>();
+                const uSz stored_combos = neosu_maps.read<u8>();
+                const u32 nb_star_entries = neosu_maps.read<u32>();
+                const uSz stored_entries = stored_speeds * stored_combos;
+                const bool layout_matches =
+                    (stored_speeds == StarPrecalc::SPEEDS_NUM && stored_combos == StarPrecalc::NUM_MOD_COMBOS);
+
+                if(layout_matches) {
+                    Sync::unique_lock lock(this->star_ratings_mtx);
+                    this->star_ratings.reserve(nb_star_entries);
+                    for(u32 i = 0; i < nb_star_entries; i++) {
+                        MD5Hash hash;
+                        (void)neosu_maps.read_hash_digest(hash);
+                        auto ratings = std::make_unique<StarPrecalc::SRArray>();
+                        (void)neosu_maps.read_bytes(reinterpret_cast<u8 *>(ratings->data()),
+                                                    sizeof(f32) * StarPrecalc::NUM_PRECALC_RATINGS);
+                        this->star_ratings.emplace(hash, std::move(ratings));
+                    }
+                } else {
+                    // layout changed; skip stored data, recalc will be triggered
+                    debugLog("star ratings layout changed (stored {}x{}, current {}x{}), skipping", stored_speeds,
+                             stored_combos, (u8)StarPrecalc::SPEEDS_NUM, (uSz)StarPrecalc::NUM_MOD_COMBOS);
+                    for(u32 i = 0; i < nb_star_entries; i++) {
+                        neosu_maps.skip_bytes(sizeof(MD5Hash) + sizeof(f32) * stored_entries);
+                    }
                 }
             }
         }
@@ -1697,6 +1751,17 @@ void Database::loadMaps() {
     this->beatmapsets = std::move(this->temp_loading_beatmapsets);
     this->temp_loading_beatmapsets.clear();
 
+    // link each diff's star_ratings pointer to its entry in the star_ratings map
+    {
+        Sync::shared_lock sr_lock(this->star_ratings_mtx);
+        Sync::shared_lock diff_lock(this->beatmap_difficulties_mtx);
+        for(const auto &[hash, diff] : this->beatmap_difficulties) {
+            if(auto it = this->star_ratings.find(hash); it != this->star_ratings.end()) {
+                diff->star_ratings = it->second.get();
+            }
+        }
+    }
+
     this->importTimer->update();
     debugLog("peppy+neosu maps: loading took {:f} seconds ({:d} peppy, {:d} neosu, {:d} maps total)",
              this->importTimer->getElapsedTime(), nb_peppy_maps, nb_neosu_maps, nb_peppy_maps + nb_neosu_maps);
@@ -1760,7 +1825,7 @@ void Database::saveMaps() {
             maps.write_string(diff->sDifficultyName);
             maps.write_string(diff->sSource);
             maps.write_string(diff->sTags);
-            maps.write_hash_chars(diff->getMD5());
+            maps.write_hash_digest(diff->getMD5());
             maps.write<f32>(diff->fAR);
             maps.write<f32>(diff->fCS);
             maps.write<f32>(diff->fHP);
@@ -1806,7 +1871,7 @@ void Database::saveMaps() {
         Sync::shared_lock lock(this->peppy_overrides_mtx);
         maps.write<u32>(this->peppy_overrides.size());
         for(const auto &[hash, override] : this->peppy_overrides) {
-            maps.write_hash_chars(hash);
+            maps.write_hash_digest(hash);
             maps.write<i16>(override.local_offset);
             maps.write<i16>(override.online_offset);
             maps.write<f32>(override.star_rating);
@@ -1822,8 +1887,25 @@ void Database::saveMaps() {
         }
     }
 
+    // star ratings section
+    // header: num_speeds, num_combos so we can detect layout changes without bumping db version
+    u32 nb_star_entries = 0;
+    {
+        Sync::shared_lock lock(this->star_ratings_mtx);
+        maps.write<u8>(StarPrecalc::SPEEDS_NUM);
+        maps.write<u8>(StarPrecalc::NUM_MOD_COMBOS);
+        maps.write<u32>(this->star_ratings.size());
+        for(const auto &[hash, ratings] : this->star_ratings) {
+            maps.write_hash_digest(hash);
+            maps.write_bytes(reinterpret_cast<const u8 *>(ratings->data()),
+                             sizeof(f32) * StarPrecalc::NUM_PRECALC_RATINGS);
+            nb_star_entries++;
+        }
+    }
+
     t.update();
-    debugLog("Saved {:d} maps (+ {:d} overrides) in {:f} seconds.", nb_diffs_saved, nb_overrides, t.getElapsedTime());
+    debugLog("Saved {:d} maps (+ {:d} overrides, {:d} star ratings) in {:f} seconds.", nb_diffs_saved, nb_overrides,
+             nb_star_entries, t.getElapsedTime());
 }
 
 void Database::findDatabases() {
@@ -2434,6 +2516,7 @@ void Database::saveScores() {
             break;
         }
 
+        // TODO: should store as digest directly, need score db version bump
         dbr.write_hash_chars(hash);
         dbr.write<u32>(scorevec.size());
 
@@ -2483,8 +2566,7 @@ void Database::saveScores() {
     debugLog("Saved {:d} scores in {:f} seconds.", nb_scores, (Timing::getTimeReal() - startTime));
 }
 
-std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately,
-                                                     bool is_peppy) {
+std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapPath, bool is_peppy) {
     logIfCV(debug_db, "beatmap path: {:s}", beatmapPath);
 
     // try loading all diffs
@@ -2506,10 +2588,6 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
             is_peppy ? DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY : DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
         auto res = map->loadMetadata();
         if(!res.error.errc) {
-            if(diffcalc_immediately) {
-                // TODO: get rid of this, just use BatchDiffCalc
-                map->calcNomodStarsSlow(std::move(res));
-            }
             diffs->push_back(std::move(map));
         } else {
             lastError = res.error;

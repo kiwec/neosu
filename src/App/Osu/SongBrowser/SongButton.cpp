@@ -232,8 +232,8 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
 }
 
 bool SongButton::sortChildren() {
-    if(this->bChildrenNeedSorting) {
-        this->bChildrenNeedSorting = false;
+    if(this->childrenNeedSorting()) {
+        this->lastChildSortStarPrecalcIdx = StarPrecalc::active_idx;
         std::ranges::sort(this->children, SongBrowser::sort_by_difficulty);
         return true;
     } else {

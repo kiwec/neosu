@@ -8,6 +8,7 @@
 #include "noinclude.h"
 #include "Vectors.h"
 #include "FixedSizeArray.h"
+#include "StarPrecalc.h"
 
 // TODO: make these utilities available without all of these ifdefs (move all diffcalc things to a lightweight separate directory)
 #ifndef BUILD_TOOLS_ONLY
@@ -386,10 +387,6 @@ class DatabaseBeatmap final {
         return loadGameplay(this, beatmap, std::move(preloadedMetadata), outPrimitivesCopy);
     }
 
-    // for one-off calculations
-    // must have loaded metadata already
-    bool calcNomodStarsSlow(LOAD_META_RESULT metadata);
-
     [[nodiscard]] MapOverrides get_overrides() const;
 
     inline void setLocalOffset(i16 localOffset) { this->iLocalOffset = localOffset; }
@@ -477,7 +474,11 @@ class DatabaseBeatmap final {
 
     // precomputed data
 
-    [[nodiscard]] inline float getStarsNomod() const { return this->fStarsNomod; }
+    // TODO: return "closest computed" SR for queries while calculating
+    // falls back to nomod stars ATM
+    [[nodiscard]] f32 getStarRating(u8 idx) const;
+
+    [[nodiscard]] inline f32 getStarsNomod() const { return this->getStarRating(StarPrecalc::NOMOD_1X_INDEX); }
 
     [[nodiscard]] inline int getMinBPM() const { return this->iMinBPM; }
     [[nodiscard]] inline int getMaxBPM() const { return this->iMaxBPM; }
@@ -563,6 +564,7 @@ class DatabaseBeatmap final {
     // precomputed data (can-run-without-but-nice-to-have data)
     u32 ppv2Version{0};  // necessary for knowing if stars are up to date
     float fStarsNomod{0.f};
+    StarPrecalc::SRArray *star_ratings{nullptr};  // points into Database::star_ratings map (stable via unique_ptr)
 
     int iMinBPM{0};
     int iMaxBPM{0};
@@ -574,6 +576,10 @@ class DatabaseBeatmap final {
 
     // custom data (not necessary, not part of the beatmap file, and not precomputed)
     std::atomic<f32> loudness{0.f};
+
+    // cache for SR queries to avoid array lookup and a bunch of conditionals
+    mutable f32 last_queried_sr{0.f};
+    mutable u8 last_queried_sr_idx{0xFF};
 
     // this is from metadata but put here for struct layout purposes
     u8 iVersion{128};  // e.g. "osu file format v12" -> 12

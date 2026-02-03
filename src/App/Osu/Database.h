@@ -7,7 +7,9 @@
 #include "UString.h"
 #include "score.h"
 #include "SyncMutex.h"
+
 #include "Hashing.h"
+#include "DiffCalc/StarPrecalc.h"
 
 #include <atomic>
 #include <set>
@@ -36,7 +38,7 @@ class DatabaseBeatmap;
 using BeatmapDifficulty = DatabaseBeatmap;
 using BeatmapSet = DatabaseBeatmap;
 
-#define NEOSU_MAPS_DB_VERSION 20251225
+#define NEOSU_MAPS_DB_VERSION 20260202
 #define NEOSU_SCORE_DB_VERSION 20240725
 
 class Database;
@@ -126,7 +128,7 @@ class Database final {
     void save();
 
     BeatmapSet *addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override = -1,
-                              bool diffcalc_immediately = false, bool is_peppy = false);
+                              bool is_peppy = false);
 
     // returns true if adding succeeded
     bool addScore(const FinishedScore &score);
@@ -163,8 +165,7 @@ class Database final {
     static std::string getOsuSongsFolder();
 
     // only used for raw loading without db
-    std::unique_ptr<BeatmapSet> loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately = false,
-                                               bool is_peppy = false);
+    std::unique_ptr<BeatmapSet> loadRawBeatmap(const std::string &beatmapPath, bool is_peppy = false);
 
     inline void addPathToImport(const std::string &dbPath) { this->extern_db_paths_to_import.push_back(dbPath); }
 
@@ -177,6 +178,12 @@ class Database final {
 
     Hash::flat::map<MD5Hash, MapOverrides> peppy_overrides;
     std::vector<BeatmapDifficulty *> loudness_to_calc;
+
+    bool bPendingBatchDiffCalc{false};
+
+    mutable Sync::shared_mutex star_ratings_mtx;
+    Hash::flat::map<MD5Hash, std::unique_ptr<StarPrecalc::SRArray>> star_ratings;
+    [[nodiscard]] f32 get_star_rating(const MD5Hash &hash, ModFlags flags, f32 speed) const;
 
    private:
     friend bool Collections::load_all();

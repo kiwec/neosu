@@ -758,6 +758,11 @@ void Osu::updateMods() {
     this->score->mods = Replay::Mods::from_cvars();
     this->score->setCheated();
 
+    {
+        auto idx = StarPrecalc::index_of(this->score->mods.flags, this->score->mods.speed);
+        StarPrecalc::active_idx = (idx != StarPrecalc::INVALID_MODCOMBO) ? (u8)idx : StarPrecalc::NOMOD_1X_INDEX;
+    }
+
     if(this->isInPlayMode()) {
         // notify the possibly running playfield of mod changes
         // e.g. recalculating stacks dynamically if HR is toggled

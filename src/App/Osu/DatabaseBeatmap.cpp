@@ -7,6 +7,7 @@
 
 #include <source_location>
 #include <utility>
+#include <cassert>
 
 #ifndef BUILD_TOOLS_ONLY
 
@@ -23,7 +24,6 @@
 #include "AsyncIOHandler.h"
 #include "crypto.h"
 
-#include <cassert>
 #include <algorithm>
 #include <sys/stat.h>
 
@@ -161,7 +161,6 @@ void DatabaseBeatmap::updateRepresentativeValues() noexcept {
     this->fAR = 0.0f;
     this->fOD = 0.0f;
     this->fHP = 0.0f;
-    this->fStarsNomod = 0.0f;
     this->iMinBPM = 9001;
     this->iMaxBPM = 0;
     this->iMostCommonBPM = 0;
@@ -173,7 +172,6 @@ void DatabaseBeatmap::updateRepresentativeValues() noexcept {
         if(diff->getAR() > this->fAR) this->fAR = diff->getAR();
         if(diff->getHP() > this->fHP) this->fHP = diff->getHP();
         if(diff->getOD() > this->fOD) this->fOD = diff->getOD();
-        if(diff->getStarsNomod() > this->fStarsNomod) this->fStarsNomod = diff->getStarsNomod();
         if(diff->getMinBPM() < this->iMinBPM) this->iMinBPM = diff->getMinBPM();
         if(diff->getMaxBPM() > this->iMaxBPM) this->iMaxBPM = diff->getMaxBPM();
         if(diff->getMostCommonBPM() > this->iMostCommonBPM) this->iMostCommonBPM = diff->getMostCommonBPM();
@@ -191,8 +189,9 @@ void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept {
     SF(sSource)            SF(sTags)         SF(sBackgroundImageFileName) SF(sAudioFileName)  SF(iID)               SF(iLengthMS)
     SF(iLocalOffset)       SF(iOnlineOffset) SF(iSetID)                   SF(iPreviewTime)    SF(fAR)               SF(fCS)
     SF(fHP)                SF(fOD)           SF(fStackLeniency)           SF(fSliderTickRate) SF(fSliderMultiplier) SF(ppv2Version)
-    SF(fStarsNomod)        SF(iMinBPM)       SF(iMaxBPM)                  SF(iMostCommonBPM)  SF(iNumCircles)
-    SF(iNumSliders)        SF(iNumSpinners)  SF(iVersion)                 SF(type)            SF(bEmptyArtistUnicode)
+    SF(fStarsNomod)        SF(star_ratings)  SF(iMinBPM)                  SF(iMaxBPM)         SF(iMostCommonBPM)    SF(iNumCircles)
+    SF(iNumSliders)        SF(iNumSpinners)  SF(last_queried_sr)          SF(last_queried_sr_idx)
+    SF(iVersion)           SF(type)          SF(bEmptyArtistUnicode)
     SF(bEmptyTitleUnicode) SF(do_not_store)  SF(draw_background)
 #undef SF
         // clang-format on
@@ -223,11 +222,13 @@ DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
       COPYOTHER(fAR),                 COPYOTHER(fCS),                      COPYOTHER(fHP),
       COPYOTHER(fOD),                 COPYOTHER(fStackLeniency),           COPYOTHER(fSliderTickRate),
       COPYOTHER(fSliderMultiplier),   COPYOTHER(ppv2Version),              COPYOTHER(fStarsNomod),
-      COPYOTHER(iMinBPM),             COPYOTHER(iMaxBPM),                  COPYOTHER(iMostCommonBPM),
-      COPYOTHER(iNumCircles),         COPYOTHER(iNumSliders),              COPYOTHER(iNumSpinners),     ATOMICOTHER(loudness),
-      COPYOTHER(iVersion),            ATOMICOTHER(md5_init),               COPYOTHER(type),
-      COPYOTHER(bEmptyArtistUnicode), COPYOTHER(bEmptyTitleUnicode),       COPYOTHER(do_not_store),
-      COPYOTHER(draw_background) {
+      COPYOTHER(star_ratings),        COPYOTHER(iMinBPM),                  COPYOTHER(iMaxBPM),
+      COPYOTHER(iMostCommonBPM),      COPYOTHER(iNumCircles),
+      COPYOTHER(iNumSliders),         COPYOTHER(iNumSpinners),             ATOMICOTHER(loudness),
+      COPYOTHER(last_queried_sr),     COPYOTHER(last_queried_sr_idx),
+      COPYOTHER(iVersion),            ATOMICOTHER(md5_init),
+      COPYOTHER(type),                COPYOTHER(bEmptyArtistUnicode),      COPYOTHER(bEmptyTitleUnicode),
+      COPYOTHER(do_not_store),        COPYOTHER(draw_background) {
     // clang-format on
 
     if(other.difficulties) {
@@ -251,9 +252,10 @@ DatabaseBeatmap::DatabaseBeatmap(DatabaseBeatmap &&other) noexcept
       COPYOTHER(iPreviewTime),       COPYOTHER(fAR),                 COPYOTHER(fCS),
       COPYOTHER(fHP),                COPYOTHER(fOD),                 COPYOTHER(fStackLeniency),
       COPYOTHER(fSliderTickRate),    COPYOTHER(fSliderMultiplier),   COPYOTHER(ppv2Version),
-      COPYOTHER(fStarsNomod),        COPYOTHER(iMinBPM),             COPYOTHER(iMaxBPM),
-      COPYOTHER(iMostCommonBPM),     COPYOTHER(iNumCircles),
+      COPYOTHER(fStarsNomod),        COPYOTHER(star_ratings),        COPYOTHER(iMinBPM),
+      COPYOTHER(iMaxBPM),            COPYOTHER(iMostCommonBPM),      COPYOTHER(iNumCircles),
       COPYOTHER(iNumSliders),        COPYOTHER(iNumSpinners),        ATOMICOTHER(loudness),
+      COPYOTHER(last_queried_sr),    COPYOTHER(last_queried_sr_idx),
       COPYOTHER(iVersion),           ATOMICOTHER(md5_init),
       COPYOTHER(type),               COPYOTHER(bEmptyArtistUnicode), COPYOTHER(bEmptyTitleUnicode),
       COPYOTHER(do_not_store),       COPYOTHER(draw_background) {
@@ -1311,6 +1313,58 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoint
     return ti;
 }
 
+f32 DatabaseBeatmap::getStarRating(u8 idx) const {
+    if(idx == this->last_queried_sr_idx && this->last_queried_sr > 0.f) {
+        return this->last_queried_sr;
+    }
+
+    assert(idx < StarPrecalc::NUM_PRECALC_RATINGS);
+    f32 ret = 0.f;
+
+    if(this->difficulties) {  // we are a beatmapset, get max sr of child difficulty
+        f32 maxdiff = 0.f;
+        f32 max_cached_sr = -1.f;
+        for(const auto &d : *this->difficulties) {
+            if(f32 diffsr = d->getStarRating(idx); diffsr > maxdiff) {
+                maxdiff = diffsr;
+                // check if we cached it
+                if(d->last_queried_sr_idx == idx && d->last_queried_sr == diffsr) {
+                    max_cached_sr = diffsr;
+                }
+            }
+        }
+
+        ret = maxdiff;
+
+        // cache max child diff sr if the max child already had it cached
+        if(max_cached_sr == maxdiff) {
+            this->last_queried_sr = ret;
+            this->last_queried_sr_idx = idx;
+        }
+    } else if(this->star_ratings) {
+        const f32 sr_array_stars{(*this->star_ratings)[idx]};
+
+        // cache the result if we had a valid one (and they aren't outdated)
+        if(sr_array_stars > 0.f) {
+            ret = sr_array_stars;
+            if(this->ppv2Version == DiffCalc::PP_ALGORITHM_VERSION) {
+                this->last_queried_sr = ret;
+                this->last_queried_sr_idx = idx;
+            }
+        } else {
+            // fall back to nomod stars
+            // TODO: return "closest computed" SR for queries while calculating
+            ret = this->fStarsNomod;
+            this->last_queried_sr_idx = 0xFF;
+            this->last_queried_sr = 0.f;
+        }
+    } else {
+        ret = this->fStarsNomod;
+    }
+
+    return ret;
+}
+
 #ifndef BUILD_TOOLS_ONLY
 
 bool DatabaseBeatmap::getMapFileAsync(MapFileReadDoneCallback data_callback) {
@@ -1742,69 +1796,6 @@ MapOverrides DatabaseBeatmap::get_overrides() const {
 
 DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(i32 positionMS) const {
     return getTimingInfoForTimeAndTimingPoints(positionMS, this->timingpoints);
-}
-
-// TODO: figure out why gameplay needs to be loaded for this to work (songbrowser infolabel etc.)
-bool DatabaseBeatmap::calcNomodStarsSlow(LOAD_META_RESULT metadata) {
-    auto fakeGameplay = std::make_unique<BeatmapInterface>();
-    auto primitivesOut = std::make_unique<PRIMITIVE_CONTAINER>();
-
-    // load everything
-    auto gameplayRes = this->loadGameplay(fakeGameplay.get(), std::move(metadata), primitivesOut.get());
-    PRIMITIVE_CONTAINER &primitives = *primitivesOut;
-
-    if(gameplayRes.error.errc || primitives.error.errc) {
-        debugLog("failed to calc {}", gameplayRes.error.errc ? "gameplay" : "primitives",
-                 gameplayRes.error.errc ? gameplayRes.error.error_string() : primitives.error.error_string());
-        return false;
-    }
-
-    const f32 AR = this->fAR;
-    const f32 CS = this->fCS;
-    const f32 HP = this->fHP;
-    const f32 OD = this->fOD;
-
-    const f32 speedMultiplier = 1.0f;
-
-    // load difficulty hitobjects for star calculation
-    auto diffResult = DatabaseBeatmap::loadDifficultyHitObjects(primitives, AR, CS, speedMultiplier, false);
-
-    if(diffResult.error.errc) {
-        debugLog("failed to load diffresult {}", diffResult.error.error_string());
-        return false;
-    }
-
-    // calculate star rating
-    DifficultyCalculator::BeatmapDiffcalcData diffcalcData{.sortedHitObjects = diffResult.diffobjects,
-                                                           .CS = CS,
-                                                           .HP = HP,
-                                                           .AR = AR,
-                                                           .OD = OD,
-                                                           .hidden = false,
-                                                           .relax = false,
-                                                           .autopilot = false,
-                                                           .touchDevice = false,
-                                                           .speedMultiplier = speedMultiplier,
-                                                           .breakDuration = diffResult.totalBreakDuration,
-                                                           .playableLength = diffResult.playableLength};
-
-    DifficultyCalculator::DifficultyAttributes outAttrs{};
-
-    DifficultyCalculator::StarCalcParams starParams{
-        .cachedDiffObjects = {},
-        .outAttributes = outAttrs,
-        .beatmapData = diffcalcData,
-        .outAimStrains = nullptr,
-        .outSpeedStrains = nullptr,
-        .incremental = nullptr,
-        .upToObjectIndex = -1,
-        .cancelCheck = {},
-    };
-
-    const f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(starParams);
-    this->fStarsNomod = totalStars;
-
-    return true;
 }
 
 #endif  // BUILD_TOOLS_ONLY
