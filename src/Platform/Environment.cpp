@@ -761,6 +761,8 @@ bool Environment::minimizeWindow() {
 
     // TODO: make minimize-on-focus-lost an option in options menu and stop trying to be smart about it,
     // i don't think it's possible to cover all edge cases automatically
+
+    // also somehow disableFullscreen seems to go into an "infinite loop" on i3wm? so really try to avoid it...
     static bool hardcodedBrokenDesktopChecked{false};
     if(m_bMinimizeSupported && !hardcodedBrokenDesktopChecked &&
        ((m_bIsWayland || m_bIsX11) || (RuntimePlatform::current() & RuntimePlatform::WIN_WINE))) {
@@ -770,6 +772,11 @@ bool Environment::minimizeWindow() {
         }
         if(!desktop.empty() && (desktop == "sway" || desktop == "i3" || desktop == "i3wm")) {
             logIf(m_bEnvDebug, "Disabled minimize support due to XDG_CURRENT_DESKTOP: {}", desktop);
+            m_bMinimizeSupported = false;
+        }
+        if(!getEnvVariable("I3SOCK").empty() || !getEnvVariable("SWAYSOCK").empty() ||
+           !getEnvVariable("WINE_HOST_I3SOCK").empty() || !getEnvVariable("WINE_HOST_SWAYSOCK").empty()) {
+            logIf(m_bEnvDebug, "Disabled minimize support due to being on sway/i3", desktop);
             m_bMinimizeSupported = false;
         }
         hardcodedBrokenDesktopChecked = true;
