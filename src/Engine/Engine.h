@@ -9,9 +9,12 @@
 #include "Rect.h"
 #include "KeyboardListener.h"
 #include "CompatShims.h"
+#include "SyncMutex.h"
+#include "SyncJthread.h"
 
 #include <vector>
 #include <memory>
+#include <deque>
 
 #ifndef APP_H
 class App;
@@ -157,6 +160,14 @@ class Engine final : public KeyboardListener {
     // custom
     bool bShuttingDown;
     bool bDrawing;
+
+    // stdin input for headless mode
+    bool bHeadless{false};
+    Sync::jthread stdinThread;
+    Sync::mutex stdinMutex;
+    std::deque<std::string> stdinQueue;
+    static void stdinReaderThread(const Sync::stop_token &stopToken);
+    void processStdinCommands();
 };
 
 extern std::unique_ptr<Mouse> mouse;

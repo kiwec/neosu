@@ -27,6 +27,58 @@
 #include "SString.h"
 #include "Parsing.h"
 
+// for sending keys synthetically from console
+static void sendkey(std::string_view keyName) {
+    SDL_Scancode sc = SDL_GetScancodeFromName(std::string(keyName).c_str());
+    if(sc == SDL_SCANCODE_UNKNOWN) {
+        // try parsing as numeric scancode
+        if(auto num = Parsing::strto<int>(keyName); num > 0 && num < SDL_SCANCODE_COUNT) {
+            sc = static_cast<SDL_Scancode>(num);
+        } else {
+            debugLog("unknown key '{}'", keyName);
+            return;
+        }
+    }
+
+    SDL_Event ev{};
+    ev.key.type = SDL_EVENT_KEY_DOWN;
+    ev.key.timestamp = Timing::getTicksNS();
+    ev.key.scancode = sc;
+    ev.key.key = SDL_GetKeyFromScancode(sc, SDL_KMOD_NONE, false);
+    ev.key.down = true;
+    ev.key.repeat = false;
+    ev.key.windowID = SDL_GetWindowID(SDL_GetKeyboardFocus());
+    SDL_PushEvent(&ev);
+
+    ev.key.type = SDL_EVENT_KEY_UP;
+    ev.key.down = false;
+    ev.key.timestamp = ev.key.timestamp + 1;
+    SDL_PushEvent(&ev);
+}
+
+static void sendtext(std::string_view text) {
+    SDL_Event ev{};
+    ev.text.type = SDL_EVENT_TEXT_INPUT;
+    ev.text.timestamp = Timing::getTicksNS();
+    ev.text.windowID = SDL_GetWindowID(SDL_GetKeyboardFocus());
+
+    // SDL_EVENT_TEXT_INPUT expects a null-terminated string
+    // (doesn't copy it)
+    static std::array<std::string, 16> strings;
+    static int stringsIndex = 0;
+
+    const std::string &current = strings[stringsIndex] = text;
+    stringsIndex = (stringsIndex + 1) % 16;
+
+    ev.text.text = current.c_str();
+    SDL_PushEvent(&ev);
+}
+
+namespace cv {
+static ConVar sendkey_cmd("sendkey", CLIENT | NOLOAD | NOSAVE, CFUNC(sendkey));
+static ConVar sendtext_cmd("sendtext", CLIENT | NOLOAD | NOSAVE, CFUNC(sendtext));
+}  // namespace cv
+
 SDLMain::SDLMain(const Mc::AppDescriptor &appDesc,
                  const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                  const std::vector<std::string> &argVec)

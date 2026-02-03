@@ -27,6 +27,10 @@
 #include "crypto.h"
 #include "Font.h"
 #include "Image.h"
+#include "Console.h"
+#include "Thread.h"
+
+#include <iostream>
 
 Image *MISSING_TEXTURE{nullptr};
 
@@ -58,6 +62,8 @@ Engine::Engine() {
     // print debug information
     debugLog("-= Engine Startup =-");
     debugLog("cmdline: {:s}", SString::join(env->getCommandLine()));
+
+    this->bHeadless = env->getLaunchArgs().contains("-headless");
 
     // timing
     this->iFrameCount = 0;
@@ -130,6 +136,14 @@ Engine::Engine() {
 
 Engine::~Engine() {
     debugLog("-= Engine Shutdown =-");
+
+    if(this->bHeadless) {
+        // there's no portable way to programmatically unblock a thread std::getline, wtf?
+        // this just leaves a zombie thread alive until you send an input/close the terminal...
+        // oh well, we're shutting down anyways
+        this->stdinThread.request_stop();
+        this->stdinThread.detach();
+    }
 
     // reset() all global unique_ptrs
     debugLog("Engine: Freeing app...");
@@ -243,6 +257,11 @@ void Engine::loadApp() {
 
         // start listening to the default keyboard input
         keyboard->addListener(app.get());
+
+        // start stdin reader thread for headless mode
+        if(this->bHeadless) {
+            this->stdinThread = Sync::jthread{stdinReaderThread};
+        }
     }
     debugLog("Engine: Loading app done.");
 }
@@ -322,6 +341,11 @@ void Engine::onUpdate() {
         logIfCV(debug_engine, "executing pending queued resolution change to ({})", this->vNewScreenSize);
 
         this->onResolutionChange(this->vNewScreenSize);
+    }
+
+    // process stdin in headless
+    if(this->bHeadless) {
+        this->processStdinCommands();
     }
 
     // update miscellaneous engine subsystems
@@ -567,6 +591,28 @@ void Engine::onEngineThrottleChanged(float newVal) {
     if(!enable) {
         this->fVsyncFrameCounterTime = 0.0f;
         this->iVsyncFrameCount = 0;
+    }
+}
+
+void Engine::stdinReaderThread(const Sync::stop_token &stopToken) {
+    McThread::set_current_thread_name(US_("stdin_reader"));
+    McThread::set_current_thread_prio(McThread::Priority::LOW);
+
+    std::string line;
+    while(!stopToken.stop_requested() && std::getline(std::cin, line)) {
+        if(stopToken.stop_requested()) return;
+
+        Sync::scoped_lock lock(engine->stdinMutex);
+        engine->stdinQueue.push_back(std::move(line));
+    }
+}
+
+void Engine::processStdinCommands() {
+    Sync::scoped_lock lock(this->stdinMutex);
+    while(!this->stdinQueue.empty()) {
+        std::string cmd = std::move(this->stdinQueue.front());
+        this->stdinQueue.pop_front();
+        Console::processCommand(cmd);
     }
 }
 
