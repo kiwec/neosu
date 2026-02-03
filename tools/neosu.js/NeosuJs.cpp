@@ -197,4 +197,5 @@ struct Beatmap {
 
 EMSCRIPTEN_BINDINGS(neosu_diffcalc) {
     class_<Beatmap>("Beatmap").constructor<std::string>().function("calculate", &Beatmap::calculate);
+    constant("PP_ALGORITHM_VERSION", DiffCalc::PP_ALGORITHM_VERSION);
 }

@@ -1,12 +1,16 @@
-import fs from 'node:fs/promises';
 import Module from './bin/neosu.js';
+
+const neosu = await Module();
+
+async function test_pp_version() {
+    console.log("pp version:", neosu.PP_ALGORITHM_VERSION);
+}
 
 // https://osu.ppy.sh/scores/1641562531 (636pp)
 async function test_pp_simple() {
     const res = await fetch('https://osu.ppy.sh/osu/3337690');
     const map_bytes = await res.bytes();
 
-    const neosu = await Module();
     const beatmap = new neosu.Beatmap(map_bytes);
     try {
         const pp = beatmap.calculate({
@@ -25,4 +29,5 @@ async function test_pp_simple() {
     }
 }
 
+test_pp_version();
 test_pp_simple();
