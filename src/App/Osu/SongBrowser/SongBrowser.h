@@ -70,7 +70,10 @@ extern SongBrowser *g_songbrowser;
 extern BeatmapCarousel *g_carousel;
 }  // namespace neosu::sbr
 
-// TODO: make more of the stuff in here private and have an actual exposed public API surface
+// TODOs:
+// - make more of the stuff in here private and have an actual exposed public API surface
+// - move all of the scrolling/button management logic to BeatmapCarousel
+// - use a more well-defined data structure for buttons that doesn't require a shitton of confusing redundant work
 class SongBrowser final : public ScreenBackable {
     NOCOPY_NOMOVE(SongBrowser)
    private:
@@ -93,6 +96,14 @@ class SongBrowser final : public ScreenBackable {
 
     GlobalSongBrowserCtorDtor global_songbrowser_;
 
+    friend SongBrowserBackgroundSearchMatcher;
+    friend BeatmapCarousel;
+    friend SongButton;
+    friend SongDifficultyButton;
+    friend CollectionButton;
+    friend CarouselButton;
+    friend ScoreButton;
+
    public:
     using CollBtnContainer = std::vector<std::unique_ptr<CollectionButton>>;
 
@@ -106,9 +117,6 @@ class SongBrowser final : public ScreenBackable {
     static i32 getUIScale(f32 m) { return (i32)(m * getUIScale()); }
     static f32 getSkinScale(const SkinImage *img);
     static vec2 getSkinDimensions(const SkinImage *img);
-
-    friend class SongBrowserBackgroundSearchMatcher;
-    friend class BeatmapCarousel;
 
     SongBrowser();
     ~SongBrowser() override;
@@ -257,6 +265,10 @@ class SongBrowser final : public ScreenBackable {
     void selectPreviousRandomBeatmap();
     void playSelectedDifficulty();
 
+    // TODO: make more stuff private
+   private:
+    CollBtnContainer *getCollectionButtonsForGroup(GroupType group);
+
     GroupType curGroup{GroupType::NO_GROUPING};
     SortType curSortMethod{SortType::ARTIST};
     u8 lastDiffSortModIndex;
@@ -303,15 +315,21 @@ class SongBrowser final : public ScreenBackable {
     bool bSongButtonsNeedSorting{false};
     float fNextScrollToSongButtonJumpFixOldRelPosY;
     float fNextScrollToSongButtonJumpFixOldScrollSizeY;
+
+   public:
     f32 thumbnailYRatio = 0.f;
 
+   private:
     // song browser selection state logic
     SongButton *selectionPreviousSongButton;
     SongDifficultyButton *selectionPreviousSongDiffButton;
     CollectionButton *selectionPreviousCollectionButton;
 
     // beatmap database
+   public:
     std::vector<SongButton *> parentButtons;
+
+   private:
     std::vector<CarouselButton *> visibleSongButtons;
 
     UIOverlay *loadingOverlay{nullptr};
@@ -349,9 +367,11 @@ class SongBrowser final : public ScreenBackable {
     std::vector<const DatabaseBeatmap *> previousRandomBeatmaps;
 
     // map auto-download
+   public:
     i32 map_autodl = 0;
     i32 set_autodl = 0;
 
+   private:
     // search
     UISearchOverlay *search;
     UString sSearchString{u""};

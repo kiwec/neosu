@@ -1692,22 +1692,27 @@ out:
     return ret;
 }
 
-// this is completely unnecessary but im lazy to change it back now
-#define getCollectionButtonsForGroup(group__)                                                                 \
-    ((group__) == GroupType::ARTIST                                                                           \
-         ? &this->artistCollectionButtons                                                                     \
-         : ((group__) == GroupType::CREATOR                                                                   \
-                ? &this->creatorCollectionButtons                                                             \
-                : ((group__) == GroupType::DIFFICULTY                                                         \
-                       ? &this->difficultyCollectionButtons                                                   \
-                       : ((group__) == GroupType::LENGTH                                                      \
-                              ? &this->lengthCollectionButtons                                                \
-                              : ((group__) == GroupType::TITLE                                                \
-                                     ? &this->titleCollectionButtons                                          \
-                                     : ((group__) == GroupType::BPM                                           \
-                                            ? &this->bpmCollectionButtons                                     \
-                                            : ((group__) == GroupType::COLLECTIONS ? &this->collectionButtons \
-                                                                                   : (nullptr))))))))
+SongBrowser::CollBtnContainer *SongBrowser::getCollectionButtonsForGroup(GroupType group) {
+    switch(group) {
+        case GroupType::ARTIST:
+            return &this->artistCollectionButtons;
+        case GroupType::CREATOR:
+            return &this->creatorCollectionButtons;
+        case GroupType::DIFFICULTY:
+            return &this->difficultyCollectionButtons;
+        case GroupType::LENGTH:
+            return &this->lengthCollectionButtons;
+        case GroupType::TITLE:
+            return &this->titleCollectionButtons;
+        case GroupType::BPM:
+            return &this->bpmCollectionButtons;
+        case GroupType::COLLECTIONS:
+            return &this->collectionButtons;
+        default:
+            return nullptr;
+    }
+    return nullptr;
+}
 
 bool SongBrowser::scrollToBestButton() {
     SongDifficultyButton *selDiff =
@@ -1764,7 +1769,7 @@ bool SongBrowser::scrollToBestButton() {
         // AGHH this is so slow and ugly JUST SHOOT ME!
         std::vector<CollectionButton *> curCollBtnsCopyPrioritized;
         curCollBtnsCopyPrioritized.reserve(curCollBtnsUnprioritized->size());
-        if(this->curGroup == GroupType::COLLECTIONS && selCollection && selCollection->isVisible()) {
+        if(this->curGroup == GroupType::COLLECTIONS && selCollection) {
             curCollBtnsCopyPrioritized.push_back(selCollection);
         }
         for(const auto &colBtn : *curCollBtnsUnprioritized) {
