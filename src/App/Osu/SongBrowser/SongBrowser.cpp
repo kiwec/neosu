@@ -1473,12 +1473,12 @@ void SongBrowser::refreshBeatmaps(UIScreen *next_screen) {
     this->fSearchWaitTime = 0.0f;
     this->searchPrevGroup = std::nullopt;
 
-    // force no grouping
-    if(this->curGroup != GroupType::NO_GROUPING) {
-        this->onGroupChange("", GroupType::NO_GROUPING);
-    } else {
-        this->groupByNothingBtn->setTextBrightColor(highlightColor);
-    }
+    // force no grouping (TODO: is this even necessary? why is it here?)
+    // if(this->curGroup != GroupType::NO_GROUPING) {
+    //     this->onGroupChange("", GroupType::NO_GROUPING);
+    // } else {
+    //     this->groupByNothingBtn->setTextBrightColor(highlightColor);
+    // }
 
     auto loading_screen = std::make_unique<LoadingScreen>(
         next_screen,
@@ -2782,8 +2782,11 @@ void SongBrowser::onDatabaseLoadingFinished() {
     this->recreateCollectionsButtons();
 
     this->bInitializedBeatmaps = true;
+    this->bSongButtonsNeedSorting = true;
 
     this->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
+    this->onGroupChange("", this->curGroup);  // does nothing besides re-highlight the buttons
+
     this->onSortScoresChange(cv::songbrowser_scores_sortingtype.getString().c_str());
 
     // update rich presence (discord total pp)
@@ -2792,7 +2795,9 @@ void SongBrowser::onDatabaseLoadingFinished() {
     // update user name/stats
     osu->onUserCardChange(BanchoState::get_username().c_str());
 
-    if(cv::songbrowser_search_hardcoded_filter.getString().length() > 0) this->onSearchUpdate();
+    if(cv::songbrowser_search_hardcoded_filter.getString().length() > 0) {
+        this->onSearchUpdate();
+    }
 
     // ugly hack to transition from preloaded main menu beatmap to database-loaded beatmap without pausing music
     {
