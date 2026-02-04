@@ -730,6 +730,8 @@ void Environment::openFileBrowser(std::string_view initialpath) const noexcept {
         encodedPath = filesystemPathToURI(pathToOpen);
     }
 
+    assert(!encodedPath.empty());
+
     if(!SDL_OpenURL(encodedPath.c_str())) {
         debugLog("Failed to open file URI {:s}: {:s}", encodedPath, SDL_GetError());
     }
@@ -1416,7 +1418,8 @@ std::string Environment::getThingFromPathHelper(std::string_view path, bool fold
         UString ustrPath;
 
         std::error_code ec;
-        auto abs_path = fs::canonical(File::getFsPath(retPath), ec);
+        // const auto fsPath = File::getFsPath(retPath); // mingw-gcc bugs cause fs::canonical to just go crazy
+        auto abs_path = fs::canonical(UString{retPath}.plat_str(), ec);
 
         if(!ec)  // canonical path found
         {
@@ -1434,7 +1437,11 @@ std::string Environment::getThingFromPathHelper(std::string_view path, bool fold
             else  // no separators found, just use ./
                 ustrPath = fmt::format(".{}{}", prefSep, retPath);
         }
-        retPath = ustrPath.utf8View();
+
+        if(!ustrPath.isEmpty()) {
+            retPath = ustrPath.utf8View();
+        }
+
         // make sure whatever we got now ends with a slash
         if(retPath.back() != prefSep && retPath.back() != otherSep) retPath = retPath + prefSep;
     } else if(lastSlash != std::string::npos)  // just return the file
