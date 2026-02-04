@@ -41,13 +41,13 @@ class WakeupFd {
     void signal() const {
         if(!valid()) return;
         uint64_t val = 1;
-        (void)write(fd, &val, sizeof(val));
+        [[maybe_unused]] auto _ = write(fd, &val, sizeof(val));
     }
 
     void drain() const {
         if(!valid()) return;
         uint64_t val;
-        (void)read(fd, &val, sizeof(val));
+        [[maybe_unused]] auto _ = read(fd, &val, sizeof(val));
     }
 
    private:
