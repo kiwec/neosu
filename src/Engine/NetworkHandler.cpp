@@ -308,7 +308,6 @@ void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
         int numfds = 0;
         if(this->wakeup_fd.valid()) {
             // use eventfd-based waiting (can wait indefinitely, woken by eventfd)
-            // TODO: use CURLMOPT_NOTIFYFUNCTION instead?
             std::array<curl_waitfd, 2> extra_fds{
                 {{.fd = (curl_socket_t)this->wakeup_fd.get(), .events = CURL_WAIT_POLLIN, .revents = {}},
                  {.fd = (curl_socket_t)this->ipc_socket_fd, .events = CURL_WAIT_POLLIN, .revents = {}}}};

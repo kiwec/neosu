@@ -170,25 +170,7 @@ MAIN_FUNC /* int argc, char *argv[] */
         return (SDL_AppResult)NEOSU_run_diffcalc(argc, argv);
     }
 
-    // if we have an "existing window handler", let it run very early
-    // for the neosu implementation, this checks if an existing instance is running, and if it is,
-    // sends it a message (with the current argc+argv) and quits the current instance (so we might never proceed further in this process)
-    // (only works on windows for now)
-    const auto &appDesc = Mc::getDefaultAppDescriptor();
-    if(appDesc.handleExistingWindow) {
-        appDesc.handleExistingWindow(argc, argv);
-    }
-
-    CrashHandler::init();  // initialize minidump handling
-
-    // this sets and caches the path in getPathToSelf, so this must be called here
-    const auto &selfpath = Environment::getPathToSelf(argv[0]);
-    // set the current working directory to the executable directory, so that relative paths
-    // work as expected
-    setcwdexe(selfpath);
-
     // parse args here
-
     // simple vector representation of the whole cmdline including the program name (as the first element)
     auto arg_cmdline = std::vector<std::string>(argv, argv + argc);
 
@@ -213,6 +195,38 @@ MAIN_FUNC /* int argc, char *argv[] */
         }
         return args;
     }();
+
+    // if we have an "existing window handler", let it run very early
+    // use the handler for the desired app-to-launch, so we don't collide with a running instance of a different kind of app
+    const Mc::AppDescriptor *appDesc{nullptr};
+    if(arg_map.contains("-testapp") && arg_map["-testapp"].has_value()) {
+        const auto &testappName = arg_map["-testapp"].value();
+        for(const auto &entry : Mc::getAllAppDescriptors()) {
+            if(testappName == entry.name) {
+                appDesc = &entry;
+                break;
+            }
+        }
+    }
+    if(!appDesc) {
+        appDesc = &Mc::getDefaultAppDescriptor();
+    }
+
+    assert(appDesc);
+
+    // for the neosu (default) implementation, this checks if an existing instance is running, and if it is,
+    // sends it a message (with the current argc+argv) and quits the current instance (so we might never proceed further in this process)
+    if(appDesc->handleExistingWindow) {
+        appDesc->handleExistingWindow(argc, argv);
+    }
+
+    CrashHandler::init();  // initialize minidump handling
+
+    // this sets and caches the path in getPathToSelf, so this must be called here
+    const auto &selfpath = Environment::getPathToSelf(argv[0]);
+    // set the current working directory to the executable directory, so that relative paths
+    // work as expected
+    setcwdexe(selfpath);
 
     // improve floating point perf in case this isn't already enabled by the compiler
     // -nofpu to disable (debug)
@@ -290,13 +304,13 @@ MAIN_FUNC /* int argc, char *argv[] */
     VPROF_ENTER_SCOPE("Main", VPROF_BUDGETGROUP_ROOT);
     VPROF_ENTER_SCOPE("SDL", VPROF_BUDGETGROUP_BETWEENFRAMES);
 
-    auto *fmain = new SDLMain(appDesc, arg_map, arg_cmdline);  // need to allocate dynamically
+    auto *fmain = new SDLMain(*appDesc, arg_map, arg_cmdline);  // need to allocate dynamically
     *appstate = fmain;
     return !fmain ? SDL_APP_FAILURE : fmain->initialize();
 #else
 
     // otherwise just put it on the stack
-    SDLMain fmain{appDesc, arg_map, arg_cmdline};
+    SDLMain fmain{*appDesc, arg_map, arg_cmdline};
     if(fmain.initialize() == SDL_APP_FAILURE) {
         SDL_AppQuit(&fmain, SDL_APP_FAILURE);
     }
