@@ -380,6 +380,8 @@ void HUD::drawDummy() {
 }
 
 void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool updateAndDrawTrail) {
+    const Skin *skin = osu->getSkin();
+
     if(cv::draw_cursor_ripples.getBool() && (!cv::mod_fposu.getBool() || !osu->isInPlayMode())) {
         this->drawCursorRipples();
     }
@@ -389,9 +391,9 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
         this->drawCursorTrailInt(this->cursorTrailShader, trail, pos, alphaMultiplier, false);
     }
 
-    const auto &cursorImg = osu->getSkin()->i_cursor;
+    const auto &cursorImg = skin->i_cursor;
     const float scale = this->getCursorScaleFactor() / (cursorImg.scale());
-    const float animatedScale = scale * (osu->getSkin()->o_cursor_expand ? this->fCursorExpandAnim : 1.0f);
+    const float animatedScale = scale * (skin->o_cursor_expand ? this->fCursorExpandAnim : 1.0f);
 
     // draw cursor
     g->setColor(Color(0xffffffff).setA(cv::cursor_alpha.getFloat() * alphaMultiplier));
@@ -400,11 +402,11 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
     {
         g->scale(animatedScale * cv::cursor_scale.getFloat(), animatedScale * cv::cursor_scale.getFloat());
 
-        if(!osu->getSkin()->o_cursor_centered)
+        if(!skin->o_cursor_centered)
             g->translate((cursorImg->getWidth() / 2.0f) * animatedScale * cv::cursor_scale.getFloat(),
                          (cursorImg->getHeight() / 2.0f) * animatedScale * cv::cursor_scale.getFloat());
 
-        if(osu->getSkin()->o_cursor_rotate) g->rotate(fmod(engine->getTime() * 37.0f, 360.0f));
+        if(skin->o_cursor_rotate) g->rotate(fmod(engine->getTime() * 37.0f, 360.0f));
 
         g->translate(pos.x, pos.y);
         g->drawImage(cursorImg);
@@ -412,7 +414,7 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
     g->popTransform();
 
     // draw cursor middle
-    if(osu->getSkin()->i_cursor_middle != MISSING_TEXTURE) {
+    if(skin->i_cursor_middle != MISSING_TEXTURE) {
         g->setColor(Color(0xffffffff).setA(cv::cursor_alpha.getFloat() * alphaMultiplier));
 
         g->pushTransform();
@@ -420,12 +422,11 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
             g->scale(scale * cv::cursor_scale.getFloat(), scale * cv::cursor_scale.getFloat());
             g->translate(pos.x, pos.y, 0.05f);
 
-            if(!osu->getSkin()->o_cursor_centered)
-                g->translate(
-                    (osu->getSkin()->i_cursor_middle->getWidth() / 2.0f) * scale * cv::cursor_scale.getFloat(),
-                    (osu->getSkin()->i_cursor_middle->getHeight() / 2.0f) * scale * cv::cursor_scale.getFloat());
+            if(!skin->o_cursor_centered)
+                g->translate((skin->i_cursor_middle->getWidth() / 2.0f) * scale * cv::cursor_scale.getFloat(),
+                             (skin->i_cursor_middle->getHeight() / 2.0f) * scale * cv::cursor_scale.getFloat());
 
-            g->drawImage(osu->getSkin()->i_cursor_middle);
+            g->drawImage(skin->i_cursor_middle);
         }
         g->popTransform();
     }
@@ -963,13 +964,15 @@ void HUD::drawSectionFail(float alpha) {
 }
 
 void HUD::drawHPBar(double health, float alpha, float breakAnim) {
-    const bool useNewDefault = !osu->getSkin()->i_scorebar_marker->isMissingTexture();
+    const Skin *skin = osu->getSkin();
+
+    const bool useNewDefault = !skin->i_scorebar_marker->isMissingTexture();
 
     const float scale = cv::hud_scale.getFloat() * cv::hud_scorebar_scale.getFloat();
     const float ratio = Osu::getRectScale(vec2(1, 1), 1.0f);
 
     const vec2 colourOffset = (useNewDefault ? vec2(7.5f, 7.8f) : vec2(3.0f, 10.0f)) * ratio;
-    const float currentXPosition = (colourOffset.x + (health * osu->getSkin()->i_scorebar_colour->getSize().x));
+    const float currentXPosition = (colourOffset.x + (health * skin->i_scorebar_colour->getSize().x));
     const vec2 markerOffset =
         (useNewDefault ? vec2(currentXPosition, (8.125f + 2.5f) * ratio) : vec2(currentXPosition, 10.0f * ratio));
     const vec2 breakAnimOffset = vec2(0, -20.0f * breakAnim) * ratio;
@@ -993,10 +996,10 @@ void HUD::drawHPBar(double health, float alpha, float breakAnim) {
 
     // draw health bar fill
     {
-        osu->getSkin()->i_scorebar_colour->setDrawClipWidthPercent(health);
-        osu->getSkin()->i_scorebar_colour->draw((osu->getSkin()->i_scorebar_colour->getSize() / 2.0f * scale) +
-                                                    (colourOffset * scale) + (breakAnimOffset * scale),
-                                                scale);
+        skin->i_scorebar_colour->setDrawClipWidthPercent(health);
+        skin->i_scorebar_colour->draw(
+            (skin->i_scorebar_colour->getSize() / 2.0f * scale) + (colourOffset * scale) + (breakAnimOffset * scale),
+            scale);
     }
 
     // draw ki
@@ -1004,15 +1007,14 @@ void HUD::drawHPBar(double health, float alpha, float breakAnim) {
         SkinImage *ki = nullptr;
 
         if(useNewDefault)
-            ki = osu->getSkin()->i_scorebar_marker;
-        else if(osu->getSkin()->i_scorebar_colour->isFromDefaultSkin() ||
-                !osu->getSkin()->i_scorebar_ki->isFromDefaultSkin()) {
+            ki = skin->i_scorebar_marker;
+        else if(skin->i_scorebar_colour->isFromDefaultSkin() || !skin->i_scorebar_ki->isFromDefaultSkin()) {
             if(health < 0.2)
-                ki = osu->getSkin()->i_scorebar_ki_danger2;
+                ki = skin->i_scorebar_ki_danger2;
             else if(health < 0.5)
-                ki = osu->getSkin()->i_scorebad_ki_danger;
+                ki = skin->i_scorebad_ki_danger;
             else
-                ki = osu->getSkin()->i_scorebar_ki;
+                ki = skin->i_scorebar_ki;
         }
 
         if(ki != nullptr && !ki->isMissingTexture()) {
@@ -1024,6 +1026,8 @@ void HUD::drawHPBar(double health, float alpha, float breakAnim) {
 }
 
 void HUD::drawAccuracySimple(float accuracy, float scale) {
+    const Skin *skin = osu->getSkin();
+
     // get integer & fractional parts of the number
     const int accuracyInt = (int)accuracy;
     const int accuracyFrac =
@@ -1035,27 +1039,29 @@ void HUD::drawAccuracySimple(float accuracy, float scale) {
         this->drawScoreNumber(accuracyInt, scale, true);
 
         // draw dot '.' between the integer and fractional part
-        if(osu->getSkin()->i_score_dot != MISSING_TEXTURE) {
+        if(skin->i_score_dot != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
-            g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
-            g->drawImage(osu->getSkin()->i_score_dot);
-            g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
-            g->translate(-osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].scale()) * scale, 0);
+            g->translate(skin->i_score_dot->getWidth() * 0.5f * scale, 0);
+            g->drawImage(skin->i_score_dot);
+            g->translate(skin->i_score_dot->getWidth() * 0.5f * scale, 0);
+            g->translate(-skin->score_overlap_amt * (skin->i_scores[0].scale()) * scale, 0);
         }
 
         this->drawScoreNumber(accuracyFrac, scale, true);
 
         // draw '%' at the end
-        if(osu->getSkin()->i_score_percent != MISSING_TEXTURE) {
+        if(skin->i_score_percent != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
-            g->translate(osu->getSkin()->i_score_percent->getWidth() * 0.5f * scale, 0);
-            g->drawImage(osu->getSkin()->i_score_percent);
+            g->translate(skin->i_score_percent->getWidth() * 0.5f * scale, 0);
+            g->drawImage(skin->i_score_percent);
         }
     }
     g->popTransform();
 }
 
 void HUD::drawAccuracy(float accuracy) {
+    const Skin *skin = osu->getSkin();
+
     g->setColor(0xffffffff);
 
     // get integer & fractional parts of the number
@@ -1065,21 +1071,20 @@ void HUD::drawAccuracy(float accuracy) {
 
     // draw it
     const int offset = 5;
-    const float scale = osu->getImageScale(osu->getSkin()->i_scores[0], 13) * cv::hud_scale.getFloat() *
-                        cv::hud_accuracy_scale.getFloat();
+    const float scale =
+        osu->getImageScale(skin->i_scores[0], 13) * cv::hud_scale.getFloat() * cv::hud_accuracy_scale.getFloat();
     g->pushTransform();
     {
         const int numDigits = (accuracyInt > 99 ? 5 : 4);
         const float xOffset =
-            osu->getSkin()->i_scores[0]->getWidth() * scale * numDigits +
-            (osu->getSkin()->i_score_dot != MISSING_TEXTURE ? osu->getSkin()->i_score_dot->getWidth() : 0) * scale +
-            (osu->getSkin()->i_score_percent != MISSING_TEXTURE ? osu->getSkin()->i_score_percent->getWidth() : 0) *
-                scale -
-            osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].scale()) * scale * (numDigits + 1);
+            skin->i_scores[0]->getWidth() * scale * numDigits +
+            (skin->i_score_dot != MISSING_TEXTURE ? skin->i_score_dot->getWidth() : 0) * scale +
+            (skin->i_score_percent != MISSING_TEXTURE ? skin->i_score_percent->getWidth() : 0) * scale -
+            skin->score_overlap_amt * (skin->i_scores[0].scale()) * scale * (numDigits + 1);
 
         this->fAccuracyXOffset = osu->getVirtScreenWidth() - xOffset - offset;
         this->fAccuracyYOffset = (cv::draw_score.getBool() ? this->fScoreHeight : 0.0f) +
-                                 osu->getSkin()->i_scores[0]->getHeight() * scale / 2 + offset * 2;
+                                 skin->i_scores[0]->getHeight() * scale / 2 + offset * 2;
 
         g->scale(scale, scale);
         g->translate(this->fAccuracyXOffset, this->fAccuracyYOffset);
@@ -1087,21 +1092,21 @@ void HUD::drawAccuracy(float accuracy) {
         this->drawScoreNumber(accuracyInt, scale, true);
 
         // draw dot '.' between the integer and fractional part
-        if(osu->getSkin()->i_score_dot != MISSING_TEXTURE) {
+        if(skin->i_score_dot != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
-            g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
-            g->drawImage(osu->getSkin()->i_score_dot);
-            g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
-            g->translate(-osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].scale()) * scale, 0);
+            g->translate(skin->i_score_dot->getWidth() * 0.5f * scale, 0);
+            g->drawImage(skin->i_score_dot);
+            g->translate(skin->i_score_dot->getWidth() * 0.5f * scale, 0);
+            g->translate(-skin->score_overlap_amt * (skin->i_scores[0].scale()) * scale, 0);
         }
 
         this->drawScoreNumber(accuracyFrac, scale, true);
 
         // draw '%' at the end
-        if(osu->getSkin()->i_score_percent != MISSING_TEXTURE) {
+        if(skin->i_score_percent != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
-            g->translate(osu->getSkin()->i_score_percent->getWidth() * 0.5f * scale, 0);
-            g->drawImage(osu->getSkin()->i_score_percent);
+            g->translate(skin->i_score_percent->getWidth() * 0.5f * scale, 0);
+            g->drawImage(skin->i_score_percent);
         }
     }
     g->popTransform();
@@ -1116,16 +1121,18 @@ void HUD::drawSkip() {
 }
 
 void HUD::drawWarningArrow(vec2 pos, bool flipVertically, bool originLeft) {
-    const float scale = cv::hud_scale.getFloat() * osu->getImageScale(osu->getSkin()->i_play_warning_arrow, 78);
+    const Skin *skin = osu->getSkin();
+
+    const float scale = cv::hud_scale.getFloat() * osu->getImageScale(skin->i_play_warning_arrow, 78);
 
     g->pushTransform();
     {
         g->scale(flipVertically ? -scale : scale, scale);
-        g->translate(pos.x + (flipVertically ? (-osu->getSkin()->i_play_warning_arrow->getWidth() * scale / 2.0f)
-                                             : (osu->getSkin()->i_play_warning_arrow->getWidth() * scale / 2.0f)) *
+        g->translate(pos.x + (flipVertically ? (-skin->i_play_warning_arrow->getWidth() * scale / 2.0f)
+                                             : (skin->i_play_warning_arrow->getWidth() * scale / 2.0f)) *
                                  (originLeft ? 1.0f : -1.0f),
                      pos.y, 0.0f);
-        g->drawImage(osu->getSkin()->i_play_warning_arrow);
+        g->drawImage(skin->i_play_warning_arrow);
     }
     g->popTransform();
 }
@@ -1160,9 +1167,8 @@ bool HUD::shouldDrawScoreboard() const {
 }
 
 // FIXME: this is extremely suboptimal, and runs on EVERY HITRESULT DURING GAMEPLAY!!!! (LiveScore::onScoreChange)
-std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
-    static std::vector<SCORE_ENTRY> scores;
-    scores.clear();
+const std::vector<SCORE_ENTRY> &HUD::getCurrentScores() {
+    this->scores_cache.clear();
 
     const auto &pf = osu->getMapInterface();
 
@@ -1215,7 +1221,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
             u64 max_score = 300 * (slot->num300 + slot->num100 + slot->num50 + slot->num_miss);
             scoreEntry.accuracy = max_score > 0 ? hit_score / max_score : 0.f;
 
-            scores.push_back(std::move(scoreEntry));
+            this->scores_cache.push_back(std::move(scoreEntry));
         }
     } else {
         int nb_slots = 0;
@@ -1257,7 +1263,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
                         LiveScore::calculateAccuracy(score.num300s, score.num100s, score.num50s, score.numMisses);
                     scoreEntry.dead = false;
                     scoreEntry.highlight = false;
-                    scores.push_back(std::move(scoreEntry));
+                    this->scores_cache.push_back(std::move(scoreEntry));
                     nb_slots++;
                 }
             }
@@ -1286,12 +1292,12 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
         playerScoreEntry.accuracy = osu->getScore()->getAccuracy();
         playerScoreEntry.dead = osu->getScore()->isDead();
         playerScoreEntry.highlight = true;
-        scores.push_back(std::move(playerScoreEntry));
+        this->scores_cache.push_back(std::move(playerScoreEntry));
         nb_slots++;
     }
 
     const WinCondition sorting_type = this->scoring_metric;
-    std::ranges::sort(scores, [sorting_type](const SCORE_ENTRY &a, const SCORE_ENTRY &b) {
+    std::ranges::sort(this->scores_cache, [sorting_type](const SCORE_ENTRY &a, const SCORE_ENTRY &b) {
         if(sorting_type == WinCondition::MISSES) {
             return a.misses < b.misses;
         } else if(sorting_type == WinCondition::CURRENT_COMBO) {
@@ -1307,7 +1313,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
         }
     });
 
-    return scores;
+    return this->scores_cache;
 }
 
 void HUD::resetScoreboard() {
@@ -1319,9 +1325,8 @@ void HUD::resetScoreboard() {
     this->slots.clear();
 
     int player_entry_id = BanchoState::is_in_a_multi_room() ? BanchoState::get_uid() : 0;
-    auto scores = this->getCurrentScores();
     int i = 0;
-    for(const auto &score : scores) {
+    for(const auto &score : this->getCurrentScores()) {
         auto slot = std::make_unique<ScoreboardSlot>(score, i);
         if(score.entry_id == player_entry_id) {
             this->player_slot = slot.get();
@@ -1351,7 +1356,7 @@ void HUD::updateScoreboard(bool animate) {
     }
 
     // Update player slot first
-    auto new_scores = this->getCurrentScores();
+    const auto &new_scores = this->getCurrentScores();
     for(int i = 0; i < new_scores.size(); i++) {
         if(new_scores[i].entry_id != this->player_slot->score.entry_id) continue;
 

@@ -271,10 +271,7 @@ class DatabaseBeatmap final {
         f32 sliderMultiplier{1.f};
         f32 sliderTickRate{1.f};
 
-        u32 numCircles{0};
-        u32 numSliders{0};
-        u32 numSpinners{0};
-        [[nodiscard]] inline u32 getNumObjects() const { return numCircles + numSliders + numSpinners; }
+        [[nodiscard]] inline u32 getNumObjects() const { return hitcircles.size() + sliders.size() + spinners.size(); }
 
         u32 totalBreakDuration{0};
 

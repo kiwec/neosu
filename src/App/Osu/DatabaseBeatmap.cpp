@@ -769,9 +769,6 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
     }
 
     // late bail if too many hitobjects would run out of memory and crash
-    c.numCircles = c.hitcircles.size();
-    c.numSliders = c.sliders.size();
-    c.numSpinners = c.spinners.size();
     if(c.getNumObjects() > BEATMAP_MAX_NUM_HITOBJECTS) {
         c.error.errc = LoadError::TOOMANY_HITOBJECTS;
         return c;
@@ -1645,9 +1642,9 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
     }
 
     // update numObjects
-    databaseBeatmap->iNumCircles = c.numCircles;
-    databaseBeatmap->iNumSliders = c.numSliders;
-    databaseBeatmap->iNumSpinners = c.numSpinners;
+    databaseBeatmap->iNumCircles = c.hitcircles.size();
+    databaseBeatmap->iNumSliders = c.sliders.size();
+    databaseBeatmap->iNumSpinners = c.spinners.size();
 
     // check if we have any hitobjects at all
     if(databaseBeatmap->getNumObjects() < 1) {

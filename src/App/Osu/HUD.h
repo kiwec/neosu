@@ -111,7 +111,9 @@ class HUD final : public UIScreen {
     static float getCursorScaleFactor();
 
    private:
-    std::vector<SCORE_ENTRY> getCurrentScores();
+    const std::vector<SCORE_ENTRY> &getCurrentScores();
+    std::vector<SCORE_ENTRY> scores_cache;
+
     WinCondition scoring_metric{};
 
     struct CursorTrailElement {

@@ -199,10 +199,10 @@ void process_score_group(const BeatmapDifficulty* map, const ModParams& params, 
                                                         .timescale = sw->score.mods.speed,
                                                         .ar = params.ar,
                                                         .od = params.od,
-                                                        .numHitObjects = (i32)(primitives.getNumObjects()),
-                                                        .numCircles = (i32)primitives.numCircles,
-                                                        .numSliders = (i32)primitives.numSliders,
-                                                        .numSpinners = (i32)primitives.numSpinners,
+                                                        .numHitObjects = (i32)primitives.getNumObjects(),
+                                                        .numCircles = (i32)primitives.hitcircles.size(),
+                                                        .numSliders = (i32)primitives.sliders.size(),
+                                                        .numSpinners = (i32)primitives.spinners.size(),
                                                         .maxPossibleCombo = (i32)diffres.getTotalMaxCombo(),
                                                         .combo = sw->score.comboMax,
                                                         .misses = sw->score.numMisses,
@@ -330,9 +330,9 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
     // process map calculation (multi-mod star ratings, BPM, object counts)
     if(item.needs_map_calc) {
         MapResult result{.map = item.map,
-                         .nb_circles = primitives.numCircles,
-                         .nb_sliders = primitives.numSliders,
-                         .nb_spinners = primitives.numSpinners};
+                         .nb_circles = (u32)primitives.hitcircles.size(),
+                         .nb_sliders = (u32)primitives.sliders.size(),
+                         .nb_spinners = (u32)primitives.spinners.size()};
 
         const f32 base_ar = item.map->getAR();
         const f32 base_cs = item.map->getCS();

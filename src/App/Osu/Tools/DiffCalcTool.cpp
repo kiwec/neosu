@@ -265,9 +265,9 @@ int entrypoint(int argc_, char *argv_[]) {
                                                   .ar = settings.AR,
                                                   .od = settings.OD,
                                                   .numHitObjects = static_cast<int>(primitives.getNumObjects()),
-                                                  .numCircles = static_cast<int>(primitives.numCircles),
-                                                  .numSliders = static_cast<int>(primitives.numSliders),
-                                                  .numSpinners = static_cast<int>(primitives.numSpinners),
+                                                  .numCircles = static_cast<int>(primitives.hitcircles.size()),
+                                                  .numSliders = static_cast<int>(primitives.sliders.size()),
+                                                  .numSpinners = static_cast<int>(primitives.spinners.size()),
                                                   .maxPossibleCombo = static_cast<int>(diffResult.getTotalMaxCombo()),
                                                   .combo = -1,
                                                   .misses = 0,
@@ -292,8 +292,8 @@ int entrypoint(int argc_, char *argv_[]) {
     std::cout << "  CS: " << settings.CS << '\n';
     std::cout << "  OD: " << settings.OD << '\n';
     std::cout << "  HP: " << settings.HP << '\n';
-    std::cout << "  objects: " << primitives.getNumObjects() << " (" << primitives.numCircles << "c + "
-              << primitives.numSliders << "s + " << primitives.numSpinners << "sp)\n";
+    std::cout << "  objects: " << primitives.getNumObjects() << " (" << primitives.hitcircles.size() << "c + "
+              << primitives.sliders.size() << "s + " << primitives.spinners.size() << "sp)\n";
     std::cout << "  max combo: " << diffResult.getTotalMaxCombo() << '\n';
 
     return 0;
