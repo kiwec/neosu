@@ -655,22 +655,22 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
     {
         Sync::shared_lock lock(this->scores_mtx);
 
-        for(auto &[hash, scorevec] : this->scores | std::views::filter([](const auto &pair) -> auto {
-                                         // filter out empty vectors
-                                         return pair.second.size() > 0;
-                                     })) {
+        for(auto &[hash, scorevec] : this->scores) {
+            if(scorevec.empty()) continue;
+
             FinishedScore *tempScore = &scorevec[0];
 
             // only add highest pp score per diff
             bool foundValidScore = false;
             f64 prevPP = -1.0;
-            for(auto &score :
-                scorevec | std::views::filter([&playerName, include_autopilot_relax](const auto &sc) -> auto {
-                    // filter out scores set with a different name or if we shouldn't allow relax/autopilot
-                    return !(!include_autopilot_relax &&
-                             (u64)sc.mods.flags & ((u64)ModFlags::Relax | (u64)ModFlags::Autopilot)) &&
-                           (playerName == sc.playerName);
-                })) {
+            for(auto &score : scorevec) {
+                // filter out scores set with a different name or if we shouldn't allow relax/autopilot
+                if((!include_autopilot_relax &&
+                    (u64)score.mods.flags & ((u64)ModFlags::Relax | (u64)ModFlags::Autopilot)) ||
+                   (playerName != score.playerName)) {
+                    continue;
+                }
+
                 foundValidScore = true;
                 totalScore += score.score;
 
@@ -709,7 +709,7 @@ Database::PlayerStats Database::calculatePlayerStats(const std::string &playerNa
     const bool scoresChanged = this->scores_changed.load(std::memory_order_acquire);
     const bool returnCached =
         playerName == this->prevPlayerStats.name.utf8View() &&
-        (!scoresChanged || (!BatchDiffCalc::scores_finished() && !engine->throttledShouldRun(60)));
+        (!scoresChanged || (!BatchDiffCalc::scores_finished() && !engine->throttledShouldRun(120)));
     if(returnCached) {
         return this->prevPlayerStats;
     }
