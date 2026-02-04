@@ -283,6 +283,8 @@ class Database final {
     // this isn't completely accurate but allows skipping importing some duplicate entries early from dbs
     int isScoreAlreadyInDB(const MD5Hash &map_hash, u64 unix_timestamp, const std::string &playerName);
 
+    static MD5Hash recalcMD5(std::string osu_path);
+
     std::unique_ptr<AsyncDBLoader> loader;
     std::unique_ptr<AsyncScoreSaver> score_saver;
 

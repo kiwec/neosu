@@ -941,6 +941,25 @@ constexpr i64 TICKS_PER_SECOND = 10'000'000;
 constexpr i64 UNIX_EPOCH_TICKS = 621'355'968'000'000'000;  // ticks from 0001-01-01 to 1970-01-01
 }  // namespace
 
+MD5Hash Database::recalcMD5(std::string osu_path) {
+    // avoid hashmap corruption, we somehow fail to read some entries' md5 hashes
+    // TODO: move this somewhere else or put it in peppy overrides or something
+    // "temporary" fix (extremely rare edge case so maybe it's not that important)
+    MD5Hash md5digest;
+    if(Environment::fileExists(osu_path)) {
+        crypto::hash::md5_f(osu_path, md5digest.data());
+        if(!md5digest.empty()) {
+            logIfCV(debug_db, "Manually calculated hash {} for {}", md5digest, osu_path);
+        } else {
+            logIfCV(debug_db, "Failed to recalculate corrupt hash {}", osu_path);
+        }
+    } else {
+        logIfCV(debug_db, "Skipped entry {} with no/corrupt md5", osu_path);
+    }
+
+    return md5digest;
+}
+
 void Database::loadMaps() {
     const auto &peppy_db_path = this->database_files[DatabaseType::STABLE_MAPS];
     const auto &neosu_maps_path = this->database_files[DatabaseType::NEOSU_MAPS];
@@ -1177,6 +1196,11 @@ void Database::loadMaps() {
                         }
                     }
 
+                    // force calculate hash if we saved with empty/0 hash
+                    if(diff_hash.empty()) {
+                        diff_hash = recalcMD5(mapset_path + osu_filename);
+                    }
+
                     auto diff = std::make_unique<BeatmapDifficulty>(mapset_path + osu_filename, mapset_path,
                                                                     DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
 
@@ -1230,7 +1254,7 @@ void Database::loadMaps() {
 
                     {
                         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-                        this->beatmap_difficulties[diff->getMD5()] = diff.get();
+                        this->beatmap_difficulties[diff_hash] = diff.get();
                     }
                     diffs->push_back(std::move(diff));
                     nb_neosu_maps++;
@@ -1258,6 +1282,7 @@ void Database::loadMaps() {
                     } else {
                         (void)neosu_maps.read_hash_chars(map_md5);  // TODO: validate
                     }
+
                     over.local_offset = neosu_maps.read<i16>();
                     over.online_offset = neosu_maps.read<i16>();
                     over.star_rating = neosu_maps.read<f32>();
@@ -1563,21 +1588,7 @@ void Database::loadMaps() {
                 fullFilePath.append(osuFileName);
 
                 if(md5hash.empty()) {
-                    // avoid hashmap corruption, we somehow fail to read some entries' md5 hashes
-                    // TODO: move this somewhere else or put it in peppy overrides or something
-                    // "temporary" fix (extremely rare edge case so maybe it's not that important)
-                    if(Environment::fileExists(fullFilePath)) {
-                        MD5Hash md5digest;
-                        crypto::hash::md5_f(fullFilePath, md5digest.data());
-                        if(!md5digest.empty()) {
-                            md5hash = md5digest;
-                            logIfCV(debug_db, "Manually calculated hash {} for {}", md5hash, fullFilePath);
-                        } else {
-                            logIfCV(debug_db, "Failed to recalculate corrupt hash {}", fullFilePath);
-                        }
-                    } else {
-                        logIfCV(debug_db, "Skipped entry {} with no/corrupt md5", fullFilePath);
-                    }
+                    md5hash = recalcMD5(fullFilePath);
                 }
 
                 // special case: legacy fallback behavior for invalid beatmapSetID, try to parse the ID from the path
@@ -1861,7 +1872,6 @@ void Database::saveMaps() {
     }
 
     // We want to save settings we applied on peppy-imported maps
-
     // When calculating loudness we don't call update_overrides() for performance reasons
     {
         Sync::unique_lock lock(this->peppy_overrides_mtx);
@@ -1873,25 +1883,35 @@ void Database::saveMaps() {
     }
 
     u32 nb_overrides = 0;
+    Hash::flat::map<MD5Hash, MapOverrides> real_overrides;
+
+    // avoid adding overrides with empty/0 hash
     {
         // only need read lock here
         Sync::shared_lock lock(this->peppy_overrides_mtx);
-        maps.write<u32>(this->peppy_overrides.size());
-        for(const auto &[hash, override] : this->peppy_overrides) {
-            maps.write_hash_digest(hash);
-            maps.write<i16>(override.local_offset);
-            maps.write<i16>(override.online_offset);
-            maps.write<f32>(override.star_rating);
-            maps.write<f32>(override.loudness);
-            maps.write<i32>(override.min_bpm);
-            maps.write<i32>(override.max_bpm);
-            maps.write<i32>(override.avg_bpm);
-            maps.write<u8>(override.draw_background);
-            maps.write_string(override.background_image_filename);
-            maps.write<u32>(override.ppv2_version);
+        real_overrides.reserve(this->peppy_overrides.size());
 
-            nb_overrides++;
+        for(const auto &it : this->peppy_overrides) {
+            if(it.first.empty()) continue;
+            real_overrides.emplace(it);
         }
+    }
+
+    maps.write<u32>(real_overrides.size());
+    for(const auto &[hash, override] : real_overrides) {
+        maps.write_hash_digest(hash);
+        maps.write<i16>(override.local_offset);
+        maps.write<i16>(override.online_offset);
+        maps.write<f32>(override.star_rating);
+        maps.write<f32>(override.loudness);
+        maps.write<i32>(override.min_bpm);
+        maps.write<i32>(override.max_bpm);
+        maps.write<i32>(override.avg_bpm);
+        maps.write<u8>(override.draw_background);
+        maps.write_string(override.background_image_filename);
+        maps.write<u32>(override.ppv2_version);
+
+        nb_overrides++;
     }
 
     // star ratings section
