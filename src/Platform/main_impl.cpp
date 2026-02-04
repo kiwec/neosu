@@ -156,11 +156,6 @@ SDL_AppResult SDLMain::initialize() {
     // must be after engine creation since it may use networkHandler
     m_interop->setup_system_integrations();
 
-    // set up live-resize event callback
-    if constexpr(Env::cfg(OS::WINDOWS) && !Env::cfg(FEAT::MAINCB)) {
-        SDL_AddEventWatch(SDLMain::resizeCallback, this);
-    }
-
     // delay info until we know what gpu we're running
     // currently this only does anything for nvidia
     if(!m_gpuConfigurator->getInitInfo().empty()) {
@@ -205,6 +200,11 @@ SDL_AppResult SDLMain::initialize() {
     // SDL3 stops listening to text input globally when window is created
     listenToTextInput(cv::use_ime.getBool());
     SDL_SetWindowKeyboardGrab(m_window, false);  // this allows windows key and such to work
+
+    // set up live-resize event callback
+    if constexpr(Env::cfg(OS::WINDOWS) && !Env::cfg(FEAT::MAINCB)) {
+        SDL_AddEventWatch(SDLMain::resizeCallback, this);
+    }
 
     // return init success
     return SDL_APP_CONTINUE;
