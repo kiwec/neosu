@@ -85,12 +85,17 @@ class ByteBufferedFile {
                 }
             }
 
-            if(this->buffered_bytes < len) {
-                // couldn't read enough data
+            // reached EOF
+            if(this->buffered_bytes == 0) {
                 if(out != nullptr) {
                     memset(out, 0, len);
                 }
                 return 0;
+            }
+
+            // truncated
+            if(this->buffered_bytes < len) {
+                len = this->buffered_bytes;
             }
 
             // read from ring buffer
