@@ -50,7 +50,11 @@ void internal::collect_outdated_db_diffs(const Sync::stop_token& stoken, std::ve
     Sync::shared_lock sr_lock(db->star_ratings_mtx);
     for(const auto& [_, diff] : db->beatmap_difficulties) {
         if(stoken.stop_requested()) break;
-        if(diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION || !db->star_ratings.contains(diff->getMD5())) {
+        // checking fStarsNomod <= 0.f might cause us to redundantly try re-calculating it, but
+        // that might actually be desirable, since we might have only failed to calculate it due to a bug
+        // that is now fixed
+        if(diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION || diff->fStarsNomod <= 0.f ||
+           !db->star_ratings.contains(diff->getMD5())) {
             outdiffs.push_back(diff);
         }
     }
@@ -138,7 +142,7 @@ std::vector<WorkItem> work_queue;
 std::atomic<u32> next_work_index{0};
 
 forceinline bool score_needs_recalc(const FinishedScore& score) {
-    return score.ppv2_version < DiffCalc::PP_ALGORITHM_VERSION;
+    return score.ppv2_version < DiffCalc::PP_ALGORITHM_VERSION || (score.score > 0 && score.ppv2_score <= 0.f);
 }
 
 // Calculate difficulty and PP for a group of scores sharing mod parameters.

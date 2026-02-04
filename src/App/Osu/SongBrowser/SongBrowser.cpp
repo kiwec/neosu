@@ -892,7 +892,6 @@ void SongBrowser::update(CBaseUIEventCtx &c) {
         if(!BatchDiffCalc::update_mainthread()) {
             BatchDiffCalc::abort_calc();
             this->lastDiffSortModIndex = 0xFF;     // force re-sort with final ratings
-            this->bSongButtonsNeedSorting = true;  // prevent early-return in rebuild
         }
 
         // deferred batch calc for newly imported maps
