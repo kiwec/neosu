@@ -556,20 +556,12 @@ bool SDLMain::createWindow() {
         SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 
-        // these are workarounds for bugs in the current SDL releases we're using, to be removed once those are fixed
-        {
-            // we don't need alpha on the window visual, this is only required for making the window itself transparent
-            // due to driver/external bugs and issues, only do this IF:
-            // NOT windows (makes the game overly dark for some reason with some drivers)
-            // OR running under wine (it does not find a suitable pixel format with xwayland+EGL otherwise! wine/driver bug)
-            if(!Env::cfg(OS::WINDOWS) || (RuntimePlatform::current() & RuntimePlatform::WIN_WINE)) {
-                SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
-            }
-
-            // work around weird issue with AMD on windows (SDL bug)
-            if constexpr(Env::cfg(OS::WINDOWS)) {
-                SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
-            }
+        // we don't need alpha on the window visual, this is only required for making the window itself transparent
+        // due to driver/external bugs and issues, only do this IF:
+        // NOT windows (makes the game overly dark for some reason with some drivers)
+        // OR running under wine (it does not find a suitable pixel format with xwayland+EGL otherwise! wine/driver bug)
+        if(!Env::cfg(OS::WINDOWS) || (RuntimePlatform::current() & RuntimePlatform::WIN_WINE)) {
+            SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
         }
 
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
