@@ -60,10 +60,11 @@ OpenGLES32Interface::OpenGLES32Interface() : Graphics(), m_vResolution(engine->g
     glFrontFace(GL_CCW);
 
     // debugging
-    if(glDebugMessageCallbackARB) {
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-        glDebugMessageCallbackARB(SDLGLInterface::glDebugCB, nullptr);
-    }
+#ifndef MCENGINE_PLATFORM_WASM
+    // GLES 3.2 has debug functions as core, but WebGL doesn't support them
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(SDLGLInterface::glDebugCB, nullptr);
+#endif
 
     // setWireframe(true);
 
@@ -784,6 +785,11 @@ void OpenGLES32Interface::setAntialiasing(bool aa) {
     else
         glDisable(GL_MULTISAMPLE);
 }
+#else
+// WebGL doesn't support alpha testing or multisampling, provide stubs
+void OpenGLES32Interface::setAlphaTesting(bool /*enabled*/) {}
+void OpenGLES32Interface::setAlphaTestFunc(DrawCompareFunc /*alphaFunc*/, float /*ref*/) {}
+void OpenGLES32Interface::setAntialiasing(bool /*aa*/) {}
 #endif
 
 void OpenGLES32Interface::setBlending(bool enabled) {

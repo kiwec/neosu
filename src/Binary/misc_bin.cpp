@@ -1,4 +1,8 @@
 // Copyright (c) 2025, WH, All rights reserved.
+#include "config.h"
+
+// WASM uses #embed-based generated files instead of inline assembly
+#ifndef MCENGINE_PLATFORM_WASM
 #include "misc_bin.h"
 
 #ifndef MISC_INCDIR
@@ -9,3 +13,4 @@
 
 // in assets/misc
 INCBIN_C_MISC(convar_template, "convar_template.html")
+#endif

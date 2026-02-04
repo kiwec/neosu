@@ -129,6 +129,39 @@ $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
 	$(CURLCOMMAND) "https://codeberg.org/soundtouch/soundtouch/archive/$(SOUNDTOUCH_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
+# curl source for WASM builds (other platforms use prebuilt binaries)
+$(DEPS_CACHE)/curl-$(CURL_VERSION).tar.gz:
+	$(MKDIR_P) $(DEPS_CACHE)
+	$(CURLCOMMAND) "https://curl.se/download/curl-$(CURL_VERSION).tar.gz" || { rm -f $@; exit 1; }
+
+# TEMPTEMP: beatmap pack for WASM demo (pre-extracted)
+# this is going through the "osu! stable raw load" path for database loading,
+# for some reason we still only have raw loading of .osz files for neosu_maps (TODO)
+WASM_BEATMAP_PACK_URL := "https://packs.ppy.sh/S1757%20-%20osu%21%20Beatmap%20Pack%20%231757.zip"
+$(DEPS_CACHE)/wasm-beatmap-pack.zip:
+	$(MKDIR_P) $(DEPS_CACHE)
+	$(CURLCOMMAND) "$(WASM_BEATMAP_PACK_URL)" || { rm -f $@; exit 1; }
+
+# extract the 10 smallest .osz files into subfolders
+$(builddir)/wasm-maps/.extracted: $(DEPS_CACHE)/wasm-beatmap-pack.zip
+	rm -rf $(builddir)/wasm-maps $(builddir)/wasm-osztemp
+	$(MKDIR_P) $(builddir)/wasm-maps $(builddir)/wasm-osztemp
+	@($(UNZIP) -j -o $(DEPS_CACHE)/wasm-beatmap-pack.zip -d $(builddir)/wasm-osztemp &>/dev/null && \
+	cd $(builddir)/wasm-osztemp && \
+	ls -S *.osz | tail -10 | while read osz; do { \
+		name="$${osz%.osz}"; \
+		$(MKDIR_P) "$(abs_builddir)/wasm-maps/$$name"; \
+		$(UNZIP) -o "$$osz" -d "$(abs_builddir)/wasm-maps/$$name" &>/dev/null; \
+	}; done) && \
+	rm -rf $(builddir)/wasm-osztemp && \
+	touch $@
+
+if WASM_PLATFORM
+EXTRACTED_MAPS_DEP := $(builddir)/wasm-maps/.extracted
+else
+EXTRACTED_MAPS_DEP := 
+endif
+
 ## BINARY (pre-built) dependencies (conditional depending on build configuration)
 
 # --with-audio=soloud (misc. codec decoding, anything not flac/wav/mp3/ogg)
@@ -408,6 +441,83 @@ lbq := '('
 rb := )
 rbq := ')'
 
+if WASM_PLATFORM
+# WASM: build mbedTLS for SSL support
+$(DEPS_CACHE)/mbedtls-$(MBEDTLS_VERSION).tar.bz2:
+	$(MKDIR_P) $(DEPS_CACHE)
+	$(CURLCOMMAND) "https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$(MBEDTLS_VERSION)/mbedtls-$(MBEDTLS_VERSION).tar.bz2" || { rm -f $@; exit 1; }
+
+$(DEPS_PREFIX)/mbedtls-$(MBEDTLS_VERSION).built: $(DEPS_CACHE)/mbedtls-$(MBEDTLS_VERSION).tar.bz2
+	rm -rf $(DEPS_PREFIX)/mbedtls
+	$(MKDIR_P) $(DEPS_PREFIX)/mbedtls/build
+	$(TAR) xf $(DEPS_CACHE)/mbedtls-$(MBEDTLS_VERSION).tar.bz2 -C $(DEPS_PREFIX)/mbedtls --strip-components=1 && \
+	cd $(DEPS_PREFIX)/mbedtls && \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
+		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
+		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
+		-D CMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
+		-D CMAKE_C_COMPILER="$(CC)" \
+		-D CMAKE_C_FLAGS="$(CFLAGS)" \
+		$(CMAKERCOPT) $(CMAKEIDOPT) \
+		-D CMAKE_C_COMPILER_AR=$(AR) \
+		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \
+		-D ENABLE_PROGRAMS=OFF \
+		-D ENABLE_TESTING=OFF \
+		-D MBEDTLS_FATAL_WARNINGS=OFF && \
+	$(CMAKE) --build build $(CMAKEPAROPT) && \
+	$(CMAKE) --install build
+	touch $@
+
+# WASM: build curl from source with mbedTLS
+CURL_INCLUDEDIR := $(DEPS_PREFIX)/include
+CURL_LIBDIR := $(DEPS_PREFIX)/lib
+CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DCURL_STATICLIB
+CURL_LIBS += -L$(CURL_LIBDIR) -lcurl -lmbedtls -lmbedx509 -lmbedcrypto -lz
+
+$(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION).tar.gz $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built $(DEPS_PREFIX)/mbedtls-$(MBEDTLS_VERSION).built
+	rm -rf $(DEPS_PREFIX)/curl
+	$(MKDIR_P) $(DEPS_PREFIX)/curl/build $(DEPS_PREFIX)/lib/pkgconfig
+	$(TAR) xf $(DEPS_CACHE)/curl-$(CURL_VERSION).tar.gz -C $(DEPS_PREFIX)/curl --strip-components=1 && \
+	cd $(DEPS_PREFIX)/curl && \
+	PKG_CONFIG="$(PKG_CONFIG)" \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
+		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
+		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
+		-D CMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
+		-D CMAKE_C_COMPILER="$(CC)" \
+		-D CMAKE_C_FLAGS="$(CFLAGS)" \
+		-D CMAKE_CXX_COMPILER="$(CXX)" \
+		-D CMAKE_CXX_FLAGS="$(CXXFLAGS)" \
+		$(CMAKERCOPT) $(CMAKEIDOPT) \
+		-D CMAKE_C_COMPILER_AR=$(AR) \
+		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \
+		-D BUILD_SHARED_LIBS=OFF \
+		-D BUILD_CURL_EXE=OFF \
+		-D BUILD_TESTING=OFF \
+		-D CURL_DISABLE_LDAP=ON \
+		-D CURL_DISABLE_LDAPS=ON \
+		-D CURL_USE_LIBSSH2=OFF \
+		-D CURL_USE_LIBPSL=OFF \
+		-D CURL_ZLIB=ON \
+		-D ZLIB_INCLUDE_DIR="$(DEPS_PREFIX)/include" \
+		-D ZLIB_LIBRARY="$(DEPS_PREFIX)/lib/libz.a" \
+		-D CURL_USE_OPENSSL=OFF \
+		-D CURL_USE_MBEDTLS=ON \
+		-D CURL_USE_WOLFSSL=OFF \
+		-D MBEDTLS_INCLUDE_DIRS="$(DEPS_PREFIX)/include" \
+		-D MBEDTLS_LIBRARY="$(DEPS_PREFIX)/lib/libmbedtls.a" \
+		-D MBEDX509_LIBRARY="$(DEPS_PREFIX)/lib/libmbedx509.a" \
+		-D MBEDCRYPTO_LIBRARY="$(DEPS_PREFIX)/lib/libmbedcrypto.a" \
+		-D CURL_CA_BUNDLE=none \
+		-D CURL_CA_PATH=none && \
+	$(CMAKE) --build build $(CMAKEPAROPT) && \
+	$(CMAKE) --install build
+	$(PKG_CONFIG) --exists --print-errors libcurl
+	touch $@
+else
+# Non-WASM: use prebuilt binaries
 CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/include
 CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib
 CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP -DCURL_STATICLIB
@@ -428,6 +538,7 @@ endif
 $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-$(SYSNAME)$(host_cpu).source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
+endif # WASM_PLATFORM
 else # from host
 CURL_CFLAGS += $(OPENSSL_CFLAGS)
 CURL_LIBS += $(OPENSSL_LIBS)
@@ -455,7 +566,7 @@ $(DEPS_PREFIX)/mimalloc-$(MIMALLOC_VERSION).built: $(DEPS_CACHE)/mimalloc-$(MIMA
 	$(MKDIR_P) $(DEPS_PREFIX)/mimalloc/out/"$(if $(ENABLE_DEBUG),debug,release)" && \
 	cd $(DEPS_PREFIX)/mimalloc/out/"$(if $(ENABLE_DEBUG),debug,release)" && \
 	env PKG_CONFIG="$(PKG_CONFIG)" \
-		LDFLAGS="$(LDFLAGS) $(WINPTHREAD_LDFLAGS) -xnone" $(CMAKE) -S ../.. -B . -G "$(CMAKE_GEN)" \
+		LDFLAGS="$(LDFLAGS) $(WINPTHREAD_LDFLAGS) -xnone" $(CMAKE_CONF_PFX) $(CMAKE) -S ../.. -B . -G "$(CMAKE_GEN)" \
 		-D CMAKE_C_COMPILER="$(CC)" \
 		-D CMAKE_C_FLAGS_RELEASE="$(CFLAGS) -Wno-array-bounds" \
 		-D CMAKE_C_FLAGS_DEBUG="$(CFLAGS) -Wno-array-bounds" \
@@ -506,7 +617,7 @@ $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).ta
 	$(SED) -i 's|KMSDRM_gbm_surface_release_buffer.*next_bo.*|//\0|' src/video/kmsdrm/SDL_kmsdrmvideo.c && \
 	patch -Np1<$(BUILD_MISCDIR)/SDL3-Use-RIDEV_NOLEGACY-for-Windows-raw-mouse-input.patch && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
-	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		$(if $(ENABLE_ASAN),-DSDL_ASAN=ON,) \
 		-D SDL_HIDAPI_LIBUSB=OFF \
@@ -565,11 +676,11 @@ $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built: $(DEPS_CACHE)/mpg123-$(MPG123_VER
 	$(if $(ubercompat),$(SED) -i -e 's|.*ThreadErrorMode.*||g' -e 's|mode_ok|0|' src/compat/compat_dl.c,true) && \
 	autoreconf -fiv && cd $(DEPS_PREFIX)/mpg123/build && \
 	PKG_CONFIG="$(PKG_CONFIG)" \
-		../configure lt_cv_prog_gnu_ld=yes --host=$(host) --prefix="$(DEPS_PREFIX)" $(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
+		$(CONFIGURE_PFX) ../configure lt_cv_prog_gnu_ld=yes --host=$(host) --prefix="$(DEPS_PREFIX)" $(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
 		--disable-components --enable-libmpg123 --with-audio=dummy --disable-modules \
 		RANLIB="$(RANLIB)" AR="$(AR)" CC="$(CC)" CXX="$(CXX)" LD="$(LD)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)" && \
-	$(MAKE) $(MAKEFLAGS) && \
-	$(MAKE) $(MAKEFLAGS) install
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) && \
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors libmpg123
 	touch $@
 else
@@ -581,26 +692,34 @@ if USE_SOLOUD
 AUDIO_CFLAGS += $(shell $(PKG_CONFIG) --cflags soloud) $(shell $(PKG_CONFIG) --cflags soundtouch) $(MPG123_CFLAGS) -DST_NO_EXCEPTION_HANDLING
 AUDIO_LIBS += $(shell $(PKG_CONFIG) --libs soloud) $(shell $(PKG_CONFIG) --libs soundtouch) $(MPG123_LIBS)
 
+if WASM_PLATFORM
+# no FFmpeg for WASM for now (not critical and it's huge bloat)
+FFMPEG_INSTALL_LIBS :=
+FFMPEG_INCDIR :=
+SOLOUD_FFMPEG_DEP :=
+else
 FFMPEG_INSTALL_LIBS := `find $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/$(SYSNAME)$(host_cpu)/lib '(' -name '*avutil*' -o -name '*avcodec*' -o -name '*avformat*' -o -name '*swresample*' ')' -printf '%p '`
 FFMPEG_INCDIR := $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/$(SYSNAME)$(host_cpu)/include
+SOLOUD_FFMPEG_DEP := $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)-$(SYSNAME)$(host_cpu).source
+endif
 
-$(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built: $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)-$(SYSNAME)$(host_cpu).source $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built
+$(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built: $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz $(SOLOUD_FFMPEG_DEP) $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built
 	rm -rf $(DEPS_PREFIX)/SoLoud
 	$(MKDIR_P) $(DEPS_PREFIX) $(DEPS_PREFIX)/include $(DEPS_PREFIX)/lib/pkgconfig $(DEPS_PREFIX)/SoLoud/build
 	$(TAR) xf $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz -C $(DEPS_PREFIX)/SoLoud --strip-components=1 && \
 	cd $(DEPS_PREFIX)/SoLoud && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
-	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
 		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
 		-D CMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
 		-D CMAKE_C_COMPILER="$(CC)" \
-		-D CMAKE_C_FLAGS_RELEASE="-I$(FFMPEG_INCDIR) $(CFLAGS)" \
-		-D CMAKE_C_FLAGS_DEBUG="-I$(FFMPEG_INCDIR) $(CFLAGS)" \
+		-D CMAKE_C_FLAGS_RELEASE="$(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CFLAGS)" \
+		-D CMAKE_C_FLAGS_DEBUG="$(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CFLAGS)" \
 		-D CMAKE_CXX_COMPILER="$(CXX)" \
-		-D CMAKE_CXX_FLAGS_RELEASE="-I$(FFMPEG_INCDIR) $(CXXFLAGS)" \
-		-D CMAKE_CXX_FLAGS_DEBUG="-I$(FFMPEG_INCDIR) $(CXXFLAGS)" \
+		-D CMAKE_CXX_FLAGS_RELEASE="$(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CXXFLAGS)" \
+		-D CMAKE_CXX_FLAGS_DEBUG="$(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CXXFLAGS)" \
 		$(CMAKERCOPT) $(CMAKEIDOPT) \
 		-D CMAKE_C_COMPILER_AR=$(AR) \
 		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \
@@ -620,7 +739,7 @@ $(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built: $(DEPS_CACHE)/SoundTouch-
 	patch -Np1<$(BUILD_MISCDIR)/SoundTouch-AVX-patches.patch && \
 	$(SED) -i -e 's|MAX_BPM_VALID 190|MAX_BPM_VALID 1000|' -e 's|MAX_BPM_RANGE 200|MAX_BPM_RANGE 300|' include/BPMDetect.h && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
-	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
 		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
@@ -696,7 +815,7 @@ $(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built: $(DEPS_CACHE)/libjpeg-$(LIBJPEG
 	$(TAR) xf $(DEPS_CACHE)/libjpeg-$(LIBJPEG_VERSION).tar.gz -C $(DEPS_PREFIX)/libjpeg --strip-components=1 && \
 	cd $(DEPS_PREFIX)/libjpeg && \
 	PKG_CONFIG="$(PKG_CONFIG)" CC="$(CC)" CXX="$(CXX)" \
-	LDFLAGS="$(LDFLAGS)" $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+	LDFLAGS="$(LDFLAGS)" $(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
 		-D CMAKE_C_COMPILER="$(CC)" \
@@ -738,7 +857,7 @@ $(DEPS_PREFIX)/glm-$(GLM_VERSION).built: $(DEPS_CACHE)/glm-$(GLM_VERSION).tar.gz
 	$(TAR) xf $(DEPS_CACHE)/glm-$(GLM_VERSION).tar.gz -C $(DEPS_PREFIX)/glm --strip-components=1 && \
 	cd $(DEPS_PREFIX)/glm && \
 	PKG_CONFIG="$(PKG_CONFIG)" \
-	LDFLAGS="$(LDFLAGS)" $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+	LDFLAGS="$(LDFLAGS)" $(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D GLM_BUILD_TESTS=OFF \
 		-D GLM_BUILD_LIBRARY=OFF \
 		-D BUILD_SHARED_LIBS=OFF \
@@ -767,13 +886,13 @@ $(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built: $(DEPS_PREFIX)/zlib-$(ZLIB_VERSIO
 	$(MKDIR_P) $(DEPS_PREFIX)/libpng/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/libpng-$(LIBPNG_VERSION).tar.gz -C $(DEPS_PREFIX)/libpng --strip-components=1 && \
 	cd $(DEPS_PREFIX)/libpng && PKG_CONFIG="$(PKG_CONFIG)" \
-		./configure lt_cv_prog_gnu_ld=yes --host=$(host) --build=$(build) --prefix="$(DEPS_PREFIX)" \
+		$(CONFIGURE_PFX) ./configure lt_cv_prog_gnu_ld=yes --host=$(host) --build=$(build) --prefix="$(DEPS_PREFIX)" \
 		$(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
 		--disable-tools --disable-tests --with-gnu-ld --enable-hardware-optimizations=on \
 			CC="$(CC) $(ZLIB_CFLAGS)" RANLIB="$(RANLIB)" AR="$(AR)" CXX="$(CXX)" LD="$(LD)" \
 			CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS) $(ZLIB_LIBS)" && \
-	$(MAKE) $(MAKEFLAGS) && \
-	$(MAKE) $(MAKEFLAGS) install
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) && \
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors libpng
 	touch $@
 else
@@ -790,7 +909,7 @@ $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built: $(DEPS_CACHE)/bzip2-$(BZIP2_VERSION
 	$(TAR) xf $(DEPS_CACHE)/bzip2-$(BZIP2_VERSION).tar.gz -C $(DEPS_PREFIX)/bzip2 --strip-components=1 && \
 	cd $(DEPS_PREFIX)/bzip2 && \
 	$(if $(findstring linux,$(host_os)),true,$(if $(STATICBUILD),true,cp $(BUILD_MISCDIR)/libbz2-Makefile-mingw) ./) && \
-	$(MAKE) $(MAKEFLAGS) PREFIX="$(DEPS_PREFIX)" RANLIB="$(RANLIB)" AR="$(AR)" CC="$(CC)" CXX="$(CXX)" LD="$(LD)" CFLAGS="$(CFLAGS) $(if $(STATICBUILD),,-fPIC)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS) $(if $(STATICBUILD),,-fPIC)" \
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) PREFIX="$(DEPS_PREFIX)" RANLIB="$(RANLIB)" AR="$(AR)" CC="$(CC)" CXX="$(CXX)" LD="$(LD)" CFLAGS="$(CFLAGS) $(if $(STATICBUILD),,-fPIC)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS) $(if $(STATICBUILD),,-fPIC)" \
 		$(if $(STATICBUILD),"libbz2.a",$(if $(findstring linux,$(host_os)),-f Makefile-libbz2_so,-f libbz2-Makefile-mingw install)) && \
 	cp -f bzlib.h $(DEPS_PREFIX)/include/ && \
 	test -f $(DEPS_PREFIX)/lib/pkgconfig/bzip2.pc || { cp -f $(if $(STATICBUILD),"libbz2.a",libbz2*$(DLLEXT)*) $(DEPS_PREFIX)/lib/ && \
@@ -821,8 +940,8 @@ $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built: $(DEPS_CACHE)/zlib-$(ZLIB_VERSION).ta
 	$(TAR) xf $(DEPS_CACHE)/zlib-$(ZLIB_VERSION).tar.gz -C $(DEPS_PREFIX)/zlib --strip-components=1 && \
 	cd $(DEPS_PREFIX)/zlib/build && PKG_CONFIG="$(PKG_CONFIG)" \
 		$(if $(findstring linux,$(host_os)),,uname=mingw CHOST=$(host)) RANLIB="$(RANLIB)" AR="$(AR)" CC="$(CC)" CXX="$(CXX)" LD="$(LD)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)" \
-		../configure --zlib-compat --prefix="$(DEPS_PREFIX)" $(if $(or $(DISABLE_NATIVE),$(ENABLE_DEBUG)),--without-optimizations,) $(if $(STATICBUILD),--static,) && \
-	$(MAKE) $(MAKEFLAGS) install && \
+		$(CONFIGURE_PFX) ../configure --zlib-compat --prefix="$(DEPS_PREFIX)" $(if $(or $(DISABLE_NATIVE),$(ENABLE_DEBUG)),--without-optimizations,) $(if $(STATICBUILD),--static,) && \
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) install && \
 	$(SED) -i 's|sharedlibdir=.*|sharedlibdir=$${libdir}|' $(DEPS_PREFIX)/lib/pkgconfig/zlib.pc && \
 	$(PKG_CONFIG) --exists --print-errors zlib
 	touch $@
@@ -848,7 +967,7 @@ $(DEPS_PREFIX)/fmt-$(FMT_VERSION).built: $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz
 	$(TAR) xf $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz -C $(DEPS_PREFIX)/fmt --strip-components=1 && \
 	cd $(DEPS_PREFIX)/fmt && \
 	PKG_CONFIG="$(PKG_CONFIG)" CC="$(CC)" CXX="$(CXX)" LDFLAGS="$(LDFLAGS) $(FMT_EXTRA_BUILDFLAGS)" \
-	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-DCMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-DCMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
 		-DCMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
@@ -919,7 +1038,7 @@ $(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built: $(DEPS_CACHE)/nsync-$(NSYNC_VERSION
 	$(SED) -i 's|Windows.h|windows.h|' platform/win32/platform_c++11_os.h && \
 	$(SED) -i -e 's|.*"/TP".*||' -e 's|install (TARGETS nsync EXPORT nsync|\0 OPTIONAL|' CMakeLists.txt && \
 	PKG_CONFIG="$(PKG_CONFIG)" CC="$(CC)" CXX="$(CXX)" LDFLAGS="$(LDFLAGS) -xnone" \
-	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-DCMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-DCMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
 		-DCMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
@@ -950,6 +1069,44 @@ endif # BUILD_NSYNC
 if BUILD_FREETYPE2
 FREETYPE2_CFLAGS += $(shell $(PKG_CONFIG) --cflags freetype2)
 FREETYPE2_LIBS += $(shell $(PKG_CONFIG) --libs freetype2)
+if WASM_PLATFORM
+# Use CMake for WASM to avoid apinames native tool issue
+$(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built: $(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz
+	rm -rf $(DEPS_PREFIX)/freetype
+	$(MKDIR_P) $(DEPS_PREFIX)/freetype/build $(DEPS_PREFIX)/lib/pkgconfig
+	$(TAR) xf $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz -C $(DEPS_PREFIX)/freetype --strip-components=1 && \
+	cd $(DEPS_PREFIX)/freetype && \
+	PKG_CONFIG="$(PKG_CONFIG)" \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
+		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
+		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
+		-D CMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
+		-D CMAKE_C_COMPILER="$(CC)" \
+		-D CMAKE_C_FLAGS="$(CFLAGS)" \
+		-D CMAKE_CXX_COMPILER="$(CXX)" \
+		-D CMAKE_CXX_FLAGS="$(CXXFLAGS)" \
+		-D CMAKE_C_COMPILER_AR="$(AR)" \
+		-D CMAKE_C_COMPILER_RANLIB="$(RANLIB)" \
+		-D FT_DISABLE_HARFBUZZ=ON \
+		-D FT_DISABLE_BROTLI=ON \
+		-D FT_REQUIRE_ZLIB=ON \
+		-D FT_REQUIRE_PNG=ON \
+		-D FT_REQUIRE_BZIP2=ON \
+		-D BUILD_SHARED_LIBS=OFF \
+		-D ZLIB_INCLUDE_DIR="$(DEPS_PREFIX)/include" \
+		-D PNG_PNG_INCLUDE_DIR="$(DEPS_PREFIX)/include" \
+		-D BZIP2_INCLUDE_DIR="$(DEPS_PREFIX)/include" \
+		-D ZLIB_LIBRARY="$(DEPS_PREFIX)/lib/libz.a" \
+		-D PNG_LIBRARY="$(DEPS_PREFIX)/lib/libpng16.a" \
+		-D BZIP2_LIBRARY_RELEASE="$(DEPS_PREFIX)/lib/libbz2.a" \
+		-D BZIP2_LIBRARY_DEBUG="$(DEPS_PREFIX)/lib/libbz2.a" \
+		-D BZIP2_LIBRARIES="$(DEPS_PREFIX)/lib/libbz2.a" && \
+	$(CMAKE) --build build $(CMAKEPAROPT) && \
+	$(CMAKE) --install build
+	$(PKG_CONFIG) --exists --print-errors freetype2
+	touch $@
+else
 $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built: $(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/freetype
 	$(MKDIR_P) $(DEPS_PREFIX)/freetype/build $(DEPS_PREFIX)/lib/pkgconfig
@@ -958,15 +1115,16 @@ $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built: $(DEPS_PREFIX)/libpng-$(LIBP
 	$(SED) -i 's|TOP_DIR :=.*||' builds/unix/unix-def.in && \
 	patch -Np1<$(BUILD_MISCDIR)/freetype-win.patch && \
 	PKG_CONFIG="$(PKG_CONFIG)" \
-		./configure lt_cv_prog_gnu_ld=yes --host=$(host) --prefix="$(DEPS_PREFIX)" \
+		$(CONFIGURE_PFX) ./configure lt_cv_prog_gnu_ld=yes --host=$(host) --prefix="$(DEPS_PREFIX)" \
 		--with-zlib=yes --with-bzip2=yes --with-png=yes --with-harfbuzz=no --with-brotli=no --with-librsvg=no \
 		$(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
 		RANLIB="$(RANLIB)" AR="$(AR)" CC="$(CC)" CXX="$(CXX)" LD="$(LD)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" \
 		LDFLAGS="$(LDFLAGS)" && \
-	$(MAKE) $(MAKEFLAGS) && \
-	$(MAKE) $(MAKEFLAGS) install
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) && \
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors freetype2
 	touch $@
+endif # WASM_PLATFORM
 else
 $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -995,7 +1153,7 @@ $(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built: $(DEPS_CACHE)/simdutf-$(SIMDUTF
 	$(TAR) xf $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz -C $(DEPS_PREFIX)/simdutf --strip-components=1 && \
 	cd $(DEPS_PREFIX)/simdutf && \
 	PKG_CONFIG="$(PKG_CONFIG)" CC="$(CC)" CXX="$(CXX)" LDFLAGS="$(LDFLAGS) $(SIMDUTF_EXTRA_BUILDFLAGS)" \
-	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
 		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
@@ -1039,7 +1197,7 @@ $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built: $(DEPS_CACHE)/liblzma-$(LZMA_VERSI
 	$(TAR) xf $(DEPS_CACHE)/liblzma-$(LZMA_VERSION).tar.gz -C $(DEPS_PREFIX)/liblzma --strip-components=1 && \
 	cd $(DEPS_PREFIX)/liblzma && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
-	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
 		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
@@ -1084,7 +1242,7 @@ $(DEPS_PREFIX)/ctre-$(CTRE_VERSION).built: $(DEPS_CACHE)/ctre-$(CTRE_VERSION).ta
 	$(TAR) xf $(DEPS_CACHE)/ctre-$(CTRE_VERSION).tar.gz -C $(DEPS_PREFIX)/ctre --strip-components=1 && \
 	cd $(DEPS_PREFIX)/ctre && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
-	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
 		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
 		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
@@ -1118,11 +1276,11 @@ $(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built: $(DEPS_CACHE)/libacl-$(LIBACL_VER
 	cd $(DEPS_PREFIX)/libacl && \
 	cd build && \
 	PKG_CONFIG="$(PKG_CONFIG)" \
-	../configure lt_cv_prog_gnu_ld=yes --host=$(host) --build=$(build) --prefix="$(DEPS_PREFIX)" \
+	$(CONFIGURE_PFX) ../configure lt_cv_prog_gnu_ld=yes --host=$(host) --build=$(build) --prefix="$(DEPS_PREFIX)" \
 		$(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
 		CC="$(CC)" RANLIB="$(RANLIB)" AR="$(AR)" CXX="$(CXX)" LD="$(LD)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" && \
-	$(MAKE) $(MAKEFLAGS) && \
-	$(MAKE) $(MAKEFLAGS) install
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) && \
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors libacl
 	touch $@
 else
@@ -1144,7 +1302,7 @@ $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-
 	$(SED) -i -e 's|time_t ctime_sec, mtime_sec;|int64_t ctime_sec, mtime_sec;|' libarchive/archive_match.c && \
 	cd build && \
 	PKG_CONFIG="$(PKG_CONFIG_PLUS_BUNDLED_OSSL)" \
-	../configure lt_cv_prog_gnu_ld=yes --host=$(host) --build=$(build) --prefix="$(DEPS_PREFIX)" \
+	$(CONFIGURE_PFX) ../configure lt_cv_prog_gnu_ld=yes --host=$(host) --build=$(build) --prefix="$(DEPS_PREFIX)" \
 		$(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
 		--disable-tools --disable-tests --with-gnu-ld --disable-bsdtar --disable-bsdcat --disable-bsdcpio \
 		--disable-bsdunzip --without-xml2 --without-expat $(if $(OPENSSL_CFLAGS),--with-openssl --with-zstd,--without-openssl --without-zstd) \
@@ -1153,8 +1311,8 @@ $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-
 		CC="$(CC)" RANLIB="$(RANLIB)" AR="$(AR)" CXX="$(CXX)" LD="$(LD)" \
 		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(OPENSSL_CFLAGS) $(LIBACL_CFLAGS) $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
 		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(OPENSSL_LIBS) $(LIBACL_LIBS) $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
-	$(MAKE) $(MAKEFLAGS) && \
-	$(MAKE) $(MAKEFLAGS) install
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) && \
+	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG_PLUS_BUNDLED_OSSL) --exists --print-errors libarchive
 	touch $@
 else
@@ -1178,6 +1336,50 @@ $(DEPS_PREFIX)/winpthread-noversion.built:
 endif # BUILD_WINPTHREAD_NOVERSION
 
 #####################################################################################################################################################
+## WASM BINARY EMBEDDING (using #embed instead of inline assembly)
+#####################################################################################################################################################
+
+# For WASM, inline assembly .incbin doesn't work. Generate source files using #embed instead.
+# The original src/Binary/*.cpp files check MCENGINE_PLATFORM_WASM and become empty stubs.
+if WASM_PLATFORM
+EMBED_SCRIPT := $(srcdir)/build-aux/gen_binary_embed.py
+
+# Shader files (GLES32 for WASM)
+WASM_SHADER_SYMS := \
+	GL_cursortrail_vsh:$(SHADERS_INCDIR)GL_cursortrail_v.glsl \
+	GL_cursortrail_fsh:$(SHADERS_INCDIR)GL_cursortrail_f.glsl \
+	GL_slider_vsh:$(SHADERS_INCDIR)GL_slider_v.glsl \
+	GL_slider_fsh:$(SHADERS_INCDIR)GL_slider_f.glsl \
+	GL_flashlight_vsh:$(SHADERS_INCDIR)GL_flashlight_v.glsl \
+	GL_flashlight_fsh:$(SHADERS_INCDIR)GL_flashlight_f.glsl \
+	GL_actual_flashlight_vsh:$(SHADERS_INCDIR)GL_actual_flashlight_v.glsl \
+	GL_actual_flashlight_fsh:$(SHADERS_INCDIR)GL_actual_flashlight_f.glsl \
+	GL_smoothclip_vsh:$(SHADERS_INCDIR)GL_smoothclip_v.glsl \
+	GL_smoothclip_fsh:$(SHADERS_INCDIR)GL_smoothclip_f.glsl
+
+WASM_EMBED_SHADERS := $(builddir)/gen/shaders_embed.cpp
+WASM_EMBED_CURL := $(builddir)/gen/curl_blob_embed.cpp
+WASM_EMBED_MISC := $(builddir)/gen/misc_bin_embed.cpp
+
+$(WASM_EMBED_SHADERS): $(EMBED_SCRIPT) $(EXTRA_BINDEPS)
+	$(MKDIR_P) $(dir $@)
+	$(PYTHON) $(EMBED_SCRIPT) $@ $(WASM_SHADER_SYMS)
+
+$(WASM_EMBED_CURL): $(EMBED_SCRIPT) $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
+	$(MKDIR_P) $(dir $@)
+	$(PYTHON) $(EMBED_SCRIPT) $@ curl_ca_embed:$(CACERT_INCDIR)cacert.pem
+
+$(WASM_EMBED_MISC): $(EMBED_SCRIPT) $(MISC_INCDIR)convar_template.html
+	$(MKDIR_P) $(dir $@)
+	$(PYTHON) $(EMBED_SCRIPT) $@ convar_template:$(MISC_INCDIR)convar_template.html
+
+WASM_EMBED_SOURCES := $(WASM_EMBED_SHADERS) $(WASM_EMBED_CURL) $(WASM_EMBED_MISC)
+neosu_SOURCES += $(WASM_EMBED_SOURCES)
+else
+WASM_EMBED_SOURCES :=
+endif # WASM_PLATFORM
+
+#####################################################################################################################################################
 ## END EXTERNAL DEPENDENCY BUILD/SETUP SECTION
 #####################################################################################################################################################
 
@@ -1188,6 +1390,7 @@ endif # BUILD_WINPTHREAD_NOVERSION
 # a list of all dependencies which need to be looked over before compiling the main executable
 # everything is here, no matter the build configuration, but unneeded dependencies are just marked with a dummy file to signal completion
 BUILT_SOURCES := \
+	$(WASM_EMBED_SOURCES) \
 	$(DEPS_PREFIX)/winpthread-noversion.built \
 	$(DEPS_PREFIX)/mimalloc-$(MIMALLOC_VERSION).built \
 	$(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built \
@@ -1291,11 +1494,14 @@ neosu_CXXFLAGS := \
 	$(NEOSU_CXXFLAGS) \
 	$(CXXFLAGS_EXTRA)
 
-# Wl,--start-group with no --end-group is a stupid hack.
+# Wl,--start-group with no --end-group is a stupid hack. it's required to make the linker resolve all the symbols on windows, for some reason (i don't know why)
+# harmless on other platforms, i think
+# WASM_PRELOAD_FLAGS and NATIVE_LDFLAGS come from configure (empty when not applicable)
 neosu_LDFLAGS := \
+	$(WASM_PRELOAD_FLAGS) \
+	$(NATIVE_LDFLAGS) \
 	$(MIMALLOC_OBJ) \
 	$(MIMALLOC_DYNAMIC_LIBS) \
-	-Wl,-rpath='$$ORIGIN/lib',-rpath='$$ORIGIN' \
 	-Wl,--start-group \
 	$(CURL_LIBS) \
 	$(SDL3_LIBS) \
@@ -1316,7 +1522,8 @@ neosu_LDFLAGS := \
 
 # make won't be able to track these if they change, because we use .incbin on them
 # so add them manually to tracking
-EXTRA_neosu_DEPENDENCIES := $(shell find $(CACERT_INCDIR) $(SHADERS_INCDIR) $(MISC_INCDIR) -maxdepth 1 -mindepth 1 -type f -exec printf '%s ' '{''}' ';')
+# also add the extracted maps dependency here (only applicable for wasm but avoids += (slow))
+EXTRA_neosu_DEPENDENCIES := $(EXTRACTED_MAPS_DEP) $(shell find $(CACERT_INCDIR) $(SHADERS_INCDIR) $(MISC_INCDIR) -maxdepth 1 -mindepth 1 -type f -exec printf '%s ' '{''}' ';')
 
 if WIN_PLATFORM
 # mimalloc new/delete override for windows
@@ -1342,7 +1549,10 @@ bear.cfg: bear-check-version
 	  echo '"compilation": {'; \
 	  echo '"compilers_to_recognize": ['; \
 	  echo '{'; \
-	  echo '"executable": "emc++"'; \
+	  echo '"executable": "emcc"'; \
+	  echo '},'; \
+	  echo '{'; \
+	  echo '"executable": "em++"'; \
 	  echo '},'; \
 	  echo '{'; \
 	  echo '"executable": "$(CC_REAL)"'; \
@@ -1375,8 +1585,8 @@ bear.cfg: bear-check-version
 # also run an extra step to exclude PCH flags
 # this is so that you avoid missing includes when it's already in the PCH and clangd then thinks it's already included
 compile_commands.json: bear.cfg mostlyclean-compile
-	$(BEAR) --config bear.cfg --append -- $(MAKE) $(AM_MAKEFLAGS) $(BUILT_SOURCES) && \
-	$(BEAR) --config bear.cfg --append -- $(MAKE) $(AM_MAKEFLAGS) $(neosu_OBJECTS) $(neosu_DEPENDENCIES) $(EXTRA_neosu_DEPENDENCIES) && \
+	$(BEAR) --config bear.cfg --append -- $(MAKE_PFX) $(MAKE) $(AM_MAKEFLAGS) $(BUILT_SOURCES) && \
+	$(BEAR) --config bear.cfg --append -- $(MAKE_PFX) $(MAKE) $(AM_MAKEFLAGS) $(neosu_OBJECTS) $(neosu_DEPENDENCIES) $(EXTRA_neosu_DEPENDENCIES) && \
 	$(SED) -i '/"-include",/{N;/"\.\/pch\.h",/d;}' $@
 
 $(abs_top_srcdir)/.clangd: compile_commands.json
@@ -1409,6 +1619,13 @@ endif
 
 # more conditionals for each individual dependency depending on whether they were built locally, and also if they were built shared
 # if they're external or built statically we don't need to do anything
+if WASM_PLATFORM
+# WASM: assets are preloaded into the .wasm via --preload-file, just install the web files
+install-libs:
+	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)"
+	$(INSTALL) -m 644 neosu.html neosu.js neosu.wasm "$(DESTDIR)$(bindir)/"
+	@test -f neosu.data && $(INSTALL) -m 644 neosu.data "$(DESTDIR)$(bindir)/" || true
+else
 install-libs:
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)/screenshots"
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)/$(LIBDEST)"
@@ -1490,6 +1707,7 @@ if !WIN_PLATFORM
 	find "$(DESTDIR)$(bindir)/lib" -maxdepth 1 -name '*'.so'*' -execdir $(PATCHELF) --set-rpath '$$ORIGIN:$$ORIGIN/../' '{''}' ';'
 	find "$(DESTDIR)$(bindir)" -maxdepth 1 -name '*'.so'*' -execdir $(PATCHELF) --set-rpath '$$ORIGIN:$$ORIGIN/lib' '{''}' ';'
 endif
+endif # WASM_PLATFORM
 
 # install hooks
 # windows: create a shortcut to launch with a given audio backend (specified in the shortcut target), only if more than 1 is enabled
@@ -1511,13 +1729,15 @@ if AUDIO_SHORTCUTS
 		rm temp.vbs; \
 	done
 endif
-if !WIN_PLATFORM
+if LINUX_PLATFORM
 	@cd "$(DESTDIR)$(bindir)" && \
 	$(LN_S) -f $(PROGRAMS) McEngine && \
 	$(LN_S) -f $(PROGRAMS) McOsu
 else
+if WIN_PLATFORM
 	@cp -P neosu.pdb "$(DESTDIR)$(bindir)" &>/dev/null || true # don't fail install if we had no pdb
-endif
+endif # WIN_PLATFORM
+endif # LINUX_PLATFORM
 
 uninstall-local:
 	rm -rf "$(DESTDIR)$(bindir)/"

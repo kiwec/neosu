@@ -35,6 +35,27 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
+# early emscripten detection - must happen before checks that use host_os
+# emconfigure sets CC=emcc before running configure
+AS_IF([[case "$CC" in
+  *emcc*) WASM_CC=$CC ;;
+esac]])
+AS_IF([test -n "$WASM_CC"], [
+    # override host triplet so subsequent checks see WASM, not linux
+    host_cpu=wasm32
+    host_vendor=local
+    host_os=unknown-emscripten
+    host=${host_cpu}-${host_vendor}-${host_os}
+    host_alias=$host
+    target_cpu=$host_cpu
+    target_vendor=$host_vendor
+    target_os=$host_os
+    target=$host
+    target_alias=''
+    # WASM uses OpenGL ES 3.2
+    AS_IF([test -z "$with_renderer"], [with_renderer=opengles])
+])
+
 AC_USE_SYSTEM_EXTENSIONS
 
 AC_DEFUN([AX_COUNT_CPUS], [
@@ -96,6 +117,12 @@ AC_DEFUN([AC_PROG_CMAKE], [
         AC_MSG_ERROR([cmake not found - required for building dependencies])
     fi
 ])
+AC_DEFUN([AC_PROG_PYTHON], [
+    AC_CHECK_PROG([PYTHON], [python3], [python3])
+    if test -z "$PYTHON"; then
+        AC_CHECK_PROG([PYTHON], [python], [python])
+    fi
+])
 AC_DEFUN([AC_PROG_MESON], [
     AC_CHECK_PROG([MESON], [meson], [meson])
     if test -z "$MESON"; then
@@ -138,6 +165,8 @@ AC_PROG_NINJA
 AC_PROG_UNZIP
 AC_PROG_MESON
 AC_PROG_CMAKE
+AC_PROG_PYTHON
+AC_SUBST([PYTHON])
 
 AC_CHECK_PROG([BEAR], [bear], [bear])
 AC_SUBST([BEAR])
@@ -412,28 +441,58 @@ AS_IF([test "x$enable_lto" != "xno"], [
     disable_lto=no
 ])
 
-AS_IF([test "x$enable_clang" = "xyes"], [
-    CC=clang
-    CXX=clang++
-    CXXFLAGS="$CXXFLAGS -Qunused-arguments -Wno-c2x-extensions"
-    CFLAGS="$CFLAGS -Qunused-arguments"
-    LDFLAGS="$LDFLAGS"
-    CLANG=yes
+# detect emscripten (CC=emcc when using emconfigure)
+AS_IF([[case "$CC" in
+  *emcc*) WASM_CC=$CC ;;
+esac]])
+
+AS_IF([test -n "$WASM_CC"], [
+    # emscripten/WASM build
+    CXXFLAGS="$CXXFLAGS -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument -Wno-c2x-extensions"
+    CFLAGS="$CFLAGS -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument"
+    LDFLAGS="$LDFLAGS -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument"
     _ccache_ctype="clang"
     _cid="Clang"
-    AC_SUBST([CLANG])
-],[
-    CC=gcc
-    CXX=g++
-    CXXFLAGS="$CXXFLAGS -fno-semantic-interposition"
-    CFLAGS="$CFLAGS -fno-semantic-interposition"
-    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -fimplicit-constexpr"
-    _ccache_ctype="gcc"
-    _cid="GNU"
+], [
+    AS_IF([test "x$enable_clang" = "xyes"], [
+        CC=clang
+        CXX=clang++
+        CXXFLAGS="$CXXFLAGS -Qunused-arguments -Wno-c2x-extensions"
+        CFLAGS="$CFLAGS -Qunused-arguments"
+        LDFLAGS="$LDFLAGS"
+        CLANG=yes
+        _ccache_ctype="clang"
+        _cid="Clang"
+        AC_SUBST([CLANG])
+    ],[
+        CC=gcc
+        CXX=g++
+        CXXFLAGS="$CXXFLAGS -fno-semantic-interposition"
+        CFLAGS="$CFLAGS -fno-semantic-interposition"
+        NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -fimplicit-constexpr"
+        _ccache_ctype="gcc"
+        _cid="GNU"
+    ])
 ])
 
-AS_IF([test "$host_cpu" = "x86_64" && test -z "$LLVMMINGW"], [
-    # this is only possible on x86_64, and not with llvm-mingw
+# WASM-specific defaults: disable nsync+mimalloc unless explicitly requested
+AS_IF([test -n "$WASM_CC"], [
+    # python is required for WASM builds (for generating #embed source files)
+    AS_IF([test -z "$PYTHON"], [
+        AC_MSG_ERROR([python3 not found - required for WASM builds to generate embedded binary sources])
+    ])
+    # nsync doesn't build properly with emscripten
+    AS_IF([test "x$with_nsync" != "xyes"], [
+        with_nsync=no
+    ])
+    # mimalloc has issues with emscripten's -xnone handling
+    AS_IF([test "x$with_mimalloc" != "xyes"], [
+        with_mimalloc=no
+    ])
+])
+
+AS_IF([test "$host_cpu" = "x86_64" && test -z "$LLVMMINGW" && test -z "$WASM_CC"], [
+    # this is only possible on x86_64, and not with llvm-mingw or wasm
     # faster tls access
     CFLAGS="$CFLAGS -mtls-dialect=gnu2"
     CXXFLAGS="$CXXFLAGS -mtls-dialect=gnu2"
@@ -452,7 +511,36 @@ AC_SUBST([PKG_CONFIG_PATH])
 AC_SUBST([PKG_CONFIG_PATH_CUSTOM])
 
 win_subsystem_ver=6.00
-AS_IF([test "$host_os" = "linux-gnu"], [
+AS_IF([test -n "$WASM_CC"], [
+    # WASM/Emscripten build
+    NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -U__linux__ -D__EMSCRIPTEN__"
+    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sWASM=1 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB"
+    # --emrun for support for running the .html with emrun (temporary until we get a real webpage for it)
+    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sFULL_ES3 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sINITIAL_MEMORY=1536MB -sWASM=1 --emrun"
+
+    # the Songs folder preload is definitely temporary, just for testing purposes to have something to play
+    WASM_PRELOAD_FLAGS="--preload-file \$(srcdir)/\$(ASSETS_DIR)/fonts@fonts --preload-file \$(srcdir)/\$(ASSETS_DIR)/materials@materials --preload-file \$(builddir)/wasm-maps@/libsdl/Songs"
+    AC_SUBST([WASM_PRELOAD_FLAGS])
+
+    # pkg-config wrapper for emscripten
+    install -Dm755 /dev/stdin $PWD/build/pkg-config <<__EOF__
+#!/usr/bin/env bash
+PKG_CONFIG_PATH="$PKG_CONFIG_PATH" $PKGCONF $pc_addflags "\$@"
+__EOF__
+
+    # forward these for building dependencies
+    AC_SUBST([CMAKE_CONF_PFX], [emcmake])
+    AC_SUBST([MAKE_PFX], [emmake])
+    AC_SUBST([CONFIGURE_PFX], [emconfigure])
+
+    CMAKE_SYSTEM_NAME="Emscripten"
+    CMAKE_GEN="Ninja"
+    SYSNAME="wasm"
+    DLLEXT=".so"
+    LIBPREFIX="lib"
+    EXEEXT=".html"
+    AC_DEFINE([MCENGINE_PLATFORM_WASM], [1], [Define if compiling for WASM with Emscripten.])
+], [test "$host_os" = "linux-gnu"], [
     AS_IF([test "$host_cpu" = "i686"], [
         install -Dm755 /dev/stdin $PWD/build/$target-$CC <<EOF
 #!/usr/bin/env bash
@@ -495,6 +583,10 @@ __EOF__
     SYSNAME="linux"
     DLLEXT=".so"
     LIBPREFIX="lib"
+
+    # fixup linker runtime paths
+    NATIVE_LDFLAGS="-Wl,-rpath='\$\$ORIGIN/lib',-rpath='\$\$ORIGIN'"
+    AC_SUBST([NATIVE_LDFLAGS])
 
     AC_DEFINE([MCENGINE_PLATFORM_LINUX], [1], [Define if compiling for Linux.])
 ],[
@@ -544,7 +636,8 @@ AC_CHECK_PROG([CCACHE], [ccache], [ccache])
 # for linux, so AC_PATH_PROG doesn't work for that (and isn't needed anyways)
 # this is done mostly for mingw targets so that configure --host=x86_64-w64-mingw32 --enable-clang
 # saves the full path to the llvm-mingw compiler, in case $PATH changes for future compiles
-AS_IF([test "$host_os" = "linux-gnu"],[
+# for wasm, emconfigure sets CC/CXX to full paths already
+AS_IF([test "$host_os" = "linux-gnu" || test -n "$WASM_CC"],[
     AS_VAR_SET([CC_REAL], [$CC])
     AS_VAR_SET([CXX_REAL], [$CXX])
 ],[
@@ -674,13 +767,17 @@ AC_SUBST([DLLEXT])
 AC_SUBST([LIBPREFIX])
 
 # don't omit frame pointers, it's not worth it on 64-bit, and having them makes profiling/debugging better
-AS_IF([test "$host_cpu" != "i686"], [COMMON_FLAGS="$COMMON_FLAGS -mcmodel=small -fno-omit-frame-pointer -momit-leaf-frame-pointer"])
+AS_IF([test "$host_cpu" != "i686" && test -z "$WASM_CC"], [COMMON_FLAGS="$COMMON_FLAGS -mcmodel=small -fno-omit-frame-pointer -momit-leaf-frame-pointer"])
 
 CPPFLAGS="$CPPFLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64"
-COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing -ftls-model=initial-exec -pthread"
+AS_IF([test -z "$WASM_CC"], [
+    COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing -ftls-model=initial-exec -pthread"
+    LDFLAGS="$LDFLAGS -static-libstdc++ -static-libgcc -pthread"
+], [
+    COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing"
+])
 CXXFLAGS="$CXXFLAGS $COMMON_FLAGS -fno-exceptions" # -fno-unwind-tables -fno-rtti
 CFLAGS="$CFLAGS $COMMON_FLAGS"
-LDFLAGS="$LDFLAGS -static-libstdc++ -static-libgcc -pthread"
 
 AC_SUBST([CXXFLAGS])
 AC_SUBST([CFLAGS])
@@ -819,7 +916,8 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         CFLAGS="-O3 ${CFLAGS//-O2/}"
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-O1"
 
-        AS_IF([test "x$enable_clang" != "xyes"], [
+        AS_IF([test "x$enable_clang" != "xyes" && test -z "$WASM_CC"], [
+            # -fipa-pta is GCC-only, skip for clang and emscripten
             CXXFLAGS="$CXXFLAGS -fipa-pta"
             CFLAGS="$CFLAGS -fipa-pta"
         ])
@@ -852,10 +950,16 @@ AS_IF([test "x$enable_omp" = "xyes"], [
 _using_gcc_lto=
 AS_IF([test "x$enable_lto" != "xno"], [
     AX_CHECK_COMPILE_FLAG([-flto=thin], [
-        AX_CHECK_LINK_FLAG([-flto=thin -fno-fat-lto-objects -fwhole-program-vtables], [
-            CXXFLAGS="$CXXFLAGS -flto=thin -fno-fat-lto-objects -fwhole-program-vtables"
-            CFLAGS="$CFLAGS -flto=thin -fno-fat-lto-objects -fwhole-program-vtables"
-            LDFLAGS="$LDFLAGS -flto=thin -fno-fat-lto-objects -fwhole-program-vtables"
+        # -fwhole-program-vtables causes LTO unit splitting issues with emscripten
+        AS_IF([test -n "$WASM_CC"], [
+            _lto_flags="-flto=thin -fno-fat-lto-objects"
+        ], [
+            _lto_flags="-flto=thin -fno-fat-lto-objects -fwhole-program-vtables"
+        ])
+        AX_CHECK_LINK_FLAG([$_lto_flags], [
+            CXXFLAGS="$CXXFLAGS $_lto_flags"
+            CFLAGS="$CFLAGS $_lto_flags"
+            LDFLAGS="$LDFLAGS $_lto_flags"
             AS_IF([test -z "$MSYS2_BUILD"], [
                 mkdir -p $PWD/.ltocache-clang
                 AX_CHECK_LINK_FLAG([-Wl,--thinlto-cache-dir=$PWD/.ltocache-clang], [
@@ -1086,6 +1190,7 @@ LIBACL_MIN_VERSION=2.3.1
 LIBACL_BUILD_VERSION=2.3.2
 CURL_MIN_VERSION=8.16.0 # due to websocket things, only very recent curl works
 CURL_BUILD_VERSION=8.18.0
+MBEDTLS_BUILD_VERSION=4.0.0 # for WASM SSL support
 OPENSSL_MIN_VERSION=3.0.0 # only for --enable-system-deps
 MPG123_MIN_VERSION=1.30.0
 MPG123_BUILD_VERSION=a06133928e6518bd65314c9cea12ccb5588703e9 # git mirror, latest as of Jan 13th, 2026 (1.33.5)
@@ -1099,7 +1204,7 @@ CTRE_MIN_VERSION=3.10.0 # regex support that doesn't have exceptions FORCED enab
 CTRE_BUILD_VERSION=6225211806c48230e5d17a1e555ef69e7325051c # git as of Jan 28th, 2026
 
 # always build these from source if we want to use them
-AC_SUBST([SOLOUD_VERSION], [40564fc8f9c7f162eb418c33f325952fd95e903a]) # neoloud fork
+AC_SUBST([SOLOUD_VERSION], [6ce4e8d0d8c4a281c6aa380b89bcbaa73ea01c39]) # neoloud fork
 #AC_SUBST([SOLOUD_VERSION], [cb174f53804d8ba3fc81a2dfa49879103fbbcb2e])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [b8e2a5f3f04483691962ab1a36ffa166abdcd675])
@@ -1123,8 +1228,11 @@ AS_IF([test "$SYSNAME" = "linux" || test "$SYSNAME" = "macos"], [
         PKG_CHECK_AUTO([LIBACL], [libacl >= $LIBACL_MIN_VERSION], [have_libacl=yes], [have_libacl=no])
     ])
 ], [
-    EXTRA_WIN_LDFLAGS="-lcomctl32"
-    AC_SUBST([EXTRA_WIN_LDFLAGS])
+    AS_IF([test "$SYSNAME" = "windows"], [
+        # Windows-specific libraries
+        EXTRA_WIN_LDFLAGS="-lcomctl32"
+        AC_SUBST([EXTRA_WIN_LDFLAGS])
+    ])
     have_curl="no"
     have_libacl="not required"
 ])
@@ -1260,13 +1368,24 @@ LIBACL_PREFIX="${DEPS_PREFIX}"
 AC_SUBST([LIBACL_VERSION])
 AC_SUBST([LIBACL_PREFIX])
 
-AS_IF([test "x$have_curl" != "xyes"], [have_curl="download"])
+AS_IF([test "x$have_curl" != "xyes"], [
+    AS_IF([test -n "$WASM_CC"], [
+        # WASM builds curl from source without OpenSSL
+        have_curl="build from source"
+        have_openssl="not required"
+    ], [
+        # other platforms download prebuilt curl with OpenSSL
+        have_curl="download"
+    ])
+])
 CURL_VERSION=$CURL_BUILD_VERSION
 CURL_PREFIX="${DEPS_PREFIX}"
 AC_SUBST([CURL_VERSION])
 AC_SUBST([CURL_PREFIX])
+MBEDTLS_VERSION=$MBEDTLS_BUILD_VERSION
+AC_SUBST([MBEDTLS_VERSION])
 
-# if we are using the prebuilt curl, we dont need libcrypto from the system
+# if we are using the prebuilt curl (with bundled OpenSSL), we don't need libcrypto from the system
 AS_IF([test "x$have_curl" = "xdownload" || test "x$have_openssl" = "xyes"], [
     AC_DEFINE([USE_OPENSSL], [1], [Defined if OpenSSL cryptographic primitives are available.])
 ])
@@ -1327,6 +1446,7 @@ AM_CONDITIONAL([WIN_PLATFORM], [test "$SYSNAME" = "windows"])
 AM_CONDITIONAL([WIN32_PLATFORM], [test "$SYSNAME" = "windows" && test "$host_cpu" = "i686"])
 AM_CONDITIONAL([MACOS_PLATFORM], [test "$SYSNAME" = "macos"])
 AM_CONDITIONAL([LINUX_PLATFORM], [test "$SYSNAME" = "linux"])
+AM_CONDITIONAL([WASM_PLATFORM], [test -n "$WASM_CC"])
 AM_CONDITIONAL([CLANG_BUILD], [test "$CLANG" = "yes"])
 
 AM_CONDITIONAL([STRIPBINS], [test "x$enable_strip" != "xno" && ! { test "$SYSNAME" = "windows" && test "$host_cpu" = "i686" ; } ])

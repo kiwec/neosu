@@ -139,7 +139,7 @@ void VisualProfiler::draw() {
 
                     addTextLine(fmt::format("GPU Vendor: {:s}"_cf, vendor), textFont, this->textLines);
                     addTextLine(fmt::format("Model: {:s}"_cf, model), textFont, this->textLines);
-                    addTextLine(fmt::format("Version: {:s}_cf", version), textFont, this->textLines);
+                    addTextLine(fmt::format("Version: {:s}"_cf, version), textFont, this->textLines);
                     addTextLine(
                         fmt::format("Resolution: {:d} x {:d}"_cf, (int)g->getResolution().x, (int)g->getResolution().y),
                         textFont, this->textLines);

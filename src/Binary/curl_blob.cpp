@@ -1,4 +1,7 @@
-#if !defined(_MSC_VER)  // not necessary
+#include "config.h"
+
+// MSVC uses schannel, WASM uses #embed-based generated files
+#if !defined(_MSC_VER) && !defined(MCENGINE_PLATFORM_WASM)
 
 #include "curl_blob.h"
 
@@ -10,4 +13,4 @@
 // (with CURLOPT_CAINFO_BLOB), without needing to rely on this data being found by curl/OpenSSL on the host
 INCBIN_C(curl_ca_embed, CACERT_INCDIR "cacert.pem")
 
-#endif  // MSC_VER
+#endif

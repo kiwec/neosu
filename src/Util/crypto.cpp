@@ -11,6 +11,7 @@
 #include <cstring>
 #include <cerrno>
 #include <random>
+#include <algorithm>
 
 #ifdef USE_OPENSSL
 #include <openssl/rand.h>
@@ -21,6 +22,8 @@
 #include "WinDebloatDefs.h"
 #include <windows.h>
 #include <wincrypt.h>
+#elif defined(__EMSCRIPTEN__)
+#include <unistd.h>  // for getentropy
 #else
 #include <sys/random.h>
 #endif
@@ -69,6 +72,16 @@ void get_bytes(u8* out, std::size_t s_out) {
     CryptReleaseContext(hCryptProv, 0);
 #elif __APPLE__
     arc4random_buf(out, s_out);
+#elif defined(__EMSCRIPTEN__)
+    // emscripten provides getentropy (max 256 bytes per call)
+    size_t offset = 0;
+    while(offset < s_out) {
+        size_t chunk = std::min(s_out - offset, size_t{256});
+        if(getentropy(out + offset, chunk) != 0) {
+            fubar_abort();
+        }
+        offset += chunk;
+    }
 #else
     size_t offset = 0;
     while(offset < s_out) {

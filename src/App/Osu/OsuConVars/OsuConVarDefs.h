@@ -980,7 +980,7 @@ CONVAR(user_include_relax_and_autopilot_for_stats, false, CLIENT | SKINS | SERVE
 
 // Unfinished features
 CONVAR(adblock, true, CLIENT | SKINS | SERVER);
-CONVAR(prefer_websockets, false, CLIENT, "prefer websocket connections over http polling");
+CONVAR(prefer_websockets, Env::cfg(OS::WASM) ? true : false, CLIENT, "prefer websocket connections over http polling");
 CONVAR(enable_spectating, false, CLIENT);
 CONVAR(allow_mp_invites, true, CLIENT, "allow multiplayer game invites from all users");
 CONVAR(allow_stranger_dms, true, CLIENT, "allow private messages from non-friends");

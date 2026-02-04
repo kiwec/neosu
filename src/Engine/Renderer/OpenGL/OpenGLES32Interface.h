@@ -77,11 +77,9 @@ class OpenGLES32Interface : public Graphics {
     void popStencil() final;
 
     // renderer settings
-#ifndef MCENGINE_PLATFORM_WASM  // not compatible with WebGL
     void setAlphaTesting(bool enabled) final;
     void setAlphaTestFunc(DrawCompareFunc alphaFunc, float ref) final;
     void setAntialiasing(bool aa) final;
-#endif
     void setClipping(bool enabled) final;
     void setBlending(bool enabled) final;
     void setBlendMode(DrawBlendMode blendMode) final;

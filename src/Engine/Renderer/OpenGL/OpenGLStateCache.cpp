@@ -56,6 +56,8 @@ void bindArrayBuffer(unsigned int GLbuffer) {
     }
 }
 
+// legacy client state functions - only available in desktop OpenGL, not GLES
+#if defined(MCENGINE_FEATURE_OPENGL) && !defined(MCENGINE_FEATURE_GLES32)
 void enableClientState(unsigned int GLarray) {
     if(GLarray != GL_VERTEX_ARRAY && GLarray != GL_TEXTURE_COORD_ARRAY && GLarray != GL_COLOR_ARRAY &&
        GLarray != GL_NORMAL_ARRAY) {
@@ -86,6 +88,7 @@ void disableClientState(unsigned int GLarray) {
         glDisableClientState(GLarray);
     }
 }
+#endif
 }  // namespace GLStateCache
 
 #endif

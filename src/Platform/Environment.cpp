@@ -489,6 +489,11 @@ std::vector<UString> Environment::getLogicalDrives() {
 const std::string &Environment::getPathToSelf(const char *argv0) {
     static std::string pathStr{};
     if(!pathStr.empty()) return pathStr;
+    if constexpr(Env::cfg(OS::WASM)) {
+        pathStr = MCENGINE_DATA_DIR;
+        return pathStr;
+    }
+
     namespace fs = std::filesystem;
 
     std::error_code ec;

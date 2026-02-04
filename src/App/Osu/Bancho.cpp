@@ -8,6 +8,8 @@
 
 #elif __APPLE__
 // nothing
+#elif defined(__EMSCRIPTEN__)
+// nothing
 #else
 
 #include <linux/limits.h>

@@ -281,7 +281,12 @@ std::string glDebugSeverityString(GLenum severity) {
 }  // namespace
 
 void SDLGLInterface::setGLLog(bool on) {
-    if(!g || !g.get() || !glDebugMessageCallbackARB) return;
+    if(!g || !g.get()) return;
+#ifdef MCENGINE_FEATURE_GLES32
+    // GLES 3.2 has debug functions as core, always available
+#else
+    if(!glDebugMessageCallbackARB) return;
+#endif
     if(on) {
         glEnable(GL_DEBUG_OUTPUT);
     } else {

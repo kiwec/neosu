@@ -306,6 +306,8 @@ typedef SSIZE_T ssize_t;
 #define MC_ARCH64
 #elif defined(_ARM64_) || defined(__aarch64__) || defined(__arm64__)
 #define MC_AARCH64
+#elif defined(__wasm32__) || defined(__EMSCRIPTEN__)
+#define MC_WASM32
 #else
 MC_MESSAGE("WARNING: unknown compilation arch??")
 #endif
@@ -332,6 +334,8 @@ MC_MESSAGE("WARNING: unknown compilation arch??")
 #define MC_ARCHSTR "i686"
 #elif defined(MC_AARCH64)
 #define MC_ARCHSTR "aarch64"
+#elif defined(MC_WASM32)
+#define MC_ARCHSTR "wasm32"
 #else
 #define MC_ARCHSTR "?"
 #endif  // MC_ARCH64
@@ -340,6 +344,8 @@ MC_MESSAGE("WARNING: unknown compilation arch??")
 #define OS_NAME "linux-" MC_ARCHSTR
 #elif defined(__APPLE__)
 #define OS_NAME "macos-" MC_ARCHSTR
+#elif defined(MCENGINE_PLATFORM_WASM) || defined(__EMSCRIPTEN__)
+#define OS_NAME "wasm-" MC_ARCHSTR
 #endif
 
 #endif  // MCENGINE_PLATFORM_WINDOWS

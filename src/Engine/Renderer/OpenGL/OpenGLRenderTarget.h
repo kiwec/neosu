@@ -48,6 +48,7 @@ class OpenGLRenderTarget final : public RenderTarget {
     std::array<int, 4> iViewportBackup{};
 
     static int iMaxMultiSamples;
+    static int iHaveGLInvalidateFramebuffer;
 };
 
 #endif

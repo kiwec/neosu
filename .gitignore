@@ -38,6 +38,7 @@ libraries-old
 dist/
 dist-*/
 debug*/
+/*-build/
 release/
 /build/
 /build-debug/
