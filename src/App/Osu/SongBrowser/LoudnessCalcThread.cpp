@@ -70,6 +70,7 @@ struct VolNormalization::LoudnessCalcThread {
     void run_bass(const Sync::stop_token &stoken) {
         UString last_song = "";
         f32 last_loudness = 0.f;
+        const f32 fallback_loudness = std::clamp<f32>(cv::loudness_fallback.getFloat(), -16.f, 0.f);
         std::array<f32, 44100> buf{};
 
         while(!BassManager::isLoaded()) {  // this should never happen, but just in case
@@ -90,7 +91,7 @@ struct VolNormalization::LoudnessCalcThread {
 
             UString song{map->getFullSoundFilePath()};
             if(song == last_song) {
-                map->loudness = last_loudness;
+                map->loudness.store(last_loudness, std::memory_order_release);
                 this->nb_computed++;
                 continue;
             }
@@ -103,6 +104,7 @@ struct VolNormalization::LoudnessCalcThread {
                     BassManager::printBassError(fmt::format("BASS_StreamCreateFile({:s})", song.toUtf8()),
                                                 BASS_ErrorGetCode());
                 }
+                map->loudness.store(fallback_loudness, std::memory_order_release);
                 this->nb_computed++;
                 continue;
             }
@@ -111,6 +113,7 @@ struct VolNormalization::LoudnessCalcThread {
             if(!loudness) {
                 BassManager::printBassError("BASS_Loudness_Start()", BASS_ErrorGetCode());
                 BASS_ChannelFree(decoder);
+                map->loudness.store(fallback_loudness, std::memory_order_release);
                 this->nb_computed++;
                 continue;
             }
@@ -125,7 +128,7 @@ struct VolNormalization::LoudnessCalcThread {
 
             BASS_ChannelFree(decoder);
 
-            f32 integrated_loudness = 0.f;
+            f32 integrated_loudness = fallback_loudness;
             const bool succeeded = BASS_Loudness_GetLevel(loudness, BASS_LOUDNESS_INTEGRATED, &integrated_loudness);
             const int errc = succeeded ? 0 : BASS_ErrorGetCode();
 
@@ -135,17 +138,12 @@ struct VolNormalization::LoudnessCalcThread {
                 debugLog("No loudness information available for '{:s}' {}", song.toUtf8(),
                          !succeeded ? BassManager::getErrorString(errc) : "(silent song?)");
 
-                integrated_loudness = std::clamp<f32>(cv::loudness_fallback.getFloat(), -16.f, 0.f);
+                integrated_loudness = fallback_loudness;
             }
 
-            // it seems safe to assume integrated_loudness == -HUGE_VAL means it's actually silent
-            // so store it (with loudness_fallback), so we don't constantly re-calculate silent tracks
-            if(succeeded) {
-                map->loudness = integrated_loudness;
-                db->update_overrides(map);
-                last_loudness = integrated_loudness;
-                last_song = song;
-            }
+            last_loudness = integrated_loudness;
+            map->loudness.store(integrated_loudness, std::memory_order_release);
+            last_song = song;
 
             this->nb_computed++;
         }
@@ -158,6 +156,7 @@ struct VolNormalization::LoudnessCalcThread {
     void run_soloud(const Sync::stop_token &stoken) {
         std::string last_song = "";
         f32 last_loudness = 0.f;
+        const f32 fallback_loudness = std::clamp<f32>(cv::loudness_fallback.getFloat(), -16.f, 0.f);
 
         SoLoud::WavStream ws(true /* prefer ffmpeg (faster) */);
         ws.setLooping(false);
@@ -173,7 +172,7 @@ struct VolNormalization::LoudnessCalcThread {
             if(map->loudness.load(std::memory_order_acquire) != 0.f) continue;
             const std::string song = map->getFullSoundFilePath();
             if(song == last_song) {
-                map->loudness = last_loudness;
+                map->loudness.store(last_loudness, std::memory_order_release);
                 this->nb_computed++;
                 continue;
             }
@@ -184,6 +183,7 @@ struct VolNormalization::LoudnessCalcThread {
                     debugLog("Failed to open '{:s}' for loudness calc", song.c_str());
                 }
                 this->nb_computed++;
+                map->loudness.store(fallback_loudness, std::memory_order_release);
                 continue;
             }
 
@@ -193,22 +193,22 @@ struct VolNormalization::LoudnessCalcThread {
                     debugLog("Failed to decode '{:s}' for loudness calc", song.c_str());
                 }
                 this->nb_computed++;
+                map->loudness.store(fallback_loudness, std::memory_order_release);
                 continue;
             }
 
-            f32 integrated_loudness = 0.f;
+            f32 integrated_loudness = fallback_loudness;
             SoLoud::result ret = SoLoud::Loudness::integratedLoudness(ws, integrated_loudness);
 
             if(ret != SoLoud::SO_NO_ERROR || integrated_loudness == -HUGE_VAL) {
                 debugLog("No loudness information available for '{:s}' {}", song.c_str(),
                          ret != SoLoud::SO_NO_ERROR ? "(decode error)" : "(silent song?)");
 
-                integrated_loudness = std::clamp<f32>(cv::loudness_fallback.getFloat(), -16.f, 0.f);
+                integrated_loudness = fallback_loudness;
             }
 
-            map->loudness = integrated_loudness;
-            db->update_overrides(map);
             last_loudness = integrated_loudness;
+            map->loudness.store(integrated_loudness, std::memory_order_release);
             last_song = song;
 
             this->nb_computed++;
