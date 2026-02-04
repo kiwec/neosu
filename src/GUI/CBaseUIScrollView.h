@@ -151,7 +151,7 @@ class CBaseUIScrollView : public CBaseUIElement {
 
         // these elements must correspond to items in the superclass' vElements container!
         // this is kind of a hack to avoid iterating over a bunch of not-visible elements
-        std::unordered_set<CBaseUIElement *> vVisibleElements;
+        std::unordered_set<CBaseUIElement *> usVisibleElements;
 
         // visible elements but ordered by the sort comparator
         std::vector<CBaseUIElement *> vVisibleElementsToDraw;

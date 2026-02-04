@@ -1305,9 +1305,16 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
                 rebuild = false;
                 break;
             }
-            if(&prevSelDiffBtn->getSiblingsAndSelf() == &diffBtnPtr->getSiblingsAndSelf()) {
+            const auto &prevSiblings = prevSelDiffBtn->getSiblingsAndSelf();
+            const auto &newSiblings = diffBtnPtr->getSiblingsAndSelf();
+            if(&prevSiblings == &newSiblings) {
                 // NOTE: pointer comparison
                 // skip rebuilding if we merely selected a sibling difficulty button
+                rebuild = false;
+                break;
+            }
+            if(prevSiblings.size() == 1 && prevSiblings.size() == newSiblings.size()) {
+                // if the new and old diffs are both single-children, no rebuild necessary
                 rebuild = false;
                 break;
             }

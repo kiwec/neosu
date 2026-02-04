@@ -171,7 +171,7 @@ void VolumeOverlay::update(CBaseUIEventCtx &c) {
 
     // scroll wheel events (should be separate from update(), but... oh well...)
     const int wheelDelta = mouse->getWheelDeltaVertical() / 120;
-    if(this->canChangeVolume() && wheelDelta != 0) {
+    if(wheelDelta != 0 && this->canChangeVolume()) {
         if(wheelDelta > 0) {
             this->volumeUp(wheelDelta);
         } else {
@@ -262,7 +262,7 @@ bool VolumeOverlay::canChangeVolume() {
         this->isBusy() || keyboard->isAltDown() ||                                                                //
         (                                                                                                         //
             !(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !ui->getPauseOverlay()->isVisible()) &&  //
-            (osu->getVirtScreenRect().contains(mouse->getPos())) &&                                      //
+            (osu->getVirtScreenRect().contains(mouse->getPos())) &&                                               //
             !(ui->getSongBrowser()->isVisible() && db->isFinished()) &&                                           //
             !(ui->getOsuDirectScreen()->isVisible()) &&                                                           //
             !(ui->getOptionsOverlay()->isVisible() && ui->getOptionsOverlay()->isMouseInside()) &&                //
@@ -299,17 +299,23 @@ void VolumeOverlay::onVolumeChange(int multiplier) {
     anim::deleteExistingAnimation(&this->fVolumeInactiveToActiveAnim);
     this->fVolumeInactiveToActiveAnim = 0.0f;
 
-    // chose which volume to change, depending on the volume overlay, default is master
-    ConVar *volumeConVar = &cv::volume_master;
-    if(this->volumeMusic->isSelected())
-        volumeConVar = &cv::volume_music;
-    else if(this->volumeEffects->isSelected())
-        volumeConVar = &cv::volume_effects;
+    // don't actually change volume for the first interaction, just make ourselves visible
+    // e.g. scrolling 1 tick should just set visible but not change volume
+    // also allow immediate change if we are changing due to a global hotkey
+    if(this->isVisible() || !env->winFocused()) {
+        // chose which volume to change, depending on the volume overlay, default is master
+        ConVar *volumeConVar = &cv::volume_master;
+        if(this->volumeMusic->isSelected())
+            volumeConVar = &cv::volume_music;
+        else if(this->volumeEffects->isSelected())
+            volumeConVar = &cv::volume_effects;
 
-    // change the volume
-    float newVolume =
-        std::clamp<float>(volumeConVar->getFloat() + cv::volume_change_interval.getFloat() * multiplier, 0.0f, 1.0f);
-    volumeConVar->setValue(newVolume);
+        // change the volume
+        float newVolume = std::clamp<float>(
+            volumeConVar->getFloat() + cv::volume_change_interval.getFloat() * multiplier, 0.0f, 1.0f);
+        volumeConVar->setValue(newVolume);
+    }
+
     this->animate();
 }
 

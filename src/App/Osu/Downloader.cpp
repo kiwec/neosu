@@ -57,7 +57,7 @@ class DownloadManager {
         auto now = std::chrono::steady_clock::now();
 
         std::shared_ptr<DownloadRequest> request = nullptr;
-        for(auto [_url, dl] : this->queue) {
+        for(const auto& [_url, dl] : this->queue) {
             if(dl->downloading.load(std::memory_order_acquire)) continue;
             if(dl->completed.load(std::memory_order_acquire)) continue;
             if(this->per_host_retry_after.contains(dl->host) && this->per_host_retry_after[dl->host] > now) continue;
@@ -133,7 +133,7 @@ class DownloadManager {
     }
 
    public:
-    DownloadManager() {}
+    DownloadManager() = default;
 
     ~DownloadManager() { this->shutdown(); }
 
