@@ -512,7 +512,8 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerCon
 
 void worker_fn(i32 thread_index, const Sync::stop_token& coord_stoken) {
     McThread::set_current_thread_name(fmt::format("diffcalc_{}", thread_index));
-    McThread::set_current_thread_prio(McThread::Priority::NORMAL);
+    // just use a low priority so we don't eat into main thread cpu time too much
+    McThread::set_current_thread_prio(McThread::Priority::LOW);
 
     WorkerContext ctx;
     ctx.diffobj_cache = std::make_unique<std::vector<DifficultyCalculator::DiffObject>>();
