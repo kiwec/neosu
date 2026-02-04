@@ -36,13 +36,13 @@ bool s_sleeper_initialized{false};
 
 void measure_actual_ntdelayexecution_time() noexcept {
     constexpr i32 num_samples = 3;  // 3 samples per delay amount
-    constexpr const auto test_delays = std::array{50000ULL, 100000ULL, 250000ULL, 500000ULL};  // 0.05ms to 0.25ms
+    constexpr const auto test_delays =
+        std::array{500000ULL, 250000ULL, 100000ULL, 50000ULL, 10000ULL};  // 0.5ms to 0.01ms
 
     u64 min_actual_sleep = UINT64_MAX;
 
     for(const auto test_delay_ns : test_delays) {
         u64 total_actual_sleep = 0;
-        i32 valid_samples = 0;
 
         for(i32 i = 0; i < num_samples; ++i) {
             const u64 start_time = getTicksNS();
@@ -53,23 +53,22 @@ void measure_actual_ntdelayexecution_time() noexcept {
             const u64 end_time = getTicksNS();
 
             const u64 actual_delay = end_time - start_time;
-            if(actual_delay >= test_delay_ns / 2 && actual_delay < test_delay_ns * 4) {  // sanity check
-                total_actual_sleep += actual_delay;
-                valid_samples++;
-            }
+            total_actual_sleep += actual_delay;
         }
 
-        if(valid_samples > 0) {
-            const u64 avg_actual_sleep = total_actual_sleep / valid_samples;
-            if(avg_actual_sleep < min_actual_sleep) {
-                min_actual_sleep = avg_actual_sleep;
-            }
+        const u64 avg_actual_sleep = total_actual_sleep / num_samples;
+        if(avg_actual_sleep < min_actual_sleep) {
+            // keep checking smaller sleeps
+            min_actual_sleep = avg_actual_sleep;
+        } else {
+            // break early, we hit the actual limit (anything smaller won't result in shorter actual sleeps)
+            break;
         }
     }
 
     if(min_actual_sleep != UINT64_MAX) {
-        // add 200usec artificial overhead to be safe (prefer busy waiting instead of oversleeping)
-        s_actual_delay_amount = min_actual_sleep + 200000;
+        // add a small artificial overhead to be safe (prefer busy waiting instead of oversleeping)
+        s_actual_delay_amount = min_actual_sleep * 1.2;
         // cap at 2ms
         if(s_actual_delay_amount > 2000000) {
             s_actual_delay_amount = 2000000;
@@ -116,8 +115,16 @@ void sleep_ns_internal(u64 ns) noexcept {
         return;
     }
 
+    // for imprecise sleeps, just do a full NtDelayExecution (best effort) and full yields
+    // (if necessary) until the target time has elapsed (don't busy wait)
+    const u64 target_time = getTicksNS() + ns;
+
     LARGE_INTEGER sleep_ticks{.QuadPart = -static_cast<LONGLONG>(ns / 100LL)};
     pNtDelayExecution(0, static_cast<PLARGE_INTEGER>(&sleep_ticks));
+
+    while(getTicksNS() < target_time) {
+        yield_internal();
+    }
 }
 
 void sleep_ns_precise_internal(u64 ns) noexcept {
@@ -145,7 +152,7 @@ void sleep_ns_precise_internal(u64 ns) noexcept {
 
     // busy-wait remainder
     while(getTicksNS() < target_time) {
-        YieldProcessor();
+        tinyYield();
     }
 }
 

@@ -32,7 +32,7 @@ static void set_callbacks() {
 
 }  // namespace
 
-void limit_frames(int target_fps) {
+void limit_frames(int target_fps, bool precise_sleeps) {
     if(!s_set_callbacks_once) {
         s_set_callbacks_once = true;
         set_callbacks();
@@ -56,8 +56,7 @@ void limit_frames(int target_fps) {
             } else {  // precise sleeps per-frame
                 // never sleep more than the current target fps frame time
                 const u64 sleep_time_ns = std::min(s_next_frame_time - now, frame_time_ns);
-                if(sleep_time_ns < (5 * Timing::NS_PER_MS)) {
-                    // only do precise sleeps if we're limiting to some high-ish framerate (>200fps)
+                if(precise_sleeps) {
                     Timing::sleepNSPrecise(sleep_time_ns);
                 } else {
                     Timing::sleepNS(sleep_time_ns);
@@ -65,7 +64,6 @@ void limit_frames(int target_fps) {
             }
         } else if(s_max_yield) {
             Timing::sleep(0);
-            s_next_frame_time = Timing::getTicksNS();  // update "now" to reflect the time spent in yield
         } else {
             // behind schedule or exactly on time, reset to now
             s_next_frame_time = now;

@@ -533,10 +533,11 @@ SDL_AppResult SDLMain::iterate() {
         VPROF_BUDGET("FPSLimiter", VPROF_BUDGETGROUP_SLEEP);
 
         // if minimized or unfocused, use BG fps, otherwise use fps_max (if 0 it's unlimited)
-        const int targetFPS = (winMinimized() || !winFocused())
-                                  ? m_iFpsMaxBG
-                                  : (app->isInGameplay() ? m_iFpsMax : cv::fps_max_menu.getInt());
-        FPSLimiter::limit_frames(targetFPS);
+        const bool minimizedOrUnfocused = winMinimized() || !winFocused();
+        const bool inActiveGameplay = !minimizedOrUnfocused && (app && app->isInGameplay());
+        const int targetFPS =
+            minimizedOrUnfocused ? m_iFpsMaxBG : (inActiveGameplay ? m_iFpsMax : cv::fps_max_menu.getInt());
+        FPSLimiter::limit_frames(targetFPS, /*precise_sleeps=*/inActiveGameplay);
     }
 
     return SDL_APP_CONTINUE;
