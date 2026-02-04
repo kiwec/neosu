@@ -132,6 +132,7 @@ std::atomic<u32> scores_total{0};
 std::atomic<u32> maps_processed{0};
 std::atomic<u32> maps_total{0};
 std::atomic<bool> workqueue_ready{false};
+std::atomic<bool> did_work{false};
 
 std::vector<MapResult> map_results;
 std::vector<ScoreResult> score_results;
@@ -591,6 +592,7 @@ void coordinator(const Sync::stop_token& stoken) {
         recalc_timer.update();
         debugLog("DB recalculator: took {} seconds, failed to recalculate {}/{}.", recalc_timer.getDelta(),
                  errored_count.load(std::memory_order_relaxed), initial_workqueue_size);
+        did_work.store(true, std::memory_order_release);
     }
 
     // just in case
@@ -747,5 +749,8 @@ bool is_finished() {
     const u32 total = get_maps_total() + get_scores_total();
     return workqueue_ready.load(std::memory_order_acquire) && processed >= total;
 }
+
+// mainly to avoid songbrowser resorting and stuff even if we didn't successfully recalculate anything
+bool did_actual_work() { return did_work.exchange(false, std::memory_order_seq_cst); }
 
 }  // namespace BatchDiffCalc

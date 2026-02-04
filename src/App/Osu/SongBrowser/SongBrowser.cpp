@@ -865,7 +865,8 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
     DatabaseBeatmap *best_diff = nullptr;
     const auto &diffs = beatmapset->getDifficulties();
     for(auto &diff : diffs) {
-        if(!best_diff || diff->getStarRating(StarPrecalc::active_idx) > best_diff->getStarRating(StarPrecalc::active_idx)) {
+        if(!best_diff ||
+           diff->getStarRating(StarPrecalc::active_idx) > best_diff->getStarRating(StarPrecalc::active_idx)) {
             best_diff = diff.get();
         }
     }
@@ -891,7 +892,9 @@ void SongBrowser::update(CBaseUIEventCtx &c) {
     if(!osu->isInGameplay()) {
         if(!BatchDiffCalc::update_mainthread()) {
             BatchDiffCalc::abort_calc();
-            this->lastDiffSortModIndex = 0xFF;     // force re-sort with final ratings
+            if(BatchDiffCalc::did_actual_work()) {
+                this->lastDiffSortModIndex = 0xFF;  // force re-sort with final ratings
+            }
         }
 
         // deferred batch calc for newly imported maps
@@ -2211,8 +2214,9 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                                         compareValue = diff->getLengthMS() / 1000.0f;
                                         break;
                                     case STARS:
-                                        compareValue = std::round(diff->getStarRating(StarPrecalc::active_idx) * 100.0f) /
-                                                       100.0f;  // round to 2 decimal places
+                                        compareValue =
+                                            std::round(diff->getStarRating(StarPrecalc::active_idx) * 100.0f) /
+                                            100.0f;  // round to 2 decimal places
                                         break;
                                     case CREATOR:
                                         compareString = SString::to_lower(diff->getCreator());

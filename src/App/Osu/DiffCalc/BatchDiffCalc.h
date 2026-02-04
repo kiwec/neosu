@@ -24,6 +24,7 @@ void abort_calc();
 [[nodiscard]] bool running();          // is the thread still running?
 [[nodiscard]] bool scores_finished();  // are score recalculations done?
 [[nodiscard]] bool is_finished();      // is everything done?
+[[nodiscard]] bool did_actual_work();  // did anything actually happen?
 
 struct internal;
 }  // namespace BatchDiffCalc
