@@ -1310,6 +1310,8 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoint
     return ti;
 }
 
+#ifndef BUILD_TOOLS_ONLY
+
 f32 DatabaseBeatmap::getStarRating(u8 idx) const {
     if(idx == this->last_queried_sr_idx && this->last_queried_sr > 0.f) {
         return this->last_queried_sr;
@@ -1361,8 +1363,6 @@ f32 DatabaseBeatmap::getStarRating(u8 idx) const {
 
     return ret;
 }
-
-#ifndef BUILD_TOOLS_ONLY
 
 bool DatabaseBeatmap::getMapFileAsync(MapFileReadDoneCallback data_callback) {
     // don't want to include AsyncIOHandler.h in DatabaseBeatmap.h

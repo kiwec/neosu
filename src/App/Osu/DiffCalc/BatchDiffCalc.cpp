@@ -105,9 +105,9 @@ struct MapResult {
     u32 nb_sliders{};
     u32 nb_spinners{};
     StarPrecalc::SRArray star_ratings{};
-    u32 min_bpm{};
-    u32 max_bpm{};
-    u32 avg_bpm{};
+    i32 min_bpm{};
+    i32 max_bpm{};
+    i32 avg_bpm{};
 };
 
 // per-thread mutable state for worker threads
@@ -678,14 +678,17 @@ bool update_mainthread() {
             for(const auto& res : updbuf.pending_maps) {
                 auto* map = res.map;
                 updbuf.unique_parents.insert(map->getParentSet());
-                map->iNumCircles = res.nb_circles;
-                map->iNumSliders = res.nb_sliders;
-                map->iNumSpinners = res.nb_spinners;
-                map->iLengthMS = std::max(map->iLengthMS, res.length_ms);
-                map->fStarsNomod = res.star_ratings[StarPrecalc::NOMOD_1X_INDEX];
-                map->iMinBPM = res.min_bpm;
-                map->iMaxBPM = res.max_bpm;
-                map->iMostCommonBPM = res.avg_bpm;
+                // only override existing values if we got some non-zero result, otherwise use what's already there
+                map->iNumCircles = res.nb_circles > 0 ? (i32)res.nb_circles : map->iNumCircles;
+                map->iNumSliders = res.nb_sliders > 0 ? (i32)res.nb_sliders : map->iNumSliders;
+                map->iNumSpinners = res.nb_spinners > 0 ? (i32)res.nb_spinners : map->iNumSpinners;
+                map->iLengthMS = res.length_ms > 0 ? res.length_ms : map->iLengthMS;
+                if(const f32 calculated_sr = res.star_ratings[StarPrecalc::NOMOD_1X_INDEX]; calculated_sr > 0.f) {
+                    map->fStarsNomod = calculated_sr;
+                }
+                map->iMinBPM = res.min_bpm != 0 ? res.min_bpm : map->iMinBPM;
+                map->iMaxBPM = res.max_bpm != 0 ? res.max_bpm : map->iMaxBPM;
+                map->iMostCommonBPM = res.avg_bpm != 0 ? res.avg_bpm : map->iMostCommonBPM;
                 map->ppv2Version = DiffCalc::PP_ALGORITHM_VERSION;
                 if(map->type == DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) {
                     db->peppy_overrides[map->getMD5()] = map->get_overrides();

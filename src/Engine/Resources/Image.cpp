@@ -410,11 +410,6 @@ bool Image::loadRawImage() {
             return !this->bLoadedImageEntirelyTransparent;
         }
 
-        if(!env->fileExists(this->sFilePath)) {
-            debugLog("Image Error: Couldn't find file {:s}", this->sFilePath);
-            return exit();
-        }
-
         if(this->isInterrupted())  // cancellation point
             return exit();
 
