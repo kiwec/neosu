@@ -32,17 +32,21 @@ using fmt::literals::operator""_cf;
     Logger::_detail::logRaw_int(Logger::_detail::log_level::info, \
                                 __VA_OPT__(_logFmtStart)(str__) __VA_OPT__(_logFmtEnd(__VA_ARGS__)))
 
-/*
 // print the call stack immediately
 // TODO: some portable way to do this
-#define doBacktrace(...)                                                                                           \
-    do {                                                                                                           \
-        for(const auto &line : SString::split(fmt::format("{}", fmt::streamed(std::stacktrace::current())), "\n")) \
-            logRaw(line);                                                                                  \
-    } while(false);
-#include <stacktrace>
+#if defined(MCENGINE_HAVE_STDSTACKTRACE) && defined(__has_include) && (__has_include(<stacktrace>))
+#include "SString.h"
 #include "fmt/ostream.h"
-*/
+
+#include <stacktrace>
+#define MC_DO_BACKTRACE logRaw("{}", fmt::streamed(std::stacktrace::current()));
+// do {
+//     for(const auto &line : SString::split_newlines(fmt::format("{}", fmt::streamed(std::stacktrace::current()))))
+//         logRaw(line);
+// } while(false);
+#else
+#define MC_DO_BACKTRACE (void)0;
+#endif
 
 // main Logger API
 namespace Logger {

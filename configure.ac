@@ -10,6 +10,16 @@ CI="${CI:-"${GITHUB_ACTIONS}"}"
 #     AC_DEFINE([CI_DEVBUILD], [1], [Defined if this is an in-between-releases build.])
 # ])
 
+# add include guards to config.h, they aren't there by default for some reason
+AH_TOP([
+#ifndef __TOP_SRC_CONFIG_H_INCLUDE_GUARD
+#define __TOP_SRC_CONFIG_H_INCLUDE_GUARD
+])
+
+AH_BOTTOM([
+#endif
+])
+
 AC_DEFINE_UNQUOTED([NEOSU_VERSION], [PACKAGE_VERSION], [Defined to the version of neosu being built.])
 
 _tstamp=$(TZ=UTC date +%y%m%d%H%M)
@@ -1156,6 +1166,16 @@ AS_IF([test -n "$ubercompat"], [
     AC_SEARCH_LIBS(_set_abort_behavior, [], [], [msvcrt_build=yes])
     AS_IF([test "x$msvcrt_build" = "xyes"], [
         AC_DEFINE([MCENGINE_PLATFORM_WINDOWS_MSVCRT], [1], [Defined if building against the MSVCRT library instead of UCRT.])
+    ])
+])
+
+AS_IF([test "$host_os" = "linux-gnu"], [
+    # somehow this is advertised as being available on mingw-gcc, and then when you go to use it it just prints a bunch of empty lines
+    _have_stdstacktrace=
+    AC_SEARCH_LIBS([__glibcxx_backtrace_simple], [stdc++exp], [_have_stdstacktrace=yes], [_have_stdstacktrace=no])
+    AS_IF([test "$_have_stdstacktrace" = "yes"], [
+        # AC_SEARCH_LIBS also automatically adds -lstdc++exp to linker flags if found
+        AC_DEFINE([MCENGINE_HAVE_STDSTACKTRACE], [1], [Defined if <stacktrace> is available to print execution backtraces.])
     ])
 ])
 

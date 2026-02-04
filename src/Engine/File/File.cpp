@@ -623,23 +623,22 @@ bool File::openForReading() {
     {
         // lazy redundant conversion
         std::string tempStdStr{this->sFilePath.utf8View()};
+        const std::string origPath{this->sFilePath.utf8View()};
 
         // resolve the file path (handles case-insensitive matching)
         FILETYPE fileType = File::existsCaseInsensitive(tempStdStr, this->fsPath);
 
-        this->sFilePath = tempStdStr;
+        if constexpr(Env::cfg(OS::WINDOWS)) {
+            this->sFilePath = this->fsPath.wstring().c_str();
+        } else {
+            this->sFilePath = this->fsPath.string().c_str();
+        }
 
-        if(fileType != File::FILETYPE::FILE) {
+        if(fileType != FILETYPE::FILE) {
             if(cv::debug_file.getBool()) {
-                UString converted;
-                if constexpr(Env::cfg(OS::WINDOWS)) {
-                    converted = this->fsPath.wstring().c_str();
-                } else {
-                    converted = this->fsPath.string().c_str();
-                }
                 // usually the caller handles logging this sort of basic error
-                debugLog("File Error: Path {:s} (fsPath: {:s}) {:s}", this->sFilePath, converted,
-                         fileType == File::FILETYPE::NONE ? "doesn't exist" : "is not a file");
+                debugLog("File Error: Path {:s} (orig: {:s}) {:s}", this->sFilePath, origPath,
+                         fileType == FILETYPE::NONE ? "doesn't exist" : "is not a file");
             }
             return false;
         }
@@ -665,7 +664,7 @@ bool File::openForReading() {
 #endif
 
     if(ret != 0) {
-        debugLog("File Error: Couldn't get file size for {:s}", this->sFilePath,
+        debugLog("File Error: Couldn't get file size for {:s}: {}", this->sFilePath,
                  std::generic_category().message(errno));
         return false;
     }

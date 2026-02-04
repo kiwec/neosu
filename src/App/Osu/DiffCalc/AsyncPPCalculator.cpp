@@ -149,6 +149,8 @@ void run_thread(const Sync::stop_token& stoken) {
 
                 if(stoken.stop_requested()) return;
                 if(new_ho.diffres.error.errc) {
+                    // so that we stop trying after failing once
+                    ho_cache.push_back(std::move(new_ho));
                     lock.lock();
                     continue;
                 }
