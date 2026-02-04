@@ -39,17 +39,15 @@ class WakeupFd {
     [[nodiscard]] int get() const { return fd; }
 
     void signal() const {
-        if(fd >= 0) {
-            uint64_t val = 1;
-            [[maybe_unused]] auto _ = write(fd, &val, sizeof(val));
-        }
+        if(!valid()) return;
+        uint64_t val = 1;
+        (void)write(fd, &val, sizeof(val));
     }
 
     void drain() const {
-        if(fd >= 0) {
-            uint64_t val;
-            [[maybe_unused]] auto _ = read(fd, &val, sizeof(val));
-        }
+        if(!valid()) return;
+        uint64_t val;
+        (void)read(fd, &val, sizeof(val));
     }
 
    private:
@@ -310,29 +308,25 @@ void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
         int numfds = 0;
         if(this->wakeup_fd.valid()) {
             // use eventfd-based waiting (can wait indefinitely, woken by eventfd)
-            curl_waitfd extra_fds[2] = {};
-            int nfds = 0;
+            // TODO: use CURLMOPT_NOTIFYFUNCTION instead?
+            std::array<curl_waitfd, 2> extra_fds{
+                {{.fd = (curl_socket_t)this->wakeup_fd.get(), .events = CURL_WAIT_POLLIN, .revents = {}},
+                 {.fd = (curl_socket_t)this->ipc_socket_fd, .events = CURL_WAIT_POLLIN, .revents = {}}}};
+            const short& wakeup_revent = extra_fds[0].revents;
+            const short& ipc_revent = extra_fds[1].revents;
 
-            extra_fds[nfds].fd = this->wakeup_fd.get();
-            extra_fds[nfds].events = CURL_WAIT_POLLIN;
-            nfds++;
-
-            if(this->ipc_socket_fd >= 0) {
-                extra_fds[nfds].fd = this->ipc_socket_fd;
-                extra_fds[nfds].events = CURL_WAIT_POLLIN;
-                nfds++;
-            }
+            const int nfds = 1 + (this->ipc_socket_fd >= 0);
 
             // infinite timeout (-1) isn't supported for some reason
-            curl_multi_poll(this->multi_handle, extra_fds, nfds, 60000, &numfds);
+            curl_multi_poll(this->multi_handle, &extra_fds[0], nfds, 60000, &numfds);
 
             // drain wakeup_fd if signaled
-            if(extra_fds[0].revents & CURL_WAIT_POLLIN) {
+            if(wakeup_revent & CURL_WAIT_POLLIN) {
                 this->wakeup_fd.drain();
             }
 
             // handle IPC if signaled
-            if(nfds > 1 && (extra_fds[1].revents & CURL_WAIT_POLLIN)) {
+            if(nfds > 1 && (ipc_revent & CURL_WAIT_POLLIN)) {
                 handleIPCConnection();
             }
         } else {
