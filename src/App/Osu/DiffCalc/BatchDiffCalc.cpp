@@ -300,6 +300,9 @@ void build_work_queue(const Sync::stop_token& stoken) {
     for(auto& [_, item] : work_by_hash) {
         work_queue.push_back(std::move(item));
     }
+
+    // put maps with scores associated with them first, so scores are recalculated early instead of spread across all maps
+    std::ranges::sort(work_queue, std::ranges::less{}, [](const auto& work) { return work.scores.empty(); });
 }
 
 void process_work_item(WorkItem& item, const Sync::stop_token& stoken, WorkerContext& ctx) {
