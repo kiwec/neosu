@@ -603,7 +603,10 @@ void Engine::stdinReaderThread(const Sync::stop_token &stopToken) {
         if(stopToken.stop_requested()) return;
 
         Sync::scoped_lock lock(engine->stdinMutex);
+        // this is a bit of a hack but there's no easy way to unblock std::getline from the main thread
+        const bool gotExit = (line == "exit"sv || line == "shutdown"sv || line == "restart"sv || line == "crash"sv);
         engine->stdinQueue.push_back(std::move(line));
+        if(gotExit) return;
     }
 }
 

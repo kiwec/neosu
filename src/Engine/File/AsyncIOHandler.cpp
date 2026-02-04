@@ -258,7 +258,7 @@ class AsyncIOHandler::InternalIOContext final {
             debugLog("ERROR: failed to close {}: {}", closeContext->path, SDL_GetError());
             m_activeFiles.erase(closeContext->path);
             if(closeContext->readCallback) {
-                PERFORM_CALLBACK(closeContext->readCallback(closeContext->operationBuffer));
+                PERFORM_CALLBACK(closeContext->readCallback(std::move(closeContext->operationBuffer)));
             }
             delete closeContext;
         }
@@ -318,7 +318,7 @@ class AsyncIOHandler::InternalIOContext final {
         } else if(context->readCallback) {
             // we don't really propagate errors here besides the log in
             // handleReadComplete and an empty/partially filled buffer here...
-            PERFORM_CALLBACK(context->readCallback(context->operationBuffer));
+            PERFORM_CALLBACK(context->readCallback(std::move(context->operationBuffer)));
         }
 
         delete context;
