@@ -473,8 +473,10 @@ SliderCurveEqualDistanceMulti::SliderCurveEqualDistanceMulti(std::vector<vec2> c
     if(g_curveBuilder.hasSegments()) {
         g_curveBuilder.build(*this, this->iNCurve, this->fPixelLength);
     } else {
-        debugLog("ERROR: no segments (line: {} numControlPoints: {} pixelLength: {} curvePointsSeparation: {})", line,
-                 numControlPoints, pixelLength, curvePointsSeparation);
+        debugLog(
+            "SliderCurveEqualDistanceMulti ERROR: no segments (line: {} numControlPoints: {} pixelLength: {} "
+            "curvePointsSeparation: {})",
+            line, numControlPoints, pixelLength, curvePointsSeparation);
     }
 }
 
