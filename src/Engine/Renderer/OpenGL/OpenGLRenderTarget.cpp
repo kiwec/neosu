@@ -11,10 +11,6 @@
 #include "VertexArrayObject.h"
 #include "Logging.h"
 
-#if !defined(MCENGINE_PLATFORM_WASM)
-#define HAS_MULTISAMPLING
-#endif
-
 int OpenGLRenderTarget::iMaxMultiSamples{-1};
 int OpenGLRenderTarget::iHaveGLInvalidateFramebuffer{Env::cfg(OS::WASM) ? 1 : -1};
 
@@ -90,13 +86,10 @@ void OpenGLRenderTarget::init() {
     }
 
     // fill depth buffer
-#ifdef HAS_MULTISAMPLING  // not defined in emscripten GL headers
     if(isMultiSampled()) {
         glRenderbufferStorageMultisample(GL_RENDERBUFFER, numMultiSamples, GL_DEPTH_COMPONENT24, (int)this->getSize().x,
                                          (int)this->getSize().y);
-    } else
-#endif
-    {
+    } else {
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, (int)this->getSize().x, (int)this->getSize().y);
     }
 
@@ -118,18 +111,15 @@ void OpenGLRenderTarget::init() {
     }
 
     // fill texture
-#ifdef HAS_MULTISAMPLING
     if(isMultiSampled()) {
-        if constexpr(Env::cfg(REND::GL)) {
-            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numMultiSamples, GL_RGBA8, (int)this->getSize().x,
-                                    (int)this->getSize().y, true);  // use fixed sample locations
-        } else /* GL ES */ {
-            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numMultiSamples, GL_RGBA8, (int)this->getSize().x,
-                                      (int)this->getSize().y, true);
-        }
-    } else
+#ifdef MCENGINE_PLATFORM_OPENGL
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numMultiSamples, GL_RGBA8, (int)this->getSize().x,
+                                (int)this->getSize().y, true);  // use fixed sample locations
+#else                                                           // GL ES
+        glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numMultiSamples, GL_RGBA8, (int)this->getSize().x,
+                                  (int)this->getSize().y, true);
 #endif
-    {
+    } else {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (int)this->getSize().x, (int)this->getSize().y, 0, GL_RGBA,
                      GL_UNSIGNED_BYTE, nullptr);
 
