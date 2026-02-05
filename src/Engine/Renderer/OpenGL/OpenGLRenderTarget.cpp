@@ -19,7 +19,7 @@ int OpenGLRenderTarget::iMaxMultiSamples{-1};
 int OpenGLRenderTarget::iHaveGLInvalidateFramebuffer{Env::cfg(OS::WASM) ? 1 : -1};
 
 void OpenGLRenderTarget::init() {
-#if defined(MCENGINE_FEATURE_GLES32) && !defined(MCENGINE_PLATFORM_WASM)
+#if !defined(MCENGINE_PLATFORM_WASM)
     if(iHaveGLInvalidateFramebuffer == -1) {
         iHaveGLInvalidateFramebuffer = !!glInvalidateFramebuffer;
     }
