@@ -35,11 +35,14 @@
 
 #include <charconv>
 
-// FUCK IT WE BALL - CLAUDE CODE WOULD NEVER - HAPPY NEW YEAR!
+// HACK: Reusing AvatarManager for map backgrounds, since the behavior is pretty much the same.
 class MapBGManager : public AvatarManager {
     NOCOPY_NOMOVE(MapBGManager)
    public:
-    MapBGManager() : AvatarManager() { this->url_format = "{:s}assets.{}/beatmaps/{:d}/covers/list@2x.jpg"; }
+    MapBGManager() : AvatarManager() {
+        // Also valid: "{:s}b.{}/thumb/{:d}l.jpg" ("l" stands for "large")
+        this->url_format = "{:s}b.{}/thumb/{:d}.jpg";
+    }
     ~MapBGManager() override = default;
 };
 
