@@ -290,9 +290,10 @@ void Database::startLoader() {
     // only clear diffs/sets for full reloads (only handled for raw re-loading atm)
     const bool lastLoadWasRaw{this->needs_raw_load};
     // TODO: raw loading from other folders
-    this->needs_raw_load = !cv::database_enabled.getBool() &&  // TODO: new cvar like "force raw load"
-                           Environment::directoryExists(Database::getOsuSongsFolder()) &&
-                           !isOsuDBReadable(getDBPath(DatabaseType::STABLE_MAPS));
+    // TODO: new cvar like "force raw load"
+    const bool songsFolderExists = Environment::directoryExists(Database::getOsuSongsFolder());
+    this->needs_raw_load = songsFolderExists &&
+                           (!cv::database_enabled.getBool() || !isOsuDBReadable(getDBPath(DatabaseType::STABLE_MAPS)));
     const bool nextLoadIsRaw{this->needs_raw_load};
 
     if(!lastLoadWasRaw || !nextLoadIsRaw) {
