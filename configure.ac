@@ -917,8 +917,8 @@ AS_IF([test "x$enable_debug" = "xyes"], [
     AS_IF([test "x$enable_optimize" != "xno"], [
         CPPFLAGS="$CPPFLAGS -DNDEBUG -D_NDEBUG"
         # put it at the start so -O3 is overrideable from the command line
-        CXXFLAGS="-O3 ${CXXFLAGS//-O2/}" # where do those -g -O2 flags even come from...
-        CFLAGS="-O3 ${CFLAGS//-O2/}"
+        CXXFLAGS="-O3 $(printf '%s' "$CXXFLAGS" | sed 's/-O2//g')" # where do those -g -O2 flags even come from...
+        CFLAGS="-O3 $(printf '%s' "$CFLAGS" | sed 's/-O2//g')"
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-O1"
 
         AS_IF([test "x$enable_clang" != "xyes" && test -z "$WASM_CC"], [

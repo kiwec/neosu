@@ -854,6 +854,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
         loginElement->cvars[keepCbx] = &cv::mp_autologin;
     }
 
+#ifndef MCENGINE_PLATFORM_WASM
     this->addSubSection_("osu!folder");
     this->addLabel_("1) If you have an existing osu!stable installation:")->setTextColor(0xff666666);
     this->addLabel_("2) osu! > Options > \"Open osu! folder\"")->setTextColor(0xff666666);
@@ -879,6 +880,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
         "Load osu! collection.db (read-only)",
         "If you have an existing osu! installation,\nalso load and display your created collections from there.",
         &cv::collections_legacy_enabled);
+#endif
 
     this->addSpacer();
     this->addCheckboxTooltip_(
@@ -929,7 +931,9 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     // this->addTextbox(cv::chat_highlight_words.getString().c_str(), "Chat word highlight list (space-separated):", &cv::chat_highlight_words);
 
     this->addSubSection_("Privacy");
+#ifndef MCENGINE_PLATFORM_WASM
     this->addCheckbox_("Automatically update neosu to the latest version", &cv::auto_update);
+#endif
     // this->addCheckbox_("Allow private messages from strangers", &cv::allow_stranger_dms);
     // this->addCheckbox_("Allow game invites from strangers", &cv::allow_mp_invites);
     this->addCheckbox_("Replace main menu logo with server logo", &cv::main_menu_use_server_logo);
@@ -1742,6 +1746,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
     this->addSubSection_("Import/Reset");
 
+#ifndef MCENGINE_PLATFORM_WASM
     UIButton *importMcOsuSettingsButton = this->addButton_("Import collections/scores/settings from McOsu");
     importMcOsuSettingsButton->setClickCallback(SA::MakeDelegate([]() -> void {
         auto conclude_import = [](bool success) {
@@ -1782,12 +1787,17 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
             conclude_import(imported);
         });
     }));
+#endif
 
     UIButton *resetAllSettingsButton = this->addButton_("Reset all settings");
     resetAllSettingsButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onResetEverythingClicked>(this));
     resetAllSettingsButton->setColor(0xffd90000);
+
+#ifndef MCENGINE_PLATFORM_WASM
     this->addSubSection_("Testing");
     this->addCheckbox_("Use bleeding edge release stream", &cv::bleedingedge);
+#endif
+
     this->addSpacer();
     this->addSpacer();
     this->addSpacer();
