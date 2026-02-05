@@ -514,9 +514,9 @@ win_subsystem_ver=6.00
 AS_IF([test -n "$WASM_CC"], [
     # WASM/Emscripten build
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -U__linux__ -D__EMSCRIPTEN__"
-    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sWASM=1 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB"
+    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sWASM=1 -sUSE_PTHREADS=1 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB"
     # --emrun for support for running the .html with emrun (temporary until we get a real webpage for it)
-    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sINITIAL_MEMORY=1536MB -sWASM=1 --emrun"
+    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sUSE_PTHREADS=1 -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sINITIAL_MEMORY=1536MB -sWASM=1 --emrun"
 
     # the Songs folder preload is definitely temporary, just for testing purposes to have something to play
     WASM_PRELOAD_FLAGS="--preload-file \$(srcdir)/\$(ASSETS_DIR)/fonts@fonts --preload-file \$(srcdir)/\$(ASSETS_DIR)/materials@materials --preload-file \$(builddir)/wasm-maps@/libsdl/Songs"
@@ -893,6 +893,11 @@ AS_IF([test "x$enable_debug" = "xyes"], [
             CXXFLAGS="$CXXFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
             CFLAGS="$CFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
         ])
+        AS_IF([test -n "$WASM_CC"], [
+            CXXFLAGS="$CXXFLAGS -gsource-map"
+            CFLAGS="$CFLAGS -gsource-map"
+            LDFLAGS="$LDFLAGS -gsource-map"
+        ])
     ], [
         # don't remap paths, the source should correspond to the real source location on linux
         # non-mingw
@@ -901,7 +906,7 @@ AS_IF([test "x$enable_debug" = "xyes"], [
     ])
     ENABLE_DEBUG=$enable_debug
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -D_DEBUG"
-    AS_IF([test -z "$CLANG"], [
+    AS_IF([test -z "$CLANG" && test -z "$WASM_CC"], [
         NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -Wcast-align -Wpacked-not-aligned"
         # CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
         # CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG"
@@ -925,9 +930,11 @@ AS_IF([test "x$enable_debug" = "xyes"], [
     AS_IF([test "x$enable_strip" != "xno"], [
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-s" # strip flag
     ], [
-        # add minimal debug info
-        CXXFLAGS="-g $CXXFLAGS"
-        CFLAGS="-g $CFLAGS"
+        AS_IF([test -z "$WASM_CC"],[
+            # add minimal debug info
+            CXXFLAGS="-g $CXXFLAGS"
+            CFLAGS="-g $CFLAGS"
+        ])
     ])
     AS_IF([test "$host_os" = "mingw32"], [
         AS_IF([test "x$enable_clang" = "xyes"], [
@@ -1204,7 +1211,7 @@ CTRE_MIN_VERSION=3.10.0 # regex support that doesn't have exceptions FORCED enab
 CTRE_BUILD_VERSION=6225211806c48230e5d17a1e555ef69e7325051c # git as of Jan 28th, 2026
 
 # always build these from source if we want to use them
-AC_SUBST([SOLOUD_VERSION], [6ce4e8d0d8c4a281c6aa380b89bcbaa73ea01c39]) # neoloud fork
+AC_SUBST([SOLOUD_VERSION], [ace9d8b6d377fe03bd35453ae5091766bbe3a7aa]) # neoloud fork
 #AC_SUBST([SOLOUD_VERSION], [cb174f53804d8ba3fc81a2dfa49879103fbbcb2e])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [b8e2a5f3f04483691962ab1a36ffa166abdcd675])

@@ -472,8 +472,8 @@ $(DEPS_PREFIX)/mbedtls-$(MBEDTLS_VERSION).built: $(DEPS_CACHE)/mbedtls-$(MBEDTLS
 # WASM: build curl from source with mbedTLS
 CURL_INCLUDEDIR := $(DEPS_PREFIX)/include
 CURL_LIBDIR := $(DEPS_PREFIX)/lib
-CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DCURL_STATICLIB
-CURL_LIBS += -L$(CURL_LIBDIR) -lcurl -lmbedtls -lmbedx509 -lmbedcrypto -lz
+CURL_CFLAGS += $(shell $(PKG_CONFIG) --cflags libcurl)
+CURL_LIBS += $(shell $(PKG_CONFIG) --libs libcurl)
 
 $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION).tar.gz $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built $(DEPS_PREFIX)/mbedtls-$(MBEDTLS_VERSION).built
 	rm -rf $(DEPS_PREFIX)/curl
@@ -515,6 +515,7 @@ $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION).ta
 	$(CMAKE) --build build $(CMAKEPAROPT) && \
 	$(CMAKE) --install build
 	$(PKG_CONFIG) --exists --print-errors libcurl
+	mv $(DEPS_PREFIX)/lib/libcurl-d.a $(DEPS_PREFIX)/lib/libcurl.a || true
 	touch $@
 else
 # Non-WASM: use prebuilt binaries
@@ -632,6 +633,7 @@ $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).ta
 		-D CMAKE_CXX_COMPILER_AR=$(AR) \
 		-D CMAKE_CXX_COMPILER_RANLIB=$(RANLIB) \
 		-D CMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
+		$(if $(WASM_CC),-DSDL_PTHREADS=ON,) \
 		-D SDL_RPATH=OFF \
 		-D SDL_IBUS=OFF \
 		-D SDL_TEST_LIBRARY=OFF \
@@ -715,11 +717,11 @@ $(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built: $(DEPS_CACHE)/SoLoud-$(SOLOUD_VER
 		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
 		-D CMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
 		-D CMAKE_C_COMPILER="$(CC)" \
-		-D CMAKE_C_FLAGS_RELEASE="$(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CFLAGS)" \
-		-D CMAKE_C_FLAGS_DEBUG="$(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CFLAGS)" \
+		-D CMAKE_C_FLAGS_RELEASE="-DMA_ENABLE_AUDIO_WORKLETS=1 $(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CFLAGS)" \
+		-D CMAKE_C_FLAGS_DEBUG="-DMA_ENABLE_AUDIO_WORKLETS=1 $(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CFLAGS)" \
 		-D CMAKE_CXX_COMPILER="$(CXX)" \
-		-D CMAKE_CXX_FLAGS_RELEASE="$(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CXXFLAGS)" \
-		-D CMAKE_CXX_FLAGS_DEBUG="$(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CXXFLAGS)" \
+		-D CMAKE_CXX_FLAGS_RELEASE="-DMA_ENABLE_AUDIO_WORKLETS=1 $(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CXXFLAGS)" \
+		-D CMAKE_CXX_FLAGS_DEBUG="-DMA_ENABLE_AUDIO_WORKLETS=1 $(if $(FFMPEG_INCDIR),-I$(FFMPEG_INCDIR) )$(CXXFLAGS)" \
 		$(CMAKERCOPT) $(CMAKEIDOPT) \
 		-D CMAKE_C_COMPILER_AR=$(AR) \
 		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \
@@ -1105,6 +1107,7 @@ $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built: $(DEPS_PREFIX)/libpng-$(LIBP
 	$(CMAKE) --build build $(CMAKEPAROPT) && \
 	$(CMAKE) --install build
 	$(PKG_CONFIG) --exists --print-errors freetype2
+	mv $(DEPS_PREFIX)/lib/libfreetyped.a $(DEPS_PREFIX)/lib/libfreetype.a || true
 	touch $@
 else
 $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built: $(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz
