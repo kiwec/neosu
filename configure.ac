@@ -514,9 +514,9 @@ win_subsystem_ver=6.00
 AS_IF([test -n "$WASM_CC"], [
     # WASM/Emscripten build
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -U__linux__ -D__EMSCRIPTEN__"
-    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sWASM=1 -sUSE_PTHREADS=1 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB"
+    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sWASM=1 -sUSE_PTHREADS=1 -sFETCH=1 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB"
     # --emrun for support for running the .html with emrun (temporary until we get a real webpage for it)
-    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sUSE_PTHREADS=1 -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sINITIAL_MEMORY=1536MB -sWASM=1 --emrun"
+    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sUSE_PTHREADS=1 -sFETCH=1 -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sINITIAL_MEMORY=1536MB -sWASM=1 --emrun"
 
     # the Songs folder preload is definitely temporary, just for testing purposes to have something to play
     WASM_PRELOAD_FLAGS="--preload-file \$(srcdir)/\$(ASSETS_DIR)/fonts@fonts --preload-file \$(srcdir)/\$(ASSETS_DIR)/materials@materials --preload-file \$(builddir)/wasm-maps@/libsdl/Songs"

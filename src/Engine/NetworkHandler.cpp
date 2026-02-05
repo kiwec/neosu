@@ -19,6 +19,8 @@
 #include <sys/eventfd.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#elif MCENGINE_PLATFORM_WASM
+#include <emscripten/fetch.h>
 #endif
 
 namespace Mc::Net {
@@ -257,6 +259,14 @@ struct NetworkImpl {
 
     // websockets
     std::vector<std::shared_ptr<WSInstance>> active_websockets;
+
+    // emscripten fetch
+#ifdef MCENGINE_PLATFORM_WASM
+    static Hash::unstable_stringmap<std::string> extractHeaders(emscripten_fetch_t* fetch);
+    static void fetchSuccess(emscripten_fetch_t* fetch);
+    static void fetchError(emscripten_fetch_t* fetch);
+    static void fetchProgress(emscripten_fetch_t* fetch);
+#endif
 
     // curl_multi implementation
     CURLM* multi_handle{nullptr};
@@ -643,13 +653,126 @@ void NetworkImpl::update() {
     std::erase_if(this->active_websockets, [](const auto& ws) { return ws->status != WSStatus::CONNECTED; });
 }
 
+#ifdef MCENGINE_PLATFORM_WASM
+Hash::unstable_stringmap<std::string> NetworkImpl::extractHeaders(emscripten_fetch_t* fetch) {
+    assert(fetch->readyState >= HEADERS_RECEIVED);
+
+    Hash::unstable_stringmap<std::string> out;
+
+    size_t s_headers = emscripten_fetch_get_response_headers_length(fetch);
+    if(s_headers > 0) {
+        s_headers++;  // null terminator
+
+        char* raw_headers = new char[s_headers];
+        emscripten_fetch_get_response_headers(fetch, raw_headers, s_headers);
+
+        // {"key1", "value1", "key2", "value2", "key3", "value3", ..., 0 };
+        char** kv_headers = emscripten_fetch_unpack_response_headers(raw_headers);
+        for(int i = 0; kv_headers[i] != nullptr && kv_headers[i + 1] != nullptr; i += 2) {
+            char* key = kv_headers[i];
+            char* value = kv_headers[i + 1];
+            out[key] = value;
+        }
+        emscripten_fetch_free_unpacked_response_headers(kv_headers);
+
+        delete[] raw_headers;
+    }
+
+    return out;
+}
+
+void NetworkImpl::fetchSuccess(emscripten_fetch_t* fetch) {
+    auto request = (Request*)fetch->userData;
+
+    Response res;
+    res.response_code = fetch->status;
+    res.body = std::string(fetch->data, fetch->numBytes);
+    res.headers = NetworkImpl::extractHeaders(fetch);
+    res.success = true;
+    request->callback(std::move(res));
+
+    delete request;
+    emscripten_fetch_close(fetch);
+}
+
+void NetworkImpl::fetchError(emscripten_fetch_t* fetch) {
+    auto request = (Request*)fetch->userData;
+
+    Response res;
+    res.response_code = fetch->status;
+    res.body = std::string(fetch->data, fetch->numBytes);
+    res.headers = NetworkImpl::extractHeaders(fetch);
+    res.error_msg = fetch->statusText;
+    res.success = false;
+    request->callback(std::move(res));
+
+    delete request;
+    emscripten_fetch_close(fetch);
+}
+
+void NetworkImpl::fetchProgress(emscripten_fetch_t* fetch) {
+    const auto request = (Request*)fetch->userData;
+
+    if(request->options.progress_callback) {
+        const float progress = fetch->dataOffset * 100.0 / fetch->totalBytes;
+        request->options.progress_callback(progress);
+    }
+}
+#endif
+
 void NetworkImpl::httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback) {
+#ifdef MCENGINE_PLATFORM_WASM
+    assert(options.mime_parts.empty());
+
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+
+    strcpy(attr.requestMethod, "GET");
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE;
+    attr.timeoutMSecs = options.timeout * 1000;
+    attr.withCredentials = false;
+
+    if(!options.headers.empty()) {
+        // {"key1", "value1", "key2", "value2", "key3", "value3", ..., 0 };
+
+        // TODO: not sure if we need to free this
+        auto kv_headers = new char*[options.headers.size() * 2 + 1];
+
+        i32 i = 0;
+        for(const auto& [key, value] : options.headers) {
+            // TODO: not sure if we need to free these
+            kv_headers[i * 2] = strdup(key.c_str());
+            kv_headers[i * 2 + 1] = strdup(value.c_str());
+            i++;
+        }
+        kv_headers[i * 2] = nullptr;
+
+        attr.requestHeaders = kv_headers;
+    }
+
+    if(!options.post_data.empty()) {
+        strcpy(attr.requestMethod, "POST");
+        // TODO: not sure if we need to free this
+        attr.requestData = strdup(options.post_data.c_str());
+        attr.requestDataSize = options.post_data.length();
+    }
+
+    auto request = new Request(url, std::move(options), std::move(callback));
+    attr.userData = request;
+    attr.onsuccess = &NetworkImpl::fetchSuccess;
+    attr.onerror = &NetworkImpl::fetchError;
+    attr.onprogress = &NetworkImpl::fetchProgress;
+
+    std::string null_terminated_url(url);
+    emscripten_fetch(&attr, null_terminated_url.c_str());
+#else
     auto request = std::make_unique<Request>(url, std::move(options), std::move(callback));
 
     Sync::scoped_lock lock{this->request_queue_mutex};
     this->pending_requests.push(std::move(request));
     this->request_queue_cv.notify_one();
     this->wakeup_fd.signal();
+#endif
 }
 
 std::shared_ptr<WSInstance> NetworkImpl::initWebsocket(const WSOptions& options) {
