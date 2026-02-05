@@ -826,6 +826,9 @@ void Environment::maximizeWindow() {
 
 void Environment::enableFullscreen() {
     // NOTE: "fake" fullscreen since we don't want a videomode change
+    if constexpr(Env::cfg(OS::WASM)) {
+        SDL_SetWindowFillDocument(m_window, true);
+    }
 
     // some weird hack that apparently makes this behave better on macos?
     SDL_SetWindowFullscreenMode(m_window, nullptr);
@@ -841,6 +844,10 @@ void Environment::disableFullscreen() {
         debugLog("Failed to disable fullscreen: {:s}", SDL_GetError());
     } else {
         SDL_SetWindowBordered(m_window, true);
+    }
+
+    if constexpr(Env::cfg(OS::WASM)) {
+        SDL_SetWindowFillDocument(m_window, false);
     }
 }
 

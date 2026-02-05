@@ -56,6 +56,7 @@ enum class WinFlags : uint64_t {
     F_TOOLTIP =             0x0000000000040000, /**< window should be treated as a tooltip and does not get mouse or keyboard focus, requires a parent window */
     F_POPUP_MENU =          0x0000000000080000, /**< window should be treated as a popup menu, requires a parent window */
     F_KEYBOARD_GRABBED =    0x0000000000100000, /**< window has grabbed keyboard input */
+    F_FILL_DOCUMENT =       0x0000000000200000, /**< window is in fill-document mode (Emscripten only), since SDL 3.4.0 */
     F_VULKAN =              0x0000000010000000, /**< window usable for Vulkan surface */
     F_METAL =               0x0000000020000000, /**< window usable for Metal view */
     F_TRANSPARENT =         0x0000000040000000, /**< window with transparent buffer */
