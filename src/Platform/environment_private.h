@@ -67,4 +67,8 @@ class SDLMain final : public Environment {
 
     // for profiling with main callbacks
     bool m_bInIterate{false};
+
+    // WASM: measure display Hz from rAF frame intervals
+    uint64_t m_iHzMeasureStartNS{0};
+    int m_iHzMeasureFrames{-1};  // -1 = waiting for init delay, 0..N = measuring, N = done
 };

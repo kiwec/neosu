@@ -109,10 +109,17 @@ SDLMain::~SDLMain() {
 }
 
 void SDLMain::setFgFPS() {
-    if constexpr(Env::cfg(FEAT::MAINCB))
+    if constexpr(Env::cfg(FEAT::MAINCB)) {
+        if(Env::cfg(OS::WASM) && (m_iFpsMax <= 0 || m_iFpsMax >= m_fDisplayHz * 0.9)) {
+            // reset to default, a callback rate above the display refresh rate
+            // seems to limit to something much lower than if we just leave it as default
+            SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "0");
+            return;
+        }
         SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, fmt::format("{}", m_iFpsMax).c_str());
-    else
+    } else {
         FPSLimiter::reset();
+    }
 }
 
 void SDLMain::setBgFPS() {
@@ -518,6 +525,37 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 SDL_AppResult SDLMain::iterate() {
     if(!m_bRunning) return SDL_APP_SUCCESS;
 
+    // WASM: measure true display Hz from rAF frame intervals (after init settles)
+    if constexpr(Env::cfg(OS::WASM)) {
+        constexpr int kMeasureFrames = 10;
+        constexpr uint64_t kInitDelayNS = 3ULL * Timing::NS_PER_SECOND;
+        if(m_iHzMeasureFrames < kMeasureFrames) {
+            const auto now = Timing::getTicksNS();
+            if(m_iHzMeasureFrames == -1) {
+                // wait for init to settle before measuring
+                if(m_iHzMeasureStartNS == 0)
+                    m_iHzMeasureStartNS = now;
+                else if(now - m_iHzMeasureStartNS >= kInitDelayNS)
+                    m_iHzMeasureFrames = 0;
+            }
+            if(m_iHzMeasureFrames == 0) {
+                m_iHzMeasureStartNS = now;
+            }
+            if(m_iHzMeasureFrames >= 0) m_iHzMeasureFrames++;
+            if(m_iHzMeasureFrames == kMeasureFrames) {
+                const auto elapsedNS = now - m_iHzMeasureStartNS;
+                const double avgFrameSecs =
+                    static_cast<double>(elapsedNS) / Timing::NS_PER_SECOND / (kMeasureFrames - 1);
+                if(avgFrameSecs > 0.0) {
+                    const auto measuredHz = std::clamp(static_cast<float>(1.0 / avgFrameSecs), 30.0f, 540.0f);
+                    debugLog("Measured display refresh rate: {:.1f} Hz", measuredHz);
+                    m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = measuredHz);
+                    setFgFPS();
+                }
+            }
+        }
+    }
+
     // update
     {
         m_engine->onUpdate();
@@ -645,6 +683,8 @@ bool SDLMain::createWindow() {
 
     if constexpr(Env::cfg(OS::LINUX)) {
         SDL_SetHintWithPriority(SDL_HINT_MOUSE_AUTO_CAPTURE, "0", SDL_HINT_NORMAL);
+    } else if constexpr(Env::cfg(OS::WASM)) {
+        SDL_SetHintWithPriority(SDL_HINT_MOUSE_AUTO_CAPTURE, "1", SDL_HINT_NORMAL);
     }
 
     SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "0", SDL_HINT_NORMAL);
@@ -713,11 +753,28 @@ bool SDLMain::createWindow() {
 }
 
 float SDLMain::queryDisplayHz() {
-    // get the screen refresh rate, and set fps_max to that as default
-    if constexpr(!Env::cfg(OS::WASM))  // not in WASM
-    {
+    // on WASM, once we've measured from rAF intervals, keep that value
+    if constexpr(Env::cfg(OS::WASM)) {
+        if(m_iHzMeasureFrames >= 10) return m_fDisplayHz;
+    } else {  // get the screen refresh rate, and set fps_max to that as default
+        // doesn't work in wasm
         const SDL_DisplayID display = SDL_GetDisplayForWindow(m_window);
-        const SDL_DisplayMode *currentDisplayMode = display ? SDL_GetCurrentDisplayMode(display) : nullptr;
+        const SDL_DisplayMode *currentDisplayMode = [display, window = m_window]() -> const SDL_DisplayMode * {
+            // fallbacks
+            if(!display) {
+                return SDL_GetWindowFullscreenMode(window);
+            }
+
+            if(const auto *curdisp = SDL_GetCurrentDisplayMode(display); curdisp) {
+                return curdisp;
+            } else if(const auto *curdesktop = SDL_GetDesktopDisplayMode(display); curdesktop) {
+                return curdesktop;
+            } else {
+                return SDL_GetWindowFullscreenMode(window);
+            }
+
+            return nullptr;
+        }();
 
         if(currentDisplayMode && currentDisplayMode->refresh_rate > 0) {
             if((m_fDisplayHz > currentDisplayMode->refresh_rate + 0.01) ||
@@ -732,7 +789,7 @@ float SDLMain::queryDisplayHz() {
                 debugLog("Couldn't SDL_GetCurrentDisplayMode(SDL display: {:d}): {:s}", display, SDL_GetError());
         }
     }
-    // in wasm or if we couldn't get the refresh rate just return a sane value to use for "vsync"-related calculations
+    // if we couldn't get the refresh rate (or in wasm pre-measurement) just return a sane value to use for "vsync"-related calculations
     return std::clamp<float>(cv::fps_max.getFloat(), 60.0f, 360.0f);
 }
 
