@@ -4,6 +4,12 @@
 
 #include <cstring>
 
+#ifdef _MSC_VER
+#include "fmt/format.h"
+#else
+#include <cinttypes>
+#endif
+
 namespace SString {
 // alphanumeric string comparator that ignores special characters at the start of strings
 bool alnum_comp(std::string_view a, std::string_view b) {
@@ -164,5 +170,18 @@ std::string join(const std::vector<std::string>& strings, S delim) {
 template std::string join<char>(const std::vector<std::string>&, char);
 template std::string join<const char*>(const std::vector<std::string>&, const char*);
 template std::string join<std::string_view>(const std::vector<std::string>&, std::string_view);
+
+std::string thousands(uint64_t n) {
+#ifdef _MSC_VER
+    return fmt::format("{:L}", n);
+#else
+    std::string ret;
+    ret.resize(28);
+    int written = std::snprintf(ret.data(), ret.size(), "%'" PRIu64 "", n);
+    ret.resize(written >= 0 ? written : 0);
+    return ret;
+#endif
+}
+
 
 }  // namespace SString

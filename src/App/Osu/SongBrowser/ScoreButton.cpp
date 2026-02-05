@@ -7,8 +7,8 @@
 
 #include <chrono>
 #include <utility>
-#include <cinttypes>
 
+#include "SString.h"
 #include "AnimationHandler.h"
 #include "BanchoUsers.h"
 #include "OsuConVars.h"
@@ -386,10 +386,8 @@ void ScoreButton::update(CBaseUIEventCtx &c) {
                 db->scores_mtx.unlock();
             }
 
-            char ppbuf[256]{};
-            int written = std::snprintf(&ppbuf[0], sizeof(ppbuf), "PP: %dpp (%'dx%s)", (int)std::round(sc.get_pp()),
-                                        sc.comboMax, comboBasedSuffix(sc.perfect, fullCombo));
-            this->sScoreScorePP = {&ppbuf[0], written >= 0 && written < sizeof(ppbuf) ? written : 0};
+            this->sScoreScorePP = fmt::format("PP: {}pp ({}x{:s})", (int)std::round(sc.get_pp()),
+                                              SString::thousands(sc.comboMax), comboBasedSuffix(sc.perfect, fullCombo));
         }
     }
 
@@ -683,23 +681,19 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
     }
 
     // display
-    const char *comboSuffix = comboBasedSuffix(sc.perfect, fullCombo);
+    const std::string_view comboSuffix = comboBasedSuffix(sc.perfect, fullCombo);
 
     this->scoreGrade = sc.calculate_grade();
     this->sScoreUsername = UString(sc.playerName.c_str());
-
-    char fmtbuf[256]{};
-    int fmted = std::snprintf(&fmtbuf[0], sizeof(fmtbuf), "Score: %'" PRIu64 " (%'dx%s)", sc.score, sc.comboMax, comboSuffix);
-    this->sScoreScore = {&fmtbuf[0], fmted >= 0 && fmted < sizeof(fmtbuf) ? fmted : 0};
+    this->sScoreScore =
+        fmt::format("Score: {} ({}x{:s})", SString::thousands(sc.score), SString::thousands(sc.comboMax), comboSuffix);
 
     if(f64 pp = sc.get_pp(); pp == -1.0) {
-        fmted = std::snprintf(&fmtbuf[0], sizeof(fmtbuf), "PP: ??? (%'dx%s)", sc.comboMax, comboSuffix);
-        this->sScoreScorePP = {&fmtbuf[0], fmted >= 0 && fmted < sizeof(fmtbuf) ? fmted : 0};
+        this->sScoreScorePP = fmt::format("PP: ??? ({}x{:s})", SString::thousands(sc.comboMax), comboSuffix);
     } else {
         // TODO: should PP use thousands separators?
-        fmted = std::snprintf(&fmtbuf[0], sizeof(fmtbuf), "PP: %dpp (%'dx%s)", (int)std::round(pp), sc.comboMax,
-                              comboSuffix);
-        this->sScoreScorePP = {&fmtbuf[0], fmted >= 0 && fmted < sizeof(fmtbuf) ? fmted : 0};
+        this->sScoreScorePP =
+            fmt::format("PP: {}pp ({}x{:s})", (int)std::round(pp), SString::thousands(sc.comboMax), comboSuffix);
     }
 
     this->sScoreAccuracy = fmt::format("{:.2f}%", accuracy);
