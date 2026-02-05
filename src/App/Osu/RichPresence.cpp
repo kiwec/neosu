@@ -71,11 +71,7 @@ void set_activity_with_image(struct DiscordActivity* to_set) {
     to_set->assets.small_text[0] = '\0';
 
     if(bg_visible && (listening || playing)) {
-        // Hardcoded "assets.ppy.sh" here, because b.ppy.sh returns 404 when not using "osu!" user agent
-        // We want this to work for Discord, not from ingame! Sadly, this means Discord presence breaks
-        // for servers that are hosting their own BSS (like Titanic).
-        auto url =
-            fmt::format("https://assets.ppy.sh/beatmaps/{}/covers/list@2x.jpg?{}", map->getSetID(), map->getID());
+        auto url = fmt::format("https://b.{}/thumb/{}l.jpg", BanchoState::endpoint, map->getSetID());
         strncpy(&to_set->assets.large_image[0], url.c_str(), 127);
 
         if(BanchoState::server_icon_url.length() > 0 && cv::main_menu_use_server_logo.getBool()) {
