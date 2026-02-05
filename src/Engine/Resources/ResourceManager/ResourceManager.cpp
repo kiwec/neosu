@@ -28,6 +28,8 @@
 #include "Logging.h"
 #include "Environment.h"
 
+#include "binary_embed.h"
+
 #include <stack>
 #include <utility>
 
@@ -406,7 +408,7 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
     pImpl->asyncLoader.reloadResources(resources);
 }
 
-void ResourceManager::setResourceName(Resource *res, std::string name) {
+void ResourceManager::setResourceName(Resource *res, std::string_view name) {
     if(!res) {
         logIfCV(debug_rm, "attempted to set name {:s} on NULL resource!", name);
         return;
@@ -596,6 +598,23 @@ Shader *ResourceManager::createShader(std::string vertexShader, std::string frag
 Shader *ResourceManager::createShader(std::string vertexShader, std::string fragmentShader) {
     Shader *shader = g->createShaderFromSource(std::move(vertexShader), std::move(fragmentShader));
 
+    loadResource(shader, true);
+
+    return shader;
+}
+
+Shader *ResourceManager::createShaderAuto(std::string_view shaderBasename) {
+    auto *shader = pImpl->checkIfExistsAndHandle<Shader>(shaderBasename);
+    if(shader != nullptr) return shader;
+
+    // create instance and load it
+    const std::string_view pfx = env->usingDX11() ? "DX11" : "GL";
+    assert(ALL_BINMAP.contains(fmt::format("{}_{}_vsh", pfx, shaderBasename)) &&
+           ALL_BINMAP.contains(fmt::format("{}_{}_fsh", pfx, shaderBasename)));
+    shader = g->createShaderFromSource(std::string{ALL_BINMAP.at(fmt::format("{}_{}_vsh", pfx, shaderBasename))},
+                                       std::string{ALL_BINMAP.at(fmt::format("{}_{}_fsh", pfx, shaderBasename))});
+
+    setResourceName(shader, shaderBasename);
     loadResource(shader, true);
 
     return shader;

@@ -105,9 +105,6 @@ neosu_SOURCES = \
 	src/App/Osu/score.cpp \
 	src/App/Tests/AudioTester/AudioTester.cpp \
 	src/App/Tests/BaseFrameworkTest/BaseFrameworkTest.cpp \
-	src/Binary/curl_blob.cpp \
-	src/Binary/misc_bin.cpp \
-	src/Binary/shaders.cpp \
 	src/Engine/AnimationHandler.cpp \
 	src/Engine/ConVars/ConVar.cpp \
 	src/Engine/ConVars/ConVarHandler.cpp \

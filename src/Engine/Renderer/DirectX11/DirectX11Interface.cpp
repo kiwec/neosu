@@ -28,7 +28,7 @@
 #include "DirectX11Shader.h"
 #include "DirectX11VertexArrayObject.h"
 
-#include "shaders.h"
+#include "binary_embed.h"
 
 #include <string_view>
 
@@ -1434,9 +1434,11 @@ int DirectX11Interface::compareFuncToDirectX(DrawCompareFunc /*compareFunc*/) {
 void DirectX11Interface::initSmoothClipShader() {
     if(this->smoothClipShader) return;
 
-    this->smoothClipShader.reset(this->createShaderFromSource(
-        std::string(reinterpret_cast<const char *>(DX11_smoothclip_vsh), DX11_smoothclip_vsh_size()),
-        std::string(reinterpret_cast<const char *>(DX11_smoothclip_fsh), DX11_smoothclip_fsh_size())));
+    this->smoothClipShader.reset(
+        this->createShaderFromSource(std::string(reinterpret_cast<const char *>(&DX11_smoothclip_vsh[0]),
+                                                 reinterpret_cast<const char *>(&DX11_smoothclip_vsh_end[0])),
+                                     std::string(reinterpret_cast<const char *>(&DX11_smoothclip_fsh[0]),
+                                                 reinterpret_cast<const char *>(&DX11_smoothclip_fsh_end[0]))));
 
     if(this->smoothClipShader) {
         this->smoothClipShader->loadAsync();

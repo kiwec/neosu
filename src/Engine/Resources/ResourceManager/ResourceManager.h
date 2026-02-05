@@ -68,7 +68,7 @@ class ResourceManager final {
     void setSyncLoadMaxBatchSize(size_t resourcesToLoad);
 
     // can't allow directly setting resource names, otherwise the map will go out of sync
-    void setResourceName(Resource *res, std::string name);
+    void setResourceName(Resource *res, std::string_view name);
 
     // resources which will be garbage collected on shutdown
     // userPtr must contain a pre-created (allocated with new) resource of any type
@@ -102,6 +102,10 @@ class ResourceManager final {
     Shader *loadShader(std::string vertexShaderFilePath, std::string fragmentShaderFilePath);
     Shader *createShader(std::string vertexShader, std::string fragmentShader, const std::string &resourceName);
     Shader *createShader(std::string vertexShader, std::string fragmentShader);
+
+    // automatically loads opengl/dx11 vertex and fragment shaders
+    // sets the resource name to the shaderBasename as well
+    Shader *createShaderAuto(std::string_view shaderBasename);
 
     // rendertargets
     RenderTarget *createRenderTarget(int x, int y, int width, int height,

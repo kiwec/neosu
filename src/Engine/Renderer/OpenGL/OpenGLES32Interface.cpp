@@ -25,7 +25,7 @@
 
 #include "SDLGLInterface.h"
 
-#include "shaders.h"
+#include "binary_embed.h"
 
 OpenGLES32Interface::OpenGLES32Interface() : Graphics(), m_vResolution(engine->getScreenSize()) {
     // renderer
@@ -1010,9 +1010,11 @@ void OpenGLES32Interface::updateAllShaderTransforms() {
 void OpenGLES32Interface::initSmoothClipShader() {
     if(this->smoothClipShader != nullptr) return;
 
-    this->smoothClipShader.reset(this->createShaderFromSource(
-        std::string(reinterpret_cast<const char *>(GL_smoothclip_vsh), GL_smoothclip_vsh_size()),
-        std::string(reinterpret_cast<const char *>(GL_smoothclip_fsh), GL_smoothclip_fsh_size())));
+    this->smoothClipShader.reset(
+        this->createShaderFromSource(std::string(reinterpret_cast<const char *>(&GL_smoothclip_vsh[0]),
+                                                 reinterpret_cast<const char *>(&GL_smoothclip_vsh_end[0])),
+                                     std::string(reinterpret_cast<const char *>(&GL_smoothclip_fsh[0]),
+                                                 reinterpret_cast<const char *>(&GL_smoothclip_fsh_end[0]))));
 
     if(this->smoothClipShader != nullptr) {
         this->smoothClipShader->loadAsync();

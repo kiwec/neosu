@@ -9,7 +9,7 @@
 #include "SyncJthread.h"
 #include "SyncCV.h"
 
-#include "curl_blob.h"
+#include "binary_embed.h"
 #include <curl/curl.h>
 
 #include <utility>

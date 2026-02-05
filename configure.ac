@@ -1091,19 +1091,9 @@ AC_SUBST([AUDIO_LIBS])
 BUNDLED_INCLUDES="-I\$(srcdir)/libraries -I\$(srcdir)/libraries/delegatesv2 -I\$(srcdir)/libraries/unordered_dense"
 AC_SUBST([BUNDLED_INCLUDES])
 
-# misc. resources to be included as binary data
-MISC_INCDIR="$srcdir/$ASSETS_DIR/misc/"
-INCBIN_FLAGS="$INCBIN_FLAGS -I$MISC_INCDIR"
-
-AC_SUBST([MISC_INCDIR])
-AC_SUBST([INCBIN_FLAGS])
-
 AC_MSG_CHECKING([for shaders in $srcdir/$ASSETS_DIR/shaders])
 AS_IF([test -f "$srcdir/$ASSETS_DIR/shaders/GL_slider_f.glsl"], [
     AC_MSG_RESULT([yes])
-    SHADERS_INCDIR="$srcdir/$ASSETS_DIR/shaders/"
-    INCBIN_FLAGS="$INCBIN_FLAGS -I$SHADERS_INCDIR"
-    AC_SUBST([SHADERS_INCDIR])
 ], [
     AC_MSG_RESULT([no])
     AC_MSG_ERROR([neosu shader resources are missing!])

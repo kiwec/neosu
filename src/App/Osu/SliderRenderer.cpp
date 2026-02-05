@@ -14,8 +14,6 @@
 #include "VertexArrayObject.h"
 #include "Logging.h"
 
-#include "shaders.h"
-
 #include <limits>
 
 namespace SliderRenderer {
@@ -248,8 +246,8 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
 
     osu->getSliderFrameBuffer()->setColor(argb(alpha * cv::slider_alpha_multiplier.getFloat(), 1.0f, 1.0f, 1.0f));
     osu->getSliderFrameBuffer()->drawRect(s_fBoundingBoxMinX, s_fBoundingBoxMinY,
-                                         s_fBoundingBoxMaxX - s_fBoundingBoxMinX,
-                                         s_fBoundingBoxMaxY - s_fBoundingBoxMinY);
+                                          s_fBoundingBoxMaxX - s_fBoundingBoxMinX,
+                                          s_fBoundingBoxMaxY - s_fBoundingBoxMinY);
 }
 
 void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 translation, float scale,
@@ -359,9 +357,7 @@ void checkUpdateVars(float hitcircleDiameter) {
     if(s_BLEND_SHADER == nullptr)  // only do this once
     {
         // build shaders
-        s_BLEND_SHADER = resourceManager->createShader(
-            env->usingDX11() ? VSH_STRING(DX11_, slider) : VSH_STRING(GL_, slider),
-            env->usingDX11() ? FSH_STRING(DX11_, slider) : FSH_STRING(GL_, slider), "slider");
+        s_BLEND_SHADER = resourceManager->createShaderAuto("slider");
     }
 
     const int subdivisions = cv::slider_body_unit_circle_subdivisions.getInt();

@@ -35,8 +35,6 @@
 #include "score.h"
 #include "Sound.h"
 
-#include "shaders.h"
-
 HUD::CursorTrail::CursorTrail() : buffer(std::clamp(cv::cursor_trail_max_size.getInt() * 2, 1, 32768)) {}
 
 // cv::cursor_trail_max_size callback
@@ -53,9 +51,7 @@ void HUD::onCursorTrailMaxChange() {
 HUD::HUD() : UIScreen() {
     // resources
     this->tempFont = engine->getDefaultFont();
-    this->cursorTrailShader = resourceManager->createShader(
-        env->usingDX11() ? VSH_STRING(DX11_, cursortrail) : VSH_STRING(GL_, cursortrail),
-        env->usingDX11() ? FSH_STRING(DX11_, cursortrail) : FSH_STRING(GL_, cursortrail), "cursortrail");
+    this->cursorTrailShader = resourceManager->createShaderAuto("cursortrail");
 
     cv::cursor_trail_max_size.setCallback(SA::MakeDelegate<&HUD::onCursorTrailMaxChange>(this));
 

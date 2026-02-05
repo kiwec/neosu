@@ -53,8 +53,6 @@
 #include "UI.h"
 #include "UIModSelectorModButton.h"
 
-#include "shaders.h"
-
 using namespace flags::operators;
 BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface(), ppv2_calc(this) {
     // vars
@@ -1836,9 +1834,7 @@ void BeatmapInterface::drawFlashlight(FLType type) {
     if(type == FLType::NORMAL_FL) {
         // Lazy-load shader
         if(!this->flashlight_shader) {
-            this->flashlight_shader = resourceManager->createShader(
-                env->usingDX11() ? VSH_STRING(DX11_, flashlight) : VSH_STRING(GL_, flashlight),
-                env->usingDX11() ? FSH_STRING(DX11_, flashlight) : FSH_STRING(GL_, flashlight), "flashlight");
+            this->flashlight_shader = resourceManager->createShaderAuto("flashlight");
         }
 
         // Dim screen when holding a slider
@@ -1867,10 +1863,7 @@ void BeatmapInterface::drawFlashlight(FLType type) {
     if(type == FLType::ACTUAL_FL) {
         // Lazy-load shader
         if(!this->actual_flashlight_shader) {
-            this->actual_flashlight_shader = resourceManager->createShader(
-                env->usingDX11() ? VSH_STRING(DX11_, actual_flashlight) : VSH_STRING(GL_, actual_flashlight),
-                env->usingDX11() ? FSH_STRING(DX11_, actual_flashlight) : FSH_STRING(GL_, actual_flashlight),
-                "actual_flashlight");
+            this->actual_flashlight_shader = resourceManager->createShaderAuto("actual_flashlight");
         }
 
         // Brighten screen when holding a slider
