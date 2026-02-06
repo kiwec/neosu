@@ -526,7 +526,7 @@ AS_IF([test -n "$WASM_CC"], [
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -U__linux__ -D__EMSCRIPTEN__"
     NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sWASM=1 -sUSE_PTHREADS=1 -sFETCH=1 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sENVIRONMENT=web,worker,node"
     # --emrun for support for running the .html with emrun (temporary until we get a real webpage for it)
-    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sUSE_PTHREADS=1 -sFETCH=1 -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sINITIAL_MEMORY=1536MB -sWASM=1 -sENVIRONMENT=web,worker,node --pre-js \$(srcdir)/src/Platform/wasm-node-polyfill.js --emrun"
+    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sUSE_PTHREADS=1 -sFETCH=1 -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sINITIAL_MEMORY=1536MB -sWASM=1 -sENVIRONMENT=web,worker,node -lidbfs.js -lnodefs.js --pre-js \$(srcdir)/src/Platform/wasm-node-polyfill.js --emrun"
 
     # the Songs folder preload is definitely temporary, just for testing purposes to have something to play
     WASM_PRELOAD_FLAGS="--preload-file \$(srcdir)/\$(ASSETS_DIR)/fonts@fonts --preload-file \$(srcdir)/\$(ASSETS_DIR)/materials@materials --preload-file \$(builddir)/wasm-maps@/libsdl/Songs"
@@ -550,6 +550,7 @@ __EOF__
     LIBPREFIX="lib"
     EXEEXT=".html"
     AC_DEFINE([MCENGINE_PLATFORM_WASM], [1], [Define if compiling for WASM with Emscripten.])
+    AC_DEFINE([NEOSU_DATA_DIR], ["/persist/"], [Persistent writable data directory for WASM.])
 ], [test "$host_os" = "linux-gnu"], [
     AS_IF([test "$host_cpu" = "i686"], [
         install -Dm755 /dev/stdin $PWD/build/$target-$CC <<EOF

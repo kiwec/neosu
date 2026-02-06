@@ -1667,7 +1667,7 @@ void Osu::onMinimized() { ui->getVolumeOverlay()->loseFocus(); }
 bool Osu::onShutdown() {
     debugLog("Osu::onShutdown()");
 
-    if(!cv::alt_f4_quits_even_while_playing.getBool() && this->isInPlayMode()) {
+    if(!Env::cfg(OS::WASM) && !cv::alt_f4_quits_even_while_playing.getBool() && this->isInPlayMode()) {
         this->map_iface->stop();
         return false;
     }

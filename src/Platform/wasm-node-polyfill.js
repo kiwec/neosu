@@ -56,3 +56,29 @@ if(typeof window === 'undefined') {
 
     }
 }
+
+// mount persistent filesystem at /persist/ before C++ starts
+Module['preRun'] = Module['preRun'] || [];
+Module['preRun'].push(function() {
+    FS.mkdir('/persist');
+    if(typeof process !== 'undefined' && process.versions && process.versions.node) {
+        // Node.js: use NODEFS backed by a host directory next to neosu.js
+        var path = require('path');
+        var fs = require('fs');
+        var dataDir = path.join(path.dirname(process.argv[1]), 'neosu-data');
+        fs.mkdirSync(dataDir, { recursive: true });
+        FS.mount(NODEFS, { root: dataDir }, '/persist');
+    } else {
+        // browser: use IDBFS backed by IndexedDB
+        addRunDependency('persist-sync');
+        FS.mount(IDBFS, { autoPersist: true }, '/persist');
+        FS.syncfs(true, function(err) {
+            if(err) console.error('IDBFS initial sync error:', err);
+            removeRunDependency('persist-sync');
+        });
+        // best-effort final sync on tab close (autoPersist handles most cases)
+        window.addEventListener('beforeunload', function() {
+            FS.syncfs(false, function(e) { if(e) console.error('syncfs error:', e); });
+        });
+    }
+});

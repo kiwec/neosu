@@ -19,6 +19,7 @@
 #include "Profiler.h"
 #include "UString.h"
 #include "Thread.h"
+#include "Engine.h"
 #include "DiffCalcTool.h"
 
 #include "environment_private.h"
@@ -33,6 +34,10 @@
 #include <filesystem>
 #include <locale>
 #include <clocale>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 
 #ifdef WITH_LIVEPP
 #include "LPP_API_x64_CPP.h"
@@ -88,7 +93,22 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
         restartArgs = fmain->getCommandLine();
     }
 
-    fmain->shutdown(result);  // FIXME: redundant?
+    // we might be called directly instead of through events, so check this again
+    if(fmain->m_bRunning) {
+        fmain->m_bRunning = false;
+        if(fmain->m_engine && !fmain->m_engine->isShuttingDown()) {
+            fmain->m_engine->shutdown();
+        }
+    }
+#ifdef __EMSCRIPTEN__
+    // flush IDBFS to IndexedDB after config/scores have been saved
+    // clang-format off
+    EM_ASM(
+        if(typeof FS !== 'undefined' && FS.syncfs)
+            FS.syncfs(false, function(e) { if(e) console.error('syncfs error:', e); });
+    );
+    // clang-format on
+#endif
     if constexpr(Env::cfg(OS::WASM) || Env::cfg(FEAT::MAINCB)) {
         // we allocated it with new
         delete fmain;

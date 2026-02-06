@@ -161,8 +161,7 @@ void Environment::update() {
 
 Graphics *Environment::createRenderer() {
 #ifdef MCENGINE_PLATFORM_WASM
-    if(m_bHeadless)
-        return new NullGraphics();
+    if(m_bHeadless) return new NullGraphics();
 #endif
 #ifdef MCENGINE_FEATURE_DIRECTX11
     if(m_bUsingDX11)  // only if specified on the command line, for now
@@ -176,6 +175,8 @@ Graphics *Environment::createRenderer() {
 }
 
 void Environment::shutdown() {
+    if(!isRunning()) return;
+
     setRawMouseInput(false);
 
     SDL_Event event{};

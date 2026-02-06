@@ -22,6 +22,8 @@ struct AppDescriptor;
 
 class SDLMain final : public Environment {
     NOCOPY_NOMOVE(SDLMain)
+    friend void SDL_AppQuit(void *appstate, SDL_AppResult result);
+
    public:
     SDLMain(const Mc::AppDescriptor &appDesc, const std::unordered_map<std::string, std::optional<std::string>> &argMap,
             const std::vector<std::string> &argVec);
