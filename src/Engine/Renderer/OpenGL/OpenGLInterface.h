@@ -7,6 +7,7 @@
 
 #ifdef MCENGINE_FEATURE_OPENGL
 #include "Graphics.h"
+#include "Shader.h"
 
 class Image;
 
@@ -96,8 +97,7 @@ class OpenGLInterface : public Graphics {
     // factory
     Image *createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) final;
     Image *createImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) final;
-    RenderTarget *createRenderTarget(int x, int y, int width, int height,
-                                     MultisampleType multiSampleType) final;
+    RenderTarget *createRenderTarget(int x, int y, int width, int height, MultisampleType multiSampleType) final;
     Shader *createShaderFromFile(std::string vertexShaderFilePath,
                                  std::string fragmentShaderFilePath) final;                      // DEPRECATED
     Shader *createShaderFromSource(std::string vertexShader, std::string fragmentShader) final;  // DEPRECATED

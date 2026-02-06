@@ -40,7 +40,7 @@ using GLuint = unsigned int;
 using GLchar = char;
 using GLsizei = int;
 
-class OpenGLSync;
+#include "OpenGLSync.h"
 
 typedef struct SDL_Window SDL_Window;
 class SDLGLInterface final : public BackendGLInterface {
