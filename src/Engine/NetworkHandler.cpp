@@ -655,7 +655,7 @@ void NetworkImpl::update() {
 
 #ifdef MCENGINE_PLATFORM_WASM
 Hash::unstable_stringmap<std::string> NetworkImpl::extractHeaders(emscripten_fetch_t* fetch) {
-    assert(fetch->readyState >= HEADERS_RECEIVED);
+    assert(fetch->readyState >= 2 /*HEADERS_RECEIVED*/);
 
     Hash::unstable_stringmap<std::string> out;
 
