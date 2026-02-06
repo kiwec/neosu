@@ -335,7 +335,9 @@ void init(bool create_console) noexcept {
     // use overrun_oldest policy for non-blocking behavior
     spdlog::init_thread_pool(32768, 1, []() -> void {
         McThread::set_current_thread_name(US_("spd_logger"));
-        McThread::set_current_thread_prio(McThread::Priority::LOW);
+        // this causes a "leak" according to ASan, through SDL_CreateEnvironment (because it tries to query some SDL hint value)
+        // just skip it
+        // McThread::set_current_thread_prio(McThread::Priority::LOW);
     });
 
     // engine console sink handles its own formatting
