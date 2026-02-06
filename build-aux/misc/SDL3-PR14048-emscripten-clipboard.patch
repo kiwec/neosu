@@ -1,0 +1,388 @@
+From 8af1f33de268e4e6698daf5e7f39513391216410 Mon Sep 17 00:00:00 2001
+From: "Ryan C. Gordon" <icculus@icculus.org>
+Date: Thu, 25 Sep 2025 14:33:25 -0400
+Subject: [PATCH 1/3] emscripten: Attempt at adding clipboard support.
+
+This is not usable as-is, do not merge.
+
+Reference Issue #13785.
+---
+ .../emscripten/SDL_emscriptenclipboard.c      | 164 ++++++++++++++++++
+ .../emscripten/SDL_emscriptenclipboard.h      |  41 +++++
+ src/video/emscripten/SDL_emscriptenvideo.c    |   9 +
+ 3 files changed, 214 insertions(+)
+ create mode 100644 src/video/emscripten/SDL_emscriptenclipboard.c
+ create mode 100644 src/video/emscripten/SDL_emscriptenclipboard.h
+
+diff --git a/src/video/emscripten/SDL_emscriptenclipboard.c b/src/video/emscripten/SDL_emscriptenclipboard.c
+new file mode 100644
+index 000000000..14d32794e
+--- /dev/null
++++ b/src/video/emscripten/SDL_emscriptenclipboard.c
+@@ -0,0 +1,164 @@
++/*
++  Simple DirectMedia Layer
++  Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
++
++  This software is provided 'as-is', without any express or implied
++  warranty.  In no event will the authors be held liable for any damages
++  arising from the use of this software.
++
++  Permission is granted to anyone to use this software for any purpose,
++  including commercial applications, and to alter it and redistribute it
++  freely, subject to the following restrictions:
++
++  1. The origin of this software must not be misrepresented; you must not
++     claim that you wrote the original software. If you use this software
++     in a product, an acknowledgment in the product documentation would be
++     appreciated but is not required.
++  2. Altered source versions must be plainly marked as such, and must not be
++     misrepresented as being the original software.
++  3. This notice may not be removed or altered from any source distribution.
++*/
++#include "SDL_internal.h"
++
++#ifdef SDL_VIDEO_DRIVER_EMSCRIPTEN
++
++#include "SDL_emscriptenvideo.h"
++#include "SDL_emscriptenclipboard.h"
++#include "../SDL_clipboard_c.h"
++#include "../../events/SDL_events_c.h"
++
++void Emscripten_InitClipboard(SDL_VideoDevice *device)
++{
++    MAIN_THREAD_EM_ASM_INT({
++        // !!! FIXME: we make sure `Module['SDL3']` exists like this all over. Can we move this to the "main" startup code?
++        if (typeof(Module['SDL3']) === 'undefined') {
++            Module['SDL3'] = {};
++        }
++
++        var SDL3 = Module['SDL3'];
++        SDL3.clipboard = {};
++        SDL3.clipboard.contents = [];
++        SDL3.clipboard.polling_id = -1;
++
++        // we don't touch the clipboard until the app explicitly requests it, because it pops
++        //  up a permissions dialog and might result in ongoing overhead. So we call this
++        //  function when we finally need to make contact with the outside world.
++        SDL3.clipboard.prepare = function() {
++            SDL3.clipboard.refresh = function() {
++                navigator.clipboard.read().then((clipboardItems) => {
++                    SDL3.clipboard.contents = [];
++                    for (clipboardItem of clipboardItems) {
++                        for (type of clipboardItem.types) {
++                            clipboardItem.getType(type).then((blob) => {
++                                blob.arrayBuffer().then((buffer) => {
++                                    console.log("Got a new clipboard buffer for type '" + type + "'");
++                                    SDL3.clipboard.contents[type] = new Uint8Array(buffer);
++                                });
++                            });
++                        }
++                    }
++                }).catch((err) => { /*console.error(err);*/ /* oh well, no clipboard update for you. */ });
++            };
++
++            SDL3.clipboard.refresh();  // get this started right now.
++
++            // There's a new "clipboardchanged" event proposed (as of September 2025). Try to use it.
++            if ('onclipboardchange' in navigator.clipboard) {
++                SDL3.clipboard.eventHandlerClipboardChange = function(event) {
++                    SDL3.clipboard.refresh();
++                };
++                navigator.clipboard.addEventListener('clipboardchange', SDL3.clipboard.eventHandlerClipboardChange);
++            } else {  // fall back to polling once per second. Gross.
++                SDL3.clipboard.polling_id = setInterval(SDL3.clipboard.refresh, 1000);
++            }
++
++            SDL3.clipboard.prepare = function() {};   // turn this into a no-op now that we're ready.
++        };
++    });
++}
++
++const char **Emscripten_GetTextMimeTypes(SDL_VideoDevice *device, size_t *num_mime_types)
++{
++    static const char *text_plain = "text/plain";
++    *num_mime_types = 1;
++    return &text_plain;
++}
++
++bool Emscripten_SetClipboardData(SDL_VideoDevice *device)
++{
++    MAIN_THREAD_EM_ASM({ var SDL3 = Module['SDL3']; SDL3.clipboard.contents = []; SDL3.clipboard.pending_contents = []; });
++
++    for (size_t i = 0; i < device->num_clipboard_mime_types; i++) {
++        const char *mime_type = device->clipboard_mime_types[i];
++        size_t clipboard_data_size = 0;
++        const void *clipboard_data = device->clipboard_callback(device->clipboard_userdata, mime_type, &clipboard_data_size);
++        if (clipboard_data && (clipboard_data_size > 0)) {
++            MAIN_THREAD_EM_ASM({
++                var mime_type = UTF8ToString($0);
++                var clipboard_data = $1;
++                var clipboard_data_size = $2;
++                var ui8array = new Uint8Array(Module.HEAPU8.subarray(clipboard_data, clipboard_data + clipboard_data_size));  // !!! FIXME: I _think_ this makes a copy of the data, not just a view into the heap.
++                var SDL3 = Module['SDL3'];
++                SDL3.clipboard.contents[mime_type] = ui8array;
++                SDL3.clipboard.pending_contents[mime_type] = new Blob([ui8array], { type: mime_type} );
++            }, mime_type, clipboard_data, clipboard_data_size);
++        }
++    }
++
++    MAIN_THREAD_EM_ASM({
++        var SDL3 = Module['SDL3'];
++        const clipboardItem = new ClipboardItem(SDL3.clipboard.pending_contents);
++        SDL3.clipboard.pending_contents = undefined;
++        navigator.clipboard.write([clipboardItem]).then(() => {
++            //console.log("We set the clipboard!");
++        }).catch((err) => { console.error(err); /* oh well, ignore it. */ });
++    });
++
++    return true;  // this is an async call, just pretend it worked, even if it didn't.
++}
++
++void *Emscripten_GetClipboardData(SDL_VideoDevice *device, const char *mime_type, size_t *length)
++{
++    if (!Emscripten_HasClipboardData(device, mime_type)) {
++        return NULL;
++    }
++
++    const size_t buflen = (size_t) MAIN_THREAD_EM_ASM_INT({ return Module['SDL3'].clipboard.contents[UTF8ToString($0)].byteLength; }, mime_type);
++    void *retval = SDL_malloc(buflen + 1);
++    if (retval) {
++        MAIN_THREAD_EM_ASM({
++            var ui8array = Module['SDL3'].clipboard.contents[UTF8ToString($0)];
++            var heapu8 = new Uint8Array(Module.HEAPU8.buffer, $1, $2);
++            heapu8.set(ui8array);
++        }, mime_type, retval, buflen);
++        ((char *)retval)[buflen] = '\0';  // make sure it's null-terminated.
++    }
++
++    return retval;
++}
++
++bool Emscripten_HasClipboardData(SDL_VideoDevice *device, const char *mime_type)
++{
++    return MAIN_THREAD_EM_ASM_INT({
++        var SDL3 = Module['SDL3'];
++        SDL3.clipboard.prepare();
++        return (SDL3.clipboard.contents[UTF8ToString($0)] !== undefined) ? 1 : 0;
++    }, mime_type);
++}
++
++void Emscripten_QuitClipboard(SDL_VideoDevice *device)
++{
++    MAIN_THREAD_EM_ASM({
++        var SDL3 = Module['SDL3'];
++        if (SDL3.clipboard.eventHandlerClipboardChange !== undefined) {
++            navigator.clipboard.removeEventListener('clipboardchange', SDL3.clipboard.eventHandlerClipboardChange);
++            SDL3.clipboard.eventHandlerClipboardChange = undefined;
++        }
++        if (SDL3.clipboard.polling_id != -1) {
++            clearInterval(SDL3.clipboard.polling_id);
++        }
++        SDL3.clipboard = undefined;
++    });
++}
++
++#endif // SDL_VIDEO_DRIVER_EMSCRIPTEN
+diff --git a/src/video/emscripten/SDL_emscriptenclipboard.h b/src/video/emscripten/SDL_emscriptenclipboard.h
+new file mode 100644
+index 000000000..1ee5250bb
+--- /dev/null
++++ b/src/video/emscripten/SDL_emscriptenclipboard.h
+@@ -0,0 +1,41 @@
++/*
++  Simple DirectMedia Layer
++  Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
++
++  This software is provided 'as-is', without any express or implied
++  warranty.  In no event will the authors be held liable for any damages
++  arising from the use of this software.
++
++  Permission is granted to anyone to use this software for any purpose,
++  including commercial applications, and to alter it and redistribute it
++  freely, subject to the following restrictions:
++
++  1. The origin of this software must not be misrepresented; you must not
++     claim that you wrote the original software. If you use this software
++     in a product, an acknowledgment in the product documentation would be
++     appreciated but is not required.
++  2. Altered source versions must be plainly marked as such, and must not be
++     misrepresented as being the original software.
++  3. This notice may not be removed or altered from any source distribution.
++*/
++#include "SDL_internal.h"
++
++#ifndef SDL_emscriptenclipboard_h_
++#define SDL_emscriptenclipboard_h_
++
++typedef struct Emscripten_ClipboardData {
++    SDL_ClipboardDataCallback callback;
++    void *userdata;
++    const char **mime_types;
++    size_t mime_count;
++    Uint32 sequence;
++} SDLEmscripten_ClipboardData;
++
++extern void Emscripten_InitClipboard(SDL_VideoDevice *_this);
++extern const char **Emscripten_GetTextMimeTypes(SDL_VideoDevice *_this, size_t *num_mime_types);
++extern bool Emscripten_SetClipboardData(SDL_VideoDevice *_this);
++extern void *Emscripten_GetClipboardData(SDL_VideoDevice *_this, const char *mime_type, size_t *length);
++extern bool Emscripten_HasClipboardData(SDL_VideoDevice *_this, const char *mime_type);
++extern void Emscripten_QuitClipboard(SDL_VideoDevice *_this);
++
++#endif // SDL_emscriptenclipboard_h_
+diff --git a/src/video/emscripten/SDL_emscriptenvideo.c b/src/video/emscripten/SDL_emscriptenvideo.c
+index 942809c4a..49687e460 100644
+--- a/src/video/emscripten/SDL_emscriptenvideo.c
++++ b/src/video/emscripten/SDL_emscriptenvideo.c
+@@ -32,6 +32,7 @@
+ #include "SDL_emscriptenframebuffer.h"
+ #include "SDL_emscriptenevents.h"
+ #include "SDL_emscriptenmouse.h"
++#include "SDL_emscriptenclipboard.h"
+ 
+ #define EMSCRIPTENVID_DRIVER_NAME "emscripten"
+ 
+@@ -187,6 +188,11 @@ static SDL_VideoDevice *Emscripten_CreateDevice(void)
+     device->GL_SwapWindow = Emscripten_GLES_SwapWindow;
+     device->GL_DestroyContext = Emscripten_GLES_DestroyContext;
+ 
++    device->GetTextMimeTypes = Emscripten_GetTextMimeTypes;
++    device->SetClipboardData = Emscripten_SetClipboardData;
++    device->GetClipboardData = Emscripten_GetClipboardData;
++    device->HasClipboardData = Emscripten_HasClipboardData;
++
+     device->free = Emscripten_DeleteDevice;
+ 
+     Emscripten_ListenSystemTheme();
+@@ -395,6 +401,8 @@ bool Emscripten_VideoInit(SDL_VideoDevice *_this)
+ 
+     Emscripten_RegisterGlobalEventHandlers(_this);
+ 
++    Emscripten_InitClipboard(_this);
++
+     // We're done!
+     return true;
+ }
+@@ -410,6 +418,7 @@ static void Emscripten_VideoQuit(SDL_VideoDevice *_this)
+     Emscripten_UnregisterGlobalEventHandlers(_this);
+     Emscripten_QuitMouse();
+     Emscripten_UnlistenSystemTheme();
++    Emscripten_QuitClipboard(_this);
+     pumpevents_has_run = false;
+     pending_swap_interval = -1;
+ }
+-- 
+2.52.0
+
+From b4dd81238fbd85c15e9ca9af757ed0d11c50fb5f Mon Sep 17 00:00:00 2001
+From: William Horvath <william@horvath.blog>
+Date: Thu, 5 Feb 2026 22:15:09 -0800
+Subject: [PATCH 2/3] emscriptenclipboard: Fix some clang-tidy warnings.
+
+---
+ .../emscripten/SDL_emscriptenclipboard.c      | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/src/video/emscripten/SDL_emscriptenclipboard.c b/src/video/emscripten/SDL_emscriptenclipboard.c
+index 14d32794e..8fb240512 100644
+--- a/src/video/emscripten/SDL_emscriptenclipboard.c
++++ b/src/video/emscripten/SDL_emscriptenclipboard.c
+@@ -25,9 +25,8 @@
+ #include "SDL_emscriptenvideo.h"
+ #include "SDL_emscriptenclipboard.h"
+ #include "../SDL_clipboard_c.h"
+-#include "../../events/SDL_events_c.h"
+ 
+-void Emscripten_InitClipboard(SDL_VideoDevice *device)
++void Emscripten_InitClipboard(SDL_VideoDevice *_this)
+ {
+     MAIN_THREAD_EM_ASM_INT({
+         // !!! FIXME: we make sure `Module['SDL3']` exists like this all over. Can we move this to the "main" startup code?
+@@ -77,21 +76,21 @@ void Emscripten_InitClipboard(SDL_VideoDevice *device)
+     });
+ }
+ 
+-const char **Emscripten_GetTextMimeTypes(SDL_VideoDevice *device, size_t *num_mime_types)
++const char **Emscripten_GetTextMimeTypes(SDL_VideoDevice *_this, size_t *num_mime_types)
+ {
+     static const char *text_plain = "text/plain";
+     *num_mime_types = 1;
+     return &text_plain;
+ }
+ 
+-bool Emscripten_SetClipboardData(SDL_VideoDevice *device)
++bool Emscripten_SetClipboardData(SDL_VideoDevice *_this)
+ {
+     MAIN_THREAD_EM_ASM({ var SDL3 = Module['SDL3']; SDL3.clipboard.contents = []; SDL3.clipboard.pending_contents = []; });
+ 
+-    for (size_t i = 0; i < device->num_clipboard_mime_types; i++) {
+-        const char *mime_type = device->clipboard_mime_types[i];
++    for (size_t i = 0; i < _this->num_clipboard_mime_types; i++) {
++        const char *mime_type = _this->clipboard_mime_types[i];
+         size_t clipboard_data_size = 0;
+-        const void *clipboard_data = device->clipboard_callback(device->clipboard_userdata, mime_type, &clipboard_data_size);
++        const void *clipboard_data = _this->clipboard_callback(_this->clipboard_userdata, mime_type, &clipboard_data_size);
+         if (clipboard_data && (clipboard_data_size > 0)) {
+             MAIN_THREAD_EM_ASM({
+                 var mime_type = UTF8ToString($0);
+@@ -117,9 +116,9 @@ bool Emscripten_SetClipboardData(SDL_VideoDevice *device)
+     return true;  // this is an async call, just pretend it worked, even if it didn't.
+ }
+ 
+-void *Emscripten_GetClipboardData(SDL_VideoDevice *device, const char *mime_type, size_t *length)
++void *Emscripten_GetClipboardData(SDL_VideoDevice *_this, const char *mime_type, size_t *length)
+ {
+-    if (!Emscripten_HasClipboardData(device, mime_type)) {
++    if (!Emscripten_HasClipboardData(_this, mime_type)) {
+         return NULL;
+     }
+ 
+@@ -146,7 +145,7 @@ bool Emscripten_HasClipboardData(SDL_VideoDevice *device, const char *mime_type)
+     }, mime_type);
+ }
+ 
+-void Emscripten_QuitClipboard(SDL_VideoDevice *device)
++void Emscripten_QuitClipboard(SDL_VideoDevice *_this)
+ {
+     MAIN_THREAD_EM_ASM({
+         var SDL3 = Module['SDL3'];
+-- 
+2.52.0
+
+From 0cc823534b4618b979d04bdddc6b0b3b5c739847 Mon Sep 17 00:00:00 2001
+From: William Horvath <william@horvath.blog>
+Date: Thu, 5 Feb 2026 22:30:14 -0800
+Subject: [PATCH 3/3] emscriptenclipboard: Use HEAPU8 directly instead of
+ Module.HEAPU8.
+
+See commit cf6c42e6e6cca075b196a8ee69e96a0d8ba0652b for reasoning.
+---
+ src/video/emscripten/SDL_emscriptenclipboard.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/video/emscripten/SDL_emscriptenclipboard.c b/src/video/emscripten/SDL_emscriptenclipboard.c
+index 8fb240512..c862b00c8 100644
+--- a/src/video/emscripten/SDL_emscriptenclipboard.c
++++ b/src/video/emscripten/SDL_emscriptenclipboard.c
+@@ -96,7 +96,7 @@ bool Emscripten_SetClipboardData(SDL_VideoDevice *_this)
+                 var mime_type = UTF8ToString($0);
+                 var clipboard_data = $1;
+                 var clipboard_data_size = $2;
+-                var ui8array = new Uint8Array(Module.HEAPU8.subarray(clipboard_data, clipboard_data + clipboard_data_size));  // !!! FIXME: I _think_ this makes a copy of the data, not just a view into the heap.
++                var ui8array = new Uint8Array(HEAPU8.subarray(clipboard_data, clipboard_data + clipboard_data_size));
+                 var SDL3 = Module['SDL3'];
+                 SDL3.clipboard.contents[mime_type] = ui8array;
+                 SDL3.clipboard.pending_contents[mime_type] = new Blob([ui8array], { type: mime_type} );
+@@ -127,7 +127,7 @@ void *Emscripten_GetClipboardData(SDL_VideoDevice *_this, const char *mime_type,
+     if (retval) {
+         MAIN_THREAD_EM_ASM({
+             var ui8array = Module['SDL3'].clipboard.contents[UTF8ToString($0)];
+-            var heapu8 = new Uint8Array(Module.HEAPU8.buffer, $1, $2);
++            var heapu8 = new Uint8Array(HEAPU8.buffer, $1, $2);
+             heapu8.set(ui8array);
+         }, mime_type, retval, buflen);
+         ((char *)retval)[buflen] = '\0';  // make sure it's null-terminated.
+-- 
+2.52.0
+

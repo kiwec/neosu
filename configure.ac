@@ -893,17 +893,18 @@ AS_IF([test "x$enable_debug" = "xyes"], [
             CXXFLAGS="$CXXFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
             CFLAGS="$CFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
         ])
-        AS_IF([test -n "$WASM_CC"], [
-            CXXFLAGS="$CXXFLAGS -gsource-map"
-            CFLAGS="$CFLAGS -gsource-map"
-            LDFLAGS="$LDFLAGS -gsource-map"
-        ])
     ], [
         # don't remap paths, the source should correspond to the real source location on linux
         # non-mingw
         CXXFLAGS="$CXXFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
         CFLAGS="$CFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
     ])
+    AS_IF([test -n "$WASM_CC"], [
+        CXXFLAGS="$CXXFLAGS -gsource-map"
+        CFLAGS="$CFLAGS -gsource-map"
+        LDFLAGS="$LDFLAGS -gsource-map"
+    ])
+
     ENABLE_DEBUG=$enable_debug
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -D_DEBUG"
     AS_IF([test -z "$CLANG" && test -z "$WASM_CC"], [

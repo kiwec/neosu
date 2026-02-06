@@ -616,6 +616,7 @@ $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).ta
 	$(if $(SDL3_STATIC),$(SED) -i -e 's|#ifdef SDL_DYNAMIC_API.*|#if 1|' -e 's|#error.*Nope.*|#define SDL_DYNAMIC_API 0|' src/dynapi/SDL_dynapi.h,true) && \
 	$(SED) -i 's|KMSDRM_gbm_surface_release_buffer.*next_bo.*|//\0|' src/video/kmsdrm/SDL_kmsdrmvideo.c && \
 	patch -Np1<$(BUILD_MISCDIR)/SDL3-Use-RIDEV_NOLEGACY-for-Windows-raw-mouse-input.patch && \
+	patch -Np1<$(BUILD_MISCDIR)/SDL3-PR14048-emscripten-clipboard.patch && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
 	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
