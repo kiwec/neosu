@@ -1,7 +1,7 @@
 From 8af1f33de268e4e6698daf5e7f39513391216410 Mon Sep 17 00:00:00 2001
 From: "Ryan C. Gordon" <icculus@icculus.org>
 Date: Thu, 25 Sep 2025 14:33:25 -0400
-Subject: [PATCH 1/3] emscripten: Attempt at adding clipboard support.
+Subject: [PATCH 1/4] emscripten: Attempt at adding clipboard support.
 
 This is not usable as-is, do not merge.
 
@@ -278,7 +278,7 @@ index 942809c4a..49687e460 100644
 From b4dd81238fbd85c15e9ca9af757ed0d11c50fb5f Mon Sep 17 00:00:00 2001
 From: William Horvath <william@horvath.blog>
 Date: Thu, 5 Feb 2026 22:15:09 -0800
-Subject: [PATCH 2/3] emscriptenclipboard: Fix some clang-tidy warnings.
+Subject: [PATCH 2/4] emscriptenclipboard: Fix some clang-tidy warnings.
 
 ---
  .../emscripten/SDL_emscriptenclipboard.c      | 19 +++++++++----------
@@ -353,7 +353,7 @@ index 14d32794e..8fb240512 100644
 From 0cc823534b4618b979d04bdddc6b0b3b5c739847 Mon Sep 17 00:00:00 2001
 From: William Horvath <william@horvath.blog>
 Date: Thu, 5 Feb 2026 22:30:14 -0800
-Subject: [PATCH 3/3] emscriptenclipboard: Use HEAPU8 directly instead of
+Subject: [PATCH 3/4] emscriptenclipboard: Use HEAPU8 directly instead of
  Module.HEAPU8.
 
 See commit cf6c42e6e6cca075b196a8ee69e96a0d8ba0652b for reasoning.
@@ -383,6 +383,133 @@ index 8fb240512..c862b00c8 100644
              heapu8.set(ui8array);
          }, mime_type, retval, buflen);
          ((char *)retval)[buflen] = '\0';  // make sure it's null-terminated.
+-- 
+2.52.0
+
+From 9fbcf84c10ab28b8048ded5ae17a6d02aca74713 Mon Sep 17 00:00:00 2001
+From: William Horvath <william@horvath.blog>
+Date: Fri, 6 Feb 2026 00:44:00 -0800
+Subject: [PATCH 4/4] emscriptenclipboard: Avoid polling for clipboard changes.
+
+Prevents a "Paste" context menu from popping up on Firefox every second.
+---
+ .../emscripten/SDL_emscriptenclipboard.c      | 46 ++++++++++++-------
+ src/video/emscripten/SDL_emscriptenevents.c   |  7 +++
+ 2 files changed, 36 insertions(+), 17 deletions(-)
+
+diff --git a/src/video/emscripten/SDL_emscriptenclipboard.c b/src/video/emscripten/SDL_emscriptenclipboard.c
+index c862b00c8..abeb08f72 100644
+--- a/src/video/emscripten/SDL_emscriptenclipboard.c
++++ b/src/video/emscripten/SDL_emscriptenclipboard.c
+@@ -36,39 +36,50 @@ void Emscripten_InitClipboard(SDL_VideoDevice *_this)
+ 
+         var SDL3 = Module['SDL3'];
+         SDL3.clipboard = {};
+-        SDL3.clipboard.contents = [];
+-        SDL3.clipboard.polling_id = -1;
++        SDL3.clipboard.contents = {};
++
++        // Listen for paste events to capture external clipboard data
++        // without navigator.clipboard.read(), which shows permission
++        // prompts in Firefox.
++        SDL3.clipboard.eventHandlerPaste = function(event) {
++            var clipboardData = event.clipboardData;
++            if (!clipboardData) {
++                return;
++            }
++            for (var i = 0; i < clipboardData.types.length; i++) {
++                var type = clipboardData.types[i];
++                var data = clipboardData.getData(type);
++                if (data.length > 0) {
++                    SDL3.clipboard.contents[type] = new TextEncoder().encode(data);
++                }
++            }
++        };
++        document.addEventListener('paste', SDL3.clipboard.eventHandlerPaste);
+ 
+-        // we don't touch the clipboard until the app explicitly requests it, because it pops
+-        //  up a permissions dialog and might result in ongoing overhead. So we call this
+-        //  function when we finally need to make contact with the outside world.
++        // For browsers that support clipboardchange (e.g. modern Chromium),
++        // we can also keep the cache updated when the clipboard changes
++        // outside of paste events. We defer setup until actually needed.
+         SDL3.clipboard.prepare = function() {
+             SDL3.clipboard.refresh = function() {
+                 navigator.clipboard.read().then((clipboardItems) => {
+-                    SDL3.clipboard.contents = [];
++                    SDL3.clipboard.contents = {};
+                     for (clipboardItem of clipboardItems) {
+                         for (type of clipboardItem.types) {
+                             clipboardItem.getType(type).then((blob) => {
+                                 blob.arrayBuffer().then((buffer) => {
+-                                    console.log("Got a new clipboard buffer for type '" + type + "'");
+                                     SDL3.clipboard.contents[type] = new Uint8Array(buffer);
+                                 });
+                             });
+                         }
+                     }
+-                }).catch((err) => { /*console.error(err);*/ /* oh well, no clipboard update for you. */ });
++                }).catch((err) => { /* no clipboard access, paste events will handle it. */ });
+             };
+ 
+-            SDL3.clipboard.refresh();  // get this started right now.
+-
+-            // There's a new "clipboardchanged" event proposed (as of September 2025). Try to use it.
+             if ('onclipboardchange' in navigator.clipboard) {
+                 SDL3.clipboard.eventHandlerClipboardChange = function(event) {
+                     SDL3.clipboard.refresh();
+                 };
+                 navigator.clipboard.addEventListener('clipboardchange', SDL3.clipboard.eventHandlerClipboardChange);
+-            } else {  // fall back to polling once per second. Gross.
+-                SDL3.clipboard.polling_id = setInterval(SDL3.clipboard.refresh, 1000);
+             }
+ 
+             SDL3.clipboard.prepare = function() {};   // turn this into a no-op now that we're ready.
+@@ -85,7 +96,7 @@ const char **Emscripten_GetTextMimeTypes(SDL_VideoDevice *_this, size_t *num_mim
+ 
+ bool Emscripten_SetClipboardData(SDL_VideoDevice *_this)
+ {
+-    MAIN_THREAD_EM_ASM({ var SDL3 = Module['SDL3']; SDL3.clipboard.contents = []; SDL3.clipboard.pending_contents = []; });
++    MAIN_THREAD_EM_ASM({ var SDL3 = Module['SDL3']; SDL3.clipboard.contents = {}; SDL3.clipboard.pending_contents = {}; });
+ 
+     for (size_t i = 0; i < _this->num_clipboard_mime_types; i++) {
+         const char *mime_type = _this->clipboard_mime_types[i];
+@@ -149,13 +160,14 @@ void Emscripten_QuitClipboard(SDL_VideoDevice *_this)
+ {
+     MAIN_THREAD_EM_ASM({
+         var SDL3 = Module['SDL3'];
++        if (SDL3.clipboard.eventHandlerPaste !== undefined) {
++            document.removeEventListener('paste', SDL3.clipboard.eventHandlerPaste);
++            SDL3.clipboard.eventHandlerPaste = undefined;
++        }
+         if (SDL3.clipboard.eventHandlerClipboardChange !== undefined) {
+             navigator.clipboard.removeEventListener('clipboardchange', SDL3.clipboard.eventHandlerClipboardChange);
+             SDL3.clipboard.eventHandlerClipboardChange = undefined;
+         }
+-        if (SDL3.clipboard.polling_id != -1) {
+-            clearInterval(SDL3.clipboard.polling_id);
+-        }
+         SDL3.clipboard = undefined;
+     });
+ }
+diff --git a/src/video/emscripten/SDL_emscriptenevents.c b/src/video/emscripten/SDL_emscriptenevents.c
+index 41a172b33..bfbe2c0ca 100644
+--- a/src/video/emscripten/SDL_emscriptenevents.c
++++ b/src/video/emscripten/SDL_emscriptenevents.c
+@@ -459,6 +459,13 @@ static EM_BOOL Emscripten_HandleKey(int eventType, const EmscriptenKeyboardEvent
+         prevent_default = false;
+     }
+ 
++    // Don't prevent default for Ctrl+V keydown so the browser fires
++    // a paste event, which the clipboard code uses to read external
++    // clipboard data without triggering permission prompts.
++    if ((eventType == EMSCRIPTEN_EVENT_KEYDOWN) && keyEvent->ctrlKey && scancode == SDL_SCANCODE_V) {
++        prevent_default = false;
++    }
++
+     return prevent_default;
+ }
+ 
 -- 
 2.52.0
 
