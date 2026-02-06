@@ -1,0 +1,7 @@
+# Binary resources to embed in the executable.
+# Format: symbol_name : path/relative/to/project/root
+# The build system prefixes paths with the source directory via --base-dir.
+# Build artifacts (e.g. cacert.pem) are passed as extra CLI arguments.
+
+# misc
+convar_template : assets/misc/convar_template.html

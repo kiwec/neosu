@@ -24,9 +24,9 @@ import argparse
 TYPES = ('asm-inline', 'nasm', 'cppembed')
 
 
-def parse_entries(args_entries, manifest_file, base_dir):
+def parse_entries(args_entries, manifest_files, base_dir):
     entries = []
-    if manifest_file:
+    for manifest_file in manifest_files:
         with open(manifest_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -200,10 +200,12 @@ def main():
         description='Generate source files for embedding binary data in executables.')
     parser.add_argument('-t', '--type', required=True, choices=TYPES,
                         help='Output type: asm-inline, nasm, or cppembed')
-    parser.add_argument('-f', '--manifest', metavar='FILE',
-                        help='Read symbol:filepath entries from a manifest file')
+    parser.add_argument('-f', '--manifest', metavar='FILE', action='append', default=[],
+                        help='Read symbol:filepath entries from a manifest file (can be repeated)')
     parser.add_argument('-b', '--base-dir', default='',
                         help='Base directory to prepend to manifest file paths (not CLI entries)')
+    parser.add_argument('-d', '--depfile', metavar='FILE',
+                        help='Write a Make-format dependency file listing all embedded files')
     parser.add_argument(
         'output', help='Output source file path (.cpp or .asm)')
     parser.add_argument('entries', nargs='*', metavar='sym:file',
@@ -225,8 +227,20 @@ def main():
     stem, _ = os.path.splitext(args.output)
     header_path = stem + '.h'
 
-    write_if_changed(args.output, source)
+    # always write the source file so Make sees a fresh timestamp and recompiles
+    # the .o (which picks up embedded file contents via .incbin / #embed)
+    os.makedirs(os.path.dirname(args.output) or '.', exist_ok=True)
+    with open(args.output, 'w') as f:
+        f.write(source)
+    # header uses write_if_changed to avoid cascading recompilation
     write_if_changed(header_path, header)
+
+    if args.depfile:
+        deps = [filepath for _, filepath in entries] + args.manifest
+        depfile_content = f'{args.output}: \\\n'
+        depfile_content += ' \\\n'.join(f'  {d}' for d in deps)
+        depfile_content += '\n'
+        write_if_changed(args.depfile, depfile_content)
 
 
 if __name__ == '__main__':

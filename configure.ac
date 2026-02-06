@@ -360,6 +360,16 @@ AS_IF([test "x$use_dx11" = "xyes" ], [
     use_dx11=no
 ])
 
+# build the list of binary embed manifests based on renderer selection
+EMBED_MANIFESTS="\$(srcdir)/\$(ASSETS_DIR)/binary/misc_embed.manifest"
+AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
+    EMBED_MANIFESTS="$EMBED_MANIFESTS \$(srcdir)/\$(ASSETS_DIR)/binary/gl_shaders_embed.manifest"
+])
+AS_IF([test "x$use_dx11" = "xyes"], [
+    EMBED_MANIFESTS="$EMBED_MANIFESTS \$(srcdir)/\$(ASSETS_DIR)/binary/dx_shaders_embed.manifest"
+])
+AC_SUBST([EMBED_MANIFESTS])
+
 AUDBACKENDLIST=""
 
 with_bass=unset
