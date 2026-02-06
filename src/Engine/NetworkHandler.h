@@ -1,5 +1,7 @@
 #pragma once
 // Copyright (c) 2015, PG & 2025, WH & 2025, kiwec, All rights reserved.
+#include "config.h"
+
 #include "noinclude.h"
 #include "types.h"
 #include "StaticPImpl.h"
@@ -139,11 +141,16 @@ class NetworkHandler {
     friend class ::Engine;
     void update();
 
+    // implementation details
     friend struct NetworkImpl;
-    StaticPImpl<NetworkImpl, 704> pImpl;  // implementation details
+#ifdef MCENGINE_PLATFORM_WASM
+    StaticPImpl<NetworkImpl, 128> pImpl;
+#else
+    StaticPImpl<NetworkImpl, 704> pImpl;
+#endif
 };
 
-}  // namespace NeoNet
+}  // namespace Mc::Net
 
 using Mc::Net::NetworkHandler;
 extern std::unique_ptr<NetworkHandler> networkHandler;

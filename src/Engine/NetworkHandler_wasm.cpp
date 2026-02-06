@@ -1,5 +1,6 @@
 // Copyright (c) 2026, WH & 2026, kiwec, All rights reserved.
-// WASM networking implementation using Emscripten Fetch API (no curl dependency)
+// WASM networking implementation using Emscripten Fetch API
+// (to avoid depending on curl, which doesn't really work for HTTP with Emscripten)
 #include "config.h"
 
 #ifdef MCENGINE_PLATFORM_WASM
@@ -175,7 +176,7 @@ void NetworkImpl::fetchSuccess(emscripten_fetch_t* fetch) {
     res.success = true;
 
     if(request->callback) {
-        request->impl->completed_requests.push_back({std::move(request->callback), std::move(res)});
+        request->impl->completed_requests.emplace_back(std::move(request->callback), std::move(res));
     }
 
     delete request;
@@ -195,7 +196,7 @@ void NetworkImpl::fetchError(emscripten_fetch_t* fetch) {
     res.success = false;
 
     if(request->callback) {
-        request->impl->completed_requests.push_back({std::move(request->callback), std::move(res)});
+        request->impl->completed_requests.emplace_back(std::move(request->callback), std::move(res));
     }
 
     delete request;
