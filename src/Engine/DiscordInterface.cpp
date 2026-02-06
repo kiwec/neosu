@@ -4,6 +4,7 @@
 #ifndef MCENGINE_FEATURE_DISCORD
 namespace DiscRPC {
 void init() {}
+void deinit() {}
 void tick() {}
 void destroy() {}
 void clear_activity() {}
@@ -29,6 +30,7 @@ namespace  // static
 static bool initialized{false};
 
 #ifdef SIGPIPE
+static bool sigpipe_handler_installed{false};
 
 static volatile sig_atomic_t s_in_discord_call{0};
 static volatile sig_atomic_t s_sigpipe{0};
@@ -80,6 +82,7 @@ static void on_discord_log(void * /*cdata*/, enum EDiscordLogLevel level, const 
 
 static dynutils::lib_obj *discord_handle{nullptr};
 static decltype(DiscordCreate) *pDiscordCreate{nullptr};
+static bool broken{false};  // if we couldn't load discord_handle or pDiscordCreate after trying once
 
 static constexpr int MAX_RECONNECT_ATTEMPTS = 3;
 static constexpr u64 RECONNECT_INTERVAL_NS = 5'000'000'000ULL;  // 5s
@@ -117,36 +120,43 @@ static bool connect() {
 }  // namespace
 
 void init() {
-    if(initialized) return;
+    if(initialized || broken) return;
 
-    discord_handle = dynutils::load_lib("discord_game_sdk");
-    if(!discord_handle) {
+    if(!discord_handle && !(discord_handle = dynutils::load_lib("discord_game_sdk"))) {
+        broken = true;
         logRaw("[Discord] Failed to load Discord SDK! (error {:s})", dynutils::get_error());
         return;
     }
 
-    pDiscordCreate = dynutils::load_func<decltype(DiscordCreate)>(discord_handle, "DiscordCreate");
-    if(!pDiscordCreate) {
+    if(!pDiscordCreate &&
+       !(pDiscordCreate = dynutils::load_func<decltype(DiscordCreate)>(discord_handle, "DiscordCreate"))) {
+        broken = true;
         logRaw("[Discord] Failed to load DiscordCreate from discord_game_sdk.dll! (error {:s})", dynutils::get_error());
         return;
     }
 
 #ifdef SIGPIPE
-    // the discord SDK writes to a unix socket that can break if discord restarts;
-    // catch SIGPIPE so we can detect the disconnect and reconnect
-    struct sigaction sa{};
-    sa.sa_handler = sigpipe_handler;
-    sigemptyset(&sa.sa_mask);
-    sigaction(SIGPIPE, &sa, nullptr);
+    if(!sigpipe_handler_installed) {
+        sigpipe_handler_installed = true;
+        // the discord SDK writes to a unix socket that can break if discord restarts;
+        // catch SIGPIPE so we can detect the disconnect and reconnect
+        struct sigaction sa{};
+        sa.sa_handler = sigpipe_handler;
+        sigemptyset(&sa.sa_mask);
+        sigaction(SIGPIPE, &sa, nullptr);
+    }
 #endif
 
-    if(!connect()) return;
+    connect();
 
-    cv::rich_presence.setCallback([](float oldValue, float newValue) -> void {
-        if(oldValue != newValue && !static_cast<int>(newValue)) {
-            DiscRPC::clear_activity();
-        }
-    });
+    // there's an issue where if the game starts with discord closed, then the SDK fails to initialize, and there's
+    // no way to try reinitializing it (without restarting the game)
+    // so allow "turning it off and on again" to try reinitializing
+    // (DiscRPC::init() does nothing if already initialized)
+    if(!cv::rich_presence.hasSingleArgCallback()) {
+        cv::rich_presence.setCallback(
+            [](float newValue) -> void { return !!static_cast<int>(newValue) ? DiscRPC::init() : DiscRPC::deinit(); });
+    }
 }
 
 void tick() {
@@ -180,12 +190,21 @@ void tick() {
     DISCCALL(dapp.core->run_callbacks(dapp.core));
 }
 
-void destroy() {
+void deinit() {
     if(initialized) {
         DISCCALL(dapp.core->destroy(dapp.core));
+#ifdef SIGPIPE
+        // ignore
+        s_sigpipe = 0;
+#endif
+        reconnect_attempts = MAX_RECONNECT_ATTEMPTS;  // don't attempt to automatically reconnect
         dapp = {};
         initialized = false;
     }
+}
+
+void destroy() {
+    deinit();
     if(discord_handle) {
         dynutils::unload_lib(discord_handle);
     }
@@ -194,9 +213,7 @@ void destroy() {
 void clear_activity() {
     if(!initialized) return;
 
-    // TODO @kiwec: test if this works
-    struct DiscordActivity activity{};
-    DISCCALL(dapp.activities->update_activity(dapp.activities, &activity, nullptr, nullptr));
+    DISCCALL(dapp.activities->clear_activity(dapp.activities, nullptr, nullptr));
 }
 
 void set_activity(struct DiscordActivity *activity) {
