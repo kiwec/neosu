@@ -448,11 +448,11 @@ esac]])
 
 AS_IF([test -n "$WASM_CC"], [
     # emscripten/WASM build
-    CXXFLAGS="$CXXFLAGS -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument -Wno-c2x-extensions"
-    CFLAGS="$CFLAGS -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument"
-    LDFLAGS="$LDFLAGS -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument"
+    CXXFLAGS="$CXXFLAGS -sWASM_WORKERS=1 -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument -Wno-c2x-extensions"
+    CFLAGS="$CFLAGS -sWASM_WORKERS=1 -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument"
+    LDFLAGS="$LDFLAGS -sWASM_WORKERS=1 -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument"
     _ccache_ctype="clang"
-    _cid="Clang"
+    _cid="Emscripten"
 ], [
     AS_IF([test "x$enable_clang" = "xyes"], [
         CC=clang

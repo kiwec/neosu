@@ -19,7 +19,7 @@
 #include <sys/eventfd.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#elif MCENGINE_PLATFORM_WASM
+#elif defined(MCENGINE_PLATFORM_WASM)
 #include <emscripten/fetch.h>
 #endif
 
