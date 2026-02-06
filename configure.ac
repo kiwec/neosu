@@ -1378,8 +1378,8 @@ AC_SUBST([LIBACL_PREFIX])
 
 AS_IF([test "x$have_curl" != "xyes"], [
     AS_IF([test -n "$WASM_CC"], [
-        # WASM builds curl from source without OpenSSL
-        have_curl="build from source"
+        # WASM doesn't use curl (browser networking goes through emscripten fetch API)
+        have_curl="not required"
         have_openssl="not required"
     ], [
         # other platforms download prebuilt curl with OpenSSL
@@ -1436,7 +1436,7 @@ AM_CONDITIONAL([BUILD_LIBARCHIVE], [test "x$have_libarchive" != "xyes"])
 AM_CONDITIONAL([BUILD_SIMDUTF], [test "x$have_simdutf" != "xyes"])
 AM_CONDITIONAL([BUILD_CTRE], [test "x$have_ctre" != "xyes"])
 AM_CONDITIONAL([BUILD_LIBACL], [test "x$have_libacl" = "xbuild from source"])
-AM_CONDITIONAL([BUILD_CURL], [test "x$have_curl" != "xyes"])
+AM_CONDITIONAL([BUILD_CURL], [test "x$have_curl" != "xyes" && test "x$have_curl" != "xnot required"])
 AM_CONDITIONAL([BUILD_MPG123], [test "$with_soloud" = "yes" && test "x$have_mpg123" != "xyes"])
 AM_CONDITIONAL([BUILD_SPDLOG], [test "x$have_spdlog" != "xyes"])
 AM_CONDITIONAL([BUILD_NSYNC], [test "x$have_nsync" = "xbuild from source"])

@@ -122,6 +122,7 @@ neosu_SOURCES = \
 	src/Engine/Input/Mouse.cpp \
 	src/Engine/Logging.cpp \
 	src/Engine/NetworkHandler.cpp \
+	src/Engine/NetworkHandler_wasm.cpp \
 	src/Engine/Profiler.cpp \
 	src/Engine/Renderer/Camera.cpp \
 	src/Engine/Renderer/DirectX11/DirectX11Image.cpp \

@@ -440,84 +440,7 @@ lbq := '('
 rb := )
 rbq := ')'
 
-if WASM_PLATFORM
-# WASM: build mbedTLS for SSL support
-$(DEPS_CACHE)/mbedtls-$(MBEDTLS_VERSION).tar.bz2:
-	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLCOMMAND) "https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$(MBEDTLS_VERSION)/mbedtls-$(MBEDTLS_VERSION).tar.bz2" || { rm -f $@; exit 1; }
-
-$(DEPS_PREFIX)/mbedtls-$(MBEDTLS_VERSION).built: $(DEPS_CACHE)/mbedtls-$(MBEDTLS_VERSION).tar.bz2
-	rm -rf $(DEPS_PREFIX)/mbedtls
-	$(MKDIR_P) $(DEPS_PREFIX)/mbedtls/build
-	$(TAR) xf $(DEPS_CACHE)/mbedtls-$(MBEDTLS_VERSION).tar.bz2 -C $(DEPS_PREFIX)/mbedtls --strip-components=1 && \
-	cd $(DEPS_PREFIX)/mbedtls && \
-	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
-		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
-		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
-		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
-		-D CMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
-		-D CMAKE_C_COMPILER="$(CC)" \
-		-D CMAKE_C_FLAGS="$(CFLAGS)" \
-		$(CMAKERCOPT) $(CMAKEIDOPT) \
-		-D CMAKE_C_COMPILER_AR=$(AR) \
-		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \
-		-D ENABLE_PROGRAMS=OFF \
-		-D ENABLE_TESTING=OFF \
-		-D MBEDTLS_FATAL_WARNINGS=OFF && \
-	$(CMAKE) --build build $(CMAKEPAROPT) && \
-	$(CMAKE) --install build
-	touch $@
-
-# WASM: build curl from source with mbedTLS
-CURL_INCLUDEDIR := $(DEPS_PREFIX)/include
-CURL_LIBDIR := $(DEPS_PREFIX)/lib
-CURL_CFLAGS += $(shell $(PKG_CONFIG) --cflags libcurl)
-CURL_LIBS += $(shell $(PKG_CONFIG) --libs libcurl)
-
-$(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION).tar.gz $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built $(DEPS_PREFIX)/mbedtls-$(MBEDTLS_VERSION).built
-	rm -rf $(DEPS_PREFIX)/curl
-	$(MKDIR_P) $(DEPS_PREFIX)/curl/build $(DEPS_PREFIX)/lib/pkgconfig
-	$(TAR) xf $(DEPS_CACHE)/curl-$(CURL_VERSION).tar.gz -C $(DEPS_PREFIX)/curl --strip-components=1 && \
-	cd $(DEPS_PREFIX)/curl && \
-	PKG_CONFIG="$(PKG_CONFIG)" \
-	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
-		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
-		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
-		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
-		-D CMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
-		-D CMAKE_C_COMPILER="$(CC)" \
-		-D CMAKE_C_FLAGS="$(CFLAGS)" \
-		-D CMAKE_CXX_COMPILER="$(CXX)" \
-		-D CMAKE_CXX_FLAGS="$(CXXFLAGS)" \
-		$(CMAKERCOPT) $(CMAKEIDOPT) \
-		-D CMAKE_C_COMPILER_AR=$(AR) \
-		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \
-		-D BUILD_SHARED_LIBS=OFF \
-		-D BUILD_CURL_EXE=OFF \
-		-D BUILD_TESTING=OFF \
-		-D CURL_DISABLE_LDAP=ON \
-		-D CURL_DISABLE_LDAPS=ON \
-		-D CURL_USE_LIBSSH2=OFF \
-		-D CURL_USE_LIBPSL=OFF \
-		-D CURL_ZLIB=ON \
-		-D ZLIB_INCLUDE_DIR="$(DEPS_PREFIX)/include" \
-		-D ZLIB_LIBRARY="$(DEPS_PREFIX)/lib/libz.a" \
-		-D CURL_USE_OPENSSL=OFF \
-		-D CURL_USE_MBEDTLS=ON \
-		-D CURL_USE_WOLFSSL=OFF \
-		-D MBEDTLS_INCLUDE_DIRS="$(DEPS_PREFIX)/include" \
-		-D MBEDTLS_LIBRARY="$(DEPS_PREFIX)/lib/libmbedtls.a" \
-		-D MBEDX509_LIBRARY="$(DEPS_PREFIX)/lib/libmbedx509.a" \
-		-D MBEDCRYPTO_LIBRARY="$(DEPS_PREFIX)/lib/libmbedcrypto.a" \
-		-D CURL_CA_BUNDLE=none \
-		-D CURL_CA_PATH=none && \
-	$(CMAKE) --build build $(CMAKEPAROPT) && \
-	$(CMAKE) --install build
-	$(PKG_CONFIG) --exists --print-errors libcurl
-	mv $(DEPS_PREFIX)/lib/libcurl-d.a $(DEPS_PREFIX)/lib/libcurl.a || true
-	touch $@
-else
-# Non-WASM: use prebuilt binaries
+# use prebuilt binaries
 CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/include
 CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib
 CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP -DCURL_STATICLIB
@@ -538,7 +461,6 @@ endif
 $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-$(SYSNAME)$(host_cpu).source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
-endif # WASM_PLATFORM
 else # from host
 CURL_CFLAGS += $(OPENSSL_CFLAGS)
 CURL_LIBS += $(OPENSSL_LIBS)
@@ -1355,11 +1277,19 @@ endif
 
 EMBED_DEPFILE := $(builddir)/gen/binary_embed.d
 
-# the generated .cpp and .h are built from the manifests + cacert.pem (a build artifact passed separately)
-$(EMBED_OUTPUT): $(EMBED_SCRIPT) $(EMBED_MANIFESTS) $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
+# cacert.pem is only needed on non-WASM platforms (WASM uses browser TLS, not curl)
+if WASM_PLATFORM
+EMBED_CACERT_DEPS :=
+EMBED_CACERT_ARGS :=
+else
+EMBED_CACERT_DEPS := $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
+EMBED_CACERT_ARGS := curl_ca_embed:$(CACERT_INCDIR)cacert.pem
+endif
+
+$(EMBED_OUTPUT): $(EMBED_SCRIPT) $(EMBED_MANIFESTS) $(EMBED_CACERT_DEPS)
 	$(MKDIR_P) $(dir $@)
 	$(PYTHON) $(EMBED_SCRIPT) -t $(EMBED_TYPE) -b $(srcdir) -d $(EMBED_DEPFILE) $(EMBED_MANIFEST_FLAGS) $@ \
-		curl_ca_embed:$(CACERT_INCDIR)cacert.pem
+		$(EMBED_CACERT_ARGS)
 
 -include $(EMBED_DEPFILE)
 
@@ -1399,8 +1329,11 @@ BUILT_SOURCES := \
 	$(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built \
 	$(DEPS_PREFIX)/ctre-$(CTRE_VERSION).built \
 	$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built \
-	$(DEPS_PREFIX)/curl-$(CURL_VERSION).built \
-	$(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
+	$(DEPS_PREFIX)/curl-$(CURL_VERSION).built
+
+if !WASM_PLATFORM
+BUILT_SOURCES += $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
+endif
 
 # (this is also disabled in CI by default, because we dont cache the pch there, so there's no point)
 if BUILD_PCH
