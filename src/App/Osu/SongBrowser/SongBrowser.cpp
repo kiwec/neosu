@@ -791,7 +791,7 @@ void SongBrowser::draw() {
     UIScreen::draw();
 
     // no beatmaps found (osu folder is probably invalid)
-    if(db->getBeatmapSets().size() == 0) {
+    if(db->getBeatmapSets().size() == 0 && !Env::cfg(OS::WASM)) {
         UString errorMessage1 = "Invalid osu! folder (or no beatmaps found): ";
         errorMessage1.append(this->sLastOsuFolder);
         UString errorMessage2 = "Go to Options -> osu!folder";

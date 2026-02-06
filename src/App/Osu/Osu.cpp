@@ -381,7 +381,7 @@ Osu::Osu()
         BanchoState::reconnect();
     }
 
-    if constexpr(!Env::cfg(BUILD::DEBUG)) {  // don't auto-update debug builds
+    if constexpr(!Env::cfg(BUILD::DEBUG) && !Env::cfg(OS::WASM)) {  // don't auto-update debug/web builds
         // don't auto update if this env var is set to anything other than 0 or empty (if it is set)
         const std::string extUpdater = Environment::getEnvVariable("NEOSU_EXTERNAL_UPDATE_PROVIDER");
         if(cv::auto_update.getBool() && (extUpdater.empty() || Parsing::strto<bool>(extUpdater) == false)) {

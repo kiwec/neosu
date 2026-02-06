@@ -249,7 +249,9 @@ MainMenu::MainMenu() : UIScreen() {
         ->setClickCallback(SA::MakeDelegate<&MainMenu::onMultiplayerButtonPressed>(this));
     this->addMainMenuButton("Options (CTRL + O)")
         ->setClickCallback(SA::MakeDelegate<&MainMenu::onOptionsButtonPressed>(this));
-    this->addMainMenuButton("Exit")->setClickCallback(SA::MakeDelegate<&MainMenu::onExitButtonPressed>(this));
+    if constexpr(!Env::cfg(OS::WASM)) {
+        this->addMainMenuButton("Exit")->setClickCallback(SA::MakeDelegate<&MainMenu::onExitButtonPressed>(this));
+    }
 
     this->pauseButton = new PauseButton(0, 0, 0, 0, "", "");
     this->pauseButton->setClickCallback(SA::MakeDelegate<&MainMenu::onPausePressed>(this));
@@ -1578,15 +1580,13 @@ void MainMenu::onOptionsButtonPressed() {
 }
 
 void MainMenu::onExitButtonPressed() {
-    if constexpr(!Env::cfg(OS::WASM)) {
-        this->fShutdownScheduledTime = engine->getTime() + 0.3f;
-        this->bWasCleanShutdown = true;
-        this->setMenuElementsVisible(false);
+    if constexpr(Env::cfg(OS::WASM)) return;
 
-        soundEngine->play(osu->getSkin()->s_click_exit);
-    } else {
-        ui->getNotificationOverlay()->addNotification("You can't do that here!", 0xffff0000, false, 2.0f);
-    }
+    this->fShutdownScheduledTime = engine->getTime() + 0.3f;
+    this->bWasCleanShutdown = true;
+    this->setMenuElementsVisible(false);
+
+    soundEngine->play(osu->getSkin()->s_click_exit);
 }
 
 void MainMenu::onPausePressed() {
