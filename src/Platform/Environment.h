@@ -109,6 +109,7 @@ class Environment {
     void restart();
     [[nodiscard]] inline bool isRunning() const { return m_bRunning; }
     [[nodiscard]] inline bool isRestartScheduled() const { return m_bIsRestartScheduled; }
+    [[nodiscard]] inline bool isHeadless() const { return m_bHeadless; }
     [[nodiscard]] inline Interop &getEnvInterop() { return *m_interop; }
 
     // resolved and cached at early startup with argv[0]
@@ -289,6 +290,7 @@ class Environment {
 
     bool m_bRunning;
     bool m_bIsRestartScheduled;
+    bool m_bHeadless;
 
     bool m_bRestoreFullscreen;
     bool m_bMinimizeSupported;

@@ -3,6 +3,10 @@
 
 #include "Environment.h"
 
+#ifdef MCENGINE_PLATFORM_WASM
+#include <emscripten/emscripten.h>
+#endif
+
 #include "AppRunner.h"
 #include "MakeDelegateWrapper.h"
 
@@ -62,8 +66,6 @@ Engine::Engine() {
     // print debug information
     debugLog("-= Engine Startup =-");
     debugLog("cmdline: {:s}", SString::join(env->getCommandLine()));
-
-    this->bHeadless = env->getLaunchArgs().contains("-headless");
 
     // timing
     this->iFrameCount = 0;
@@ -137,7 +139,7 @@ Engine::Engine() {
 Engine::~Engine() {
     debugLog("-= Engine Shutdown =-");
 
-    if(this->bHeadless) {
+    if(env->isHeadless() && this->stdinThread.joinable()) {
         // there's no portable way to programmatically unblock a thread std::getline, wtf?
         // this just leaves a zombie thread alive until you send an input/close the terminal...
         // oh well, we're shutting down anyways
@@ -259,7 +261,8 @@ void Engine::loadApp() {
         keyboard->addListener(app.get());
 
         // start stdin reader thread for headless mode
-        if(this->bHeadless) {
+        // on WASM, stdin is polled from the main thread via JS (pthreads can't do blocking stdin reads)
+        if(env->isHeadless() && !Env::cfg(OS::WASM)) {
             this->stdinThread = Sync::jthread{stdinReaderThread};
         }
     }
@@ -344,7 +347,7 @@ void Engine::onUpdate() {
     }
 
     // process stdin in headless
-    if(this->bHeadless) {
+    if(env->isHeadless()) {
         this->processStdinCommands();
     }
 
@@ -611,12 +614,33 @@ void Engine::stdinReaderThread(const Sync::stop_token &stopToken) {
 }
 
 void Engine::processStdinCommands() {
+#ifdef MCENGINE_PLATFORM_WASM
+    // poll the JS-side line buffer (filled by process.stdin in wasm-node-polyfill.js)
+    while(true) {
+        char *line = (char *)EM_ASM_PTR({
+            if(globalThis.__stdinLines && globalThis.__stdinLines.length > 0) {
+                var line = globalThis.__stdinLines.shift();
+                var len = lengthBytesUTF8(line) + 1;
+                var ptr = _malloc(len);
+                stringToUTF8(line, ptr, len);
+                return ptr;
+            }
+            return 0;
+        });
+        if(!line) break;
+        std::string cmd(line);
+        free(line);
+        Console::processCommand(cmd);
+        if(this->bShuttingDown) break;
+    }
+#else
     Sync::scoped_lock lock(this->stdinMutex);
     while(!this->stdinQueue.empty()) {
         std::string cmd = std::move(this->stdinQueue.front());
         this->stdinQueue.pop_front();
         Console::processCommand(cmd);
     }
+#endif
 }
 
 //**********************//

@@ -15,6 +15,7 @@
 
 #include "AppDescriptor.h"
 #include "DirectX11Interface.h"
+#include "NullGraphics.h"
 #include "SDLGLInterface.h"
 
 #include <algorithm>
@@ -77,6 +78,7 @@ Environment::Environment(const Mc::AppDescriptor &appDesc,
 
     m_bRunning = true;
     m_bIsRestartScheduled = false;
+    m_bHeadless = m_mArgMap.contains("-headless");
 
     m_fDisplayHz = 360.0f;
     m_fDisplayHzSecs = 1.0f / m_fDisplayHz;
@@ -158,6 +160,10 @@ void Environment::update() {
 }
 
 Graphics *Environment::createRenderer() {
+#ifdef MCENGINE_PLATFORM_WASM
+    if(m_bHeadless)
+        return new NullGraphics();
+#endif
 #ifdef MCENGINE_FEATURE_DIRECTX11
     if(m_bUsingDX11)  // only if specified on the command line, for now
         return new DirectX11Interface(Env::cfg(OS::WINDOWS) ? getHwnd() : reinterpret_cast<HWND>(m_window));

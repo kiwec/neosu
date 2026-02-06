@@ -285,9 +285,13 @@ MAIN_FUNC /* int argc, char *argv[] */
     }
 
     if(headless) {
-        // use the offscreen video driver if we're going to run in headless mode
-        // (does not create a visible window)
-        SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
+        // use a video driver that doesn't need a real display
+        if constexpr(Env::cfg(OS::WASM)) {
+            SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "dummy", SDL_HINT_OVERRIDE);
+            SDL_SetHintWithPriority(SDL_HINT_AUDIO_DRIVER, "dummy", SDL_HINT_OVERRIDE);
+        } else {
+            SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
+        }
     }
 
     if(!SDL_Init(SDL_INIT_VIDEO))  // other subsystems can be init later

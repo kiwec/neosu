@@ -144,6 +144,16 @@ SDL_AppResult SDLMain::initialize() {
     doEarlyCmdlineOverrides();
     setupLogging();
 
+    // WASM headless (Node.js): no window, no GL, no events, just engine + app
+    if constexpr(Env::cfg(OS::WASM)) {
+        if(isHeadless()) {
+            m_engine = std::make_unique<Engine>();
+            if(!m_engine || m_engine->isShuttingDown()) return SDL_APP_FAILURE;
+            m_engine->loadApp();
+            return SDL_APP_CONTINUE;
+        }
+    }
+
     // create window with props
     if(!createWindow()) {
         return SDL_APP_FAILURE;
@@ -178,7 +188,7 @@ SDL_AppResult SDLMain::initialize() {
 
     // make window visible now, after we loaded the config and set the wanted window size & fullscreen state
     // (unless running headless, then just never show the window)
-    if(!getLaunchArgs().contains("-headless")) {
+    if(!isHeadless()) {
         SDL_ShowWindow(m_window);
         SDL_RaiseWindow(m_window);
     }
@@ -527,7 +537,8 @@ SDL_AppResult SDLMain::iterate() {
 
     // WASM: measure true display Hz from rAF frame intervals (after init settles)
     if constexpr(Env::cfg(OS::WASM)) {
-        calibrateDisplayHzWASM();
+        if(!isHeadless())
+            calibrateDisplayHzWASM();
     }
 
     // update

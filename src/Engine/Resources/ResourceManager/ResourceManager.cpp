@@ -7,6 +7,10 @@
 
 #include "ResourceManager.h"
 
+#ifdef MCENGINE_PLATFORM_WASM
+#include <emscripten/threading.h>
+#endif
+
 #include "Font.h"
 #include "Image.h"
 #include "RenderTarget.h"
@@ -285,6 +289,10 @@ void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destfla
         if(flags::has<RDF_FORCE_BLOCKING>(destflags)) {
             do {
                 this->update();
+#ifdef MCENGINE_PLATFORM_WASM
+                // pthreads proxy I/O to the main thread; drain the queue so the loader thread can make progress
+                emscripten_main_thread_process_queued_calls();
+#endif
             } while(pImpl->asyncLoader.isLoadingResource(rs));
         }
 
@@ -390,6 +398,9 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
 
         while(!asyncLoadingList.empty()) {
             this->update();
+#ifdef MCENGINE_PLATFORM_WASM
+            emscripten_main_thread_process_queued_calls();
+#endif
             for(auto resit = asyncLoadingList.begin(); resit != asyncLoadingList.end();) {
                 if(pImpl->asyncLoader.isLoadingResource(*resit)) {
                     ++resit;

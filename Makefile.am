@@ -158,8 +158,10 @@ $(builddir)/wasm-maps/.extracted: $(DEPS_CACHE)/wasm-beatmap-pack.zip
 
 if WASM_PLATFORM
 EXTRACTED_MAPS_DEP := $(builddir)/wasm-maps/.extracted
+WASM_POLYFILL_DEP := $(srcdir)/src/Platform/wasm-node-polyfill.js
 else
-EXTRACTED_MAPS_DEP := 
+EXTRACTED_MAPS_DEP :=
+WASM_POLYFILL_DEP :=
 endif
 
 ## BINARY (pre-built) dependencies (conditional depending on build configuration)
@@ -539,6 +541,7 @@ $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).ta
 	$(SED) -i 's|KMSDRM_gbm_surface_release_buffer.*next_bo.*|//\0|' src/video/kmsdrm/SDL_kmsdrmvideo.c && \
 	patch -Np1<$(BUILD_MISCDIR)/SDL3-Use-RIDEV_NOLEGACY-for-Windows-raw-mouse-input.patch && \
 	patch -Np1<$(BUILD_MISCDIR)/SDL3-PR14048-emscripten-clipboard.patch && \
+	patch -Np1<$(BUILD_MISCDIR)/SDL3-emscripten-dummyaudio.patch && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" \
 	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
@@ -564,9 +567,9 @@ $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).ta
 		-D SDL_GPU=OFF \
 		-D SDL_HAPTIC=OFF \
 		-D SDL_SENSOR=OFF \
-		-D SDL_DUMMYAUDIO=OFF \
+		-D SDL_DUMMYAUDIO=ON \
 		-D SDL_DUMMYCAMERA=OFF \
-		-D SDL_DUMMYVIDEO=OFF \
+		-D SDL_DUMMYVIDEO=ON \
 		-D SDL_OFFSCREEN=ON \
 		-D SDL_RENDER_GPU=OFF \
 		-D SDL_RENDER_VULKAN=OFF \
@@ -1441,7 +1444,7 @@ neosu_LDFLAGS := \
 	$(LDFLAGS_EXTRA)
 
 # extracted maps dependency (only applicable for wasm but avoids += (slow))
-EXTRA_neosu_DEPENDENCIES := $(EXTRACTED_MAPS_DEP)
+EXTRA_neosu_DEPENDENCIES := $(EXTRACTED_MAPS_DEP) $(WASM_POLYFILL_DEP)
 
 if WIN_PLATFORM
 # mimalloc new/delete override for windows
@@ -1542,6 +1545,7 @@ if WASM_PLATFORM
 install-libs:
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)"
 	$(INSTALL) -m 644 neosu.html neosu.js neosu.wasm "$(DESTDIR)$(bindir)/"
+	@test -f neosu.worker.js && $(INSTALL) -m 644 neosu.worker.js "$(DESTDIR)$(bindir)/" || true
 	@test -f neosu.data && $(INSTALL) -m 644 neosu.data "$(DESTDIR)$(bindir)/" || true
 else
 install-libs:

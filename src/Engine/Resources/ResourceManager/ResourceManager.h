@@ -12,6 +12,7 @@
 #include "noinclude.h"
 #include "types.h"
 #include "StaticPImpl.h"
+#include "config.h"
 
 #include <string_view>
 #include <vector>

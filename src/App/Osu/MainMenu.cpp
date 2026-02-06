@@ -1690,6 +1690,10 @@ MainMenu::SongsFolderEnumerator::SongsFolderEnumerator() : Resource(APPDEFINED) 
     resourceManager->loadResource(this);
 }
 
+MainMenu::SongsFolderEnumerator::~SongsFolderEnumerator() {
+    resourceManager->destroyResource(this, ResourceDestroyFlags::RDF_NODELETE);
+}
+
 void MainMenu::SongsFolderEnumerator::rebuild() {
     this->setAsyncReady(false);
     this->setReady(false);

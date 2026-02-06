@@ -18,6 +18,7 @@
 #include "ResourceManager.h"
 
 #include <utility>
+#include <cstdlib>
 
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_audio.h>
@@ -60,6 +61,13 @@ unsigned int SoLoudSoundEngine::getResamplerFromCV() {
 }
 
 SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
+    // in WASM headless, use no-op audio backends (because Node.js doesn't have audio)
+    if constexpr(Env::cfg(OS::WASM)) {
+        if(env->isHeadless()) {
+            cv::snd_soloud_backend.setValue("SDL3", false);
+            setenv("SOLOUD_MINIAUDIO_DRIVER", "null", 1);
+        }
+    }
 #if SOLOUD_VERSION >= 202512
     {
         static SoLoud::logFunctionType SoLoudLogCB = +[](const char *message, void * /*userdata*/) -> void {
@@ -124,7 +132,9 @@ void SoLoudSoundEngine::restart() {
         if constexpr(Env::cfg(OS::WASM)) {
             // TODO: this makes no sense, but audio is really messed up unless you restart again after the first init
             // weirdly, this happens with either miniaudio or SDL
-            this->restart();
+            if(this->bWasBackendEverReady) {
+                this->restart();
+            }
         }
     }
 }
