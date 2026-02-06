@@ -2611,7 +2611,7 @@ void HUD::drawRuntimeInfo() {
                 osstr = "lnx";
                 break;
             case OS::WASM:
-                osstr = "wsm";
+                osstr = "web";
                 break;
             case OS::MAC:
                 osstr = "mac";
