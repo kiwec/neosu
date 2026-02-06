@@ -527,33 +527,7 @@ SDL_AppResult SDLMain::iterate() {
 
     // WASM: measure true display Hz from rAF frame intervals (after init settles)
     if constexpr(Env::cfg(OS::WASM)) {
-        constexpr int kMeasureFrames = 10;
-        constexpr uint64_t kInitDelayNS = 3ULL * Timing::NS_PER_SECOND;
-        if(m_iHzMeasureFrames < kMeasureFrames) {
-            const auto now = Timing::getTicksNS();
-            if(m_iHzMeasureFrames == -1) {
-                // wait for init to settle before measuring
-                if(m_iHzMeasureStartNS == 0)
-                    m_iHzMeasureStartNS = now;
-                else if(now - m_iHzMeasureStartNS >= kInitDelayNS)
-                    m_iHzMeasureFrames = 0;
-            }
-            if(m_iHzMeasureFrames == 0) {
-                m_iHzMeasureStartNS = now;
-            }
-            if(m_iHzMeasureFrames >= 0) m_iHzMeasureFrames++;
-            if(m_iHzMeasureFrames == kMeasureFrames) {
-                const auto elapsedNS = now - m_iHzMeasureStartNS;
-                const double avgFrameSecs =
-                    static_cast<double>(elapsedNS) / Timing::NS_PER_SECOND / (kMeasureFrames - 1);
-                if(avgFrameSecs > 0.0) {
-                    const auto measuredHz = std::clamp(static_cast<float>(1.0 / avgFrameSecs), 30.0f, 540.0f);
-                    debugLog("Measured display refresh rate: {:.1f} Hz", measuredHz);
-                    m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = measuredHz);
-                    setFgFPS();
-                }
-            }
-        }
+        calibrateDisplayHzWASM();
     }
 
     // update
@@ -731,7 +705,9 @@ bool SDLMain::createWindow() {
 
     // initialize with the display refresh rate of the current monitor
     m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = queryDisplayHz());
-    {
+
+    // wait for calibration to finish before setting custom iteration rates in WASM
+    if constexpr(!Env::cfg(OS::WASM)) {
         const auto hz = std::round(m_fDisplayHz);
         const auto fourxhz = std::round(std::clamp<float>(hz * 4.0f, hz, 1000.0f));
 
@@ -740,6 +716,11 @@ bool SDLMain::createWindow() {
         cv::fps_max.setValue(fourxhz);
         cv::fps_max_menu.setDefaultDouble(hz);
         cv::fps_max_menu.setValue(hz);
+    } else {
+        cv::fps_max.setDefaultDouble(0.);
+        cv::fps_max.setValue(0.);
+        cv::fps_max_menu.setDefaultDouble(0.);
+        cv::fps_max_menu.setValue(0.);
     }
 
     // initialize window flags and state
@@ -752,10 +733,52 @@ bool SDLMain::createWindow() {
     return true;
 }
 
+void SDLMain::calibrateDisplayHzWASM() {
+    // redundant check to make sure this gets compiled out otherwise
+    if constexpr(!Env::cfg(OS::WASM)) return;
+
+    constexpr uint64_t kInitDelayNS = WASM_HZ_INIT_DELAY_SECONDS * Timing::NS_PER_SECOND;
+    if(m_iHzMeasureFrames < WASM_HZ_FRAMES_TO_MEASURE) {
+        const auto now = Timing::getTicksNS();
+        if(m_iHzMeasureFrames == -1) {
+            // wait for init to settle before measuring
+            if(m_iHzMeasureStartNS == 0)
+                m_iHzMeasureStartNS = now;
+            else if(now - m_iHzMeasureStartNS >= kInitDelayNS)
+                m_iHzMeasureFrames = 0;
+        }
+        if(m_iHzMeasureFrames == 0) {
+            m_iHzMeasureStartNS = now;
+        }
+        if(m_iHzMeasureFrames >= 0) m_iHzMeasureFrames++;
+        if(m_iHzMeasureFrames == WASM_HZ_FRAMES_TO_MEASURE) {
+            const auto elapsedNS = now - m_iHzMeasureStartNS;
+            const double avgFrameSecs =
+                static_cast<double>(elapsedNS) / Timing::NS_PER_SECOND / (WASM_HZ_FRAMES_TO_MEASURE - 1);
+            if(avgFrameSecs > 0.0) {
+                const auto measuredHz = std::clamp(static_cast<float>(1.0 / avgFrameSecs), 30.0f, 540.0f);
+
+                debugLog("Measured display refresh rate: {:.1f} Hz", measuredHz);
+                m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = measuredHz);
+
+                // update these to the true result
+                const auto hz = std::round(m_fDisplayHz);
+                const auto fourxhz = std::round(std::clamp<float>(hz * 4.0f, hz, 1000.0f));
+
+                cv::fps_max.setDefaultDouble(fourxhz);
+                cv::fps_max.setValue(fourxhz);
+                cv::fps_max_menu.setDefaultDouble(hz);
+                cv::fps_max_menu.setValue(hz);
+                setFgFPS();
+            }
+        }
+    }
+}
+
 float SDLMain::queryDisplayHz() {
     // on WASM, once we've measured from rAF intervals, keep that value
     if constexpr(Env::cfg(OS::WASM)) {
-        if(m_iHzMeasureFrames >= 10) return m_fDisplayHz;
+        if(m_iHzMeasureFrames >= WASM_HZ_FRAMES_TO_MEASURE) return m_fDisplayHz;
     } else {  // get the screen refresh rate, and set fps_max to that as default
         // doesn't work in wasm
         const SDL_DisplayID display = SDL_GetDisplayForWindow(m_window);
