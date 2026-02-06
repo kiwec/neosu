@@ -1,4 +1,4 @@
-// Copyright (c) 2025, WH & 2025, kiwec, All rights reserved.
+// Copyright (c) 2026, WH & 2026, kiwec, All rights reserved.
 // WASM networking implementation using Emscripten Fetch API (no curl dependency)
 #include "config.h"
 
