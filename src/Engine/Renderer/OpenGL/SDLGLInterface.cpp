@@ -93,6 +93,8 @@ void SDLGLInterface::unload() {
 SDLGLInterface::SDLGLInterface(SDL_Window *window)
     : BackendGLInterface(), window(window), syncobj(std::make_unique<OpenGLSync>()) {}
 
+SDLGLInterface::~SDLGLInterface() = default;
+
 void SDLGLInterface::beginScene() {
     // block on frame queue (if enabled)
     this->syncobj->begin();

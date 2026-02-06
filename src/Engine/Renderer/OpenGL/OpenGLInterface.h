@@ -7,7 +7,6 @@
 
 #ifdef MCENGINE_FEATURE_OPENGL
 #include "Graphics.h"
-#include "Shader.h"
 
 class Image;
 
@@ -15,7 +14,7 @@ class OpenGLInterface : public Graphics {
     NOCOPY_NOMOVE(OpenGLInterface)
    public:
     OpenGLInterface();
-    ~OpenGLInterface() override = default;
+    ~OpenGLInterface() override;
 
     // scene
     void beginScene() override;

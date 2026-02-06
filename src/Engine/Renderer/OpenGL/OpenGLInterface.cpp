@@ -67,6 +67,8 @@ OpenGLInterface::OpenGLInterface()
     GLStateCache::initialize();
 }
 
+OpenGLInterface::~OpenGLInterface() = default;
+
 void OpenGLInterface::beginScene() {
     this->bInScene = true;
 
