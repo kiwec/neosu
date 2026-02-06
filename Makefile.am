@@ -1370,7 +1370,9 @@ PCH_FLAGS :=
 endif # BUILD_PCH
 
 # making sure deps are built before main compile
-$(neosu_OBJECTS): $(BUILT_SOURCES) $(PCH_OUTPUT)
+# EMBED_OUTPUT is order-only (after |): must exist before compilation, but updating it doesn't rebuild all objects
+# (only binary_embed.o through neosu_SOURCES dep)
+$(neosu_OBJECTS): $(BUILT_SOURCES) $(PCH_OUTPUT) | $(EMBED_OUTPUT)
 
 # add all paths with sources as an include ("-I") flag
 NEOSU_INCLUDE_FLAGS := $(shell find $(srcdir)/src -not -path '*/.*' -type d -printf "-I%p ")
