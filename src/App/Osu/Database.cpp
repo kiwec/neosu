@@ -1886,14 +1886,14 @@ void Database::saveMaps() {
     u32 nb_overrides = 0;
     Hash::flat::map<MD5Hash, MapOverrides> real_overrides;
 
-    // avoid adding overrides with empty/0 hash
+    // avoid adding overrides with empty/0/"suspicious" hashes
     {
         // only need read lock here
         Sync::shared_lock lock(this->peppy_overrides_mtx);
         real_overrides.reserve(this->peppy_overrides.size());
 
         for(const auto &it : this->peppy_overrides) {
-            if(it.first.empty()) continue;
+            if(it.first.is_suspicious()) continue;
             real_overrides.emplace(it);
         }
     }
