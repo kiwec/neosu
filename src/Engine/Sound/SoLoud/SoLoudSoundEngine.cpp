@@ -62,12 +62,13 @@ unsigned int SoLoudSoundEngine::getResamplerFromCV() {
 
 SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
     // in WASM headless, use no-op audio backends (because Node.js doesn't have audio)
-    if constexpr(Env::cfg(OS::WASM)) {
-        if(env->isHeadless()) {
-            cv::snd_soloud_backend.setValue("SDL3", false);
-            setenv("SOLOUD_MINIAUDIO_DRIVER", "null", 1);
-        }
+#ifdef MCENGINE_PLATFORM_WASM
+    if(env->isHeadless()) {
+        cv::snd_soloud_backend.setValue("SDL3", false);
+        setenv("SOLOUD_MINIAUDIO_DRIVER", "null", 1);
     }
+#endif
+
 #if SOLOUD_VERSION >= 202512
     {
         static SoLoud::logFunctionType SoLoudLogCB = +[](const char *message, void * /*userdata*/) -> void {
