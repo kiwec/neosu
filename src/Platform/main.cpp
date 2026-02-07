@@ -37,6 +37,10 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
+
+// Our html shell overrides window.alert to display fatal errors properly.
+// (we override window.alert so this code also falls back nicely on the default shell)
+EM_JS(void, js_fatal_error, (const char *str), { alert(UTF8ToString(str)); });
 #endif
 
 #ifdef WITH_LIVEPP
@@ -78,7 +82,14 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 // Init/Iterate/Event
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     if(!appstate || result == SDL_APP_FAILURE) {
-        debugLog("Force exiting now, a fatal error occurred. (SDL error: {})", SDL_GetError());
+        auto err_msg = SDL_GetError();
+        debugLog("Force exiting now, a fatal error occurred. (SDL error: {})", err_msg);
+
+#ifdef MCENGINE_PLATFORM_WASM
+        // Display the error to the user (as opposed to a black screen)
+        js_fatal_error(err_msg);
+#endif
+
         std::exit(-1);
     }
 
