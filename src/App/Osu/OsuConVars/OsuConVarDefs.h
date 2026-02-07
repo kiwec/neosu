@@ -80,7 +80,7 @@ CONVAR(debug_draw_timingpoints, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(debug_hiterrorbar_misaims, false, CLIENT);
 CONVAR(debug_pp, false, CLIENT);
 CONVAR(debug_bg_loader, false, CLIENT);
-CONVAR(debug_avatars, false, CLIENT);
+CONVAR(debug_thumbs, false, CLIENT);
 CONVAR(slider_debug_draw, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "draw hitcircle at every curve point and nothing else (no vao, no rt, no shader, nothing) "
        "(requires enabling legacy slider renderer)");

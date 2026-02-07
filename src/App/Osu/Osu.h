@@ -10,7 +10,7 @@
 #include <vector>
 #include <array>
 
-class AvatarManager;
+class ThumbnailManager;
 class ConVar;
 class Image;
 class McFont;
@@ -154,7 +154,7 @@ class Osu final : public App, public MouseListener {
     [[nodiscard]] inline const std::unique_ptr<LiveScore> &getScore() const { return this->score; }
     [[nodiscard]] inline const std::unique_ptr<UpdateHandler> &getUpdateHandler() const { return this->updateHandler; }
     [[nodiscard]] inline const std::unique_ptr<BeatmapInterface> &getMapInterface() const { return this->map_iface; }
-    [[nodiscard]] inline const std::unique_ptr<AvatarManager> &getAvatarManager() const { return this->avatarManager; }
+    [[nodiscard]] inline const std::unique_ptr<ThumbnailManager> &getThumbnailManager() const { return this->thumbnailManager; }
 
     [[nodiscard]] inline RenderTarget *getBackBuffer() const { return this->backBuffer; }
     [[nodiscard]] inline RenderTarget *getPlayfieldBuffer() const { return this->playfieldBuffer; }
@@ -268,7 +268,7 @@ class Osu final : public App, public MouseListener {
     std::unique_ptr<Skin> skin{nullptr};
     std::unique_ptr<BeatmapInterface> map_iface{nullptr};
     std::unique_ptr<UpdateHandler> updateHandler{nullptr};
-    std::unique_ptr<AvatarManager> avatarManager{nullptr};
+    std::unique_ptr<ThumbnailManager> thumbnailManager{nullptr};
     std::unique_ptr<UserCard> userButton{nullptr};
     std::unique_ptr<BGImageHandler> backgroundImageHandler{nullptr};
     std::unique_ptr<LiveScore> score{nullptr};

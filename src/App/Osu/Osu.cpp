@@ -1,7 +1,7 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "Osu.h"
 
-#include "AvatarManager.h"
+#include "ThumbnailManager.h"
 #include "BackgroundImageHandler.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
@@ -246,7 +246,7 @@ Osu::Osu()
     this->ui_memb = std::make_unique<UI>();
     this->score = std::make_unique<LiveScore>(false);
     this->updateHandler = std::make_unique<UpdateHandler>();
-    this->avatarManager = std::make_unique<AvatarManager>();
+    this->thumbnailManager = std::make_unique<ThumbnailManager>();
     this->backgroundImageHandler = std::make_unique<BGImageHandler>();
     this->fposu = std::make_unique<ModFPoSu>();
 
@@ -576,7 +576,7 @@ void Osu::update() {
     this->fposu->update();
 
     // only update if not playing
-    if(!this->isInPlayModeAndNotPaused()) this->avatarManager->update();
+    if(!this->isInPlayModeAndNotPaused()) this->thumbnailManager->update();
 
     ui->update();
 

@@ -1,6 +1,6 @@
-// Copyright (c) 2025, WH, All rights reserved.
+// Copyright (c) 2025-26, WH, All rights reserved.
 
-#include "AvatarManager.h"
+#include "ThumbnailManager.h"
 #include "AsyncIOHandler.h"
 
 #include "Downloader.h"
@@ -17,18 +17,18 @@
 class Osu;
 extern Osu* osu;
 
-Image* AvatarManager::get_avatar(const AvatarIdentifier& id_folder) {
-    auto it = this->avatars.find(id_folder);
-    if(it == this->avatars.end()) {
+Image* ThumbnailManager::try_get_image(const ThumbIdentifier& id_folder) {
+    auto it = this->images.find(id_folder);
+    if(it == this->images.end()) {
         return nullptr;
     }
 
-    AvatarEntry& entry = it->second;
+    ThumbEntry& entry = it->second;
     entry.last_access_time = engine->getTime();
 
     // lazy load if not in memory (won't block)
     if(!entry.image) {
-        this->load_avatar_image(entry);
+        this->load_image(entry);
     }
 
     // return only if ready (async loading complete)
@@ -36,7 +36,7 @@ Image* AvatarManager::get_avatar(const AvatarIdentifier& id_folder) {
 }
 
 // this is run during Osu::update(), while not in unpaused gameplay
-void AvatarManager::update() {
+void ThumbnailManager::update() {
     const uSz cur_load_queue_size = this->load_queue.size();
 
     // nothing to do
@@ -51,8 +51,8 @@ void AvatarManager::update() {
         return;
     }
 
-    // remove oldest avatars if we have too many loaded
-    this->prune_oldest_avatars();
+    // remove oldest entries if we have too many loaded
+    this->prune_oldest_entries();
 
     // process 4 elements at a time from the download queue
     // we might not drain it fully due to only checking download progress once,
@@ -79,17 +79,17 @@ void AvatarManager::update() {
         }
 
         // if we have the file or the download just finished, create the entry
-        // but only actually load it when it's needed (in get_avatar)
+        // but only actually load it when it's needed (in get_image)
         bool newly_downloaded = false;
         if(exists_on_disk) {
-            this->avatars[id_folder] = {.file_path = id_folder.second, .image = nullptr, .last_access_time = 0.0};
-        } else if((newly_downloaded = this->download_avatar(id_folder))) {
+            this->images[id_folder] = {.file_path = id_folder.second, .image = nullptr, .last_access_time = 0.0};
+        } else if((newly_downloaded = this->download_image(id_folder))) {
             // write async
             io->write(id_folder.second, std::move(this->temp_img_download_data),
-                      [&avatars = this->avatars, pair = id_folder](bool success) -> void {
+                      [&images = this->images, pair = id_folder](bool success) -> void {
                           if(!osu) return;  // do not run callback if osu has shut down
                           if(success) {
-                              avatars[pair] = {.file_path = pair.second, .image = nullptr, .last_access_time = 0.0};
+                              images[pair] = {.file_path = pair.second, .image = nullptr, .last_access_time = 0.0};
                           }
                       });
         }
@@ -100,20 +100,19 @@ void AvatarManager::update() {
     }
 }
 
-void AvatarManager::add_avatar(const AvatarIdentifier& id_folder) {
-    const bool debug = cv::debug_avatars.getBool();
+void ThumbnailManager::request_image(const ThumbIdentifier& id_folder) {
+    const bool debug = cv::debug_thumbs.getBool();
 
     // increment refcount even if we didn't add to load queue
-    const u32 current_refcount = this->avatar_refcount[id_folder].fetch_add(1, std::memory_order_relaxed) + 1;
+    const u32 current_refcount = this->image_refcount[id_folder].fetch_add(1, std::memory_order_relaxed) + 1;
     logIf(debug, "trying to add {} to load queue, current refcount: {}", id_folder.first, current_refcount);
 
     {
         bool already_added = false;
         if(current_refcount > 1 || this->id_blacklist.contains(id_folder) ||
-           (already_added = this->avatars.contains(id_folder))) {
-            logIf(
-                debug, "not adding {} to load queue, {}", id_folder.first,
-                current_refcount > 1 ? "refcount > 1" : (already_added ? "already have it in avatars" : "blacklisted"));
+           (already_added = this->images.contains(id_folder))) {
+            logIf(debug, "not adding {} to load queue, {}", id_folder.first,
+                  current_refcount > 1 ? "refcount > 1" : (already_added ? "already have it" : "blacklisted"));
             return;
         }
     }
@@ -131,19 +130,19 @@ void AvatarManager::add_avatar(const AvatarIdentifier& id_folder) {
     }
 }
 
-void AvatarManager::remove_avatar(const AvatarIdentifier& id_folder) {
-    const u32 current_refcount = this->avatar_refcount[id_folder].fetch_sub(1, std::memory_order_acq_rel) - 1;
-    logIfCV(debug_avatars, "current refcount for {} is {}", id_folder.first, current_refcount);
+void ThumbnailManager::discard_image(const ThumbIdentifier& id_folder) {
+    const u32 current_refcount = this->image_refcount[id_folder].fetch_sub(1, std::memory_order_acq_rel) - 1;
+    logIfCV(debug_thumbs, "current refcount for {} is {}", id_folder.first, current_refcount);
 
     if(current_refcount == 0) {
         // dequeue if it's waiting to be loaded, that's all
         if(std::erase(this->load_queue, id_folder) > 0) {
-            logIfCV(debug_avatars, "removed {} from load queue", id_folder.first);
+            logIfCV(debug_thumbs, "removed {} from load queue", id_folder.first);
         }
     }
 }
 
-void AvatarManager::load_avatar_image(AvatarEntry& entry) {
+void ThumbnailManager::load_image(ThumbEntry& entry) {
     if(entry.image || entry.file_path.empty()) {
         return;
     }
@@ -153,20 +152,20 @@ void AvatarManager::load_avatar_image(AvatarEntry& entry) {
     entry.image = resourceManager->loadImageAbs(entry.file_path, entry.file_path);
 }
 
-void AvatarManager::prune_oldest_avatars() {
+void ThumbnailManager::prune_oldest_entries() {
     // don't even do anything if we're not close to the limit (incl. unloaded)
-    if(this->avatars.size() <= (uSz)(MAX_LOADED_AVATARS * (7.f / 8.f))) return;
+    if(this->images.size() <= (uSz)(MAX_LOADED_IMAGES * (7.f / 8.f))) return;
 
     // collect all loaded entries
-    std::vector<std::unordered_map<AvatarIdentifier, AvatarEntry>::iterator> loaded_entries;
+    std::vector<std::unordered_map<ThumbIdentifier, ThumbEntry>::iterator> loaded_entries;
 
-    for(auto it = this->avatars.begin(); it != this->avatars.end(); ++it) {
+    for(auto it = this->images.begin(); it != this->images.end(); ++it) {
         if(it->second.image && it->second.image->isReady()) {
             loaded_entries.push_back(it);
         }
     }
 
-    if(loaded_entries.size() <= MAX_LOADED_AVATARS) {
+    if(loaded_entries.size() <= MAX_LOADED_IMAGES) {
         return;
     }
 
@@ -175,35 +174,35 @@ void AvatarManager::prune_oldest_avatars() {
     });
 
     // unload oldest images (a bit more, to not constantly be unloading images for each new image added after we hit the limit once)
-    uSz to_unload = std::clamp<uSz>((uSz)(MAX_LOADED_AVATARS / 4.f), 0, loaded_entries.size() / 2);
+    uSz to_unload = std::clamp<uSz>((uSz)(MAX_LOADED_IMAGES / 4.f), 0, loaded_entries.size() / 2);
     for(uSz i = 0; i < to_unload; ++i) {
-        logIfCV(debug_avatars, "unloading {} from memory due to age", loaded_entries[i]->second.file_path);
+        logIfCV(debug_thumbs, "unloading {} from memory due to age", loaded_entries[i]->second.file_path);
         resourceManager->destroyResource(loaded_entries[i]->second.image);
         loaded_entries[i]->second.image = nullptr;
     }
 }
 
-bool AvatarManager::download_avatar(const AvatarIdentifier& id_folder) {
+bool ThumbnailManager::download_image(const ThumbIdentifier& id_folder) {
     float progress = -1.f;
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto img_url = fmt::format(fmt::runtime(this->url_format), scheme, BanchoState::endpoint, id_folder.first);
     int response_code;
     // TODO: constantly requesting the full download is a bad API, should be a way to just check if it's already downloading
-    // TODO: only download a single (response_code == 404) avatar and share it
+    // TODO: only download a single (response_code == 404) result and share it
     Downloader::download(img_url.c_str(), &progress, this->temp_img_download_data, &response_code);
     if(progress == -1.f) this->id_blacklist.insert(id_folder);
 
     return (progress == 1.f && !this->temp_img_download_data.empty());
 }
 
-void AvatarManager::clear() {
-    for(auto& [id_folder, entry] : this->avatars) {
+void ThumbnailManager::clear() {
+    for(auto& [id_folder, entry] : this->images) {
         if(entry.image) {
             resourceManager->destroyResource(entry.image);
         }
     }
 
-    this->avatars.clear();
+    this->images.clear();
     this->load_queue.clear();
     this->id_blacklist.clear();
 }

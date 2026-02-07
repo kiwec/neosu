@@ -9,7 +9,6 @@ neosu_SOURCES = \
 	src/App/AppRegistry.cpp \
 	src/App/AppRunner.cpp \
 	src/App/Osu/AbstractBeatmapInterface.cpp \
-	src/App/Osu/AvatarManager.cpp \
 	src/App/Osu/BackgroundImageHandler.cpp \
 	src/App/Osu/Bancho.cpp \
 	src/App/Osu/BanchoAes.cpp \
@@ -77,6 +76,7 @@ neosu_SOURCES = \
 	src/App/Osu/SongBrowser/SongButton.cpp \
 	src/App/Osu/SongBrowser/SongDifficultyButton.cpp \
 	src/App/Osu/SpectatorScreen.cpp \
+	src/App/Osu/ThumbnailManager.cpp \
 	src/App/Osu/Tools/DiffCalcTool.cpp \
 	src/App/Osu/TooltipOverlay.cpp \
 	src/App/Osu/UI.cpp \
@@ -192,28 +192,4 @@ neosu_SOURCES = \
 	src/Util/UString.cpp \
 	src/Util/crypto.cpp \
 	src/Util/dynutils.cpp \
-$(NULL)
-EXTRA_BINDEPS = \
-	assets/shaders/DX11_actual_flashlight_f.hlsl \
-	assets/shaders/DX11_actual_flashlight_v.hlsl \
-	assets/shaders/DX11_cursortrail_f.hlsl \
-	assets/shaders/DX11_cursortrail_v.hlsl \
-	assets/shaders/DX11_default_f.hlsl \
-	assets/shaders/DX11_default_v.hlsl \
-	assets/shaders/DX11_flashlight_f.hlsl \
-	assets/shaders/DX11_flashlight_v.hlsl \
-	assets/shaders/DX11_slider_f.hlsl \
-	assets/shaders/DX11_slider_v.hlsl \
-	assets/shaders/DX11_smoothclip_f.hlsl \
-	assets/shaders/DX11_smoothclip_v.hlsl \
-	assets/shaders/GL_actual_flashlight_f.glsl \
-	assets/shaders/GL_actual_flashlight_v.glsl \
-	assets/shaders/GL_cursortrail_f.glsl \
-	assets/shaders/GL_cursortrail_v.glsl \
-	assets/shaders/GL_flashlight_f.glsl \
-	assets/shaders/GL_flashlight_v.glsl \
-	assets/shaders/GL_slider_f.glsl \
-	assets/shaders/GL_slider_v.glsl \
-	assets/shaders/GL_smoothclip_f.glsl \
-	assets/shaders/GL_smoothclip_v.glsl \
 $(NULL)
