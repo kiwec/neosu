@@ -397,10 +397,11 @@ void Database::update() {
                std::cmp_greater(this->cur_raw_load_idx, (this->raw_load_beatmap_folders.size() - 1))) {
                 this->raw_load_beatmap_folders.clear();
                 this->raw_load_scheduled = false;
-                this->importTimer->update();
 
                 this->beatmapsets = std::move(this->temp_loading_beatmapsets);
                 this->temp_loading_beatmapsets.clear();
+
+                this->importTimer->update();
 
                 debugLog("Refresh finished, added {} beatmaps in {:f} seconds.", this->beatmapsets.size(),
                          this->importTimer->getElapsedTime());
@@ -456,12 +457,47 @@ void Database::save() {
 //       See loadRawBeatmap()
 //       (unless is_peppy is specified, in which case we're loading a raw osu folder and not saving the things we loaded)
 BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override, bool is_peppy) {
-    // TODO: deduplication logic
-    // needs to handle different loading states that we might be in currently
     std::unique_ptr<BeatmapSet> mapset = this->loadRawBeatmap(beatmapFolderPath, is_peppy);
     if(mapset == nullptr) return nullptr;
 
     BeatmapSet *raw_mapset = mapset.get();
+
+    {
+        // deduplicate diffs
+        // TODO: this will disallow adding a neosu beatmapset if we already have a peppy beatmapset that is the same (and vice versa)!
+        Sync::unique_lock lock(this->beatmap_difficulties_mtx);
+        for(auto diffit = mapset->difficulties->begin(); diffit != mapset->difficulties->end();) {
+            const auto &diff = *diffit;
+            auto [existingit, inserted] = this->beatmap_difficulties.try_emplace(diff->getMD5(), diff.get());
+            if(!inserted) {
+                // update set id just in case we had an override, though
+                const i32 real_set_id = set_id_override != -1 ? set_id_override : mapset->iSetID;
+
+                BeatmapDifficulty *diffparent = existingit->second->parentSet;
+                if(const i32 old_set_id = diffparent->iSetID; old_set_id == -1 && real_set_id > 0) {
+                    logIfCV(debug_db, "updating old set {} id {} -> {}", diffparent->getFolder(), old_set_id,
+                            real_set_id);
+                    diffparent->iSetID = set_id_override;
+                    for(auto &existingdiff : diffparent->getDifficulties()) {
+                        existingdiff->iSetID = set_id_override;
+                    }
+                }
+                logIfCV(debug_db, "skipping raw {} (already in beatmap_difficulties), current size: {}", diff->getMD5(),
+                        this->beatmap_difficulties.size());
+                diffit = mapset->difficulties->erase(diffit);
+            } else {
+                logIfCV(debug_db, "adding raw {} to beatmap_difficulties, current size: {}", diff->getMD5(),
+                        this->beatmap_difficulties.size());
+                ++diffit;
+            }
+        }
+    }
+
+    if(mapset->difficulties->empty()) {
+        logIfCV(debug_db, "WARNING: not adding raw mapset {} id {}, only had duplicate difficulties!",
+                mapset->getFolder(), set_id_override != -1 ? set_id_override : mapset->iSetID);
+        return nullptr;
+    }
 
     // Some beatmaps don't provide beatmap/beatmapset IDs in the .osu files
     // But we know the beatmapset ID because we just downloaded it!
@@ -469,13 +505,6 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
         mapset->iSetID = set_id_override;
         for(auto &diff : mapset->getDifficulties()) {
             diff->iSetID = set_id_override;
-        }
-    }
-
-    {
-        Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-        for(const auto &diff : mapset->getDifficulties()) {
-            this->beatmap_difficulties[diff->getMD5()] = diff.get();
         }
     }
 
