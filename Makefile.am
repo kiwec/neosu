@@ -156,12 +156,13 @@ $(builddir)/wasm-maps/.extracted: $(DEPS_CACHE)/wasm-beatmap-pack.zip
 	rm -rf $(builddir)/wasm-osztemp && \
 	touch $@
 
-if WASM_PLATFORM
-EXTRACTED_MAPS_DEP := $(builddir)/wasm-maps/.extracted
-WASM_POLYFILL_DEP := $(srcdir)/src/Platform/wasm-node-polyfill.js
-else
 EXTRACTED_MAPS_DEP :=
 WASM_POLYFILL_DEP :=
+if WASM_PLATFORM
+WASM_POLYFILL_DEP += $(srcdir)/src/Platform/wasm-node-polyfill.js
+if BUNDLE_BEATMAPS
+EXTRACTED_MAPS_DEP += $(builddir)/wasm-maps/.extracted
+endif
 endif
 
 ## BINARY (pre-built) dependencies (conditional depending on build configuration)

@@ -209,6 +209,8 @@ AC_ARG_ENABLE([werror],
     AS_HELP_STRING([--enable-werror], [Build with -Werror (default: yes)]))
 AC_ARG_ENABLE([pch],
     AS_HELP_STRING([--enable-pch], [Build and use a pre-compiled header to speed up rebuild time (default: yes)]))
+AC_ARG_ENABLE([redistributable],
+    AS_HELP_STRING([--enable-redistributable], [Don't bundle any non-redistributable content (currently only relevant for WASM, skips bundling beatmaps, default: yes)]))
 
 AC_ARG_WITH([renderer],
     AS_HELP_STRING([--with-renderer={opengl,dx11,opengles}], [The (comma separated list of) renderer backend(s) to build with (default: opengl)]))
@@ -226,6 +228,14 @@ AC_ARG_WITH([discord],
     AS_HELP_STRING([--with-discord], [Build with Discord rich presence support (default on if supported (Windows, Linux 64-bit))]))
 
 # setup defaults
+AS_IF([test "x$enable_redistributable" != "xno"], [
+    enable_redistributable=yes
+    disable_redistributable=no
+], [
+    enable_redistributable=no
+    disable_redistributable=yes
+])
+
 AS_IF([test "x$enable_static" != "xno"], [
     enable_static=yes
     disable_static=no
@@ -528,8 +538,12 @@ AS_IF([test -n "$WASM_CC"], [
     # --emrun for support for running the .html with emrun (temporary until we get a real webpage for it)
     NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sPTHREAD_POOL_SIZE=32 -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sUSE_PTHREADS=1 -sFETCH=1 -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sINITIAL_MEMORY=1536MB -sWASM=1 -sENVIRONMENT=web,worker,node -lidbfs.js -lnodefs.js --pre-js \$(srcdir)/src/Platform/wasm-node-polyfill.js --emrun"
 
-    # the Songs folder preload is definitely temporary, just for testing purposes to have something to play
-    WASM_PRELOAD_FLAGS="--preload-file \$(srcdir)/\$(ASSETS_DIR)/fonts@fonts --preload-file \$(srcdir)/\$(ASSETS_DIR)/materials@materials --preload-file \$(builddir)/wasm-maps@/libsdl/Songs"
+    WASM_PRELOAD_FLAGS="--preload-file \$(srcdir)/\$(ASSETS_DIR)/fonts@fonts --preload-file \$(srcdir)/\$(ASSETS_DIR)/materials@materials"
+    AS_IF([test "x$enable_redistributable" = "xno"], [
+        # bundle some copyrighted beatmaps for non-redistributable builds
+        # useful for testing purposes to have something to immediately play
+        WASM_PRELOAD_FLAGS="$WASM_PRELOAD_FLAGS --preload-file \$(builddir)/wasm-maps@/libsdl/Songs"
+    ])
     AC_SUBST([WASM_PRELOAD_FLAGS])
 
     # pkg-config wrapper for emscripten
@@ -1487,6 +1501,7 @@ AM_CONDITIONAL([BUILD_WINPTHREAD_NOVERSION],
     [test "$host_os" = "mingw32" && test "x$enable_static" = "xyes"])
 
 AM_CONDITIONAL([AUDIO_SHORTCUTS], [test -n "$make_audio_shortcuts" && test -n "$WINE" && test "$SYSNAME" = "windows"])
+AM_CONDITIONAL([BUNDLE_BEATMAPS], [test -n "$WASM_CC" && test "x$enable_redistributable" = "xno"])
 
 # output makefile and build timestamp
 AC_CONFIG_FILES([Makefile src/build_timestamp.h])
@@ -1515,6 +1530,7 @@ neosu build configuration:
     Discord:            ${with_discord-yes}
     IME enabled:        ${enable_ime-yes}
     Hardened build:     ${hardened_build-no}
+    Redistrib. build:   ${enable_redistributable-yes}
     LTO:                ${enable_lto-auto}
     OpenMP:             ${enable_omp-no}
     Debug build:        ${enable_debug-no}
