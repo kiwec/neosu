@@ -100,7 +100,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
             fmain->m_engine->shutdown();
         }
     }
-#ifdef __EMSCRIPTEN__
+#ifdef MCENGINE_PLATFORM_WASM
     // flush IDBFS to IndexedDB after config/scores have been saved
     // clang-format off
     EM_ASM(

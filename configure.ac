@@ -923,10 +923,12 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         # CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
         # CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG"
     ])
-    AS_IF([test -n "$WASM_CC"], [
-        NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sASSERTIONS"
-        NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sASSERTIONS"
-    ])
+    # assertions breaks in a couple places due to calling malloc/free in the soloud mixer (inside SoundTouch)
+    # hopefully it's not fatal to ignore...
+    # AS_IF([test -n "$WASM_CC"], [
+    #     NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sASSERTIONS"
+    #     NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sASSERTIONS"
+    # ])
     AC_SUBST([ENABLE_DEBUG])
     AS_IF([test "x$enable_strip" != "xyes"], [enable_strip=no]) # disable stripping unless its explicitly requested for debug (why tho?)
 ], [
@@ -1217,7 +1219,7 @@ CTRE_MIN_VERSION=3.10.0 # regex support that doesn't have exceptions FORCED enab
 CTRE_BUILD_VERSION=6225211806c48230e5d17a1e555ef69e7325051c # git as of Jan 28th, 2026
 
 # always build these from source if we want to use them
-AC_SUBST([SOLOUD_VERSION], [dfc9480dfd63aee2994637be0f6a6b017f79d08d]) # neoloud fork
+AC_SUBST([SOLOUD_VERSION], [800cb5eb24756eac79fab0803d8704d1c5fe28c5]) # neoloud fork
 #AC_SUBST([SOLOUD_VERSION], [cb174f53804d8ba3fc81a2dfa49879103fbbcb2e])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [b8e2a5f3f04483691962ab1a36ffa166abdcd675])
