@@ -288,23 +288,24 @@ void Database::startLoader() {
     VolNormalization::abort();
 
     // only clear diffs/sets for full reloads (only handled for raw re-loading atm)
-    const bool lastLoadWasRaw{this->needs_raw_load};
+    // const bool lastLoadWasRaw{this->needs_raw_load};
+    // TODO: fix delta load logic
     // TODO: raw loading from other folders
     // TODO: new cvar like "force raw load"
     const bool songsFolderExists = Environment::directoryExists(Database::getOsuSongsFolder());
     this->needs_raw_load = songsFolderExists &&
                            (!cv::database_enabled.getBool() || !isOsuDBReadable(getDBPath(DatabaseType::STABLE_MAPS)));
-    const bool nextLoadIsRaw{this->needs_raw_load};
+    // const bool nextLoadIsRaw{this->needs_raw_load};
 
-    if(!lastLoadWasRaw || !nextLoadIsRaw) {
-        this->loudness_to_calc.clear();
-        {
-            Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-            this->beatmap_difficulties.clear();
-        }
-        this->temp_loading_beatmapsets.clear();
-        this->beatmapsets.clear();
+    this->is_first_load = true;
+
+    this->loudness_to_calc.clear();
+    {
+        Sync::unique_lock lock(this->beatmap_difficulties_mtx);
+        this->beatmap_difficulties.clear();
     }
+    this->temp_loading_beatmapsets.clear();
+    this->beatmapsets.clear();
 
     // append, the copy will only be cleared if loading them succeeded
     this->extern_db_paths_to_import_async_copy.insert(this->extern_db_paths_to_import_async_copy.end(),
