@@ -206,8 +206,14 @@ ByteBufferedFile::Writer::Writer(std::string_view writePath_param)
 
     auto path = File::getFsPath(this->write_path);
     this->file_path = path;
+
     this->tmp_file_path = this->file_path;
-    this->tmp_file_path += ".tmp";
+    if constexpr(!Env::cfg(OS::WASM)) {
+        // on WASM/IDBFS, just write directly to the final path.
+        // the .tmp+rename pattern doesn't trigger IDBFS autoPersist, so the rename
+        // never gets synced to IndexedDB and the file is lost on next page load.
+        this->tmp_file_path += ".tmp";
+    }
 
     this->file.open(this->tmp_file_path, std::ios::binary);
     if(!this->file.is_open()) {
@@ -222,7 +228,7 @@ ByteBufferedFile::Writer::~Writer() {
         this->flush();
         this->file.close();
 
-        if(!this->error_flag) {
+        if(!this->error_flag && this->tmp_file_path != this->file_path) {
             std::error_code ec;
             std::filesystem::remove(this->file_path, ec);  // Windows (the Microsoft docs are LYING)
             std::filesystem::rename(this->tmp_file_path, this->file_path, ec);
