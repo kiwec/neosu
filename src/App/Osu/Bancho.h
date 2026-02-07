@@ -99,6 +99,7 @@ struct BanchoState final {
 
     [[nodiscard]] static std::string get_disk_uuid_win32();
     [[nodiscard]] static std::string get_disk_uuid_blkid();
+    [[nodiscard]] static std::string get_disk_uuid_wasm();
 
     static bool print_new_channels;
 

@@ -13,6 +13,8 @@
 #include "RenderTarget.h"
 #include "ResourceManager.h"
 #include "UIScreen.h"
+#include "Logging.h"
+#include "SString.h"
 
 #include "Changelog.h"
 #include "Chat.h"
@@ -50,6 +52,63 @@ class UI::NullScreen final : public UIScreen {
     forceinline bool isVisible() final { return false; }
 };
 
+namespace cv {
+// callback only set after initialized
+// for debugging
+static ConVar set_active_ui_screen("set_active_ui_screen", CLIENT | NOLOAD | NOSAVE);
+}  // namespace cv
+
+void UI::setScreenByName(std::string_view screenGetterNameWithoutGet) {
+    UIScreen *toSet = nullptr;
+    const std::string lowerName = SString::to_lower(screenGetterNameWithoutGet);
+
+    if(lowerName == "notificationoverlay"sv) {
+        toSet = this->notificationOverlay;
+    } else if(lowerName == "volumeoverlay"sv) {
+        toSet = this->volumeOverlay;
+    } else if(lowerName == "promptoverlay"sv) {
+        toSet = this->promptOverlay;
+    } else if(lowerName == "modselector"sv) {
+        toSet = this->modSelector;
+    } else if(lowerName == "useractions"sv) {
+        toSet = this->userActionsOverlay;
+    } else if(lowerName == "room"sv) {
+        toSet = this->room;
+    } else if(lowerName == "chat"sv) {
+        toSet = this->chatOverlay;
+    } else if(lowerName == "optionsoverlay"sv) {
+        toSet = this->optionsOverlay;
+    } else if(lowerName == "rankingscreen"sv) {
+        toSet = this->rankingScreen;
+    } else if(lowerName == "userstatsscreen"sv) {
+        toSet = this->userStatsScreen;
+    } else if(lowerName == "spectatorscreen"sv) {
+        toSet = this->spectatorScreen;
+    } else if(lowerName == "pauseoverlay"sv) {
+        toSet = this->pauseOverlay;
+    } else if(lowerName == "hud"sv) {
+        toSet = this->hud;
+    } else if(lowerName == "songbrowser"sv) {
+        toSet = this->songBrowser;
+    } else if(lowerName == "osudirectscreen"sv) {
+        toSet = this->osuDirectScreen;
+    } else if(lowerName == "lobby"sv) {
+        toSet = this->lobby;
+    } else if(lowerName == "changelog"sv) {
+        toSet = this->changelog;
+    } else if(lowerName == "mainmenu"sv) {
+        toSet = this->mainMenu;
+    } else if(lowerName == "tooltipoverlay"sv) {
+        toSet = this->tooltipOverlay;
+    }
+
+    if(toSet) {
+        this->setScreen(toSet);
+    } else {
+        debugLog("Invalid screen {}", screenGetterNameWithoutGet);
+    }
+}
+
 UI *ui{nullptr};
 
 UI::UI() {
@@ -59,6 +118,8 @@ UI::UI() {
 }
 
 UI::~UI() {
+    cv::set_active_ui_screen.removeAllCallbacks();
+
     for(auto *overlay : this->extra_overlays) {
         SAFE_DELETE(overlay);
     }
@@ -100,6 +161,8 @@ bool UI::init() {
 
     // debug
     // this->windowManager = std::make_unique<CWindowManager>();
+    cv::set_active_ui_screen.setCallback(SA::MakeDelegate<&UI::setScreenByName>(this));
+
     return true;
 }
 

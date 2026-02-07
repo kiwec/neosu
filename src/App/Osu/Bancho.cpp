@@ -9,7 +9,7 @@
 #elif __APPLE__
 // nothing
 #elif defined(__EMSCRIPTEN__)
-// nothing
+#include <emscripten/emscripten.h>
 #else
 
 #include <linux/limits.h>
@@ -49,6 +49,7 @@
 #include "Timing.h"
 #include "Logging.h"
 #include "UserCard.h"
+#include "File.h"
 #include "UI.h"
 
 // defs
@@ -1053,6 +1054,8 @@ const std::string &BanchoState::get_disk_uuid() {
             BanchoState::disk_uuid = get_disk_uuid_win32();
         } else if constexpr(Env::cfg(OS::LINUX)) {
             BanchoState::disk_uuid = get_disk_uuid_blkid();
+        } else if constexpr(Env::cfg(OS::WASM)) {
+            BanchoState::disk_uuid = get_disk_uuid_wasm();
         } else {
             BanchoState::disk_uuid = "error getting disk uuid (unsupported platform)";
         }
@@ -1194,4 +1197,26 @@ std::string BanchoState::get_disk_uuid_win32() {
 
 #endif
     return retuuid;
+}
+
+std::string BanchoState::get_disk_uuid_wasm() {
+#ifdef MCENGINE_PLATFORM_WASM
+    FILE *f = File::fopen_c("/persist/client_id", "r");
+    if(f) {
+        std::array<char, 64> buf{};
+        fgets(buf.data(), buf.size(), f);
+        fclose(f);
+        if(buf[0]) return std::string{std::string_view{buf}};
+    }
+
+    const char *uuid = emscripten_run_script_string("crypto.randomUUID()");
+    f = File::fopen_c("/persist/client_id", "w");
+    if(f) {
+        fputs(uuid, f);
+        fclose(f);
+    }
+    return uuid;
+#else
+    return "error getting disk uuid (unsupported platform)";
+#endif
 }
