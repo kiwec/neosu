@@ -956,8 +956,10 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     CBaseUIElement *sectionGraphics = this->addSection_("Graphics");
 
     this->addSubSection_("Renderer");
-    this->addCheckboxTooltip_("VSync", "If enabled: plz enjoy input lag.", &cv::vsync);
-
+    // makes the game run worse
+    if constexpr(!Env::cfg(OS::WASM)) {
+        this->addCheckboxTooltip_("VSync", "If enabled: plz enjoy input lag.", &cv::vsync);
+    }
     this->addCheckboxTooltip_("High Priority", "Sets the game process priority to high", &cv::win_processpriority);
 
     this->addCheckbox_("Show FPS Counter", &cv::draw_fps);

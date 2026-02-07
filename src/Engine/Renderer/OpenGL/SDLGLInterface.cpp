@@ -112,6 +112,10 @@ void SDLGLInterface::endScene() {
 }
 
 void SDLGLInterface::setVSync(bool vsync) {
+    if constexpr(Env::cfg(OS::WASM)) {  // disabling vsync makes things worse in wasm
+        vsync = true;
+    }
+
     if(!SDL_GL_SetSwapInterval(vsync ? 1 : 0)) {
         debugLog("Could not {} vsync: {}", vsync ? "enable" : "disable", SDL_GetError());
     }

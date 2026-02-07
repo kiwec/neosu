@@ -109,13 +109,13 @@ SDLMain::~SDLMain() {
 }
 
 void SDLMain::setFgFPS() {
+    if constexpr(Env::cfg(OS::WASM)) {
+        // actually just set it to 0 (requestAnimationFrame) for WASM
+        SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "0");
+        return;
+    }
+
     if constexpr(Env::cfg(FEAT::MAINCB)) {
-        if(Env::cfg(OS::WASM) && (m_iFpsMax <= 0 || m_iFpsMax >= m_fDisplayHz * 0.9)) {
-            // reset to default, a callback rate above the display refresh rate
-            // seems to limit to something much lower than if we just leave it as default
-            SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "0");
-            return;
-        }
         SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, fmt::format("{}", m_iFpsMax).c_str());
     } else {
         FPSLimiter::reset();
@@ -537,8 +537,7 @@ SDL_AppResult SDLMain::iterate() {
 
     // WASM: measure true display Hz from rAF frame intervals (after init settles)
     if constexpr(Env::cfg(OS::WASM)) {
-        if(!isHeadless())
-            calibrateDisplayHzWASM();
+        if(!isHeadless()) calibrateDisplayHzWASM();
     }
 
     // update
@@ -733,7 +732,7 @@ bool SDLMain::createWindow() {
         cv::fps_max_menu.setDefaultDouble(0.);
         cv::fps_max_menu.setValue(0.);
 
-        // set it to 0 initially
+        // set it to 0
         SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "0");
     }
 
