@@ -28,17 +28,6 @@ find src libraries -not -path '*/[@.]*' -type f '(' -name "*.cpp" -o -name "*.c"
 
 echo "\$(NULL)" >> "$SOURCES_FILE"
 
-# need to add these to dependency tracking manually, `.incbin` does not track changes to binary includes
-cat >> "$SOURCES_FILE" << EOF
-EXTRA_BINDEPS = \\
-EOF
-
-find assets/shaders -not -path '*/[@.]*' -type f | LC_ALL=C sort | \
-    sed 's/$/ \\/' | \
-    sed 's/^/\t/' >> "$SOURCES_FILE"
-
-echo "\$(NULL)" >> "$SOURCES_FILE"
-
 mkdir -p "$(dirname build-aux)"
 
 ########################################
