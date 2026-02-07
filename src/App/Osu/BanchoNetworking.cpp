@@ -99,6 +99,13 @@ void attempt_logging_in() {
             auto errmsg = fmt::format("Failed to log in: {}", response.error_msg);
             ui->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
             BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
+
+            if(Env::cfg(OS::WASM) && response.response_code == 0) {
+                // Provide extra guidance since "Connection failed" isn't very descriptive
+                ui->getNotificationOverlay()->addToast(
+                    "Either you are offline, or the server doesn't support the web version of neosu.", ERROR_TOAST);
+            }
+
             return;
         }
 

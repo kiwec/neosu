@@ -210,6 +210,20 @@ void BanchoState::handle_packet(Packet &packet) {
 
             const bool is_online = (new_user_id > 0) || (new_user_id < -10000);
             if(is_online) {
+                // Prevent getting into an invalid state where we are "logged in" but can't send any packets
+                if(BanchoState::cho_token.empty()) {
+                    ui->getNotificationOverlay()->addToast("Failed to log in: Server didn't send a cho-token header.",
+                                                           ERROR_TOAST);
+                    if constexpr(Env::cfg(OS::WASM)) {
+                        ui->getNotificationOverlay()->addToast(
+                            "Most likely, some CORS headers are missing (did you set Access-Control-Expose-Headers?)",
+                            ERROR_TOAST);
+                    }
+
+                    BanchoState::disconnect();
+                    return;
+                }
+
                 debugLog("Logged in as user #{:d}.", new_user_id);
                 cv::mp_autologin.setValue(true);
                 BanchoState::print_new_channels = true;

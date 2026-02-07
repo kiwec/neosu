@@ -202,6 +202,14 @@ void NetworkImpl::fetchError(emscripten_fetch_t* fetch) {
         res.error_msg = fetch->statusText;
         res.success = false;
 
+        if(res.error_msg.empty()) {
+            if(res.response_code == 0) {
+                res.error_msg = "Connection failed.";
+            } else {
+                res.error_msg = "HTTP " + std::to_string(res.response_code);
+            }
+        }
+
         if(request->callback) {
             request->impl->completed_requests.emplace_back(std::move(request->callback), std::move(res));
         }
