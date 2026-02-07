@@ -322,7 +322,7 @@ void BanchoState::disconnect(bool shutdown) {
 
     // Logout
     // This is a blocking call, but we *do* want this to block when quitting the game.
-    if(BanchoState::is_online()) {
+    if(BanchoState::is_online() && !BANCHO::Net::auth_token.empty()) {
         Packet packet;
         packet.write<u16>(OUTP_LOGOUT);
         packet.write<u8>(0);
