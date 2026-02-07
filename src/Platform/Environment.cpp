@@ -285,8 +285,13 @@ const std::string &Environment::getCacheDir() const noexcept {
         }
     }
 
-    // ./cache
-    m_sCacheDir = MCENGINE_DATA_DIR "cache";
+    if constexpr(Env::cfg(OS::WASM)) {
+        // /persist/cache
+        m_sCacheDir = "/persist/cache";
+    } else {
+        // ./cache
+        m_sCacheDir = MCENGINE_DATA_DIR "cache";
+    }
     return m_sCacheDir;
 }
 
