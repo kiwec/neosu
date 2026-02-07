@@ -732,6 +732,9 @@ bool SDLMain::createWindow() {
         cv::fps_max.setValue(0.);
         cv::fps_max_menu.setDefaultDouble(0.);
         cv::fps_max_menu.setValue(0.);
+
+        // set it to 0 initially
+        SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "0");
     }
 
     // initialize window flags and state

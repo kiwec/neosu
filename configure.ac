@@ -524,9 +524,9 @@ win_subsystem_ver=6.00
 AS_IF([test -n "$WASM_CC"], [
     # WASM/Emscripten build
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -U__linux__ -D__EMSCRIPTEN__"
-    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sWASM=1 -sUSE_PTHREADS=1 -sFETCH=1 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sENVIRONMENT=web,worker,node"
+    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sPTHREAD_POOL_SIZE=32 -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sWASM=1 -sUSE_PTHREADS=1 -sFETCH=1 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sENVIRONMENT=web,worker,node"
     # --emrun for support for running the .html with emrun (temporary until we get a real webpage for it)
-    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sUSE_PTHREADS=1 -sFETCH=1 -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sINITIAL_MEMORY=1536MB -sWASM=1 -sENVIRONMENT=web,worker,node -lidbfs.js -lnodefs.js --pre-js \$(srcdir)/src/Platform/wasm-node-polyfill.js --emrun"
+    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sPTHREAD_POOL_SIZE=32 -sAUDIO_WORKLET=1 -sWASM_WORKERS=1 -sUSE_PTHREADS=1 -sFETCH=1 -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sINITIAL_MEMORY=1536MB -sWASM=1 -sENVIRONMENT=web,worker,node -lidbfs.js -lnodefs.js --pre-js \$(srcdir)/src/Platform/wasm-node-polyfill.js --emrun"
 
     # the Songs folder preload is definitely temporary, just for testing purposes to have something to play
     WASM_PRELOAD_FLAGS="--preload-file \$(srcdir)/\$(ASSETS_DIR)/fonts@fonts --preload-file \$(srcdir)/\$(ASSETS_DIR)/materials@materials --preload-file \$(builddir)/wasm-maps@/libsdl/Songs"
@@ -923,6 +923,10 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         # CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
         # CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG"
     ])
+    AS_IF([test -n "$WASM_CC"], [
+        NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sASSERTIONS"
+        NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sASSERTIONS"
+    ])
     AC_SUBST([ENABLE_DEBUG])
     AS_IF([test "x$enable_strip" != "xyes"], [enable_strip=no]) # disable stripping unless its explicitly requested for debug (why tho?)
 ], [
@@ -1213,7 +1217,7 @@ CTRE_MIN_VERSION=3.10.0 # regex support that doesn't have exceptions FORCED enab
 CTRE_BUILD_VERSION=6225211806c48230e5d17a1e555ef69e7325051c # git as of Jan 28th, 2026
 
 # always build these from source if we want to use them
-AC_SUBST([SOLOUD_VERSION], [ec8610082fa56eb199adffdae04e378c5d37c29a]) # neoloud fork
+AC_SUBST([SOLOUD_VERSION], [dfc9480dfd63aee2994637be0f6a6b017f79d08d]) # neoloud fork
 #AC_SUBST([SOLOUD_VERSION], [cb174f53804d8ba3fc81a2dfa49879103fbbcb2e])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [b8e2a5f3f04483691962ab1a36ffa166abdcd675])

@@ -1547,6 +1547,7 @@ install-libs:
 	$(INSTALL) -m 644 neosu.html neosu.js neosu.wasm "$(DESTDIR)$(bindir)/"
 	@test -f neosu.worker.js && $(INSTALL) -m 644 neosu.worker.js "$(DESTDIR)$(bindir)/" || true
 	@test -f neosu.data && $(INSTALL) -m 644 neosu.data "$(DESTDIR)$(bindir)/" || true
+	@test -f neosu.wasm.map && $(INSTALL) -m 644 neosu.wasm.map "$(DESTDIR)$(bindir)/" || true
 else
 install-libs:
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)/screenshots"

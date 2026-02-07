@@ -130,13 +130,13 @@ void SoLoudSoundEngine::restart() {
             initID = -2;
         }
         this->setOutputDeviceInt(OUTPUT_DEVICE{.id = initID, .name = initName, .driver = getMAorSDLCV()}, true);
-        if constexpr(Env::cfg(OS::WASM)) {
-            // TODO: this makes no sense, but audio is really messed up unless you restart again after the first init
-            // weirdly, this happens with either miniaudio or SDL
-            if(this->bWasBackendEverReady) {
-                this->restart();
-            }
-        }
+        // if constexpr(Env::cfg(OS::WASM)) {
+        //     // TODO: this makes no sense, but audio is really messed up unless you restart again after the first init
+        //     // weirdly, this happens with either miniaudio or SDL
+        //     if(this->bWasBackendEverReady) {
+        //         this->restart();
+        //     }
+        // }
     }
 }
 
