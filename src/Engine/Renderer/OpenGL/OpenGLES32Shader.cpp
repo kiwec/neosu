@@ -89,14 +89,12 @@ void OpenGLES32Shader::disable() {
 }
 
 int OpenGLES32Shader::getAndCacheUniformLocation(std::string_view name) {
-    if(!this->isReady()) return -1;
+    if(!this->isReady() || name.empty()) return -1;
 
     const auto cachedValue = m_uniformLocationCache.find(name);
     const bool cached = (cachedValue != m_uniformLocationCache.end());
 
-    const int id = (cached                      ? cachedValue->second
-                    : name[name.size()] == '\0' ? glGetUniformLocation(m_iProgram, name.data())
-                                                : -1);
+    const int id = (cached ? cachedValue->second : glGetUniformLocation(m_iProgram, name.data()));
     if(!cached && id != -1) m_uniformLocationCache.emplace(name, id);
 
     return id;

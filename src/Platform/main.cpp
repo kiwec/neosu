@@ -100,12 +100,19 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
             fmain->m_engine->shutdown();
         }
     }
-#ifdef MCENGINE_PLATFORM_WASM
-    // flush IDBFS to IndexedDB after config/scores have been saved
+#ifdef __EMSCRIPTEN__
+    // flush IDBFS to IndexedDB after config/scores have been saved.
+    // keep the runtime alive until the async sync completes, otherwise the IDB
+    // connection gets torn down before the data reaches IndexedDB.
     // clang-format off
     EM_ASM(
-        if(typeof FS !== 'undefined' && FS.syncfs)
-            FS.syncfs(false, function(e) { if(e) console.error('syncfs error:', e); });
+        if(typeof FS !== 'undefined' && FS.syncfs) {
+            runtimeKeepalivePush();
+            FS.syncfs(false, function(e) {
+                if(e) console.error('syncfs error:', e);
+                runtimeKeepalivePop();
+            });
+        }
     );
     // clang-format on
 #endif

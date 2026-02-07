@@ -398,9 +398,6 @@ void Database::update() {
                 this->raw_load_beatmap_folders.clear();
                 this->raw_load_scheduled = false;
 
-                this->beatmapsets = std::move(this->temp_loading_beatmapsets);
-                this->temp_loading_beatmapsets.clear();
-
                 this->importTimer->update();
 
                 debugLog("Refresh finished, added {} beatmaps in {:f} seconds.", this->beatmapsets.size(),
@@ -508,15 +505,12 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
         }
     }
 
-    // do not add to songbrowser yet unless we are finished loading
-    if(this->isFinished()) {
-        this->beatmapsets.push_back(std::move(mapset));
+    this->beatmapsets.push_back(std::move(mapset));
 
+    // only notify songbrowser if loading is done (it rebuilds from beatmapsets in onDatabaseLoadingFinished)
+    if(this->isFinished()) {
         ui->getSongBrowser()->addBeatmapSet(raw_mapset);
         this->bPendingBatchDiffCalc = true;  // picked up by SongBrowser::update
-    } else {
-        // FIXME: this is just completely wrong, this vector cant just be appended to like that here
-        this->temp_loading_beatmapsets.push_back(std::move(mapset));
     }
 
     return raw_mapset;

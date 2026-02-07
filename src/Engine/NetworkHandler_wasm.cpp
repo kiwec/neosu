@@ -110,7 +110,11 @@ struct NetworkImpl {
 
    public:
     NetworkImpl() = default;
-    ~NetworkImpl() = default;
+    ~NetworkImpl() { shutting_down = true; }
+
+    // fetch callbacks fire asynchronously from the browser event loop and can
+    // arrive after NetworkImpl has been destroyed.  guard against use-after-free.
+    static inline bool shutting_down = false;
 
     struct Request {
         std::string url;
@@ -169,14 +173,16 @@ Hash::unstable_stringmap<std::string> NetworkImpl::extractHeaders(emscripten_fet
 void NetworkImpl::fetchSuccess(emscripten_fetch_t* fetch) {
     auto* request = static_cast<Request*>(fetch->userData);
 
-    Response res;
-    res.response_code = fetch->status;
-    res.body = std::string(fetch->data, fetch->numBytes);
-    res.headers = extractHeaders(fetch);
-    res.success = true;
+    if(!shutting_down) {
+        Response res;
+        res.response_code = fetch->status;
+        res.body = std::string(fetch->data, fetch->numBytes);
+        res.headers = extractHeaders(fetch);
+        res.success = true;
 
-    if(request->callback) {
-        request->impl->completed_requests.emplace_back(std::move(request->callback), std::move(res));
+        if(request->callback) {
+            request->impl->completed_requests.emplace_back(std::move(request->callback), std::move(res));
+        }
     }
 
     delete request;
@@ -186,17 +192,19 @@ void NetworkImpl::fetchSuccess(emscripten_fetch_t* fetch) {
 void NetworkImpl::fetchError(emscripten_fetch_t* fetch) {
     auto* request = static_cast<Request*>(fetch->userData);
 
-    Response res;
-    res.response_code = fetch->status;
-    if(fetch->data && fetch->numBytes > 0) {
-        res.body = std::string(fetch->data, fetch->numBytes);
-    }
-    res.headers = extractHeaders(fetch);
-    res.error_msg = fetch->statusText;
-    res.success = false;
+    if(!shutting_down) {
+        Response res;
+        res.response_code = fetch->status;
+        if(fetch->data && fetch->numBytes > 0) {
+            res.body = std::string(fetch->data, fetch->numBytes);
+        }
+        res.headers = extractHeaders(fetch);
+        res.error_msg = fetch->statusText;
+        res.success = false;
 
-    if(request->callback) {
-        request->impl->completed_requests.emplace_back(std::move(request->callback), std::move(res));
+        if(request->callback) {
+            request->impl->completed_requests.emplace_back(std::move(request->callback), std::move(res));
+        }
     }
 
     delete request;

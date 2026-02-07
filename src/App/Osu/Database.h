@@ -298,7 +298,7 @@ class Database final {
     // this vector owns all loaded beatmapsets, raw beatmapset pointers are assumed not ownable
     std::vector<std::unique_ptr<BeatmapSet>> beatmapsets;
     std::vector<std::unique_ptr<BeatmapSet>>
-        temp_loading_beatmapsets;  // only used during loading, contents moved into beatmapsets after
+        temp_loading_beatmapsets;  // staging buffer for async loadMaps() thread only; moved into beatmapsets when async load finishes
 
     Sync::shared_mutex beatmap_difficulties_mtx;
     Hash::flat::map<MD5Hash, BeatmapDifficulty *> beatmap_difficulties;
