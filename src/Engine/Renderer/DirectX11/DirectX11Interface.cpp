@@ -1102,7 +1102,7 @@ void DirectX11Interface::setWireframe(bool enabled) {
 
 void DirectX11Interface::flush() { this->deviceContext->Flush(); }
 
-std::vector<u8> DirectX11Interface::getScreenshot(bool /*withAlpha*/) {
+std::vector<u8> DirectX11Interface::getScreenshot(bool withAlpha) {
     ID3D11Texture2D *backBuffer = nullptr;
     if(!this->swapChain || FAILED(this->swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID *)&backBuffer)) ||
        !backBuffer) {
@@ -1129,19 +1129,20 @@ std::vector<u8> DirectX11Interface::getScreenshot(bool /*withAlpha*/) {
         D3D11_MAPPED_SUBRESOURCE mappedResource{};
         if(SUCCEEDED(this->deviceContext->Map(tempTexture2D, 0, D3D11_MAP_READ, 0, &mappedResource))) {
             success = true;
-            result.reserve(tempTexture2DDesc.Width * tempTexture2DDesc.Height * 3);  // RGB
-            const UINT numPixelBytes = 4;                                            // RGBA
+            result.reserve(tempTexture2DDesc.Width * tempTexture2DDesc.Height * (withAlpha ? 4 : 3));
+            const UINT numPixelBytes = 4;
             const UINT numRowBytes = mappedResource.RowPitch / sizeof(u8);
             for(UINT y = 0; y < tempTexture2DDesc.Height; y++) {
                 for(UINT x = 0; x < tempTexture2DDesc.Width; x++) {
-                    u8 r = (u8)(((u8 *)mappedResource.pData)[y * numRowBytes + x * numPixelBytes + 0]);  // RGBA
+                    u8 r = (u8)(((u8 *)mappedResource.pData)[y * numRowBytes + x * numPixelBytes + 0]);
                     u8 g = (u8)(((u8 *)mappedResource.pData)[y * numRowBytes + x * numPixelBytes + 1]);
                     u8 b = (u8)(((u8 *)mappedResource.pData)[y * numRowBytes + x * numPixelBytes + 2]);
-                    // u8 a = (u8)(((u8*)mappedResource.pData)[y*numRowBytes + x*numPixelBytes + 3]);
+                    u8 a = (u8)(((u8 *)mappedResource.pData)[y * numRowBytes + x * numPixelBytes + 3]);
 
                     result.push_back(r);
                     result.push_back(g);
                     result.push_back(b);
+                    if(withAlpha) result.push_back(a);
                 }
             }
             this->deviceContext->Unmap(tempTexture2D, 0);
@@ -1156,6 +1157,7 @@ std::vector<u8> DirectX11Interface::getScreenshot(bool /*withAlpha*/) {
             result.push_back(0);
             result.push_back(0);
             result.push_back(0);
+            if(withAlpha) result.push_back(255);
         }
     }
     return result;
