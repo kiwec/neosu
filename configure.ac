@@ -1098,6 +1098,12 @@ AS_IF([test "x$enable_werror" != "xno"], [
     AX_CHECK_COMPILE_FLAG([-Wno-error=format-y2k], [
         werror_flags_temp="$werror_flags_temp -Wno-error=format-y2k"
     ])
+    AS_IF([test -n "$WASM_CC"], [
+        # not exactly sure why the above tests pass but then the actual compilation fails due to -Werror=unknown-warning-option
+        AX_CHECK_COMPILE_FLAG([-Wno-unknown-warning-option], [
+            werror_flags_temp="$werror_flags_temp -Wno-unknown-warning-option"
+        ])
+    ])
     NEOSU_CXXFLAGS="$werror_flags_temp $NEOSU_CXXFLAGS"
 ])
 
