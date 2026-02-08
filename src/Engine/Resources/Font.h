@@ -22,6 +22,7 @@ class Graphics;
 class OpenGLInterface;
 class OpenGLES32Interface;
 class DirectX11Interface;
+class NullGraphics;
 struct TextShadow;
 class UString;
 
@@ -33,6 +34,7 @@ class McFont final : public Resource {
     friend OpenGLInterface;
     friend OpenGLES32Interface;
     friend DirectX11Interface;
+    friend NullGraphics;
     void drawString(const UString &text, std::optional<TextShadow> shadow);
 
    public:

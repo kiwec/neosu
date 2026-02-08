@@ -131,6 +131,7 @@ neosu_SOURCES = \
 	src/Engine/Renderer/DirectX11/DirectX11Shader.cpp \
 	src/Engine/Renderer/DirectX11/DirectX11VertexArrayObject.cpp \
 	src/Engine/Renderer/Graphics.cpp \
+	src/Engine/Renderer/NullGraphics.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLES32Interface.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLES32Shader.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLES32VertexArrayObject.cpp \

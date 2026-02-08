@@ -14,8 +14,15 @@
 #include "Thread.h"
 
 #include "AppDescriptor.h"
+
+#if defined(MCENGINE_FEATURE_DIRECTX11)
 #include "DirectX11Interface.h"
+#endif
+
+#ifdef MCENGINE_PLATFORM_WASM
 #include "NullGraphics.h"
+#endif
+
 #include "SDLGLInterface.h"
 
 #include <algorithm>
@@ -38,7 +45,7 @@
 #include <X11/Xlib.h>
 #endif
 #elif defined(__EMSCRIPTEN__)
-// TODO
+// TODO (?)
 #endif
 
 #include <SDL3/SDL.h>

@@ -1,0 +1,172 @@
+// Copyright (c) 2026, WH, All rights reserved.
+// dummy graphics backend for headless mode (no rendering)
+#include "NullGraphics.h"
+
+#include "Font.h"
+#include "UString.h"
+
+// image that does CPU-side pixel loading but never uploads to GPU
+NullImage::NullImage(std::string filepath, bool mipmapped, bool keepInSystemMemory)
+    : Image(std::move(filepath), mipmapped, keepInSystemMemory) {}
+NullImage::NullImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory)
+    : Image(width, height, mipmapped, keepInSystemMemory) {}
+
+void NullImage::bind(unsigned int /*textureUnit*/) const {}
+void NullImage::unbind() const {}
+
+void NullImage::init() {
+    if(!this->isAsyncReady()) return;
+    if(!this->bKeepInSystemMemory) this->rawImage.clear();
+    this->setReady(true);
+}
+void NullImage::initAsync() {
+    if(!this->bCreatedImage)
+        this->setAsyncReady(loadRawImage());
+    else
+        this->setAsyncReady(true);
+}
+void NullImage::destroy() {
+    if(!this->bKeepInSystemMemory) this->rawImage.clear();
+}
+
+NullShader::NullShader() : Shader() {}
+
+void NullShader::enable() {}
+void NullShader::disable() {}
+void NullShader::setUniform1f(std::string_view /*name*/, float /*value*/) {}
+void NullShader::setUniform1fv(std::string_view /*name*/, int /*count*/, const float *const /*values*/) {}
+void NullShader::setUniform1i(std::string_view /*name*/, int /*value*/) {}
+void NullShader::setUniform2f(std::string_view /*name*/, float /*x*/, float /*y*/) {}
+void NullShader::setUniform2fv(std::string_view /*name*/, int /*count*/, const float *const /*vectors*/) {}
+void NullShader::setUniform3f(std::string_view /*name*/, float /*x*/, float /*y*/, float /*z*/) {}
+void NullShader::setUniform3fv(std::string_view /*name*/, int /*count*/, const float *const /*vectors*/) {}
+void NullShader::setUniform4f(std::string_view /*name*/, float /*x*/, float /*y*/, float /*z*/, float /*w*/) {}
+void NullShader::setUniformMatrix4fv(std::string_view /*name*/, const Matrix4 & /*matrix*/) {}
+void NullShader::setUniformMatrix4fv(std::string_view /*name*/, const float *const /*v*/) {}
+
+void NullShader::init() { this->setReady(true); }
+void NullShader::initAsync() { this->setAsyncReady(true); }
+void NullShader::destroy() {}
+
+NullRenderTarget::NullRenderTarget(int x, int y, int width, int height, MultisampleType multiSampleType)
+    : RenderTarget(x, y, width, height, multiSampleType) {}
+
+void NullRenderTarget::enable() {}
+void NullRenderTarget::disable() {}
+void NullRenderTarget::bind(unsigned int /*textureUnit*/) {}
+void NullRenderTarget::unbind() {}
+
+void NullRenderTarget::init() { this->setReady(true); }
+void NullRenderTarget::initAsync() { this->setAsyncReady(true); }
+void NullRenderTarget::destroy() {}
+
+NullVertexArrayObject::NullVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage, bool keepInSystemMemory)
+    : VertexArrayObject(primitive, usage, keepInSystemMemory) {}
+
+void NullVertexArrayObject::draw() {}
+
+// scene
+void NullGraphics::beginScene() {}
+void NullGraphics::endScene() {}
+
+// depth buffer
+void NullGraphics::clearDepthBuffer() {}
+
+// color
+void NullGraphics::setColor(Color /*color*/) {}
+void NullGraphics::setAlpha(float /*alpha*/) {}
+
+// 2d primitive drawing
+void NullGraphics::drawPixels(int /*x*/, int /*y*/, int /*width*/, int /*height*/, DrawPixelsType /*type*/,
+                              const void * /*pixels*/) {}
+void NullGraphics::drawPixel(int /*x*/, int /*y*/) {}
+void NullGraphics::drawLinef(float /*x1*/, float /*y1*/, float /*x2*/, float /*y2*/) {}
+void NullGraphics::drawRectf(const RectOptions & /*opt*/) {}
+void NullGraphics::fillRectf(float /*x*/, float /*y*/, float /*width*/, float /*height*/) {}
+void NullGraphics::fillRoundedRect(int /*x*/, int /*y*/, int /*width*/, int /*height*/, int /*radius*/) {}
+void NullGraphics::fillGradient(int /*x*/, int /*y*/, int /*width*/, int /*height*/, Color /*topLeftColor*/,
+                                Color /*topRightColor*/, Color /*bottomLeftColor*/, Color /*bottomRightColor*/) {}
+
+void NullGraphics::drawQuad(int /*x*/, int /*y*/, int /*width*/, int /*height*/) {}
+void NullGraphics::drawQuad(vec2 /*topLeft*/, vec2 /*topRight*/, vec2 /*bottomRight*/, vec2 /*bottomLeft*/,
+                            Color /*topLeftColor*/, Color /*topRightColor*/, Color /*bottomRightColor*/,
+                            Color /*bottomLeftColor*/) {}
+
+// 2d resource drawing
+void NullGraphics::drawImage(const Image * /*image*/, AnchorPoint /*anchor*/, float /*edgeSoftness*/,
+                             McRect /*clipRect*/) {}
+void NullGraphics::drawString(McFont *font, const UString &text, std::optional<TextShadow> shadow) {
+    updateTransform();
+
+    font->drawString(text, shadow);
+}
+
+// 3d type drawing
+void NullGraphics::drawVAO(VertexArrayObject * /*vao*/) {}
+
+// 2d clipping
+void NullGraphics::setClipRect(McRect /*clipRect*/) {}
+void NullGraphics::pushClipRect(McRect /*clipRect*/) {}
+void NullGraphics::popClipRect() {}
+
+// viewport
+void NullGraphics::pushViewport() {}
+void NullGraphics::setViewport(int /*x*/, int /*y*/, int /*width*/, int /*height*/) {}
+void NullGraphics::popViewport() {}
+
+// stencil buffer
+void NullGraphics::pushStencil() {}
+void NullGraphics::fillStencil(bool /*inside*/) {}
+void NullGraphics::popStencil() {}
+
+// renderer settings
+void NullGraphics::setClipping(bool /*enabled*/) {}
+void NullGraphics::setAlphaTesting(bool /*enabled*/) {}
+void NullGraphics::setAlphaTestFunc(DrawCompareFunc /*alphaFunc*/, float /*ref*/) {}
+void NullGraphics::setDepthBuffer(bool /*enabled*/) {}
+void NullGraphics::setColorWriting(bool /*r*/, bool /*g*/, bool /*b*/, bool /*a*/) {}
+void NullGraphics::setColorInversion(bool /*enabled*/) {}
+void NullGraphics::setCulling(bool /*enabled*/) {}
+void NullGraphics::setVSync(bool /*enabled*/) {}
+void NullGraphics::setAntialiasing(bool /*enabled*/) {}
+void NullGraphics::setWireframe(bool /*enabled*/) {}
+
+// renderer actions
+void NullGraphics::flush() {}
+std::vector<u8> NullGraphics::getScreenshot(bool /*withAlpha*/) { return {}; }
+
+// renderer info
+const char *NullGraphics::getName() const { return "NullGraphics"; }
+[[nodiscard]] vec2 NullGraphics::getResolution() const { return {1280.f, 720.f}; }
+UString NullGraphics::getVendor() { return ""; }
+UString NullGraphics::getModel() { return ""; }
+UString NullGraphics::getVersion() { return ""; }
+int NullGraphics::getVRAMTotal() { return 0; }
+int NullGraphics::getVRAMRemaining() { return 0; }
+
+// callbacks
+void NullGraphics::onResolutionChange(vec2 /*newResolution*/) {}
+
+// factory
+Image *NullGraphics::createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) {
+    return new NullImage(std::move(filePath), mipmapped, keepInSystemMemory);
+}
+Image *NullGraphics::createImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) {
+    return new NullImage(width, height, mipmapped, keepInSystemMemory);
+}
+RenderTarget *NullGraphics::createRenderTarget(int x, int y, int width, int height, MultisampleType msType) {
+    return new NullRenderTarget(x, y, width, height, msType);
+}
+Shader *NullGraphics::createShaderFromFile(std::string /*vertexShaderFilePath*/,
+                                           std::string /*fragmentShaderFilePath*/) {
+    return new NullShader();
+}
+Shader *NullGraphics::createShaderFromSource(std::string /*vertexShader*/, std::string /*fragmentShader*/) {
+    return new NullShader();
+}
+VertexArrayObject *NullGraphics::createVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage,
+                                                         bool keepInSystemMemory) {
+    return new NullVertexArrayObject(primitive, usage, keepInSystemMemory);
+}
+
+void NullGraphics::onTransformUpdate() {}
