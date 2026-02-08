@@ -315,16 +315,17 @@ MAIN_FUNC /* int argc, char *argv[] */
     }
 #endif
 
-    if(!arg_map.contains("-ime")) {
-        // FIXME(spec):
-        // we want SDL_EVENT_TEXT_INPUT for utf char events all the time, but we don't want a text editing composition window to show up.
-        // set this hint so that SDL thinks we can handle IME stuff internally, so it doesn't show any OS-level IME window.
-        // !!!this is not good because it doesn't let the user use their native IME to input text in text fields!!!
-        // a better/less hacky fix would be to always notify when we actually need text input, such as when a textbox is active,
-        // and disable it otherwise, but until then, this is the simplest workaround.
-        // followup in main_impl.cpp::SDLMain::configureEvents()
-        SDL_SetHintWithPriority(SDL_HINT_IME_IMPLEMENTED_UI, "candidates,composition", SDL_HINT_NORMAL);
-    }
+    // double FIXME: disabled for now, try to enable/disable text input on a best-effort basis
+    // if(!arg_map.contains("-ime")) {
+    //     // FIXME(spec):
+    //     // we want SDL_EVENT_TEXT_INPUT for utf char events all the time, but we don't want a text editing composition window to show up.
+    //     // set this hint so that SDL thinks we can handle IME stuff internally, so it doesn't show any OS-level IME window.
+    //     // !!!this is not good because it doesn't let the user use their native IME to input text in text fields!!!
+    //     // a better/less hacky fix would be to always notify when we actually need text input, such as when a textbox is active,
+    //     // and disable it otherwise, but until then, this is the simplest workaround.
+    //     // followup in main_impl.cpp::SDLMain::configureEvents()
+    //     SDL_SetHintWithPriority(SDL_HINT_IME_IMPLEMENTED_UI, "candidates,composition", SDL_HINT_NORMAL);
+    // }
 
     if(headless) {
         // use a video driver that doesn't need a real display

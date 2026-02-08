@@ -1556,8 +1556,9 @@ void Osu::updateWindowsKeyDisable() {
 
     // this is kind of a weird place to put this, but we don't care about text input when in gameplay
     // on some platforms, text input being enabled might result in an on-screen keyboard showing up
-    // TODO: check if this breaks chat while playing
-    env->listenToTextInput(!isPlayerPlaying);
+    // ultra hack: we have no way of knowing whether there are any char event consumers currently listening
+    // special case chat to allow chat while playing (chat->setVisible will call this function too)
+    env->listenToTextInput(!isPlayerPlaying || ui->getChat()->isVisible());
 }
 
 void Osu::onWindowedResolutionChanged(std::string_view args) {

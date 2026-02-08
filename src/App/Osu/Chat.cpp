@@ -1344,6 +1344,9 @@ CBaseUIContainer *Chat::setVisible(bool visible) {
         anim::moveQuadOut(&this->fAnimation, 0.0f, 0.25f * this->fAnimation, true);
     }
 
+    // HACKHACK for text input listening
+    osu->updateWindowsKeyDisable();
+
     return this;
 }
 
