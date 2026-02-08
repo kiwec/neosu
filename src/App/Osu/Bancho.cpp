@@ -1,23 +1,5 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 
-#ifdef _WIN32
-
-#include "WinDebloatDefs.h"
-#include <windows.h>
-#include <cinttypes>
-
-#elif __APPLE__
-// nothing
-#elif defined(__EMSCRIPTEN__)
-#include <emscripten/emscripten.h>
-#else
-
-#include <linux/limits.h>
-#include <sys/stat.h>
-#include "dynutils.h"
-
-#endif
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -51,6 +33,22 @@
 #include "UserCard.h"
 #include "File.h"
 #include "UI.h"
+
+#ifdef MCENGINE_PLATFORM_WINDOWS
+
+#include "WinDebloatDefs.h"
+#include <windows.h>
+#include <cinttypes>
+
+#elif defined(MCENGINE_PLATFORM_WASM)
+#include <emscripten/emscripten.h>
+#elif defined(MCENGINE_PLATFORM_LINUX)
+
+#include <linux/limits.h>
+#include <sys/stat.h>
+#include "dynutils.h"
+
+#endif
 
 // defs
 // some of these are atomic due to multithreaded access

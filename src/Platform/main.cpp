@@ -35,7 +35,7 @@
 #include <locale>
 #include <clocale>
 
-#ifdef __EMSCRIPTEN__
+#ifdef MCENGINE_PLATFORM_WASM
 #include <emscripten/emscripten.h>
 
 // Our html shell overrides window.alert to display fatal errors properly.
@@ -111,7 +111,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
             fmain->m_engine->shutdown();
         }
     }
-#ifdef __EMSCRIPTEN__
+#ifdef MCENGINE_PLATFORM_WASM
     // flush IDBFS to IndexedDB after config/scores have been saved.
     // keep the runtime alive until the async sync completes, otherwise the IDB
     // connection gets torn down before the data reaches IndexedDB.
