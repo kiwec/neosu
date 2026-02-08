@@ -55,7 +55,7 @@ struct UniformCache {
 UniformCache s_uniformCache;
 
 // helper function to update color uniforms (after ->enable-ing the shader)
-void updateColorUniforms(const Color &borderColor, const Color &bodyColor);
+void updateColorUniforms(Color borderColor, Color bodyColor);
 // check if convar-dependent uniforms need to be updated (after ->enable-ing the shader)
 void updateConfigUniforms();
 
@@ -230,6 +230,8 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
 
             if(!useGradientImage) {
                 s_BLEND_SHADER->disable();
+            } else {
+                osu->getSkin()->i_slider_gradient->unbind();
             }
         }
         osu->getSliderFrameBuffer()->disable();
@@ -295,6 +297,8 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
 
             if(!useGradientImage) {
                 s_BLEND_SHADER->disable();
+            } else {
+                osu->getSkin()->i_slider_gradient->unbind();
             }
         }
 
@@ -461,7 +465,7 @@ void checkUpdateVars(float hitcircleDiameter) {
 }
 
 // helper function to update color uniforms
-void updateColorUniforms(const Color &borderColor, const Color &bodyColor) {
+void updateColorUniforms(Color borderColor, Color bodyColor) {
     if(!s_BLEND_SHADER) return;
 
     if(s_uniformCache.lastBorderColor != borderColor) {

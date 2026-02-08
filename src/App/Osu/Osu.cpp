@@ -362,7 +362,9 @@ Osu::Osu()
     this->userButton = std::make_unique<UserCard>(BanchoState::get_uid());
 
     this->bUILoaded = ui->init();
+}
 
+void Osu::doDeferredInitTasks() {
     // do this after reading configs if we wanted to set a windowed resolution
     if(this->last_res_change_req_src & R_CV_WINDOWED_RESOLUTION) {
         this->onWindowedResolutionChanged(cv::windowed_resolution.getString());
@@ -569,6 +571,11 @@ void Osu::draw() {
 
 void Osu::update() {
     if(unlikely(!this->UIReady())) return;  // TODO: guarantee that this can't happen
+    if(unlikely(!this->bFirstUpdateTasksDone)) {
+        this->bFirstUpdateTasksDone = true;
+        this->doDeferredInitTasks();
+    }
+
     if(this->skin.get()) this->skin->update();
 
     this->fposu->update();

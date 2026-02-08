@@ -267,6 +267,10 @@ class Osu final : public App, public MouseListener {
     bool bUILoaded{false};
     [[nodiscard]] inline bool UIReady() const { return !!this->ui_memb && this->bUILoaded; };
 
+    void doDeferredInitTasks();
+    // defer some things to post-construction on the first update tick so that we're fully initialized
+    bool bFirstUpdateTasksDone{false};
+
     // interfaces (other)
     std::unique_ptr<Skin> skin{nullptr};
     std::unique_ptr<BeatmapInterface> map_iface{nullptr};

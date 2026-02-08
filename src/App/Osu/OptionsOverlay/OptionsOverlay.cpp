@@ -325,7 +325,7 @@ struct OptionsOverlayImpl final {
 
     bool updating_layout{false};
 
-    bool should_use_oauth_login();
+    [[nodiscard]] bool should_use_oauth_login() const;
 
     OptionsOverlay *parent;
 };
@@ -4198,7 +4198,7 @@ void OptionsOverlayImpl::openAndScrollToSkinSection() {
         this->options->scrollToElement(this->skinSection, 0, 100 * Osu::getUIScale());
 }
 
-bool OptionsOverlayImpl::should_use_oauth_login() {
+bool OptionsOverlayImpl::should_use_oauth_login() const {
     if(cv::force_oauth.getBool()) {
         return true;
     }
