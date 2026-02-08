@@ -301,7 +301,7 @@ void HitObject::update(i32 curPos, f64 /*frame_time*/) {
     this->iDelta = this->click_time - curPos;
 
     // 1 ms fudge by using >=, shouldn't really be a problem
-    if(curPos >= (this->click_time - this->iApproachTime) && curPos < (this->click_time + this->duration)) {
+    if(curPos >= (this->click_time - this->iApproachTime) && curPos < (this->getEndTime())) {
         // approach circle scale
         const float scale = std::clamp<float>((float)this->iDelta / (float)this->iApproachTime, 0.0f, 1.0f);
         this->fApproachScale = 1 + (scale * cv::approach_scale_multiplier.getFloat());
@@ -1445,7 +1445,7 @@ void Slider::drawBody(float alpha, float from, float to) {
         if(cv::slider_shrink.getBool() && this->fSliderSnakePercent > 0.999f) {
             alwaysPoints.push_back(this->pf->osuCoords2Pixels(this->curve->pointAt(this->fSlidePercent)));  // curpoint
             alwaysPoints.push_back(this->pf->osuCoords2Pixels(this->getRawPosAt(
-                this->click_time + this->duration + 1)));  // endpoint (because setDrawPercent() causes the last
+                this->getEndTime() + 1)));  // endpoint (because setDrawPercent() causes the last
                                                            // circle mesh to become invisible too quickly)
         }
         if(cv::snaking_sliders.getBool() && this->fSliderSnakePercent < 1.0f)
@@ -1506,8 +1506,6 @@ void Slider::update(i32 curPos, f64 frame_time) {
     if(curPos > this->click_time)
         this->fSlidePercent = std::clamp<float>(
             std::clamp<i32>((curPos - (this->click_time)), 0, (i32)this->fSliderTime) / this->fSliderTime, 0.0f, 1.0f);
-
-    this->fActualSlidePercent = this->fSlidePercent;
 
     const float sliderSnakeDuration =
         (1.0f / 3.0f) * this->iApproachTime * cv::slider_snake_duration_multiplier.getFloat();
@@ -1653,7 +1651,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
         // because fuck you
         const i32 offset = (i32)cv::slider_end_inside_check_offset.getInt();
         const i32 lenienceHackEndTime =
-            std::max(this->click_time + this->duration / 2, (this->click_time + this->duration) - offset);
+            std::max(this->getEndTime() / 2, (this->getEndTime()) - offset);
         const bool isTrackingCorrectly =
             (this->isClickHeldSlider() || (flags::has<ModFlags::Relax>(curIFaceMods))) && this->bCursorInside;
         if(isTrackingCorrectly) {
@@ -1703,7 +1701,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
 
                         // end of combo, ignore in hiterrorbar, ignore combo, subtract health
                         this->addHitResult(this->endResult, 0, this->is_end_of_combo,
-                                           this->getRawPosAt(this->click_time + this->duration), -1.0f, 0.0f, true,
+                                           this->getRawPosAt(this->getEndTime()), -1.0f, 0.0f, true,
                                            true, false);
                     }
                 }
@@ -1728,13 +1726,13 @@ void Slider::update(i32 curPos, f64 frame_time) {
 
         // handle auto, and the last circle
         if((flags::has<ModFlags::Autoplay>(curIFaceMods))) {
-            if(curPos >= this->click_time + this->duration) {
+            if(curPos >= this->getEndTime()) {
                 this->bHeldTillEnd = true;
                 this->onHit(LiveScore::HIT::HIT_300, 0, true);
                 this->pi->holding_slider = false;
             }
         } else {
-            if(curPos >= this->click_time + this->duration) {
+            if(curPos >= this->getEndTime()) {
                 // handle leftover startcircle
                 {
                     // this may happen (if the slider time is shorter than the miss window of the startcircle)
@@ -1851,7 +1849,7 @@ void Slider::updateAnimations(i32 curPos) {
     if(this->bFinished) {
         this->fFollowCircleAnimationAlpha =
             1.0f -
-            std::clamp<float>((float)((curPos - (this->click_time + this->duration))) / 1000.0f / fadeout_fade_time,
+            std::clamp<float>((float)((curPos - (this->getEndTime()))) / 1000.0f / fadeout_fade_time,
                               0.0f, 1.0f);
         this->fFollowCircleAnimationAlpha *= this->fFollowCircleAnimationAlpha;  // quad in
     }
@@ -1862,7 +1860,7 @@ void Slider::updateAnimations(i32 curPos) {
                           0.0f, 1.0f);
     if(this->bFinished) {
         this->fFollowCircleAnimationScale = std::clamp<float>(
-            (float)((curPos - (this->click_time + this->duration))) / 1000.0f / fadeout_scale_time, 0.0f, 1.0f);
+            (float)((curPos - (this->getEndTime()))) / 1000.0f / fadeout_scale_time, 0.0f, 1.0f);
     }
     this->fFollowCircleAnimationScale =
         -this->fFollowCircleAnimationScale * (this->fFollowCircleAnimationScale - 2.0f);  // quad out
@@ -2083,7 +2081,7 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
             const bool isLazer2020Drain = false;
 
             this->addHitResult(
-                result, delta, this->is_end_of_combo, this->getRawPosAt(this->click_time + this->duration), -1.0f, 0.0f,
+                result, delta, this->is_end_of_combo, this->getRawPosAt(this->getEndTime()), -1.0f, 0.0f,
                 true, !this->bHeldTillEnd,
                 isLazer2020Drain);  // end of combo, ignore in hiterrorbar, depending on heldTillEnd increase
                                     // combo or not, increase score, increase health depending on drain type
@@ -2270,7 +2268,7 @@ void Slider::onReset(i32 curPos) {
         this->bFinished = false;
         this->fEndHitAnimation = 0.0f;
         this->fEndSliderBodyFadeAnimation = 0.0f;
-    } else if(curPos < this->click_time + this->duration) {
+    } else if(curPos < this->getEndTime()) {
         this->bStartFinished = true;
         this->fStartHitAnimation = 1.0f;
 
@@ -2590,7 +2588,7 @@ void Spinner::update(i32 curPos, f64 frame_time) {
     // if we have not been clicked yet, check if we are in the timeframe of a miss, also handle auto and relax
     if(!this->bFinished) {
         // handle spinner ending
-        if(curPos >= this->click_time + this->duration) {
+        if(curPos >= this->getEndTime()) {
             this->onHit();
             return;
         }
@@ -2697,7 +2695,7 @@ void Spinner::onReset(i32 curPos) {
         this->storedDeltaAngles[i] = 0.0f;
     }
 
-    if(curPos > this->click_time + this->duration)
+    if(curPos > this->getEndTime())
         this->bFinished = true;
     else
         this->bFinished = false;
@@ -2781,7 +2779,7 @@ vec2 Spinner::getAutoCursorPos(i32 curPos) const {
     i32 delta = 0;
     if(curPos <= this->click_time)
         delta = 0;
-    else if(curPos >= this->click_time + this->duration)
+    else if(curPos >= this->getEndTime())
         delta = this->duration;
     else
         delta = curPos - this->click_time;

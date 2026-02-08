@@ -365,7 +365,7 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
     if(this->hitobjects.empty()) return;
 
     auto last_hitobject = this->hitobjectsSortedByEndTime.back();
-    const bool isAfterLastHitObject = (this->iCurMusicPos > (last_hitobject->click_time + last_hitobject->duration));
+    const bool isAfterLastHitObject = (this->iCurMusicPos > (last_hitobject->getEndTime()));
     if(isAfterLastHitObject) {
         return;
     }
@@ -755,8 +755,8 @@ void SimulatedBeatmapInterface::updateAutoCursorPos() {
             // get previous object
             if(o->isFinished() ||
                (this->iCurMusicPos >
-                o->click_time + o->duration + (i32)(this->getHitWindow50() * this->mods.autopilot_lenience))) {
-                prevTime = o->click_time + o->duration + o->getAutopilotDelta();
+                o->getEndTime() + (i32)(this->getHitWindow50() * this->mods.autopilot_lenience))) {
+                prevTime = o->getEndTime() + o->getAutopilotDelta();
                 prevPos = o->getAutoCursorPos(this->iCurMusicPos);
             } else if(!o->isFinished())  // get next object
             {
@@ -866,10 +866,10 @@ void SimulatedBeatmapInterface::calculateStacks() {
 
                     if(isSpinnerN) continue;
 
-                    if(objectI->click_time - (approachTime * stackLeniency) > (objectN->click_time + objectN->duration))
+                    if(objectI->click_time - (approachTime * stackLeniency) > (objectN->getEndTime()))
                         break;
 
-                    vec2 objectNEndPosition = objectN->getOriginalRawPosAt(objectN->click_time + objectN->duration);
+                    vec2 objectNEndPosition = objectN->getOriginalRawPosAt(objectN->getEndTime());
                     if(objectN->duration != 0 &&
                        vec::length(objectNEndPosition - objectI->getOriginalRawPosAt(objectI->click_time)) <
                            STACK_LENIENCE) {
@@ -900,7 +900,7 @@ void SimulatedBeatmapInterface::calculateStacks() {
                     if(objectI->click_time - (approachTime * stackLeniency) > objectN->click_time) break;
 
                     if(vec::length((objectN->duration != 0
-                                        ? objectN->getOriginalRawPosAt(objectN->click_time + objectN->duration)
+                                        ? objectN->getOriginalRawPosAt(objectN->getEndTime())
                                         : objectN->getOriginalRawPosAt(objectN->click_time)) -
                                    objectI->getOriginalRawPosAt(objectI->click_time)) < STACK_LENIENCE) {
                         objectN->setStack(objectI->getStack() + 1);
@@ -922,7 +922,7 @@ void SimulatedBeatmapInterface::calculateStacks() {
 
             if(currHitObject->getStack() != 0 && !isSlider) continue;
 
-            i32 startTime = currHitObject->click_time + currHitObject->duration;
+            i32 startTime = currHitObject->getEndTime();
             int sliderStack = 0;
 
             for(int j = i + 1; j < this->hitobjects.size(); j++) {
@@ -933,18 +933,18 @@ void SimulatedBeatmapInterface::calculateStacks() {
                 // "The start position of the hitobject, or the position at the end of the path if the hitobject is a
                 // slider"
                 vec2 position2 =
-                    isSlider ? sliderPointer->getOriginalRawPosAt(sliderPointer->click_time + sliderPointer->duration)
+                    isSlider ? sliderPointer->getOriginalRawPosAt(sliderPointer->getEndTime())
                              : currHitObject->getOriginalRawPosAt(currHitObject->click_time);
 
                 if(vec::length(objectJ->getOriginalRawPosAt(objectJ->click_time) -
                                currHitObject->getOriginalRawPosAt(currHitObject->click_time)) < 3) {
                     currHitObject->setStack(currHitObject->getStack() + 1);
-                    startTime = objectJ->click_time + objectJ->duration;
+                    startTime = objectJ->getEndTime();
                 } else if(vec::length(objectJ->getOriginalRawPosAt(objectJ->click_time) - position2) < 3) {
                     // "Case for sliders - bump notes down and right, rather than up and left."
                     sliderStack++;
                     objectJ->setStack(objectJ->getStack() - sliderStack);
-                    startTime = objectJ->click_time + objectJ->duration;
+                    startTime = objectJ->getEndTime();
                 }
             }
         }
@@ -1067,7 +1067,7 @@ void SimulatedBeatmapInterface::computeDrainRate() {
 
                 testPlayer.decreaseHealth(testDrop * (h->click_time - lastTime - breakTime));
 
-                lastTime = (int)(h->click_time + h->duration);
+                lastTime = (int)(h->getEndTime());
 
                 if(testPlayer.health < lowestHp) lowestHp = testPlayer.health;
 

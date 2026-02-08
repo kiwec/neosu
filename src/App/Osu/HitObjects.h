@@ -322,7 +322,6 @@ class Slider final : public HitObject {
     float fSliderTimeWithoutRepeats;
 
     float fSlidePercent{0.f};        // 0.0f - 1.0f - 0.0f - 1.0f - etc.
-    float fActualSlidePercent{0.f};  // 0.0f - 1.0f
     float fSliderSnakePercent{0.f};
     float fReverseArrowAlpha{0.f};
     float fBodyAlpha{0.f};
