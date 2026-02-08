@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <optional>
+#include <span>
 
 class Graphics;
 class OpenGLInterface;
@@ -36,7 +37,7 @@ class McFont final : public Resource {
 
    public:
     McFont(std::string filepath, int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
-    McFont(std::string filepath, const char16_t *characters, size_t numCharacters, int fontSize = 16,
+    McFont(std::string filepath, const std::span<const char16_t> &characters, int fontSize = 16,
            bool antialiasing = true, int fontDPI = 96);
     ~McFont() override;
 

@@ -336,8 +336,7 @@ Osu::Osu()
             Environment::renameFile(oldIconFontPath, newIconFontPath);
         }
     }
-    this->fontIcons = resourceManager->loadFont("forkawesome.ttf", "FONT_OSU_ICONS", Icons::icons.data(),
-                                                Icons::icons.size(), 26, true, newDPI);
+    this->fontIcons = resourceManager->loadFont("forkawesome.ttf", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
 
     this->fonts.push_back(defaultFont);
     this->fonts.push_back(this->titleFont);
@@ -348,9 +347,7 @@ Osu::Osu()
 
     float averageIconHeight = 0.0f;
     for(char16_t icon : Icons::icons) {
-        UString iconString;
-        iconString.insert(0, icon);
-        const float height = this->fontIcons->getStringHeight(iconString);
+        const float height = this->fontIcons->getGlyphHeight(icon);
         if(height > averageIconHeight) averageIconHeight = height;
     }
     this->fontIcons->setHeight(averageIconHeight);

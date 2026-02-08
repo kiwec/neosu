@@ -9,15 +9,17 @@
 #ifndef RESOURCEMANAGER_H
 #define RESOURCEMANAGER_H
 
+#include "config.h"
+
 #include "noinclude.h"
 #include "types.h"
 #include "StaticPImpl.h"
-#include "config.h"
 
 #include <string_view>
 #include <vector>
 #include <memory>
 #include <string>
+#include <span>
 
 enum class MultisampleType : uint8_t;
 enum class DrawPrimitive : uint8_t;
@@ -88,8 +90,8 @@ class ResourceManager final {
     // fonts
     McFont *loadFont(std::string filepath, const std::string &resourceName, int fontSize = 16, bool antialiasing = true,
                      int fontDPI = 96);
-    McFont *loadFont(std::string filepath, const std::string &resourceName, const char16_t *characters,
-                     size_t numCharacters, int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
+    McFont *loadFont(std::string filepath, const std::string &resourceName, const std::span<const char16_t> &characters,
+                     int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
 
     // sounds
     Sound *loadSound(std::string filepath, const std::string &resourceName, bool stream = false,

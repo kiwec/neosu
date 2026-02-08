@@ -522,14 +522,15 @@ McFont *ResourceManager::loadFont(std::string filepath, const std::string &resou
     return fnt;
 }
 
-McFont *ResourceManager::loadFont(std::string filepath, const std::string &resourceName, const char16_t *characters,
-                                  size_t numCharacters, int fontSize, bool antialiasing, int fontDPI) {
+McFont *ResourceManager::loadFont(std::string filepath, const std::string &resourceName,
+                                  const std::span<const char16_t> &characters, int fontSize, bool antialiasing,
+                                  int fontDPI) {
     auto res = pImpl->checkIfExistsAndHandle<McFont>(resourceName);
     if(res != nullptr) return res;
 
     // create instance and load it
     filepath.insert(0, MCENGINE_FONTS_PATH "/");
-    auto *fnt = new McFont(std::move(filepath), characters, numCharacters, fontSize, antialiasing, fontDPI);
+    auto *fnt = new McFont(std::move(filepath), characters, fontSize, antialiasing, fontDPI);
     setResourceName(fnt, resourceName);
 
     loadResource(fnt, true);
