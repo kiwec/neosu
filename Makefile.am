@@ -473,6 +473,9 @@ $(DEPS_PREFIX)/curl-$(CURL_VERSION).built:
 	touch $@
 endif # BUILD_CURL
 
+# accumulated by each dependency's build block below, used by stamp-install-sharedlibs
+INSTALL_LIB_DEPS =
+
 if BUILD_MIMALLOC
 if WIN_PLATFORM
 MIMALLOC_DYNAMIC_LIBS := -L$(DEPS_PREFIX)/bin -L$(DEPS_PREFIX)/lib -Wl,--whole-archive -Wl,--undefined=mi_redirect_enable -l:mimalloc-redirect$(if $(filter x86_64,$(host_cpu)),,32).lib -Wl,--no-whole-archive -lmimalloc -lmimalloc-redirect -l:libmimalloc.dll.a
@@ -522,6 +525,7 @@ $(DEPS_PREFIX)/mimalloc-$(MIMALLOC_VERSION).built: $(DEPS_CACHE)/mimalloc-$(MIMA
 	$(CMAKE) --install .
 	cp $(DEPS_PREFIX)/mimalloc/bin/mimalloc-redirect*.lib $(DEPS_PREFIX)/lib/ || true
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/mimalloc-$(MIMALLOC_VERSION).built
 else
 MIMALLOC_DYNAMIC_LIBS :=
 MIMALLOC_OBJ :=
@@ -587,6 +591,7 @@ $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).ta
 	$(CMAKE) --install build
 	$(PKG_CONFIG) --exists --print-errors sdl3
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built
 else
 $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -611,6 +616,7 @@ $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built: $(DEPS_CACHE)/mpg123-$(MPG123_VER
 	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors libmpg123
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built
 else
 $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -692,6 +698,7 @@ $(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built: $(DEPS_CACHE)/SoundTouch-
 	rm -rf $(DEPS_PREFIX)/lib/*SoundTouch$(if $(STATICBUILD),$(DLLEXT),.a)*
 	$(PKG_CONFIG) --env-only --modversion --print-errors soundtouch
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built $(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built
 else
 $(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -706,6 +713,7 @@ DISCORDSDK_INSTALL_LIBS := $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/lib/$(
 $(DEPS_PREFIX)/discordsdk-$(DISCORDSDK_VERSION).built: $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)-$(SYSNAME)$(host_cpu).source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/discordsdk-$(DISCORDSDK_VERSION).built
 else
 $(DEPS_PREFIX)/discordsdk-$(DISCORDSDK_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX)
@@ -728,6 +736,7 @@ endif # WIN_PLATFORM
 $(DEPS_PREFIX)/bass-$(BASS_VERSION).built: $(DEPS_CACHE)/bass-$(BASS_VERSION)-$(SYSNAME).source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/bass-$(BASS_VERSION).built
 else
 $(DEPS_PREFIX)/bass-$(BASS_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX)
@@ -771,6 +780,7 @@ $(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built: $(DEPS_CACHE)/libjpeg-$(LIBJPEG
 	$(CMAKE) --install build
 	$(PKG_CONFIG) --exists --print-errors libturbojpeg
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built
 else
 $(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -823,6 +833,7 @@ $(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built: $(DEPS_PREFIX)/zlib-$(ZLIB_VERSIO
 	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors libpng
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built
 else
 $(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -854,6 +865,7 @@ $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built: $(DEPS_CACHE)/bzip2-$(BZIP2_VERSION
 	  echo 'Libs: -L$${libdir} -lbz2' ) > "$(DEPS_PREFIX)/lib/pkgconfig/bzip2.pc" ; }
 	$(PKG_CONFIG) --exists --print-errors bzip2
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built
 else
 $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -873,6 +885,7 @@ $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built: $(DEPS_CACHE)/zlib-$(ZLIB_VERSION).ta
 	$(SED) -i 's|sharedlibdir=.*|sharedlibdir=$${libdir}|' $(DEPS_PREFIX)/lib/pkgconfig/zlib.pc && \
 	$(PKG_CONFIG) --exists --print-errors zlib
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built
 else
 $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -927,6 +940,7 @@ $(DEPS_PREFIX)/fmt-$(FMT_VERSION).built: $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz
 	$(CMAKE) --install build
 	$(PKG_CONFIG) --exists --print-errors fmt
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/fmt-$(FMT_VERSION).built
 else
 $(DEPS_PREFIX)/fmt-$(FMT_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -989,6 +1003,7 @@ $(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built: $(DEPS_CACHE)/nsync-$(NSYNC_VERSION
 	$(CMAKE) --install build && \
 	test -f $(DEPS_PREFIX)/include/nsync.h && test -f $(DEPS_PREFIX)/lib/libnsync_cpp$(if $(STATICBUILD),.*a,*$(DLLEXT))
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built
 else
 $(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -1054,6 +1069,7 @@ $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built: $(DEPS_PREFIX)/libpng-$(LIBP
 	$(PKG_CONFIG) --exists --print-errors freetype2
 	touch $@
 endif # WASM_PLATFORM
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built
 else
 $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -1112,6 +1128,7 @@ $(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built: $(DEPS_CACHE)/simdutf-$(SIMDUTF
 	$(CMAKE) --install build
 	$(PKG_CONFIG) --exists --print-errors simdutf
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built
 else
 $(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -1158,6 +1175,7 @@ $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built: $(DEPS_CACHE)/liblzma-$(LZMA_VERSI
 	$(CMAKE) --install build
 	$(PKG_CONFIG) --exists --print-errors liblzma
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built
 else
 $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -1212,6 +1230,7 @@ $(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built: $(DEPS_CACHE)/libacl-$(LIBACL_VER
 	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors libacl
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built
 else
 $(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -1244,6 +1263,7 @@ $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-
 	$(MAKE_PFX) $(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG_PLUS_BUNDLED_OSSL) --exists --print-errors libarchive
 	touch $@
+INSTALL_LIB_DEPS += $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built
 else
 $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
@@ -1512,14 +1532,14 @@ compile_commands.json: bear.cfg mostlyclean-compile
 	$(SED) -i '/"-include",/{N;/"\.\/pch\.h",/d;}' $@
 
 $(abs_top_srcdir)/.clangd: compile_commands.json
-	@if [ -f $@ ]; then \
-		if grep -q "CompilationDatabase:" $@; then \
+	@if [ -f $@ ]; then { \
+		if grep -q "CompilationDatabase:" $@; then { \
 			$(SED) -i 's|CompilationDatabase:.*|CompilationDatabase: $(shell realpath --relative-to=$(abs_top_srcdir) $(CURDIR))|g' $@; \
-		else \
+		}; else { \
 			echo "CompileFlags:" >> $@; \
 			echo "    CompilationDatabase: $(shell realpath --relative-to=$(abs_top_srcdir) $(CURDIR))" >> $@; \
-		fi; \
-	else \
+		}; fi; \
+	}; else { \
 		echo "CompileFlags:" > $@; \
 		echo "    Add: [-D_CLANGD]" >> $@; \
 		echo "    BuiltinHeaders: QueryDriver" >> $@; \
@@ -1527,7 +1547,7 @@ $(abs_top_srcdir)/.clangd: compile_commands.json
 		echo "" >> $@; \
 		echo "InlayHints:" >> $@; \
 		echo "    Enabled: No" >> $@; \
-	fi
+	}; fi
 
 # `make compile-commands` to generate a compile_commands.json database
 compile-commands: $(abs_top_srcdir)/.clangd
@@ -1541,104 +1561,139 @@ endif
 
 # more conditionals for each individual dependency depending on whether they were built locally, and also if they were built shared
 # if they're external or built statically we don't need to do anything
+# use stamp files for incremental installs so that we only re-run the necessary steps
+
+INSTALL_STAMPS =
+
 if WASM_PLATFORM
 # WASM: assets are preloaded into the .wasm via --preload-file, just install the web files
-install-libs:
+WASM_INSTALL_FILES = neosu.js neosu.wasm
+
+$(DESTDIR)$(bindir)/%: % | install-dirs
+	$(INSTALL) -Dm 644 $< $@
+
+install-dirs:
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)"
-	$(INSTALL) -m 644 neosu.html neosu.js neosu.wasm "$(DESTDIR)$(bindir)/"
-	@test -f neosu.worker.js && $(INSTALL) -m 644 neosu.worker.js "$(DESTDIR)$(bindir)/" || true
-	@test -f neosu.data && $(INSTALL) -m 644 neosu.data "$(DESTDIR)$(bindir)/" || true
-	@test -f neosu.wasm.map && $(INSTALL) -m 644 neosu.wasm.map "$(DESTDIR)$(bindir)/" || true
-else
-install-libs:
+
+install-libs: install-dirs $(addprefix $(DESTDIR)$(bindir)/,$(WASM_INSTALL_FILES))
+	@test -f neosu.worker.js && $(INSTALL) -Cm 644 neosu.worker.js "$(DESTDIR)$(bindir)/" || true
+	@test -f neosu.data && $(INSTALL) -Cm 644 neosu.data "$(DESTDIR)$(bindir)/" || true
+	@test -f neosu.wasm.map && $(INSTALL) -Cm 644 neosu.wasm.map "$(DESTDIR)$(bindir)/" || true
+
+else # !WASM_PLATFORM
+
+# --- directory creation (always runs) ---
+install-dirs:
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)/screenshots"
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)/$(LIBDEST)"
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)/fonts"
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)/materials"
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)/materials/default"
 	$(INSTALL) -dm 755 "$(DESTDIR)$(bindir)/cfg"
+
+# --- assets (fonts + materials) ---
+ASSET_FILES = $(wildcard $(srcdir)/$(ASSETS_DIR)/fonts/* $(srcdir)/$(ASSETS_DIR)/materials/* $(srcdir)/$(ASSETS_DIR)/materials/default/*)
+
+stamp-install-assets: $(ASSET_FILES) | install-dirs
 	find $(srcdir)/$(ASSETS_DIR)/fonts -type f -exec $(INSTALL) -Dm 644 '{''}' "$(DESTDIR)$(bindir)/fonts" ';'
 	find $(srcdir)/$(ASSETS_DIR)/materials -mindepth 1 -maxdepth 1 -type f -exec $(INSTALL) -Dm 644 '{''}' "$(DESTDIR)$(bindir)/materials" ';'
 	find $(srcdir)/$(ASSETS_DIR)/materials/default -mindepth 1 -maxdepth 1 -type f -exec $(INSTALL) -Dm 644 '{''}' "$(DESTDIR)$(bindir)/materials/default" ';'
+	@touch $@
+
+INSTALL_STAMPS += stamp-install-assets
+
+# --- shared libraries ---
+stamp-install-sharedlibs: $(INSTALL_LIB_DEPS) | install-dirs
 if USE_DISCORDSDK
-	@cp -P $(DISCORDSDK_INSTALL_LIBS) "$(DESTDIR)$(bindir)/$(LIBDEST)"
+	@cp -Pu $(DISCORDSDK_INSTALL_LIBS) "$(DESTDIR)$(bindir)/$(LIBDEST)"
 endif
 if BUILD_MIMALLOC
 if WIN_PLATFORM
-	@cp -P "$(DEPS_PREFIX)/bin/mimalloc"{,-redirect$(if $(filter x86_64,$(host_cpu)),,32)}".dll" "$(DESTDIR)$(bindir)/$(LIBDEST)"
+	@cp -Pu "$(DEPS_PREFIX)/bin/mimalloc"{,-redirect$(if $(filter x86_64,$(host_cpu)),,32)}".dll" "$(DESTDIR)$(bindir)/$(LIBDEST)"
 else
-	@find $(DEPS_PREFIX)/lib/ -iname '*mimalloc*''.so*' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'
+	@find $(DEPS_PREFIX)/lib/ -iname '*mimalloc*''.so*' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'
 endif
 endif
 if WIN_PLATFORM
 if WINSHARED_DLLS_NEEDED
-	@cp -P $(WINSHARED_DLLS) "$(DESTDIR)$(bindir)/$(LIBDEST)"
+	@cp -Pu $(WINSHARED_DLLS) "$(DESTDIR)$(bindir)/$(LIBDEST)"
 endif
 endif
 if USE_BASS
-	@cp -P $(BASS_INSTALL_LIBS) "$(DESTDIR)$(bindir)/$(LIBDEST)"
+	@cp -Pu $(BASS_INSTALL_LIBS) "$(DESTDIR)$(bindir)/$(LIBDEST)"
 endif
 if USE_SOLOUD
-	$(if $(STATICBUILD),,@cp -P "$(SOLOUD_PREFIX)/lib"/*$(LIBPREFIX)soloud*$(DLLEXT)* "$(DESTDIR)$(bindir)/$(LIBDEST)")
-	$(if $(STATICBUILD),,@cp -P "$(SOUNDTOUCH_PREFIX)/lib"/*$(LIBPREFIX)SoundTouch*$(DLLEXT)* "$(DESTDIR)$(bindir)/$(LIBDEST)")
-	@cp -P -t "$(DESTDIR)$(bindir)/" $(FFMPEG_INSTALL_LIBS) || true
+	$(if $(STATICBUILD),,@cp -Pu "$(SOLOUD_PREFIX)/lib"/*$(LIBPREFIX)soloud*$(DLLEXT)* "$(DESTDIR)$(bindir)/$(LIBDEST)")
+	$(if $(STATICBUILD),,@cp -Pu "$(SOUNDTOUCH_PREFIX)/lib"/*$(LIBPREFIX)SoundTouch*$(DLLEXT)* "$(DESTDIR)$(bindir)/$(LIBDEST)")
+	@cp -Pu -t "$(DESTDIR)$(bindir)/" $(FFMPEG_INSTALL_LIBS) || true
 if BUILD_MPG123
-	$(if $(STATICBUILD),,@`find $(MPG123_PREFIX) '(' -iname '*mpg*'$(DLLEXT) -o -iname '*mpg*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(MPG123_PREFIX) '(' -iname '*mpg*'$(DLLEXT) -o -iname '*mpg*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 endif
 if BUILD_SDL3
-	$(if $(SDL3_STATIC),,@`find $(SDL3_PREFIX) '(' -iname '*SDL3*'$(DLLEXT) -o -iname '*SDL3*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(SDL3_STATIC),,@`find $(SDL3_PREFIX) '(' -iname '*SDL3*'$(DLLEXT) -o -iname '*SDL3*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_LIBJPEG
-	$(if $(STATICBUILD),,@`find $(LIBJPEG_PREFIX) '(' -iname '*libjpeg-*'$(DLLEXT) -o -iname '*libjpeg*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
-	$(if $(STATICBUILD),,@`find $(LIBJPEG_PREFIX) '(' -iname '*libturbojpeg-*'$(DLLEXT) -o -iname '*libturbojpeg''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(LIBJPEG_PREFIX) '(' -iname '*libjpeg-*'$(DLLEXT) -o -iname '*libjpeg*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(LIBJPEG_PREFIX) '(' -iname '*libturbojpeg-*'$(DLLEXT) -o -iname '*libturbojpeg''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_LIBPNG
-	$(if $(STATICBUILD),,@`find $(LIBPNG_PREFIX) '(' -iname '*libpng*'$(DLLEXT) -o -iname '*libpng*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(LIBPNG_PREFIX) '(' -iname '*libpng*'$(DLLEXT) -o -iname '*libpng*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_BZIP2
-	$(if $(STATICBUILD),,@`find $(BZIP2_PREFIX) '(' -iname '*bz2*'$(DLLEXT) -o -iname '*bz2*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(BZIP2_PREFIX) '(' -iname '*bz2*'$(DLLEXT) -o -iname '*bz2*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_ZLIB
-	$(if $(STATICBUILD),,@`find $(ZLIB_PREFIX) '(' -iname '*libz-*'$(DLLEXT) -o -iname '*libz*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(ZLIB_PREFIX) '(' -iname '*libz-*'$(DLLEXT) -o -iname '*libz*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_FREETYPE2
-	$(if $(STATICBUILD),,@`find $(FREETYPE2_PREFIX) '(' -iname '*freetype*'$(DLLEXT) -o -iname '*freetype*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(FREETYPE2_PREFIX) '(' -iname '*freetype*'$(DLLEXT) -o -iname '*freetype*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_FMT
-	$(if $(STATICBUILD),,@`find $(FMT_PREFIX) '(' -iname '*fmt*'$(DLLEXT) -o -iname '*fmt*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(FMT_PREFIX) '(' -iname '*fmt*'$(DLLEXT) -o -iname '*fmt*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_NSYNC
-	$(if $(STATICBUILD),,@`find $(NSYNC_PREFIX) '(' -iname '*nsync*'$(DLLEXT) -o -iname '*nsync*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(NSYNC_PREFIX) '(' -iname '*nsync*'$(DLLEXT) -o -iname '*nsync*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_LZMA
-	$(if $(STATICBUILD),,@`find $(LZMA_PREFIX) '(' -iname '*lzma*'$(DLLEXT) -o -iname '*lzma*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(LZMA_PREFIX) '(' -iname '*lzma*'$(DLLEXT) -o -iname '*lzma*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_SIMDUTF
-	$(if $(STATICBUILD),,@`find $(SIMDUTF_PREFIX) '(' -iname '*simdutf*'$(DLLEXT) -o -iname '*simdutf*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(SIMDUTF_PREFIX) '(' -iname '*simdutf*'$(DLLEXT) -o -iname '*simdutf*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_LIBARCHIVE
-	$(if $(STATICBUILD),,@`find $(LIBARCHIVE_PREFIX) '(' -iname '*archive*'$(DLLEXT) -o -iname '*archive*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(LIBARCHIVE_PREFIX) '(' -iname '*archive*'$(DLLEXT) -o -iname '*archive*''.so.*' ')' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_LIBACL
-	$(if $(STATICBUILD),,@`find $(LIBACL_PREFIX) -iname '*acl*''.so.*' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+	$(if $(STATICBUILD),,@`find $(LIBACL_PREFIX) -iname '*acl*''.so.*' -exec cp -Pu '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
-if STRIPBINS
-	find "$(DESTDIR)$(bindir)" -name '*'$(DLLEXT)'*' -execdir $(STRIP) -s '{''}' '+'
-	$(STRIP) -s "$(DESTDIR)$(bindir)/$(bin_PROGRAMS)"
-endif
+	@touch $@
+
+INSTALL_STAMPS += stamp-install-sharedlibs
+
+# --- patchelf rpath (linux only) ---
 if !WIN_PLATFORM
+stamp-install-rpath: stamp-install-sharedlibs
 	find "$(DESTDIR)$(bindir)/lib" -maxdepth 1 -name '*'.so'*' -execdir $(PATCHELF) --set-rpath '$$ORIGIN:$$ORIGIN/../' '{''}' ';'
 	find "$(DESTDIR)$(bindir)" -maxdepth 1 -name '*'.so'*' -execdir $(PATCHELF) --set-rpath '$$ORIGIN:$$ORIGIN/lib' '{''}' ';'
-endif
-endif # WASM_PLATFORM
+	@touch $@
 
-# install hooks
-# windows: create a shortcut to launch with a given audio backend (specified in the shortcut target), only if more than 1 is enabled
-# also copy pdb if it exists
-# linux: make links to McEngine and McOsu so existing launch scripts won't need to be changed to the new executable name
-install-exec-hook: install-libs
+INSTALL_STAMPS += stamp-install-rpath
+endif
+
+# --- strip binaries ---
+if STRIPBINS
+stamp-install-strip: stamp-install-sharedlibs $(bin_PROGRAMS)
+	find "$(DESTDIR)$(bindir)" -name '*'$(DLLEXT)'*' -execdir $(STRIP) -s '{''}' '+'
+	$(STRIP) -s "$(DESTDIR)$(bindir)/$(bin_PROGRAMS)"
+	@touch $@
+
+INSTALL_STAMPS += stamp-install-strip
+endif
+
+# --- wine audio backend shortcuts (windows cross-compile only) ---
 if AUDIO_SHORTCUTS
+stamp-install-wine-shortcuts: | install-dirs
 	@cd "$(DESTDIR)$(bindir)" && \
 	for backend in $(AUDBACKENDLIST); do \
 		echo 'Set WshShell = CreateObject("WScript.Shell")' > temp.vbs && \
@@ -1652,7 +1707,21 @@ if AUDIO_SHORTCUTS
 		$(WINE) cscript temp.vbs && \
 		rm temp.vbs; \
 	done
+	@touch $@
+
+INSTALL_STAMPS += stamp-install-wine-shortcuts
 endif
+
+# --- wire it all together ---
+install-libs: install-dirs $(INSTALL_STAMPS)
+
+endif # WASM_PLATFORM
+
+CLEANFILES += $(INSTALL_STAMPS)
+
+# install hooks
+# copy pdb (windows) / make compat symlinks (linux) (always run)
+install-exec-hook: install-libs
 if LINUX_PLATFORM
 	@cd "$(DESTDIR)$(bindir)" && \
 	$(LN_S) -f $(PROGRAMS) McEngine && \
@@ -1676,7 +1745,7 @@ clean-deps:
 
 clean-dep-cache:
 	rm -rf $(DEPS_CACHE)
-.PHONY: clean-deps clean-dep-cache install-libs bear-check-version
+.PHONY: clean-deps clean-dep-cache install-libs install-dirs bear-check-version
 
 maintainer-clean-local: clean-deps clean-dep-cache
 
