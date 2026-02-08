@@ -866,7 +866,6 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
         if(SettingsImporter::import_from_osu_stable()) {
             ui->getNotificationOverlay()->addToast(US_("Successfully imported settings from osu!stable."),
                                                    SUCCESS_TOAST);
-
         } else {
             ui->getNotificationOverlay()->addToast(
                 US_("Error: Couldn't find osu!stable install directory or config file!"), ERROR_TOAST);
@@ -1275,8 +1274,10 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
         this->skinSelectLocalButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSkinSelect>(this));
 
-        this->addButton_("Open current Skin folder")
-            ->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::openCurrentSkinFolder>(this));
+        if constexpr(!Env::cfg(OS::WASM)) {
+            this->addButton_("Open current Skin folder")
+                ->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::openCurrentSkinFolder>(this));
+        }
 
         OptionsElement *skinReload = this->addButtonButton("Reload Skin", "Random Skin");
         auto *skinReloadBtn = static_cast<UIButton *>(skinReload->baseElems[0].get());
