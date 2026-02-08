@@ -1564,6 +1564,7 @@ endif
 # use stamp files for incremental installs so that we only re-run the necessary steps
 
 INSTALL_STAMPS =
+INSTALL_RPATH_STAMP =
 
 if WASM_PLATFORM
 # WASM: assets are preloaded into the .wasm via --preload-file, just install the web files
@@ -1678,12 +1679,13 @@ stamp-install-rpath: stamp-install-sharedlibs
 	find "$(DESTDIR)$(bindir)" -maxdepth 1 -name '*'.so'*' -execdir $(PATCHELF) --set-rpath '$$ORIGIN:$$ORIGIN/lib' '{''}' ';'
 	@touch $@
 
+INSTALL_RPATH_STAMP += stamp-install-rpath
 INSTALL_STAMPS += stamp-install-rpath
 endif
 
-# --- strip binaries ---
+# --- strip binaries (must run after rpath to avoid racing on the same files) ---
 if STRIPBINS
-stamp-install-strip: stamp-install-sharedlibs $(bin_PROGRAMS)
+stamp-install-strip: stamp-install-sharedlibs $(INSTALL_RPATH_STAMP) $(bin_PROGRAMS)
 	find "$(DESTDIR)$(bindir)" -name '*'$(DLLEXT)'*' -execdir $(STRIP) -s '{''}' '+'
 	$(STRIP) -s "$(DESTDIR)$(bindir)/$(bin_PROGRAMS)"
 	@touch $@
