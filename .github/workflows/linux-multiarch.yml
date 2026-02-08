@@ -4,8 +4,8 @@ on:
     branches:
       - master
     paths-ignore:
-      - 'cmake-win/'
-      - 'tools/'
+      - 'cmake-win/**'
+      - 'tools/**'
       - '*.md'
       - '.clangd-template'
       - '.gitignore'
@@ -14,8 +14,8 @@ on:
     branches:
       - master
     paths-ignore:
-      - 'cmake-win/'
-      - 'tools/'
+      - 'cmake-win/**'
+      - 'tools/**'
       - '*.md'
       - '.clangd-template'
       - '.gitignore'
