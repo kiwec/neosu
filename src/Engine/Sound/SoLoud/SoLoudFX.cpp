@@ -662,11 +662,16 @@ void SoundTouchFilterInstance::updateSTLatency() {
     // this only covers the SoundTouch component; engine-level delays (position caching,
     // interpolator smoothing, audio queue depth) add a few more ms, dependent on system buffer size.
     double resultSeconds = 0.0;
-    if(cv::snd_soloud_offset_compensation_strategy.getInt() != 0) {
-        const double overlapMs = mSoundTouch->getSetting(SETTING_OVERLAP_MS);
-        const double overlapSamples = overlapMs * sr / 1000.0;
-        const double pipelineSamples =
-            static_cast<double>(mSTInputSequence) - 2.0 * static_cast<double>(mSTOutputSequence) - overlapSamples / 2.0;
+    if(int strat = cv::snd_soloud_offset_compensation_strategy.getInt(); strat != 0) {
+        double pipelineSamples = 0.0;
+        if(strat == 1) {
+            const double overlapMs = mSoundTouch->getSetting(SETTING_OVERLAP_MS);
+            const double overlapSamples = overlapMs * sr / 1000.0;
+            pipelineSamples = static_cast<double>(mSTInputSequence) - 2.0 * static_cast<double>(mSTOutputSequence) -
+                              overlapSamples / 2.0;
+        } else {
+            pipelineSamples = static_cast<double>(mSTInputSequence) - 2.0 * static_cast<double>(mSTOutputSequence);
+        }
         resultSeconds = pipelineSamples / sr;
     }
 

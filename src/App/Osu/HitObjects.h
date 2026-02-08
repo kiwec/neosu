@@ -57,6 +57,7 @@ class HitObject {
     // }  // how much combo this hitobject is "worth"
 
     // Gameplay logic
+    [[nodiscard]] forceinline i32 getEndTime() const { return this->click_time + this->duration; }
     i32 click_time;
     i32 duration{0};
 
