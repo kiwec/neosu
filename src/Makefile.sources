@@ -132,16 +132,16 @@ neosu_SOURCES = \
 	src/Engine/Renderer/DirectX11/DirectX11VertexArrayObject.cpp \
 	src/Engine/Renderer/Graphics.cpp \
 	src/Engine/Renderer/NullGraphics.cpp \
-	src/Engine/Renderer/OpenGL/OpenGLES32Interface.cpp \
-	src/Engine/Renderer/OpenGL/OpenGLES32Shader.cpp \
-	src/Engine/Renderer/OpenGL/OpenGLES32VertexArrayObject.cpp \
+	src/Engine/Renderer/OpenGL/Core/OpenGLInterface.cpp \
+	src/Engine/Renderer/OpenGL/Core/OpenGLShader.cpp \
+	src/Engine/Renderer/OpenGL/Core/OpenGLVertexArrayObject.cpp \
+	src/Engine/Renderer/OpenGL/ES/OpenGLES32Interface.cpp \
+	src/Engine/Renderer/OpenGL/ES/OpenGLES32Shader.cpp \
+	src/Engine/Renderer/OpenGL/ES/OpenGLES32VertexArrayObject.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLImage.cpp \
-	src/Engine/Renderer/OpenGL/OpenGLInterface.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLRenderTarget.cpp \
-	src/Engine/Renderer/OpenGL/OpenGLShader.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLStateCache.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLSync.cpp \
-	src/Engine/Renderer/OpenGL/OpenGLVertexArrayObject.cpp \
 	src/Engine/Renderer/OpenGL/SDLGLInterface.cpp \
 	src/Engine/Renderer/RenderTarget.cpp \
 	src/Engine/Renderer/Shader.cpp \
@@ -178,10 +178,10 @@ neosu_SOURCES = \
 	src/GUI/CWindowManager.cpp \
 	src/GUI/Windows/ConsoleBox.cpp \
 	src/GUI/Windows/VisualProfiler.cpp \
-	src/Platform/CrashHandler.cpp \
 	src/Platform/Environment.cpp \
 	src/Platform/GPUDriverConfigurator.cpp \
 	src/Platform/RuntimePlatform.cpp \
+	src/Platform/Windows/CrashHandler.cpp \
 	src/Platform/main.cpp \
 	src/Platform/main_impl.cpp \
 	src/Util/ACFParser.cpp \

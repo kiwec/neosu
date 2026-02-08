@@ -13,11 +13,11 @@
 #include "Environment.h"
 #include "ConVar.h"
 
+#ifndef MCENGINE_PLATFORM_WASM
 #ifdef MCENGINE_FEATURE_GLES32
 #include "glad/glad_egl.h"
 #endif
 
-#ifndef MCENGINE_PLATFORM_WASM
 namespace {  // static
 #ifdef MCENGINE_FEATURE_GLES32
 bool EGLLoaded{false};
@@ -26,7 +26,7 @@ bool GLESLoaded{false};
 bool GLLoaded{false};
 #endif
 }  // namespace
-#endif
+#endif // MCENGINE_PLATFORM_WASM
 
 // resolve GL functions (static, called before construction)
 void SDLGLInterface::load() {

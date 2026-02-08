@@ -157,9 +157,7 @@ $(builddir)/wasm-maps/.extracted: $(DEPS_CACHE)/wasm-beatmap-pack.zip
 	touch $@
 
 EXTRACTED_MAPS_DEP :=
-WASM_POLYFILL_DEP :=
 if WASM_PLATFORM
-WASM_POLYFILL_DEP += $(srcdir)/src/Platform/wasm-node-polyfill.js
 if BUNDLE_BEATMAPS
 EXTRACTED_MAPS_DEP += $(builddir)/wasm-maps/.extracted
 endif

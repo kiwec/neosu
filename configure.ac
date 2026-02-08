@@ -533,12 +533,13 @@ AC_SUBST([PKG_CONFIG_PATH_CUSTOM])
 win_subsystem_ver=6.00
 AS_IF([test -n "$WASM_CC"], [
     # WASM/Emscripten build
+    WASM_POLYFILL_DEP="\$(srcdir)/src/Platform/WASM/wasm-node-polyfill.js"
     EMSCRIPTEN_FLAGS="-sPTHREAD_POOL_SIZE=32 -sAUDIO_WORKLET=1 -sWASM=1 -sWASM_WORKERS=1 -sUSE_PTHREADS=1 -sFETCH=1 -sEXPORTED_RUNTIME_METHODS=callMain,ENV -sINCOMING_MODULE_JS_API=locateFile,onAbort,onRuntimeInitialized,noInitialRun,print -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sENVIRONMENT=web,worker,node"
 
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -U__linux__ -D__EMSCRIPTEN__"
     NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS $EMSCRIPTEN_FLAGS"
     # --emrun for support for running the .html with emrun (useful for offline testing)
-    NEOSU_LDFLAGS="$NEOSU_LDFLAGS $EMSCRIPTEN_FLAGS -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sINITIAL_MEMORY=1536MB -lidbfs.js -lnodefs.js --pre-js \$(srcdir)/src/Platform/wasm-node-polyfill.js --emrun"
+    NEOSU_LDFLAGS="$NEOSU_LDFLAGS $EMSCRIPTEN_FLAGS -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sINITIAL_MEMORY=1536MB -lidbfs.js -lnodefs.js --pre-js $WASM_POLYFILL_DEP --emrun"
 
     WASM_PRELOAD_FLAGS="--preload-file \$(srcdir)/\$(ASSETS_DIR)/fonts@fonts --preload-file \$(srcdir)/\$(ASSETS_DIR)/materials@materials"
     AS_IF([test "x$enable_redistributable" = "xno"], [
@@ -547,6 +548,7 @@ AS_IF([test -n "$WASM_CC"], [
         WASM_PRELOAD_FLAGS="$WASM_PRELOAD_FLAGS --preload-file \$(builddir)/wasm-maps@/libsdl/Songs"
     ])
     AC_SUBST([WASM_PRELOAD_FLAGS])
+    AC_SUBST([WASM_POLYFILL_DEP])
 
     # pkg-config wrapper for emscripten
     install -Dm755 /dev/stdin $PWD/build/pkg-config <<__EOF__
