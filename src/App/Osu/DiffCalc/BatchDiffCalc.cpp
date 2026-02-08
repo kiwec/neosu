@@ -608,11 +608,16 @@ void coordinator(const Sync::stop_token& stoken) {
 
 void internal::flush_score_results(std::vector<ScoreResult>& pending) {
     bool any_updated = false;
+
     Sync::unique_lock lk(db->scores_mtx);
+    auto& db_scores = db->getScoresMutable();
     for(auto& res : pending) {
-        auto it = db->getScoresMutable().find(res.score.beatmap_hash);
-        if(it == db->getScoresMutable().end()) continue;
-        if(auto scoreIt = std::ranges::find(it->second, res.score); scoreIt != it->second.end()) {
+        const auto& it = db_scores.find(res.score.beatmap_hash);
+        if(it == db_scores.end()) continue;
+
+        auto& scorevec = it->second;
+
+        if(const auto& scoreIt = std::ranges::find(scorevec, res.score); scoreIt != scorevec.end()) {
             scoreIt->ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
             scoreIt->ppv2_score = res.pp;
             scoreIt->ppv2_total_stars = res.total_stars;
@@ -656,7 +661,7 @@ void abort_calc() {
 }
 
 namespace {
-struct MainThreadUpdateCtx {
+struct {
     std::vector<MapResult> pending_maps;
     std::vector<ScoreResult> pending_scores;
     Hash::flat::set<BeatmapSet*> unique_parents;
@@ -667,23 +672,25 @@ struct MainThreadUpdateCtx {
 bool update_mainthread() {
     if(!running()) return true;
 
+    auto& [pending_maps, pending_scores, unique_parents]{updbuf};
+
     {
         Sync::unique_lock lock(results_mutex, Sync::try_to_lock);
         if(!lock.owns_lock()) return true;
-        updbuf.pending_maps = std::move(map_results);
-        updbuf.pending_scores = std::move(score_results);
+        pending_maps = std::move(map_results);
+        pending_scores = std::move(score_results);
         map_results.clear();
         score_results.clear();
     }
 
     // apply map results
-    if(const uSz num_pending = updbuf.pending_maps.size(); num_pending > 0) {
-        updbuf.unique_parents.reserve(num_pending);
+    if(const uSz num_pending = pending_maps.size(); num_pending > 0) {
+        unique_parents.reserve(num_pending);
         {
             Sync::unique_lock lock(db->peppy_overrides_mtx);
-            for(const auto& res : updbuf.pending_maps) {
+            for(const auto& res : pending_maps) {
                 auto* map = res.map;
-                updbuf.unique_parents.insert(map->getParentSet());
+                unique_parents.insert(map->getParentSet());
                 // only override existing values if we got some non-zero result, otherwise use what's already there
                 map->iNumCircles = res.nb_circles > 0 ? (i32)res.nb_circles : map->iNumCircles;
                 map->iNumSliders = res.nb_sliders > 0 ? (i32)res.nb_sliders : map->iNumSliders;
@@ -704,7 +711,7 @@ bool update_mainthread() {
 
         {
             Sync::unique_lock slk(db->star_ratings_mtx);
-            for(const auto& res : updbuf.pending_maps) {
+            for(const auto& res : pending_maps) {
                 auto& ptr = db->star_ratings[res.map->getMD5()];
                 if(!ptr) ptr = std::make_unique<StarPrecalc::SRArray>();
                 *ptr = res.star_ratings;
@@ -712,18 +719,18 @@ bool update_mainthread() {
             }
         }
 
-        for(auto* set : updbuf.unique_parents) {
+        for(auto* set : unique_parents) {
             set->updateRepresentativeValues();
         }
 
-        updbuf.pending_maps.clear();
-        updbuf.unique_parents.clear();
+        pending_maps.clear();
+        unique_parents.clear();
     }
 
     // apply score results
-    if(!updbuf.pending_scores.empty()) {
-        internal::flush_score_results(updbuf.pending_scores);
-        updbuf.pending_scores.clear();
+    if(!pending_scores.empty()) {
+        internal::flush_score_results(pending_scores);
+        pending_scores.clear();
     }
 
     return !is_finished();
