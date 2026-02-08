@@ -2625,7 +2625,9 @@ void HUD::drawRuntimeInfo() {
                            cv::build_timestamp.getString(),  //
                            osstr,                            //
                            MC_ARCHSTR, /* e.g. x32/x64/arm64 for windows or x86/x86-64/aarch64 for non-windows */
-                           env->usingDX11() ? "dx" : "gl",  //
+                           env->usingDX11()         ? "dx"
+                           : Env::cfg(REND::GLES32) ? "gles"
+                                                    : "gl",  //
                            soundEngine->getTypeId() == SoundEngine::BASS ? "bss" : "sld");
     }();
 
