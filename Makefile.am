@@ -225,56 +225,59 @@ $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)-windowsx86_64.source: $(DEPS_CACHE)/ffmpe
 # windows zips contain headers needed for all platforms
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass.zip" || { rm -f $@; exit 1; }
-$(DEPS_CACHE)/bass-$(BASS_VERSION)/bass-linux.zip:
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bass.zip" || { rm -f $@; exit 1; }
+$(DEPS_CACHE)/bass-$(BASS_VERSION)/bass24-header.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass-linux.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bass24-header.zip" || { rm -f $@; exit 1; }
+$(DEPS_CACHE)/bass-$(BASS_VERSION)/bass24-linux.zip:
+	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bass24-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassflac24.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bassflac24.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassflac24-linux.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bassflac24-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass_fx.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bass_fx.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass_fx-linux.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bass_fx-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassmix.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bassmix.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassmix-linux.zip" || { rm -f $@; exit 1; }
-$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud.zip:
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bassmix-linux.zip" || { rm -f $@; exit 1; }
+$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud24.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassloud.zip" || { rm -f $@; exit 1; }
-$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud-linux.zip:
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bassloud24.zip" || { rm -f $@; exit 1; }
+$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud24-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassloud-linux.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bassloud24-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/basswasapi.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/basswasapi.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi24-header.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/basswasapi24-header.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/basswasapi24-header.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassasio.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassasio.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/bass-libs-$(BASS_VERSION)/bassasio.zip" || { rm -f $@; exit 1; }
 
 # windows builds: only need windows zips
-$(DEPS_CACHE)/bass-$(BASS_VERSION)-windows.source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip $\
+$(DEPS_CACHE)/bass-$(BASS_VERSION)-windows.source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass24-header.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix.zip $\
-										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud.zip $\
+										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud24.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi24-header.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassasio.zip
 	cd $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
 	$(MKDIR_P) bass/lib/windows/i686 && $(UNZIP) -qjo bass.zip bass.dll -d bass/lib/windows/i686 && \
 	$(MKDIR_P) bass/lib/windows/x86_64 && $(UNZIP) -qjo bass.zip x64/bass.dll -d bass/lib/windows/x86_64 && \
-	$(MKDIR_P) bass/include/ && $(UNZIP) -qjo bass.zip bass.h -d bass/include/ && \
+	$(MKDIR_P) bass/include/ && $(UNZIP) -qjo bass24-header.zip c/bass.h -d bass/include/ && \
 	$(MKDIR_P) bassfx/lib/windows/i686 && $(UNZIP) -qjo bass_fx.zip bass_fx.dll -d bassfx/lib/windows/i686 && \
 	$(MKDIR_P) bassfx/lib/windows/x86_64 && $(UNZIP) -qjo bass_fx.zip x64/bass_fx.dll -d bassfx/lib/windows/x86_64 && \
 	$(MKDIR_P) bassfx/include/ && $(UNZIP) -qjo bass_fx.zip bass_fx.h -d bassfx/include/ && \
@@ -283,9 +286,9 @@ $(DEPS_CACHE)/bass-$(BASS_VERSION)-windows.source: $(DEPS_CACHE)/bass-$(BASS_VER
 	$(MKDIR_P) bassmix/lib/windows/i686 && $(UNZIP) -qjo bassmix.zip bassmix.dll -d bassmix/lib/windows/i686 && \
 	$(MKDIR_P) bassmix/lib/windows/x86_64 && $(UNZIP) -qjo bassmix.zip x64/bassmix.dll -d bassmix/lib/windows/x86_64 && \
 	$(MKDIR_P) bassmix/include/ && $(UNZIP) -qjo bassmix.zip bassmix.h -d bassmix/include/ && \
-	$(MKDIR_P) bassloud/lib/windows/i686 && $(UNZIP) -qjo bassloud.zip bassloud.dll -d bassloud/lib/windows/i686 && \
-	$(MKDIR_P) bassloud/lib/windows/x86_64 && $(UNZIP) -qjo bassloud.zip x64/bassloud.dll -d bassloud/lib/windows/x86_64 && \
-	$(MKDIR_P) bassloud/include/ && $(UNZIP) -qjo bassloud.zip c/bassloud.h -d bassloud/include/ && \
+	$(MKDIR_P) bassloud/lib/windows/i686 && $(UNZIP) -qjo bassloud24.zip bassloud.dll -d bassloud/lib/windows/i686 && \
+	$(MKDIR_P) bassloud/lib/windows/x86_64 && $(UNZIP) -qjo bassloud24.zip x64/bassloud.dll -d bassloud/lib/windows/x86_64 && \
+	$(MKDIR_P) bassloud/include/ && $(UNZIP) -qjo bassloud24.zip c/bassloud.h -d bassloud/include/ && \
 	$(MKDIR_P) basswasapi/lib/windows/i686 && $(UNZIP) -qjo basswasapi.zip basswasapi.dll -d basswasapi/lib/windows/i686 && \
 	$(MKDIR_P) basswasapi/lib/windows/x86_64 && $(UNZIP) -qjo basswasapi.zip x64/basswasapi.dll -d basswasapi/lib/windows/x86_64 && \
 	$(MKDIR_P) basswasapi/include/ && $(UNZIP) -qjo basswasapi24-header.zip c/basswasapi.h -d basswasapi/include/ && \
@@ -295,15 +298,15 @@ $(DEPS_CACHE)/bass-$(BASS_VERSION)-windows.source: $(DEPS_CACHE)/bass-$(BASS_VER
 	touch $@
 
 # linux builds: need linux zips + windows zips for headers (BASS has no aarch64 builds)
-$(DEPS_CACHE)/bass-$(BASS_VERSION)-linux.source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass-linux.zip $\
+$(DEPS_CACHE)/bass-$(BASS_VERSION)-linux.source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass24-linux.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24-linux.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx-linux.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix-linux.zip $\
-										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud-linux.zip
+										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud24.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud24-linux.zip
 	cd $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(MKDIR_P) bass/include/ && $(UNZIP) -qjo bass.zip bass.h -d bass/include/ && \
-	$(MKDIR_P) bass/lib/linux/i686 && $(UNZIP) -qjo bass-linux.zip x86/libbass.so -d bass/lib/linux/i686 && \
-	$(MKDIR_P) bass/lib/linux/x86_64 && $(UNZIP) -qjo bass-linux.zip x86_64/libbass.so -d bass/lib/linux/x86_64 && \
+	$(MKDIR_P) bass/include/ && $(UNZIP) -qjo bass24-linux.zip c/bass.h -d bass/include/ && \
+	$(MKDIR_P) bass/lib/linux/i686 && $(UNZIP) -qjo bass24-linux.zip libs/x86/libbass.so -d bass/lib/linux/i686 && \
+	$(MKDIR_P) bass/lib/linux/x86_64 && $(UNZIP) -qjo bass24-linux.zip libs/x86_64/libbass.so -d bass/lib/linux/x86_64 && \
 	$(MKDIR_P) bassfx/include/ && $(UNZIP) -qjo bass_fx.zip bass_fx.h -d bassfx/include/ && \
 	$(MKDIR_P) bassfx/lib/linux/i686 && $(UNZIP) -qjo bass_fx-linux.zip x86/libbass_fx.so -d bassfx/lib/linux/i686 && \
 	$(MKDIR_P) bassfx/lib/linux/x86_64 && $(UNZIP) -qjo bass_fx-linux.zip x86_64/libbass_fx.so -d bassfx/lib/linux/x86_64 && \
@@ -312,9 +315,9 @@ $(DEPS_CACHE)/bass-$(BASS_VERSION)-linux.source: $(DEPS_CACHE)/bass-$(BASS_VERSI
 	$(MKDIR_P) bassmix/include/ && $(UNZIP) -qjo bassmix.zip bassmix.h -d bassmix/include/ && \
 	$(MKDIR_P) bassmix/lib/linux/i686 && $(UNZIP) -qjo bassmix-linux.zip x86/libbassmix.so -d bassmix/lib/linux/i686 && \
 	$(MKDIR_P) bassmix/lib/linux/x86_64 && $(UNZIP) -qjo bassmix-linux.zip x86_64/libbassmix.so -d bassmix/lib/linux/x86_64 && \
-	$(MKDIR_P) bassloud/include/ && $(UNZIP) -qjo bassloud.zip c/bassloud.h -d bassloud/include/ && \
-	$(MKDIR_P) bassloud/lib/linux/i686 && $(UNZIP) -qjo bassloud-linux.zip libs/x86/libbassloud.so -d bassloud/lib/linux/i686 && \
-	$(MKDIR_P) bassloud/lib/linux/x86_64 && $(UNZIP) -qjo bassloud-linux.zip libs/x86_64/libbassloud.so -d bassloud/lib/linux/x86_64
+	$(MKDIR_P) bassloud/include/ && $(UNZIP) -qjo bassloud24.zip c/bassloud.h -d bassloud/include/ && \
+	$(MKDIR_P) bassloud/lib/linux/i686 && $(UNZIP) -qjo bassloud24-linux.zip libs/x86/libbassloud.so -d bassloud/lib/linux/i686 && \
+	$(MKDIR_P) bassloud/lib/linux/x86_64 && $(UNZIP) -qjo bassloud24-linux.zip libs/x86_64/libbassloud.so -d bassloud/lib/linux/x86_64
 	touch $@
 
 $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip:

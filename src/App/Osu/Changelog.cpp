@@ -37,6 +37,8 @@ Changelog::Changelog() : ScreenBackable() {
     v42_02.changes = {
         R"(- Added initial support for pre-calculating star rating for various mod/rate combinations)",
         R"(  - Currently included: 9 rates between 0.75x and 1.5x, and for each rate, 6 unique mod combinations (valid combos of nomod/HR/HD/EZ))",
+        R"(- Updated BASS to fix some offset issues (e.g. https://osu.ppy.sh/beatmapsets/246733 ))",
+        
     };
     changelogs.push_back(v42_02);
 

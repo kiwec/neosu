@@ -123,36 +123,40 @@ set(DISCORDSDK_HASH "SHA512=4c8f72c7bdf92bc969fb86b96ea0d835e01b9bab1a2cc27ae00b
 set_download_name("discordsdk" "${DISCORDSDK_VERSION}" "${DISCORDSDK_URL}")
 
 # BASS BINARIES
-set(BASS_VERSION "20250813")
+set(BASS_VERSION "20260208_202602")
 
-set(BASS_URL "https://archive.org/download/BASS-libs-${BASS_VERSION}/bass.zip")
-set(BASS_HASH "SHA512=6066f2a9097389c433b68f28d325793fcc4a3b1adf7916eb58d11cd48a8d5da16ea91de75d6f3e353bdc1cbe2cdee3eb6b1c4a035ca9ba15941ee2fb357185f3")
+set(BASS_HEADER_URL "https://archive.org/download/bass-libs-${BASS_VERSION}/bass24-header.zip")
+set(BASS_HEADER_HASH "SHA512=d7725d6a360c12ec8f7d814b144241750e084f9a6ed4fa9abc9cebb845301dbb0591d9b74b807ccafe94cd1e9bbba5d118b1db757ee9da580b5869b1a6a4f746")
+set_download_name("bass_header" "${BASS_VERSION}" "${BASS_HEADER}")
+
+set(BASS_URL "https://archive.org/download/bass-libs-${BASS_VERSION}/bass.zip")
+set(BASS_HASH "SHA512=07282d1db1d7bb9f0a4901c1797a257882863e5f1526e3b053a60ced3c4056fa1b02f1fb856e8ee239286fbe1576110141c50eeff2254b1c69016f0029f73c97")
 set_download_name("bass" "${BASS_VERSION}" "${BASS_URL}")
 
-set(BASSFX_URL "https://archive.org/download/BASS-libs-${BASS_VERSION}/bass_fx.zip")
-set(BASSFX_HASH "SHA512=561572d0f6d5f108dfa11d786c664923bdb9aebc4d49a78a66f5826bcdfe102254c0308000a00cb79b6eb007938845f8625ea0ed3c4f9ff72806a48562ddd800")
+set(BASSFX_URL "https://archive.org/download/bass-libs-${BASS_VERSION}/bass_fx.zip")
+set(BASSFX_HASH "SHA512=2fbed47a031d8e49e99c335d50e46f3620132d63fc56f82a71e59e694567a3833a3704345bd822813e01dbca0595ee33351ebcb52a4c44d90e4a673bc0f5f98e")
 set_download_name("bassfx" "${BASS_VERSION}" "${BASSFX_URL}")
 
-set(BASSMIX_URL "https://archive.org/download/BASS-libs-${BASS_VERSION}/bassmix.zip")
-set(BASSMIX_HASH "SHA512=e7139b71f53b30bd27f2991006781f69a5e0e415996fcd41a7122908b0245cc6e1efb82b66409b80dc4d7cb4eb0d6d445cf3eaff52fe6f7c43bbd9872ea7949b")
+set(BASSMIX_URL "https://archive.org/download/bass-libs-${BASS_VERSION}/bassmix.zip")
+set(BASSMIX_HASH "SHA512=583e3c1f93736034892f37820c7121521eb441f713ac696524491f76acba3b83f7f602f90f2c7563dafc7e122b35dcf639cb62eaab353f81e1dd0e46bd4992c3")
 set_download_name("bassmix" "${BASS_VERSION}" "${BASSMIX_URL}")
 
-set(BASSWASAPI_URL "https://archive.org/download/BASS-libs-${BASS_VERSION}/basswasapi.zip")
+set(BASSWASAPI_URL "https://archive.org/download/bass-libs-${BASS_VERSION}/basswasapi.zip")
 set(BASSWASAPI_HASH "SHA512=f5c68062936ccf60383c5dbea3dc4b9bcf52884fb745d0564bd6592e88a7336e16e5d9a63ea28177385641790d53eaa5d9edfe112e768dcfb68b82af65affddc")
 set_download_name("basswasapi" "${BASS_VERSION}" "${BASSWASAPI_URL}")
 
-set(BASSWASAPI_HEADER_URL "https://archive.org/download/BASS-libs-${BASS_VERSION}/basswasapi24-header.zip")
-set(BASSWASAPI_HEADER_HASH "SHA512=de54b3961491ea832a0069af75dc1d57209b7805699d955b384bf9671a4da3615ba3ea217c596fa41616d2df4a8b2ea0f8f9d9c4e2453221541aacb0cc30dc6c")
+set(BASSWASAPI_HEADER_URL "https://archive.org/download/bass-libs-${BASS_VERSION}/basswasapi24-header.zip")
+set(BASSWASAPI_HEADER_HASH "SHA512=8eee38b038330503ec0b6380c6baa33554d8cdc4263b3fe14ecebf9aff5f175c7fed26e641bb4df87998f630c854ed48bd0703275e38b09f0094628211c36b2e")
 set_download_name("basswasapi_header" "${BASS_VERSION}" "${BASSWASAPI_HEADER_URL}")
 
-set(BASSASIO_URL "https://archive.org/download/BASS-libs-${BASS_VERSION}/bassasio.zip")
-set(BASSASIO_HASH "SHA512=9542469b352d6a6bfd3a3292a09642639c0583963b714a780699ab0e5fa7cbf36e3c9ae8081195d6fef7daad88133cf10d0a568724edca5e8374473128da738a")
+set(BASSASIO_URL "https://archive.org/download/bass-libs-${BASS_VERSION}/bassasio.zip")
+set(BASSASIO_HASH "SHA512=d112ce98255df6b80ee1d34fe7261673d01847d494d7064db5cc99ac97bfc43a9369cab1617d7fdeeb26a0f83c7049946491de9a41b6ad150defc603e74d167a")
 set_download_name("bassasio" "${BASS_VERSION}" "${BASSASIO_URL}")
 
-set(BASSLOUD_URL "https://archive.org/download/BASS-libs-${BASS_VERSION}/bassloud.zip")
-set(BASSLOUD_HASH "SHA512=8607d5d9fd07f6886ab4984cf68f6e9463b027a5766ae572e6d99f9298fafd08cc8ac4ece0c4ca4e47a532a76448d75443c9fa7ea7f1d7b84579487022cec493")
+set(BASSLOUD_URL "https://archive.org/download/bass-libs-${BASS_VERSION}/bassloud24.zip")
+set(BASSLOUD_HASH "SHA512=cb6abbd23f6766dbceced372aeb733bd663be06efcd73a9040751c90e9bffcbdc8b6774991a41edfb91722cc28aa782708fcaa9378b65cce53e3ba5c8e71c0c0")
 set_download_name("bassloud" "${BASS_VERSION}" "${BASSLOUD_URL}")
 
-set(BASSFLAC_URL "https://archive.org/download/BASS-libs-${BASS_VERSION}/bassflac24.zip")
-set(BASSFLAC_HASH "SHA512=1d912dcd342cf0ef873e743a305b5fc5f06a60c7446ff6f6e7e5f313124475526bb01c69718c401158b9803fb9935d2dd4d7f7ac1b2646f7ba4e769ef0455b29")
+set(BASSFLAC_URL "https://archive.org/download/bass-libs-${BASS_VERSION}/bassflac24.zip")
+set(BASSFLAC_HASH "SHA512=92df226490926979761cf838140a4a3279afe3b77ac2c0b00536b56f7ba7c328b31770788c5daf1449a3d6e8d7759c5df18465e7150f3c3fdf35e83e765a144d")
 set_download_name("bassflac" "${BASS_VERSION}" "${BASSFLAC_URL}")

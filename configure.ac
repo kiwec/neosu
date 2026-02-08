@@ -1257,7 +1257,7 @@ AC_SUBST([FFMPEG_VERSION], [8.0])
 
 AC_SUBST([DISCORDSDK_VERSION], [2.5.6]) # pre-built
 
-AC_SUBST([BASS_VERSION], [20250813]) # just mark the date so we can invalidate the cache if necessary
+AC_SUBST([BASS_VERSION], [20260208_202602]) # just mark the date so we can invalidate the cache if necessary
 
 AS_IF([test "$SYSNAME" = "linux" || test "$SYSNAME" = "macos"], [
     AS_IF([test "x$enable_system_deps" != "xno"], [
