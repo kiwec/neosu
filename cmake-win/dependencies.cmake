@@ -26,10 +26,10 @@ set(SDL3_URL "https://github.com/libsdl-org/SDL/archive/${SDL3_VERSION}.tar.gz")
 set(SDL3_HASH "SHA512=4908a367722bad1b6e37fc79cbf4d0ec7e064026147ad76799d42bcfae4491645999b92269ff8b1d98095742e376ae42bb285a483083811c4b451d74f859ac6b")
 set_download_name("sdl3" "${SDL3_VERSION}" "${SDL3_URL}")
 
-set(FREETYPE_VERSION "2.13.3")
+set(FREETYPE_VERSION "2.14.1")
 string(REPLACE "." "-" _freetype_ver_temp "${FREETYPE_VERSION}")
 set(FREETYPE_URL "https://github.com/freetype/freetype/archive/refs/tags/VER-${_freetype_ver_temp}.tar.gz")
-set(FREETYPE_HASH "SHA512=fccfaa15eb79a105981bf634df34ac9ddf1c53550ec0b334903a1b21f9f8bf5eb2b3f9476e554afa112a0fca58ec85ab212d674dfd853670efec876bacbe8a53")
+set(FREETYPE_HASH "SHA512=b73b08784bb4b293fb807e4ca5585fa490da11c3b0f9dca26e39e4cdaf4551ce7d75006e97ca721bfca2ed53f4c6f94c12e3d6c606955ec7c0dcd2f48bfa613d")
 set_download_name("freetype" "${FREETYPE_VERSION}" "${FREETYPE_URL}")
 unset(_freetype_ver_temp)
 

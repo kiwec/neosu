@@ -112,7 +112,10 @@ set(EXTERNAL_PROJECT_CMAKE_ARGS
     -DCMAKE_SHARED_LINKER_FLAGS_DEBUG=${DEBUG_LINK_FLAGS_STR}
     -DCMAKE_SHARED_LINKER_FLAGS_RELEASE=${RELEASE_LINK_FLAGS_STR}
     -DCMAKE_STATIC_LINKER_FLAGS_RELEASE=${RELEASE_LINK_FLAGS_STR}
-    -DBZIP2_LIBRARIES=${DEPS_INSTALL_DIR}/lib/bz2_static.lib # bzip2's .pc file is literally just broken
+    -DBZIP2_INCLUDE_DIR=${DEPS_INSTALL_DIR}/include # bzip2's .pc file is literally just broken
+    -DBZIP2_LIBRARIES=${DEPS_INSTALL_DIR}/lib/bz2_static.lib
+    -DBZIP2_LIBRARY_RELEASE=${DEPS_INSTALL_DIR}/lib/bz2_static.lib
+    -DBZIP2_LIBRARY_DEBUG=${DEPS_INSTALL_DIR}/lib/bz2_static.lib
 )
 
 # Build dependencies - order matters due to interdependencies
