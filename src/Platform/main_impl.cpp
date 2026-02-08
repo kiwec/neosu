@@ -736,12 +736,12 @@ bool SDLMain::createWindow() {
         SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "0");
     }
 
-    // initialize window flags and state
-    updateWindowStateCache();
-
     // init dpi
     m_fDisplayScale = SDL_GetWindowDisplayScale(m_window);
     m_fPixelDensity = SDL_GetWindowPixelDensity(m_window);
+
+    // initialize window flags and state
+    updateWindowStateCache();
 
     return true;
 }

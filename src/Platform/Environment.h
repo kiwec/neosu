@@ -202,14 +202,14 @@ class Environment {
     [[nodiscard]] constexpr float getDisplayRefreshRate() const { return m_fDisplayHz; }
     [[nodiscard]] constexpr float getDisplayRefreshTime() const { return m_fDisplayHzSecs; }
 
-    [[nodiscard]] inline vec2 getWindowPos() const { return m_vLastKnownWindowPos; }
-    [[nodiscard]] inline vec2 getWindowSize() const { return m_vLastKnownWindowSize; }
+    [[nodiscard]] constexpr vec2 getWindowPos() const { return m_vLastKnownWindowPos; }
+    [[nodiscard]] constexpr vec2 getWindowSize() const { return m_vLastKnownWindowSize; }
     [[nodiscard]] McRect getWindowRect() const;
 
     [[nodiscard]] int getMonitor() const;
     [[nodiscard]] const std::unordered_map<unsigned int, McRect> &getMonitors() const;
 
-    [[nodiscard]] inline vec2 getNativeScreenSize() const { return m_vLastKnownNativeScreenSize; }
+    [[nodiscard]] constexpr vec2 getNativeScreenSize() const { return m_vLastKnownNativeScreenSize; }
     [[nodiscard]] McRect getDesktopRect() const;
 
     [[nodiscard]] int getDPI() const;
