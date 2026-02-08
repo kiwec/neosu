@@ -210,67 +210,45 @@ Info from_bytes(u8* data, uSz s_data) {
 }
 
 bool load_from_disk(FinishedScore& score, bool update_db) {
-    FILE* replay_file = nullptr;
-    u8* buffer = nullptr;
-    uSz buffer_size = 0;
     bool success = false;
 
-    if(score.peppy_replay_tms > 0) {
-        auto osu_folder = cv::osu_folder.getString();
-        auto path =
-            fmt::format("{:s}/Data/r/{:s}-{:d}.osr", osu_folder, score.beatmap_hash, score.peppy_replay_tms);
+    const bool is_peppy = score.peppy_replay_tms > 0;
+    const auto path = is_peppy
+                          ? fmt::format("{:s}/Data/r/{:s}-{:d}.osr", cv::osu_folder.getString(), score.beatmap_hash,
+                                        score.peppy_replay_tms)
+                          : fmt::format(NEOSU_REPLAYS_PATH "/{:s}/{:d}.replay.lzma", score.server, score.unixTimestamp);
+    do {
+        uSz file_size = 0;
+        std::unique_ptr<u8[]> buffer;
+        {
+            File replay_file(path);
+            if(!replay_file.canRead() || !(file_size = replay_file.getFileSize())) break;
+            buffer = replay_file.takeFileBuffer();
+            if(!buffer) break;
+        }
 
-        replay_file = File::fopen_c(path.c_str(), "rb");
-        if(replay_file == nullptr) goto cleanup;
+        if(is_peppy) {
+            auto info = from_bytes(buffer.get(), file_size);
+            score.replay = info.frames;
+            score.mods = Replay::Mods::from_legacy(info.mod_flags);  // update mods just in case
+        } else {
+            score.replay = get_frames(buffer.get(), file_size);
+        }
 
-        if(fseek(replay_file, 0, SEEK_END) != 0) goto cleanup;
+        if(score.replay.empty()) break;
 
-        long file_size = ftell(replay_file);
-        if(file_size < 0) goto cleanup;
+        success = true;  // FIXME/TODO (?): we're just assuming from_bytes/get_frames will have worked?
 
-        buffer_size = static_cast<uSz>(file_size);
-        if(fseek(replay_file, 0, SEEK_SET) != 0) goto cleanup;
-
-        buffer = new u8[buffer_size];
-        if(fread(buffer, buffer_size, 1, replay_file) != 1) goto cleanup;
-
-        auto info = from_bytes(buffer, buffer_size);
-        score.replay = info.frames;
-        score.mods = Replay::Mods::from_legacy(info.mod_flags);  // update mods just in case
-    } else {
-        auto path = fmt::format(NEOSU_REPLAYS_PATH "/{:s}/{:d}.replay.lzma", score.server, score.unixTimestamp);
-
-        replay_file = File::fopen_c(path.c_str(), "rb");
-        if(replay_file == nullptr) goto cleanup;
-
-        if(fseek(replay_file, 0, SEEK_END) != 0) goto cleanup;
-
-        long file_size = ftell(replay_file);
-        if(file_size < 0) goto cleanup;
-
-        buffer_size = static_cast<uSz>(file_size);
-        if(fseek(replay_file, 0, SEEK_SET) != 0) goto cleanup;
-
-        buffer = new u8[buffer_size];
-        if(fread(buffer, buffer_size, 1, replay_file) != 1) goto cleanup;
-
-        score.replay = get_frames(buffer, buffer_size);
-    }
-
-    if(update_db) {
-        Sync::unique_lock lk(db->scores_mtx);
-        if(const auto& it = db->getScoresMutable().find(score.beatmap_hash); it != db->getScoresMutable().end()) {
-            if(auto scorevecIt = std::ranges::find(it->second, score); scorevecIt != it->second.end()) {
-                scorevecIt->replay = score.replay;
+        if(update_db) {
+            Sync::unique_lock lk(db->scores_mtx);
+            if(const auto& it = db->getScoresMutable().find(score.beatmap_hash); it != db->getScoresMutable().end()) {
+                if(auto scorevecIt = std::ranges::find(it->second, score); scorevecIt != it->second.end()) {
+                    scorevecIt->replay = score.replay;
+                }
             }
         }
-    }
+    } while(false);
 
-    success = true;
-
-cleanup:
-    if(buffer) delete[] buffer;
-    if(replay_file) fclose(replay_file);
     return success;
 }
 
