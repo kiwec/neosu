@@ -159,8 +159,8 @@ MainMenu::MainMenu() : UIScreen() {
     this->bDidUserUpdateFromOlderVersion = false;
     this->bDrawVersionNotificationArrow = false;
     {
-        if(Environment::fileExists(MCENGINE_DATA_DIR "version.txt")) {
-            File versionFile(MCENGINE_DATA_DIR "version.txt");
+        if(Environment::fileExists(NEOSU_DATA_DIR "version.txt")) {
+            File versionFile(NEOSU_DATA_DIR "version.txt");
             std::string linebuf{};
             double version = -1.;
             u64 buildstamp = 0;
@@ -1488,11 +1488,11 @@ void MainMenu::setMenuElementsVisible(bool visible, bool animate) {
 
 void MainMenu::writeVersionFile() {
     // remember, don't show the notification arrow until the version changes again
-    io->write(MCENGINE_DATA_DIR "version.txt",
+    io->write(NEOSU_DATA_DIR "version.txt",
               fmt::format("{}\n{}", cv::version.getString(), cv::build_timestamp.getString()),
               [](bool success) -> void {
                   if(!success) {
-                      debugLog("Warning: failed to write new version to {}", MCENGINE_DATA_DIR "version.txt");
+                      debugLog("Warning: failed to write new version to {}", NEOSU_DATA_DIR "version.txt");
                   }
               });
 }

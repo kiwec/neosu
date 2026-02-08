@@ -273,7 +273,7 @@ Osu::Osu()
     // Init neosu_version after loading config for correct bleedingedge detection
     if(Env::cfg(BUILD::DEBUG)) {
         BanchoState::neosu_version = fmt::format("dev-{}", cv::build_timestamp.getVal<u64>());
-    } else if(osu->isBleedingEdge()) {
+    } else if(this->isBleedingEdge()) {
         BanchoState::neosu_version = fmt::format("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
     } else {
         BanchoState::neosu_version = fmt::format("release-{:.2f}", cv::version.getFloat());
@@ -1251,7 +1251,9 @@ void Osu::saveScreenshot() {
     const f32 innerWidth = this->internalRect.getWidth();
     const f32 innerHeight = this->internalRect.getHeight();
 
-    soundEngine->play(this->skin->s_shutter);
+    if(const auto &skin = this->skin; !!skin) {
+        soundEngine->play(skin->s_shutter);
+    }
     ui->getNotificationOverlay()->addToast(fmt::format("Saved screenshot to {}", screenshotFilename.c_str()),
                                            CHAT_TOAST,
                                            [screenshotFilename] { env->openFileBrowser(screenshotFilename); });
@@ -1441,7 +1443,7 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
     // NOTE: when only changing DPI, "prevUIScale" is already the new UI scale!
     const float prevUIScale = getUIScale();
 
-    const bool resolution_changed = (osu->getSliderFrameBuffer()->getSize() != newResolution);  // HACK
+    const bool resolution_changed = (this->getSliderFrameBuffer()->getSize() != newResolution);  // HACK
     this->internalRect = {vec2{}, newResolution};
 
     // update dpi specific engine globals
