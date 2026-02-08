@@ -1479,6 +1479,10 @@ AM_CONDITIONAL([BUILD_MIMALLOC], [{ test "x$enable_debug" != "xyes" || test "x$w
 
 AM_CONDITIONAL([USE_BASS], [test "$with_bass" = "yes"])
 AM_CONDITIONAL([USE_SOLOUD], [test "$with_soloud" = "yes"])
+AM_CONDITIONAL([USE_GL], [test "$use_opengl" = "yes" || test "$use_opengles32" = "yes"])
+AM_CONDITIONAL([USE_OPENGL], [test "$use_opengl" = "yes"])
+AM_CONDITIONAL([USE_OPENGLES], [test "$use_opengles32" = "yes"])
+AM_CONDITIONAL([USE_DX11], [test "$use_dx11" = "yes"])
 # this just copies some libraries on installation
 AM_CONDITIONAL([USE_DISCORDSDK], [test "$with_discord" = "yes"])
 AM_CONDITIONAL([WIN_PLATFORM], [test "$SYSNAME" = "windows"])

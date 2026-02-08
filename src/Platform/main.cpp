@@ -15,7 +15,9 @@
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_process.h>
 
+#ifdef MCENGINE_PLATFORM_WINDOWS
 #include "CrashHandler.h"
+#endif
 #include "Profiler.h"
 #include "UString.h"
 #include "Thread.h"
@@ -258,7 +260,9 @@ MAIN_FUNC /* int argc, char *argv[] */
         appDesc->handleExistingWindow(argc, argv);
     }
 
-    CrashHandler::init();  // initialize minidump handling
+#ifdef MCENGINE_PLATFORM_WINDOWS
+    CrashHandler::init();
+#endif
 
     // this sets and caches the path in getPathToSelf, so this must be called here
     const auto &selfpath = Environment::getPathToSelf(argv[0]);
