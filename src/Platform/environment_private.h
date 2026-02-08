@@ -42,7 +42,6 @@ class SDLMain final : public Environment {
     void setupLogging();
     void configureEvents();
     float queryDisplayHz();
-    void doEarlyCmdlineOverrides();
 
     // callback handlers
     void fps_max_callback(float newVal);

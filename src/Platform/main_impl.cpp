@@ -141,7 +141,6 @@ void SDLMain::fps_max_background_callback(float newVal) {
 }
 
 SDL_AppResult SDLMain::initialize() {
-    doEarlyCmdlineOverrides();
     setupLogging();
 
     // WASM headless (Node.js): no window, no GL, no events, just engine + app
@@ -918,34 +917,6 @@ void SDLMain::setupLogging() {
     SDL_SetLogOutputFunction(SDLLogCB, nullptr);
 }
 
-#ifdef MCENGINE_PLATFORM_WINDOWS
-#include "WinDebloatDefs.h"
-#include <objbase.h>
-#include "dynutils.h"
-#endif
-
-void SDLMain::doEarlyCmdlineOverrides() {
-#if defined(MCENGINE_PLATFORM_WINDOWS) || (defined(_WIN32) && !defined(__linux__))
-    using namespace dynutils;
-    // disable IME text input if -noime (or if the feature won't be supported)
-#ifdef MCENGINE_FEATURE_IMESUPPORT
-    if(m_mArgMap.contains("-noime"))
-#endif
-    {
-        auto *imm32_handle = load_lib_system("imm32.dll");
-        if(imm32_handle) {
-            auto disable_ime_func = load_func<BOOL WINAPI(DWORD)>(imm32_handle, "ImmDisableIME");
-            if(disable_ime_func) disable_ime_func(-1);
-            unload_lib(imm32_handle);
-        }
-    }
-
-#else
-    // nothing yet
-    return;
-#endif
-}
-
 void SDLMain::shutdown(SDL_AppResult result) {
     if(result == SDL_APP_FAILURE)  // force quit now
         return;
@@ -972,10 +943,12 @@ bool SDLMain::resizeCallback(void *userdata, SDL_Event *event) {
     return false;
 }
 
-#if defined(MCENGINE_PLATFORM_WINDOWS) && !defined(SDL_main_h_)
-extern "C" {
-extern SDL_DECLSPEC void SDLCALL SDL_UnregisterApp(void);
-}
+#if defined(MCENGINE_PLATFORM_WINDOWS)
+#if !defined(SDL_main_h_)
+extern "C" SDL_DECLSPEC void SDLCALL SDL_UnregisterApp(void);
+#endif
+// avoid including windows.h here for 1 function
+extern "C" __declspec(dllimport) char *__stdcall GetCommandLineA(void);
 #endif
 
 void SDLMain::restart(const std::vector<std::string> &args) {
