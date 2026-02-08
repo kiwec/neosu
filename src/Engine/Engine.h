@@ -162,6 +162,7 @@ class Engine final : public KeyboardListener {
     bool bDrawing;
 
     // stdin input for headless mode
+    bool bShouldProcessStdin;
     Sync::jthread stdinThread;
     Sync::mutex stdinMutex;
     std::deque<std::string> stdinQueue;

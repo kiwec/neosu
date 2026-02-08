@@ -85,6 +85,7 @@ Engine::Engine() {
     // custom
     this->bDrawing = false;
     this->bShuttingDown = false;
+    this->bShouldProcessStdin = env->isHeadless() || env->getLaunchArgs().contains("-console");
 
     // initialize all engine subsystems (the order does matter!)
     debugLog("Engine: Initializing subsystems ...");
@@ -139,7 +140,7 @@ Engine::Engine() {
 Engine::~Engine() {
     debugLog("-= Engine Shutdown =-");
 
-    if(env->isHeadless() && this->stdinThread.joinable()) {
+    if(this->bShouldProcessStdin && this->stdinThread.joinable()) {
         // there's no portable way to programmatically unblock a thread std::getline, wtf?
         // this just leaves a zombie thread alive until you send an input/close the terminal...
         // oh well, we're shutting down anyways
@@ -262,7 +263,7 @@ void Engine::loadApp() {
 
         // start stdin reader thread for headless mode
         // on WASM, stdin is polled from the main thread via JS (pthreads can't do blocking stdin reads)
-        if(env->isHeadless() && !Env::cfg(OS::WASM)) {
+        if(this->bShouldProcessStdin && !Env::cfg(OS::WASM)) {
             this->stdinThread = Sync::jthread{stdinReaderThread};
         }
     }
@@ -347,7 +348,7 @@ void Engine::onUpdate() {
     }
 
     // process stdin in headless
-    if(env->isHeadless()) {
+    if(this->bShouldProcessStdin) {
         this->processStdinCommands();
     }
 
