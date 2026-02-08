@@ -1266,6 +1266,11 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     this->addSubSection_("Skin");
     this->addSkinPreview();
     {
+        if constexpr(Env::cfg(OS::WASM)) {
+            this->addLabel_("To import a skin, just drop the .osk file on this window!")->setTextColor(0xff666666);
+            this->addSpacer();
+        }
+
         {
             OptionsElement *skinSelect = this->addButtonLabel_("Select Skin", "default");
             this->skinSelectLocalButton = static_cast<CBaseUIButton *>(skinSelect->baseElems[0].get());
