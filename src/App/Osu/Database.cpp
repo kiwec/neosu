@@ -749,7 +749,6 @@ Database::PlayerStats Database::calculatePlayerStats(const std::string &playerNa
     // "If n is the amount of scores giving more pp than a given score, then the score's weight is 0.95^n"
     // "Total pp = PP[1] * 0.95^0 + PP[2] * 0.95^1 + PP[3] * 0.95^2 + ... + PP[n] * 0.95^(n-1)"
     // also, total accuracy is apparently weighted the same as pp
-
     float pp = 0.0f;
     float acc = 0.0f;
     for(uSz i = 0; i < ps.ppScores.size(); i++) {
@@ -1797,7 +1796,7 @@ void Database::loadMaps() {
     // link each diff's star_ratings pointer to its entry in the star_ratings map
     {
         Sync::shared_lock sr_lock(this->star_ratings_mtx);
-        Sync::shared_lock diff_lock(this->beatmap_difficulties_mtx);
+        Sync::unique_lock diff_lock(this->beatmap_difficulties_mtx);
         for(const auto &[hash, diff] : this->beatmap_difficulties) {
             if(auto it = this->star_ratings.find(hash); it != this->star_ratings.end()) {
                 diff->star_ratings = it->second.get();
