@@ -1445,13 +1445,13 @@ void Database::loadMaps() {
                         this->num_beatmaps_to_load, md5hash);
 
                 bool overrides_found = false;
-                MapOverrides override;
+                MapOverrides override_;
                 {
                     Sync::shared_lock lock(this->peppy_overrides_mtx);
                     auto overrides = this->peppy_overrides.find(md5hash);
                     overrides_found = overrides != this->peppy_overrides.end();
                     if(overrides_found) {
-                        override = overrides->second;
+                        override_ = overrides->second;
                     }
                 }
                 std::string osuFileName = dbr.read_string();
@@ -1528,11 +1528,11 @@ void Database::loadMaps() {
                 BPMInfo bpm;
                 auto nb_timing_points = dbr.read<u32>();
                 if(overrides_found &&
-                   override.min_bpm != -1) {  // only use cached override bpm if it's not the sentinel -1
+                   override_.min_bpm != -1) {  // only use cached override bpm if it's not the sentinel -1
                     dbr.skip_bytes(sizeof(DB_TIMINGPOINT) * nb_timing_points);
-                    bpm.min = override.min_bpm;
-                    bpm.max = override.max_bpm;
-                    bpm.most_common = override.avg_bpm;
+                    bpm.min = override_.min_bpm;
+                    bpm.max = override_.max_bpm;
+                    bpm.most_common = override_.avg_bpm;
                 } else if(nb_timing_points > 0) {
                     timing_points_buffer.resize(nb_timing_points);
                     if(dbr.read_bytes((u8 *)timing_points_buffer.data(), sizeof(DB_TIMINGPOINT) * nb_timing_points) !=
@@ -1703,14 +1703,14 @@ void Database::loadMaps() {
                 if(diffp != nullptr) {  // if we actually added it
                     bool loudness_found = false;
                     if(overrides_found) {
-                        diffp->iLocalOffset = override.local_offset;
-                        diffp->iOnlineOffset = override.online_offset;
-                        diffp->fStarsNomod = override.star_rating;
-                        diffp->ppv2Version = override.ppv2_version;
-                        diffp->loudness = override.loudness;
-                        diffp->draw_background = override.draw_background;
-                        diffp->sBackgroundImageFileName = override.background_image_filename;
-                        if(override.loudness != 0.f) {
+                        diffp->iLocalOffset = override_.local_offset;
+                        diffp->iOnlineOffset = override_.online_offset;
+                        diffp->fStarsNomod = override_.star_rating;
+                        diffp->ppv2Version = override_.ppv2_version;
+                        diffp->loudness = override_.loudness;
+                        diffp->draw_background = override_.draw_background;
+                        diffp->sBackgroundImageFileName = override_.background_image_filename;
+                        if(override_.loudness != 0.f) {
                             loudness_found = true;
                         }
                     } else {
@@ -1923,18 +1923,18 @@ void Database::saveMaps() {
     }
 
     maps.write<u32>(real_overrides.size());
-    for(const auto &[hash, override] : real_overrides) {
+    for(const auto &[hash, override_] : real_overrides) {
         maps.write_hash_digest(hash);
-        maps.write<i16>(override.local_offset);
-        maps.write<i16>(override.online_offset);
-        maps.write<f32>(override.star_rating);
-        maps.write<f32>(override.loudness);
-        maps.write<i32>(override.min_bpm);
-        maps.write<i32>(override.max_bpm);
-        maps.write<i32>(override.avg_bpm);
-        maps.write<u8>(override.draw_background);
-        maps.write_string(override.background_image_filename);
-        maps.write<u32>(override.ppv2_version);
+        maps.write<i16>(override_.local_offset);
+        maps.write<i16>(override_.online_offset);
+        maps.write<f32>(override_.star_rating);
+        maps.write<f32>(override_.loudness);
+        maps.write<i32>(override_.min_bpm);
+        maps.write<i32>(override_.max_bpm);
+        maps.write<i32>(override_.avg_bpm);
+        maps.write<u8>(override_.draw_background);
+        maps.write_string(override_.background_image_filename);
+        maps.write<u32>(override_.ppv2_version);
 
         nb_overrides++;
     }
