@@ -69,6 +69,13 @@ GLAD_EGL_SOURCES := \
 	libraries/glad/glad_egl.cpp \
 	$(NULL)
 endif
+if WIN_PLATFORM
+if !USE_OPENGLES
+GLAD_EGL_SOURCES := \
+	libraries/glad/glad_egl.cpp \
+	$(NULL)
+endif
+endif
 endif
 
 neosu_SOURCES = \

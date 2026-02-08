@@ -57,6 +57,10 @@ cond_sources "if WIN_PLATFORM" "WIN_SOURCES"       src/Platform/Windows
     printf 'if USE_OPENGLES\nGLAD_EGL_SOURCES := \\\n'
     find_sources libraries/glad -maxdepth 1 -name 'glad_egl*'
     printf '\t$(NULL)\nendif\n'
+    printf 'if WIN_PLATFORM\n'
+    printf 'if !USE_OPENGLES\nGLAD_EGL_SOURCES := \\\n'
+    find_sources libraries/glad -maxdepth 1 -name 'glad_egl*'
+    printf '\t$(NULL)\nendif\nendif\n'
     printf 'endif\n'
 } >> "$SOURCES_FILE"
 
