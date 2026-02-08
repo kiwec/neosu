@@ -952,7 +952,7 @@ void MainMenu::draw() {
 void MainMenu::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
-    if(cv::is_bleedingedge.getBool()) {
+    if(osu->isBleedingEdge()) {
         static UString versionString =
             fmt::format("Version {:.2f} ({:s})", cv::version.getFloat(), cv::build_timestamp.getString());
         this->versionButton->setTextColor(rgb(255, 220, 220));

@@ -147,18 +147,6 @@ Osu::Osu()
 
     cvars().setCVSubmittableCheckFunc(Osu::globalOnAreAllCvarsSubmittableCallback);
 
-    if(Env::cfg(BUILD::DEBUG)) {
-        BanchoState::neosu_version = fmt::format("dev-{}", cv::build_timestamp.getVal<u64>());
-    } else if(cv::is_bleedingedge.getBool()) {  // FIXME: isn't this always false here...?
-        BanchoState::neosu_version = fmt::format("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
-    } else {
-        BanchoState::neosu_version = fmt::format("release-{:.2f}", cv::version.getFloat());
-    }
-
-    BanchoState::user_agent = "Mozilla/5.0 (compatible; neosu/";
-    BanchoState::user_agent.append(BanchoState::neosu_version);
-    BanchoState::user_agent.append("; " OS_NAME "; +https://" NEOSU_DOMAIN "/)");
-
     // create cache dir, with migration for old versions
     Environment::createDirectory(env->getCacheDir());
     if(Environment::directoryExists(NEOSU_DATA_DIR "avatars")) {
@@ -281,6 +269,19 @@ Osu::Osu()
     cv::skin_reload.setCallback(SA::MakeDelegate<&Osu::onSkinReload>(this));
     // load skin
     this->onSkinChange(cv::skin.getString());
+
+    // Init neosu_version after loading config for correct bleedingedge detection
+    if(Env::cfg(BUILD::DEBUG)) {
+        BanchoState::neosu_version = fmt::format("dev-{}", cv::build_timestamp.getVal<u64>());
+    } else if(osu->isBleedingEdge()) {
+        BanchoState::neosu_version = fmt::format("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
+    } else {
+        BanchoState::neosu_version = fmt::format("release-{:.2f}", cv::version.getFloat());
+    }
+
+    BanchoState::user_agent = "Mozilla/5.0 (compatible; neosu/";
+    BanchoState::user_agent.append(BanchoState::neosu_version);
+    BanchoState::user_agent.append("; " OS_NAME "; +https://" NEOSU_DOMAIN "/)");
 
     // Convar callbacks that should be set after loading the config
     cv::mod_mafham.setCallback(SA::MakeDelegate<&Osu::rebuildRenderTargets>(this));
@@ -1981,6 +1982,14 @@ bool Osu::getModTD() const { return cv::mod_touchdevice.getBool() || cv::mod_tou
 bool Osu::getModDT() const { return cv::mod_doubletime_dummy.getBool(); }
 bool Osu::getModNC() const { return cv::mod_doubletime_dummy.getBool() && cv::nightcore_enjoyer.getBool(); }
 bool Osu::getModHT() const { return cv::mod_halftime_dummy.getBool(); }
+
+bool Osu::isBleedingEdge() const {
+    if constexpr(Env::cfg(OS::WASM)) {
+        return env->getEnvVariable("IS_BLEEDINGEDGE") == "1";
+    } else {
+        return cv::is_bleedingedge.getBool();
+    }
+}
 
 // part 1 of callback
 void Osu::audioRestartCallbackBefore() {

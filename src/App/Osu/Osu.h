@@ -154,7 +154,9 @@ class Osu final : public App, public MouseListener {
     [[nodiscard]] inline const std::unique_ptr<LiveScore> &getScore() const { return this->score; }
     [[nodiscard]] inline const std::unique_ptr<UpdateHandler> &getUpdateHandler() const { return this->updateHandler; }
     [[nodiscard]] inline const std::unique_ptr<BeatmapInterface> &getMapInterface() const { return this->map_iface; }
-    [[nodiscard]] inline const std::unique_ptr<ThumbnailManager> &getThumbnailManager() const { return this->thumbnailManager; }
+    [[nodiscard]] inline const std::unique_ptr<ThumbnailManager> &getThumbnailManager() const {
+        return this->thumbnailManager;
+    }
 
     [[nodiscard]] inline RenderTarget *getBackBuffer() const { return this->backBuffer; }
     [[nodiscard]] inline RenderTarget *getPlayfieldBuffer() const { return this->playfieldBuffer; }
@@ -194,6 +196,7 @@ class Osu final : public App, public MouseListener {
     [[nodiscard]] bool getModNC() const;
     [[nodiscard]] bool getModHT() const;
 
+    [[nodiscard]] bool isBleedingEdge() const;
     [[nodiscard]] constexpr bool isInPlayMode() const { return this->bIsPlayingASelectedBeatmap; }
     [[nodiscard]] inline bool isSkinLoading() const {
         return this->bSkinLoadScheduled ||
