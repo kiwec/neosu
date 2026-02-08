@@ -865,15 +865,6 @@ void MainMenu::draw() {
         // background_shader->setUniform1f("time", engine->getTime());
         // background_shader->setUniform2f("resolution", osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
-        // Check if we need to update the background
-        auto *currentOsuMap = osu->getMapInterface() ? osu->getMapInterface()->getBeatmap() : nullptr;
-        if(this->mapFadeAnim == 1.f && this->currentMap != currentOsuMap) {
-            this->lastMap = this->currentMap ? this->currentMap : currentOsuMap;  // don't fade from NULL?
-            this->currentMap = currentOsuMap;
-            this->mapFadeAnim = 0.f;
-            anim::moveLinear(&this->mapFadeAnim, 1.f, cv::main_menu_background_fade_duration.getFloat(), true);
-        }
-
         if(this->lastMap && this->lastMap != this->currentMap) {
             this->drawMapBackground(this->lastMap, 1.f - this->mapFadeAnim);
         }
@@ -951,6 +942,17 @@ void MainMenu::draw() {
 
 void MainMenu::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
+
+    if(cv::draw_menu_background.getBool()) {
+        // Check if we need to update the background
+        auto *currentOsuMap = osu->getMapInterface() ? osu->getMapInterface()->getBeatmap() : nullptr;
+        if(this->mapFadeAnim == 1.f && this->currentMap != currentOsuMap) {
+            this->lastMap = this->currentMap ? this->currentMap : currentOsuMap;  // don't fade from NULL?
+            this->currentMap = currentOsuMap;
+            this->mapFadeAnim = 0.f;
+            anim::moveLinear(&this->mapFadeAnim, 1.f, cv::main_menu_background_fade_duration.getFloat(), true);
+        }
+    }
 
     if(osu->isBleedingEdge()) {
         static UString versionString =
