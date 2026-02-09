@@ -24,8 +24,7 @@ class SDLGPUVertexArrayObject final : public VertexArrayObject {
     NOCOPY_NOMOVE(SDLGPUVertexArrayObject)
    public:
     SDLGPUVertexArrayObject(DrawPrimitive primitive = DrawPrimitive::TRIANGLES,
-                            DrawUsageType usage = DrawUsageType::STATIC,
-                            bool keepInSystemMemory = false);
+                            DrawUsageType usage = DrawUsageType::STATIC, bool keepInSystemMemory = false);
     ~SDLGPUVertexArrayObject() override;
 
     void draw() override;

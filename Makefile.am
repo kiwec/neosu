@@ -1320,18 +1320,21 @@ SDLGPU_PACK_SCRIPT := $(srcdir)/build-aux/pack_sdlgpu_shader.py
 SDLGPU_SHADER_DIR := $(builddir)/gen/shaders
 SDLGPU_SHADER_MANIFEST := $(SDLGPU_SHADER_DIR)/sdlgpu_shaders.manifest
 SDLGPU_GLSL_INPUTS := $(wildcard $(srcdir)/$(ASSETS_DIR)/shaders/SDLGPU_*_[vf].glsl)
+SDLGPU_HLSL_INPUTS := $(wildcard $(srcdir)/$(ASSETS_DIR)/shaders/SDLGPU_*_[vf].hlsl)
+SDLGPU_DXC_FLAG := $(if $(DXC),--dxc $(DXC))
 SDLGPU_EMBED_DEPS := $(SDLGPU_SHADER_MANIFEST)
 SDLGPU_EMBED_MANIFEST_FLAG := -F $(SDLGPU_SHADER_MANIFEST)
 
 # the manifest is the natural "stamp". pack_sdlgpu_shader.py always writes it,
 # so its mtime reflects when shaders were last compiled/packed
-$(SDLGPU_SHADER_MANIFEST): $(SDLGPU_GLSL_INPUTS) $(SDLGPU_PACK_SCRIPT)
+$(SDLGPU_SHADER_MANIFEST): $(SDLGPU_GLSL_INPUTS) $(SDLGPU_HLSL_INPUTS) $(SDLGPU_PACK_SCRIPT)
 	$(MKDIR_P) $(SDLGPU_SHADER_DIR)
 	$(PYTHON) $(SDLGPU_PACK_SCRIPT) \
 		--shader-dir $(srcdir)/$(ASSETS_DIR)/shaders \
 		--output-dir $(SDLGPU_SHADER_DIR) \
 		--manifest $(SDLGPU_SHADER_MANIFEST) \
-		--glslc $(GLSLC)
+		--glslc $(GLSLC) \
+		$(SDLGPU_DXC_FLAG)
 
 # individual .shdpk files are side effects of the manifest rule;
 # the depfile lists them, so make needs to know how to "build" them
@@ -1360,7 +1363,7 @@ $(EMBED_OUTPUT): $(EMBED_SCRIPT) $(EMBED_MANIFESTS) $(EMBED_CACERT_DEPS) $(SDLGP
 
 neosu_SOURCES += $(EMBED_OUTPUT)
 CLEANFILES += $(EMBED_OUTPUT) $(builddir)/gen/binary_embed.h $(EMBED_DEPFILE) $(EMBED_CONFIG_STAMP) \
-	$(builddir)/gen/shaders/*.shdpk $(builddir)/gen/shaders/*.spv \
+	$(builddir)/gen/shaders/*.shdpk $(builddir)/gen/shaders/*.spv $(builddir)/gen/shaders/*.dxil \
 	$(builddir)/gen/shaders/sdlgpu_shaders.manifest $(builddir)/gen/shaders/.stamp
 
 #####################################################################################################################################################

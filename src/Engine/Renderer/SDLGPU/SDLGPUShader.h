@@ -93,7 +93,7 @@ class SDLGPUShader final : public Shader {
     };
 
     // access uniform blocks for snapshotting into deferred draw commands
-    const std::vector<UniformBlock> &getUniformBlocks() const { return m_uniformBlocks; }
+    [[nodiscard]] const std::vector<UniformBlock> &getUniformBlocks() const { return m_uniformBlocks; }
 
     // parse a .shdpk shader pack, extracting GLSL source and the best-matching binary for the device
     static bool parseShaderPack(SDL_GPUDevice *device, const u8 *data, size_t dataSize, std::string *glslOut,
@@ -110,7 +110,7 @@ class SDLGPUShader final : public Shader {
     std::string m_sVsh;
     std::string m_sFsh;
 
-    SDL_GPUDevice *m_device{nullptr};  // cached at init for safe destruction
+    SDL_GPUDevice *m_device{nullptr};  // cached at init for dtor order
     SDL_GPUShader *m_gpuVertexShader{nullptr};
     SDL_GPUShader *m_gpuFragmentShader{nullptr};
 

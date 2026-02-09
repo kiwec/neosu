@@ -22,8 +22,7 @@ using SDLGPUSampleCount = u32;
 class SDLGPURenderTarget final : public RenderTarget {
     NOCOPY_NOMOVE(SDLGPURenderTarget)
    public:
-    SDLGPURenderTarget(int x, int y, int width, int height,
-                       MultisampleType multiSampleType = MultisampleType::X0);
+    SDLGPURenderTarget(int x, int y, int width, int height, MultisampleType multiSampleType = MultisampleType::X0);
     ~SDLGPURenderTarget() override { destroy(); }
 
     void draw(int x, int y) override;

@@ -26,6 +26,7 @@
 #include "UString.h"
 #include "VertexArrayObject.h"
 #include "Environment.h"
+#include "SString.h"
 
 #include "binary_embed.h"
 
@@ -61,11 +62,62 @@ SDLGPUInterface::~SDLGPUInterface() {
 }
 
 bool SDLGPUInterface::init() {
+    std::string drivers;
+    {
+        const int numDrivers = SDL_GetNumGPUDrivers();
+        for(int i = 0; i < numDrivers; ++i) {
+            drivers += fmt::format("{} ", SDL_GetGPUDriver(i));
+        }
+        if(!drivers.empty()) {
+            drivers.pop_back();
+        }
+        debugLog("SDLGPUInterface: Available drivers: {}", drivers);
+    }
+
     // create GPU device
-    m_device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, DEBUG_SDLGPU, nullptr);
-    if(!m_device) {
-        debugLog("SDLGPUInterface: Failed to create GPU device: {}", SDL_GetError());
+    // on windows, try D3D12 (DXIL) first, then fall back to vulkan (SPIRV)
+    std::vector<std::pair<std::string, unsigned int>> initOrder{{"D3D12", SDL_GPU_SHADERFORMAT_DXIL},
+                                                                {"Vulkan", SDL_GPU_SHADERFORMAT_SPIRV}};
+    const bool vkAvailable = drivers.contains("vulkan");
+    const bool d3dAvailable = drivers.contains("direct3d12");
+    if(!vkAvailable) {
+        initOrder.pop_back();
+    }
+    if(!d3dAvailable) {
+        initOrder.pop_back();
+    }
+    if(initOrder.empty()) {
+        debugLog("SDLGPUInterface: No compatible drivers available!");
         return false;
+    }
+
+    if constexpr(Env::cfg(OS::WINDOWS)) {
+        if(vkAvailable && d3dAvailable) {
+            auto args = env->getLaunchArgs();
+            std::string argvalLower;
+            if(args["-sdlgpu"].has_value()) {
+                argvalLower = SString::to_lower(args["-sdlgpu"].value());
+            } else if(args["-gpu"].has_value()) {
+                argvalLower = SString::to_lower(args["-gpu"].value());
+            }
+            if(argvalLower.contains("vk") || argvalLower.contains("vulkan")) {
+                initOrder[0].swap(initOrder[1]);
+            }
+        }
+    }
+
+    if(!(m_device = SDL_CreateGPUDevice(initOrder[0].second, DEBUG_SDLGPU, nullptr))) {
+        if(initOrder.size() > 1) {
+            debugLog("SDLGPUInterface: {} unavailable ({}), trying {}...", initOrder[0].first, SDL_GetError(),
+                     initOrder[1].first);
+            if(!(m_device = SDL_CreateGPUDevice(initOrder[1].second, DEBUG_SDLGPU, nullptr))) {
+                debugLog("SDLGPUInterface: Failed to create GPU device: {}", SDL_GetError());
+                return false;
+            }
+        } else {
+            debugLog("SDLGPUInterface: Failed to create GPU device: {}", SDL_GetError());
+            return false;
+        }
     }
 
     debugLog("SDLGPUInterface: GPU driver: {}", SDL_GetGPUDeviceDriver(m_device));
@@ -77,6 +129,16 @@ bool SDLGPUInterface::init() {
     }
 
     m_swapchainFormat = SDL_GetGPUSwapchainTextureFormat(m_device, m_window);
+
+    // cache supported present modes
+    m_bSupportsSDRComposition =
+        SDL_WindowSupportsGPUSwapchainComposition(m_device, m_window, SDL_GPU_SWAPCHAINCOMPOSITION_SDR);
+    if(m_bSupportsSDRComposition) {
+        m_bSupportsImmediate = SDL_WindowSupportsGPUPresentMode(m_device, m_window, SDL_GPU_PRESENTMODE_IMMEDIATE);
+        m_bSupportsMailbox = SDL_WindowSupportsGPUPresentMode(m_device, m_window, SDL_GPU_PRESENTMODE_MAILBOX);
+    } else {
+        debugLog("SDLGPUInterface: swapchain composition not supported: {}", SDL_GetError());
+    }
 
     // create default shader
     {
@@ -1375,19 +1437,29 @@ void SDLGPUInterface::setCulling(bool enabled) {
 
 void SDLGPUInterface::setVSync(bool enabled) {
     m_bVSync = enabled;
-    if(m_device && m_window) {
-        SDL_GPUPresentMode mode = enabled ? SDL_GPU_PRESENTMODE_VSYNC : SDL_GPU_PRESENTMODE_IMMEDIATE;
-        if(!SDL_SetGPUSwapchainParameters(m_device, m_window, SDL_GPU_SWAPCHAINCOMPOSITION_SDR, mode)) {
-            // fall back to mailbox
-            if(!enabled)
-                SDL_SetGPUSwapchainParameters(m_device, m_window, SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
-                                              SDL_GPU_PRESENTMODE_MAILBOX);
-        }
+    if(!m_device || !m_window || !m_bSupportsSDRComposition) return;
+
+    if(enabled) {
+        if(!SDL_SetGPUSwapchainParameters(m_device, m_window, SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
+                                          SDL_GPU_PRESENTMODE_VSYNC))
+            debugLog("SDLGPUInterface: couldn't set vsync present mode: {}", SDL_GetError());
+        return;
+    }
+
+    // prefer immediate, fall back to mailbox
+    if(m_bSupportsImmediate) {
+        if(!SDL_SetGPUSwapchainParameters(m_device, m_window, SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
+                                          SDL_GPU_PRESENTMODE_IMMEDIATE))
+            debugLog("SDLGPUInterface: couldn't set immediate present mode: {}", SDL_GetError());
+    } else if(m_bSupportsMailbox) {
+        if(!SDL_SetGPUSwapchainParameters(m_device, m_window, SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
+                                          SDL_GPU_PRESENTMODE_MAILBOX))
+            debugLog("SDLGPUInterface: couldn't set mailbox present mode: {}", SDL_GetError());
     }
 }
 
 void SDLGPUInterface::setAntialiasing(bool /*enabled*/) {
-    // no-op: SDL_GPU has no equivalent of GL_MULTISAMPLE toggle;
+    // not sure how to implement this exactly, but
     // MSAA is active whenever pipeline+target sample counts match and are >1
 }
 
@@ -1473,31 +1545,6 @@ std::vector<u8> SDLGPUInterface::getScreenshot(bool withAlpha) {
     return result;
 }
 
-void SDLGPUInterface::bindCurrentDrawState() {
-    if(!m_renderPass || !m_cmdBuf) return;
-
-    rebuildPipeline();
-    if(m_currentPipeline) SDL_BindGPUGraphicsPipeline(m_renderPass, m_currentPipeline);
-    if(m_iStencilState > 0) SDL_SetGPUStencilReference(m_renderPass, m_iStencilState == 1 ? 1 : 0);
-
-    // push uniforms via active shader (default or custom)
-    m_activeShader->setUniformMatrix4fv("mvp", this->MP);
-    m_activeShader->pushUniforms(m_cmdBuf);
-
-    // always bind fragment sampler (SDL_gpu requires all declared bindings to be satisfied)
-    {
-        SDL_GPUTextureSamplerBinding texBinding{};
-        if(m_boundTexture && m_boundSampler) {
-            texBinding.texture = m_boundTexture;
-            texBinding.sampler = m_boundSampler;
-        } else {
-            texBinding.texture = m_dummyTexture;
-            texBinding.sampler = m_dummySampler;
-        }
-        SDL_BindGPUFragmentSamplers(m_renderPass, 0, &texBinding, 1);
-    }
-}
-
 // render target support
 
 void SDLGPUInterface::pushRenderTarget(SDL_GPUTexture *colorTex, SDL_GPUTexture *depthTex,
@@ -1550,7 +1597,7 @@ void SDLGPUInterface::popRenderTarget() {
     m_nextClearColor = prev.clearColor;
 }
 
-// renderer info
+// renderer info (TODO: how?)
 
 const char *SDLGPUInterface::getName() const { return "SDLGPUInterface"; }
 

@@ -163,6 +163,14 @@ AC_DEFUN([AC_PROG_GLSLC], [
     fi
 ])
 
+# needed for compiling HLSL shaders to DXIL (Windows/D3D12 only)
+AC_DEFUN([AC_PROG_DXC], [
+    AC_CHECK_PROG([DXC], [dxc], [dxc])
+    if test -z "$DXC"; then
+        AC_MSG_ERROR([dxc not found - required for compiling HLSL to DXIL])
+    fi
+])
+
 # needed for dep resolver
 #AC_PROG_WGET
 AC_PROG_CURLBIN
@@ -385,6 +393,10 @@ AS_IF([test "x$use_sdlgpu" = "xyes" ], [
     AC_PROG_GLSLC
     AS_IF([test "x$use_sdlgpu" = "xyes" && test -z "$GLSLC"], [
         AC_MSG_ERROR([glslc not found - required for compiling GLSL to SPIR-V])
+    ])
+
+    AS_IF([test "$host_os" = "mingw32"], [
+        AC_PROG_DXC
     ])
 
     use_sdlgpu=yes

@@ -214,17 +214,13 @@ void SDLGPUShader::writeUniform(std::string_view name, const void *data, u32 dat
     m_uniformBlocks[bi].dirty = true;
 }
 
-void SDLGPUShader::setUniform1f(std::string_view name, float value) {
-    writeUniform(name, &value, sizeof(float));
-}
+void SDLGPUShader::setUniform1f(std::string_view name, float value) { writeUniform(name, &value, sizeof(float)); }
 
 void SDLGPUShader::setUniform1fv(std::string_view name, int count, const float *const values) {
     writeUniform(name, values, (u32)(sizeof(float) * count));
 }
 
-void SDLGPUShader::setUniform1i(std::string_view name, int value) {
-    writeUniform(name, &value, sizeof(int));
-}
+void SDLGPUShader::setUniform1i(std::string_view name, int value) { writeUniform(name, &value, sizeof(int)); }
 
 void SDLGPUShader::setUniform2f(std::string_view name, float x, float y) {
     float v[2] = {x, y};
@@ -260,7 +256,7 @@ void SDLGPUShader::setUniformMatrix4fv(std::string_view name, const float *const
 // shader pack parsing
 
 bool SDLGPUShader::parseShaderPack(SDL_GPUDevice *device, const u8 *data, size_t dataSize, std::string *glslOut,
-                                    std::vector<u8> &binaryOut, SDL_GPUShaderFormat &formatOut) {
+                                   std::vector<u8> &binaryOut, SDL_GPUShaderFormat &formatOut) {
     if(dataSize < 12 || std::memcmp(data, "SGSH", 4) != 0) return false;
 
     u32 version;

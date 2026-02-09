@@ -196,9 +196,6 @@ class SDLGPUInterface final : public Graphics {
                           SDLGPUSampleCount sampleCount = 0);
     void popRenderTarget();
 
-    // bind current draw state (pipeline, uniforms, textures) onto active render pass
-    void bindCurrentDrawState();
-
     // record a baked VAO draw into the deferred command list
     void recordBakedDraw(SDL_GPUBuffer *buffer, u32 firstVertex, u32 vertexCount, DrawPrimitive primitive);
 
@@ -317,6 +314,11 @@ class SDLGPUInterface final : public Graphics {
     bool m_bTexturingEnabled{false};
     bool m_bColorInversion{false};
     bool m_bVSync{false};
+
+    // cached present mode support (queried once at init)
+    bool m_bSupportsSDRComposition{false};
+    bool m_bSupportsImmediate{false};
+    bool m_bSupportsMailbox{false};
 
     // 1x1 white dummy texture+sampler (bound when texturing is disabled)
     SDL_GPUTexture *m_dummyTexture{nullptr};

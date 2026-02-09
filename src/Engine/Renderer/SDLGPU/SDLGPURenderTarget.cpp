@@ -31,11 +31,19 @@ void SDLGPURenderTarget::init() {
 
     // map MultisampleType to SDL_GPUSampleCount
     switch(this->getMultiSampleType()) {
-        case MultisampleType::X2:  m_sampleCount = SDL_GPU_SAMPLECOUNT_2; break;
-        case MultisampleType::X4:  m_sampleCount = SDL_GPU_SAMPLECOUNT_4; break;
-        case MultisampleType::X8:  m_sampleCount = SDL_GPU_SAMPLECOUNT_8; break;
-        case MultisampleType::X16: m_sampleCount = SDL_GPU_SAMPLECOUNT_8; break;  // clamp to 8
-        default:                   m_sampleCount = SDL_GPU_SAMPLECOUNT_1; break;
+        case MultisampleType::X2:
+            m_sampleCount = SDL_GPU_SAMPLECOUNT_2;
+            break;
+        case MultisampleType::X4:
+            m_sampleCount = SDL_GPU_SAMPLECOUNT_4;
+            break;
+        case MultisampleType::X8:
+        case MultisampleType::X16:
+            m_sampleCount = SDL_GPU_SAMPLECOUNT_8;
+            break;  // clamp to 8
+        default:
+            m_sampleCount = SDL_GPU_SAMPLECOUNT_1;
+            break;
     }
 
     // create color texture (resolve target when MSAA, or direct render target when not)
@@ -214,8 +222,8 @@ void SDLGPURenderTarget::enable() {
     SDL_GPUTexture *renderTex = m_msaaTexture ? m_msaaTexture : m_colorTexture;
     SDL_GPUTexture *resolveTex = m_msaaTexture ? m_colorTexture : nullptr;
 
-    gpu->pushRenderTarget(renderTex, m_depthTexture, SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-                          this->bClearColorOnDraw, clearCol, resolveTex, m_sampleCount);
+    gpu->pushRenderTarget(renderTex, m_depthTexture, SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, this->bClearColorOnDraw,
+                          clearCol, resolveTex, m_sampleCount);
 }
 
 void SDLGPURenderTarget::disable() {

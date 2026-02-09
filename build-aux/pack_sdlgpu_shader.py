@@ -7,7 +7,7 @@
 # file compatible with gen_binary_embed.py.
 #
 # Usage:
-#   pack_sdlgpu_shader.py --shader-dir <dir> --output-dir <dir> --manifest <file> [--glslc <path>]
+#   pack_sdlgpu_shader.py --shader-dir <dir> --output-dir <dir> --manifest <file> [--glslc <path>] [--dxc <path>]
 #
 # .shdpk format:
 #   [4B] magic "SGSH"
@@ -57,6 +57,19 @@ def write_shdpk(output_path, sections):
             f.write(data)
 
 
+def compile_hlsl(dxc, hlsl_path, dxil_path, stage):
+    """Compile an HLSL file to DXIL. Returns True on success."""
+    profile = 'vs_6_0' if stage == 'v' else 'ps_6_0'
+    os.makedirs(os.path.dirname(dxil_path) or '.', exist_ok=True)
+    cmd = [dxc, '-T', profile, '-E', 'main', '-Fo', dxil_path, hlsl_path]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f'dxc failed for {hlsl_path}:', file=sys.stderr)
+        print(result.stderr, file=sys.stderr)
+        return False
+    return True
+
+
 def compile_glsl(glslc, glsl_path, spv_path, stage):
     """Compile a GLSL file to SPIR-V. Returns True on success."""
     stage_flag = 'vert' if stage == 'v' else 'frag'
@@ -88,6 +101,7 @@ def main():
     parser.add_argument('--output-dir', required=True, help='Output directory for .spv and .shdpk files')
     parser.add_argument('--manifest', required=True, help='Output manifest file for gen_binary_embed.py')
     parser.add_argument('--glslc', default="glslc", help='Path to glslc')
+    parser.add_argument('--dxc', default=None, help='Path to dxc (optional, for HLSL->DXIL)')
     args = parser.parse_args()
 
     shaders = find_shaders(args.shader_dir)
@@ -115,7 +129,21 @@ def main():
         with open(spv_path, 'rb') as f:
             spv_data = f.read()
 
-        write_shdpk(shdpk_path, [(FMT_GLSL, glsl_data), (FMT_SPIRV, spv_data)])
+        sections = [(FMT_GLSL, glsl_data), (FMT_SPIRV, spv_data)]
+
+        # optionally compile matching HLSL -> DXIL
+        if args.dxc:
+            hlsl_path = os.path.join(os.path.dirname(glsl_path), f'SDLGPU_{name}_{stage}.hlsl')
+            if os.path.exists(hlsl_path):
+                dxil_path = os.path.join(args.output_dir, f'SDLGPU_{name}_{stage}.dxil')
+                if not compile_hlsl(args.dxc, hlsl_path, dxil_path, stage):
+                    ok = False
+                    continue
+                with open(dxil_path, 'rb') as f:
+                    dxil_data = f.read()
+                sections.append((FMT_DXIL, dxil_data))
+
+        write_shdpk(shdpk_path, sections)
 
         manifest_lines.append(f'{symbol} : {shdpk_path}')
 
