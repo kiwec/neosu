@@ -1651,7 +1651,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
         // because fuck you
         const i32 offset = (i32)cv::slider_end_inside_check_offset.getInt();
         const i32 lenienceHackEndTime =
-            std::max(this->getEndTime() / 2, (this->getEndTime()) - offset);
+            std::max(this->click_time + this->duration / 2, (this->getEndTime()) - offset);
         const bool isTrackingCorrectly =
             (this->isClickHeldSlider() || (flags::has<ModFlags::Relax>(curIFaceMods))) && this->bCursorInside;
         if(isTrackingCorrectly) {
