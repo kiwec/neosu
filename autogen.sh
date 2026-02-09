@@ -43,6 +43,7 @@ cond_sources "if USE_GL"       "GL_SHARED_SOURCES" src/Engine/Renderer/OpenGL -m
 cond_sources "if USE_OPENGL"   "GL_CORE_SOURCES"   src/Engine/Renderer/OpenGL/Core
 cond_sources "if USE_OPENGLES" "GLES_SOURCES"      src/Engine/Renderer/OpenGL/ES
 cond_sources "if USE_DX11"     "DX11_SOURCES"      src/Engine/Renderer/DirectX11
+cond_sources "if USE_SDLGPU"   "SDLGPU_SOURCES"    src/Engine/Renderer/SDLGPU
 cond_sources "if USE_SOLOUD"   "SOLOUD_SOURCES"    src/Engine/Sound/SoLoud
 cond_sources "if USE_BASS"     "BASS_SOURCES"      src/Engine/Sound/BASS
 cond_sources "if WIN_PLATFORM" "WIN_SOURCES"       src/Platform/Windows
@@ -58,7 +59,7 @@ cond_sources "if WIN_PLATFORM" "WIN_SOURCES"       src/Platform/Windows
     find_sources libraries/glad -maxdepth 1 -name 'glad_egl*'
     printf '\t$(NULL)\nendif\n'
     printf 'if WIN_PLATFORM\n'
-    printf 'if !USE_OPENGLES\nGLAD_EGL_SOURCES := \\\n'
+    printf 'if USE_OPENGL\nGLAD_EGL_SOURCES := \\\n'
     find_sources libraries/glad -maxdepth 1 -name 'glad_egl*'
     printf '\t$(NULL)\nendif\nendif\n'
     printf 'endif\n'
@@ -70,6 +71,7 @@ cond_sources "if WIN_PLATFORM" "WIN_SOURCES"       src/Platform/Windows
 
     find_sources src libraries \
         -not -path 'src/Engine/Renderer/DirectX11/*' \
+        -not -path 'src/Engine/Renderer/SDLGPU/*' \
         -not -path 'src/Engine/Renderer/OpenGL/*' \
         -not -path 'src/Engine/Sound/BASS/*' \
         -not -path 'src/Engine/Sound/SoLoud/*' \
@@ -81,6 +83,7 @@ cond_sources "if WIN_PLATFORM" "WIN_SOURCES"       src/Platform/Windows
 	$(GL_CORE_SOURCES) \
 	$(GLES_SOURCES) \
 	$(DX11_SOURCES) \
+	$(SDLGPU_SOURCES) \
 	$(GLAD_GL_SOURCES) \
 	$(GLAD_EGL_SOURCES) \
 	$(SOLOUD_SOURCES) \

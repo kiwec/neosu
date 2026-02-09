@@ -61,7 +61,7 @@ class MainMenu final : public UIScreen, public MouseListener {
     friend class MainButton;
     float button_sound_cooldown{0.f};
 
-    void drawBanner();
+    void drawTestBanner();
     void drawVersionInfo();
     void drawMainButton();
     void drawLogoImage(const McRect &mainButtonRect);

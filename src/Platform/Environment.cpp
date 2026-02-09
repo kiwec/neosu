@@ -19,6 +19,10 @@
 #include "DirectX11Interface.h"
 #endif
 
+#if defined(MCENGINE_FEATURE_SDLGPU)
+#include "SDLGPUInterface.h"
+#endif
+
 #ifdef MCENGINE_PLATFORM_WASM
 #include "NullGraphics.h"
 #endif
@@ -129,10 +133,30 @@ Environment::Environment(const Mc::AppDescriptor &appDesc,
 
     // use directx if:
     // we we built with support for it, and
-    // (either OpenGL(ES) is missing, or
+    // (either OpenGL(ES) + SDLGPU is missing, or
     // (-directx or -dx11 are specified on the command line))
-    m_bUsingDX11 = Env::cfg(REND::DX11) && (!Env::cfg(REND::GL | REND::GLES32) ||
-                                            (m_mArgMap.contains("-directx") || m_mArgMap.contains("-dx11")));
+    // use SDLGPU if:
+    // we we built with support for it, and
+    // (either OpenGL(ES) + DX11 is missing, or
+    // (-sdlgpu or -gpu are specified on the command line))
+    // otherwise, use whichever of GLES32/GL are available
+    {
+        using enum RuntimeRenderer;
+        // clang-format off
+        m_renderer = 
+            (Env::cfg(REND::DX11) &&
+                (!(Env::cfg(REND::GL | REND::GLES32 | REND::SDLGPU)) ||
+                  (m_mArgMap.contains("-directx") || m_mArgMap.contains("-dx11"))))
+            ? DX11
+        : (Env::cfg(REND::SDLGPU) && 
+                (!(Env::cfg(REND::GL | REND::GLES32 | REND::DX11)) ||
+                  (m_mArgMap.contains("-sdlgpu") || m_mArgMap.contains("-gpu"))))
+            ? SDLGPU
+        : Env::cfg(REND::GLES32) 
+            ? GLES
+        : GL;
+        // clang-format on
+    }
 
     // setup callbacks
     cv::debug_env.setCallback(SA::MakeDelegate<&Environment::onLogLevelChange>(this));
@@ -172,8 +196,12 @@ Graphics *Environment::createRenderer() {
     if(m_bHeadless) return new NullGraphics();
 #endif
 #ifdef MCENGINE_FEATURE_DIRECTX11
-    if(m_bUsingDX11)  // only if specified on the command line, for now
+    if(usingDX11())  // only if specified on the command line, for now
         return new DirectX11Interface(Env::cfg(OS::WINDOWS) ? getHwnd() : reinterpret_cast<HWND>(m_window));
+#endif
+#ifdef MCENGINE_FEATURE_SDLGPU
+    if(usingSDLGPU())
+        return new SDLGPUInterface(m_window);
 #endif
 #if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
     // need to load stuff dynamically before the base class constructors

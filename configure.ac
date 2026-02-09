@@ -213,7 +213,7 @@ AC_ARG_ENABLE([redistributable],
     AS_HELP_STRING([--enable-redistributable], [Don't bundle any non-redistributable content (currently only relevant for WASM, skips bundling beatmaps, default: yes)]))
 
 AC_ARG_WITH([renderer],
-    AS_HELP_STRING([--with-renderer={opengl,dx11,opengles}], [The (comma separated list of) renderer backend(s) to build with (default: opengl)]))
+    AS_HELP_STRING([--with-renderer={opengl,dx11,opengles,sdlgpu}], [The (comma separated list of) renderer backend(s) to build with (default: opengl)]))
 
 AC_ARG_WITH([audio],
     AS_HELP_STRING([--with-audio={bass,soloud}], [The (comma separated list of) audio backend(s) to build with (default: soloud)]))
@@ -318,6 +318,7 @@ use_opengl_default=yes # ugly
 use_opengl=unset
 use_opengles32=unset
 use_dx11=unset
+use_sdlgpu=unset
 
 AS_VAR_SET_IF([with_renderer],
     [ac_save_IFS=$IFS
@@ -332,10 +333,12 @@ AS_VAR_SET_IF([with_renderer],
             opengles*) use_opengles32=yes ;;
             dx11) use_dx11=yes ;;
             directx*) use_dx11=yes ;;
+            *sdl*) use_sdlgpu=yes ;;
+            *gpu*) use_sdlgpu=yes ;;
             esac
         done])
 
-AS_IF([test "x$use_dx11" = "xyes" || test "x$use_opengles32" = "xyes"], [
+AS_IF([test "x$use_dx11" = "xyes" || test "x$use_opengles32" = "xyes" || test "x$use_sdlgpu" = "xyes"], [
     use_opengl_default=no
     AS_IF([test "x$use_opengles32" = "xyes"], [
         # can't combine GL and GL ES
@@ -370,6 +373,14 @@ AS_IF([test "x$use_dx11" = "xyes" ], [
     use_dx11=no
 ])
 
+AS_IF([test "x$use_sdlgpu" = "xyes" ], [
+    use_sdlgpu=yes
+    AC_DEFINE([MCENGINE_FEATURE_SDLGPU], [1], [Defined if the SDL_gpu backend is to be used.])
+    rendbackendlist="$rendbackendlist sdlgpu"
+], [
+    use_sdlgpu=no
+])
+
 # build the list of binary embed manifests based on renderer selection
 EMBED_MANIFESTS="\$(srcdir)/\$(ASSETS_DIR)/binary/misc_embed.manifest"
 AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
@@ -377,6 +388,10 @@ AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
 ])
 AS_IF([test "x$use_dx11" = "xyes"], [
     EMBED_MANIFESTS="$EMBED_MANIFESTS \$(srcdir)/\$(ASSETS_DIR)/binary/dx_shaders_embed.manifest"
+])
+AS_IF([test "x$use_sdlgpu" = "xyes"], [
+    # TODO: precompile shaders (this file is currently empty)
+    EMBED_MANIFESTS="$EMBED_MANIFESTS \$(srcdir)/\$(ASSETS_DIR)/binary/sdlgpu_shaders_embed.manifest"
 ])
 AC_SUBST([EMBED_MANIFESTS])
 
@@ -1187,6 +1202,8 @@ AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
     ])
 ])
 
+# TODO: check for glslc for vulkan and dxc for d3d12 for compiling shaders
+
 AS_IF([test "x$use_dx11" = "xyes"], [
     AS_IF([test "$SYSNAME" = "linux"], [
         PKG_CHECK_AUTO([DXGI], [dxvk-dxgi], [have_dxgi=yes], [have_dxgi=no])
@@ -1483,6 +1500,7 @@ AM_CONDITIONAL([USE_GL], [test "$use_opengl" = "yes" || test "$use_opengles32" =
 AM_CONDITIONAL([USE_OPENGL], [test "$use_opengl" = "yes"])
 AM_CONDITIONAL([USE_OPENGLES], [test "$use_opengles32" = "yes"])
 AM_CONDITIONAL([USE_DX11], [test "$use_dx11" = "yes"])
+AM_CONDITIONAL([USE_SDLGPU], [test "$use_sdlgpu" = "yes"])
 # this just copies some libraries on installation
 AM_CONDITIONAL([USE_DISCORDSDK], [test "$with_discord" = "yes"])
 AM_CONDITIONAL([WIN_PLATFORM], [test "$SYSNAME" = "windows"])

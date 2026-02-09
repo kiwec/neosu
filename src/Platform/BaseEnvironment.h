@@ -38,6 +38,7 @@ enum class REND : uint8_t {
     GL = 1 << 0,
     GLES32 = 1 << 1,
     DX11 = 1 << 2,
+    SDLGPU = 1 << 3,
     NONE = 0,
 };
 
@@ -128,7 +129,11 @@ consteval REND getRenderers() {
 #ifdef MCENGINE_FEATURE_DIRECTX11
         REND::DX11 |
 #endif
-#if !(defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32) || defined(MCENGINE_FEATURE_DIRECTX11))
+#ifdef MCENGINE_FEATURE_SDLGPU
+        REND::SDLGPU |
+#endif
+#if !(defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32) || defined(MCENGINE_FEATURE_DIRECTX11) || \
+      defined(MCENGINE_FEATURE_SDLGPU))
 #error "No renderer is defined! Check the build configuration, or \"config.h\"."
 #endif
         REND::NONE;

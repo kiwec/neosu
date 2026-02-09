@@ -1854,7 +1854,7 @@ void BeatmapInterface::drawFlashlight(FLType type) {
         this->flashlight_shader->setUniform1f("max_opacity", opacity);
         this->flashlight_shader->setUniform1f("flashlight_radius", fl_radius);
 
-        if(env->usingDX11()) {  // don't flip Y position for DX11
+        if(!env->usingGL()) {  // don't flip Y position for DX11
             this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
         } else {
             this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
@@ -1883,7 +1883,7 @@ void BeatmapInterface::drawFlashlight(FLType type) {
         this->actual_flashlight_shader->setUniform1f("max_opacity", opacity);
         this->actual_flashlight_shader->setUniform1f("flashlight_radius", anti_fl_radius);
 
-        if(env->usingDX11()) {  // don't flip Y position for DX11
+        if(!env->usingGL()) {  // don't flip Y position for DX11
             this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
         } else {
             this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,

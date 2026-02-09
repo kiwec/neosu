@@ -824,8 +824,9 @@ void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
     bgih->draw(bgih->getLoadBackgroundImage(beatmap, true), alpha);
 }
 
-void MainMenu::drawBanner() {
-    UString bannerText = "---- DirectX11 Test ----";
+void MainMenu::drawTestBanner() {
+    if(!env->usingDX11() && !env->usingSDLGPU()) return;
+    static const UString bannerText = env->usingDX11() ? "---- DirectX11 Test ----" : "---- SDL_gpu Test ----";
 
     McFont *bannerFont = osu->getSubTitleFont();
     float bannerStringWidth = bannerFont->getStringWidth(bannerText);
@@ -875,10 +876,8 @@ void MainMenu::draw() {
         // background_shader->disable();
     }
 
-    // draw dx11 test banner
-    if(env->usingDX11()) {
-        this->drawBanner();
-    }
+    // draw test banner
+    this->drawTestBanner();
 
     // draw notification arrow for changelog (version button)
     if(this->bDrawVersionNotificationArrow) {

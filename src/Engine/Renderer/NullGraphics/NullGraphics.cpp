@@ -2,68 +2,13 @@
 // dummy graphics backend for headless mode (no rendering)
 #include "NullGraphics.h"
 
+#include "NullImage.h"
+#include "NullRenderTarget.h"
+#include "NullShader.h"
+#include "NullVertexArrayObject.h"
+
 #include "Font.h"
 #include "UString.h"
-
-// image that does CPU-side pixel loading but never uploads to GPU
-NullImage::NullImage(std::string filepath, bool mipmapped, bool keepInSystemMemory)
-    : Image(std::move(filepath), mipmapped, keepInSystemMemory) {}
-NullImage::NullImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory)
-    : Image(width, height, mipmapped, keepInSystemMemory) {}
-
-void NullImage::bind(unsigned int /*textureUnit*/) const {}
-void NullImage::unbind() const {}
-
-void NullImage::init() {
-    if(!this->isAsyncReady()) return;
-    if(!this->bKeepInSystemMemory) this->rawImage.clear();
-    this->setReady(true);
-}
-void NullImage::initAsync() {
-    if(!this->bCreatedImage)
-        this->setAsyncReady(loadRawImage());
-    else
-        this->setAsyncReady(true);
-}
-void NullImage::destroy() {
-    if(!this->bKeepInSystemMemory) this->rawImage.clear();
-}
-
-NullShader::NullShader() : Shader() {}
-
-void NullShader::enable() {}
-void NullShader::disable() {}
-void NullShader::setUniform1f(std::string_view /*name*/, float /*value*/) {}
-void NullShader::setUniform1fv(std::string_view /*name*/, int /*count*/, const float *const /*values*/) {}
-void NullShader::setUniform1i(std::string_view /*name*/, int /*value*/) {}
-void NullShader::setUniform2f(std::string_view /*name*/, float /*x*/, float /*y*/) {}
-void NullShader::setUniform2fv(std::string_view /*name*/, int /*count*/, const float *const /*vectors*/) {}
-void NullShader::setUniform3f(std::string_view /*name*/, float /*x*/, float /*y*/, float /*z*/) {}
-void NullShader::setUniform3fv(std::string_view /*name*/, int /*count*/, const float *const /*vectors*/) {}
-void NullShader::setUniform4f(std::string_view /*name*/, float /*x*/, float /*y*/, float /*z*/, float /*w*/) {}
-void NullShader::setUniformMatrix4fv(std::string_view /*name*/, const Matrix4 & /*matrix*/) {}
-void NullShader::setUniformMatrix4fv(std::string_view /*name*/, const float *const /*v*/) {}
-
-void NullShader::init() { this->setReady(true); }
-void NullShader::initAsync() { this->setAsyncReady(true); }
-void NullShader::destroy() {}
-
-NullRenderTarget::NullRenderTarget(int x, int y, int width, int height, MultisampleType multiSampleType)
-    : RenderTarget(x, y, width, height, multiSampleType) {}
-
-void NullRenderTarget::enable() {}
-void NullRenderTarget::disable() {}
-void NullRenderTarget::bind(unsigned int /*textureUnit*/) {}
-void NullRenderTarget::unbind() {}
-
-void NullRenderTarget::init() { this->setReady(true); }
-void NullRenderTarget::initAsync() { this->setAsyncReady(true); }
-void NullRenderTarget::destroy() {}
-
-NullVertexArrayObject::NullVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage, bool keepInSystemMemory)
-    : VertexArrayObject(primitive, usage, keepInSystemMemory) {}
-
-void NullVertexArrayObject::draw() {}
 
 // scene
 void NullGraphics::beginScene() {}
