@@ -155,6 +155,14 @@ AC_DEFUN([AC_PROG_NASM], [
     fi
 ])
 
+# needed for building SPIR-V shaders (if building it is required)
+AC_DEFUN([AC_PROG_GLSLC], [
+    AC_CHECK_PROG([GLSLC], [glslc], [glslc])
+    if test -z "$GLSLC"; then
+        AC_MSG_ERROR([glslc not found - required for compiling GLSL shaders to SPIR-V])
+    fi
+])
+
 # needed for dep resolver
 #AC_PROG_WGET
 AC_PROG_CURLBIN
@@ -374,6 +382,11 @@ AS_IF([test "x$use_dx11" = "xyes" ], [
 ])
 
 AS_IF([test "x$use_sdlgpu" = "xyes" ], [
+    AC_PROG_GLSLC
+    AS_IF([test "x$use_sdlgpu" = "xyes" && test -z "$GLSLC"], [
+        AC_MSG_ERROR([glslc not found - required for compiling GLSL to SPIR-V])
+    ])
+
     use_sdlgpu=yes
     AC_DEFINE([MCENGINE_FEATURE_SDLGPU], [1], [Defined if the SDL_gpu backend is to be used.])
     rendbackendlist="$rendbackendlist sdlgpu"
@@ -389,10 +402,9 @@ AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
 AS_IF([test "x$use_dx11" = "xyes"], [
     EMBED_MANIFESTS="$EMBED_MANIFESTS \$(srcdir)/\$(ASSETS_DIR)/binary/dx_shaders_embed.manifest"
 ])
-AS_IF([test "x$use_sdlgpu" = "xyes"], [
-    # TODO: precompile shaders (this file is currently empty)
-    EMBED_MANIFESTS="$EMBED_MANIFESTS \$(srcdir)/\$(ASSETS_DIR)/binary/sdlgpu_shaders_embed.manifest"
-])
+
+# SDL_gpu shader packs are compiled and embedded via pack_sdlgpu_shader.py,
+# not through a static manifest (see Makefile.am).
 AC_SUBST([EMBED_MANIFESTS])
 
 AUDBACKENDLIST=""
@@ -1201,8 +1213,6 @@ AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
         have_egl="not required"
     ])
 ])
-
-# TODO: check for glslc for vulkan and dxc for d3d12 for compiling shaders
 
 AS_IF([test "x$use_dx11" = "xyes"], [
     AS_IF([test "$SYSNAME" = "linux"], [

@@ -6,6 +6,46 @@
 #include "Camera.h"
 #include "ConVar.h"
 #include "Engine.h"
+#include "Environment.h"
+#include "Image.h"
+#include "Logging.h"
+
+void Graphics::takeScreenshot(ScreenshotParams params) { this->pendingScreenshots.push_back(std::move(params)); }
+
+void Graphics::processPendingScreenshot() {
+    if(this->pendingScreenshots.empty()) return;
+
+    for(auto &screenshot : this->pendingScreenshots) {
+        auto &savePath = screenshot.savePath;
+        auto &callback = screenshot.dataCB;
+
+        if(savePath.empty() && !callback) {
+            static i32 num = 0;
+            Environment::createDirectory("screenshots");
+            while(Environment::fileExists(fmt::format("screenshots/test_screenshot{}.png", num))) num++;
+            savePath = fmt::format("screenshots/test_screenshot{}.png", num);
+        }
+
+        std::vector<u8> pixels = this->getScreenshot(screenshot.withAlpha);
+        if(pixels.empty()) {
+            if(callback) {
+                callback({});
+            } else {
+                debugLog("failed to get pixel data (tried to save to {})", savePath);
+            }
+            continue;
+        }
+
+        if(callback) {
+            callback(std::move(pixels));
+        } else {
+            const auto res = this->getResolution();
+            Image::saveToImage(pixels.data(), (i32)res.x, (i32)res.y, 3, savePath);
+            debugLog("saved to {}", savePath);
+        }
+    }
+    this->pendingScreenshots.clear();
+}
 
 Graphics::Graphics() {
     // init matrix stacks

@@ -14,8 +14,9 @@
 # A header file (<output_stem>.h) is always generated alongside the source file,
 # containing extern "C" declarations and an inline size function for each symbol.
 #
-# Manifest format (-f):
+# Manifest format (-f / -F):
 #   Lines of "symbol:filepath", blank lines and #-comments are ignored.
+#   -f manifests have --base-dir prepended to paths; -F manifests don't.
 
 import sys
 import os
@@ -24,9 +25,12 @@ import argparse
 TYPES = ('asm-inline', 'nasm', 'cppembed')
 
 
-def parse_entries(args_entries, manifest_files, base_dir):
+def parse_entries(args_entries, manifest_files, build_manifest_files, base_dir):
     entries = []
-    for manifest_file in manifest_files:
+    for manifest_file, apply_base in (
+        *((m, True) for m in manifest_files),
+        *((m, False) for m in build_manifest_files),
+    ):
         with open(manifest_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -38,7 +42,7 @@ def parse_entries(args_entries, manifest_files, base_dir):
                     sys.exit(1)
                 sym, path = line.split(':', 1)
                 path = path.strip()
-                if base_dir:
+                if apply_base and base_dir:
                     path = os.path.join(base_dir, path)
                 entries.append((sym.strip(), path))
     for entry in args_entries:
@@ -202,8 +206,10 @@ def main():
                         help='Output type: asm-inline, nasm, or cppembed')
     parser.add_argument('-f', '--manifest', metavar='FILE', action='append', default=[],
                         help='Read symbol:filepath entries from a manifest file (can be repeated)')
+    parser.add_argument('-F', '--build-manifest', metavar='FILE', action='append', default=[],
+                        help='Like -f, but paths are relative to CWD (--base-dir is not applied)')
     parser.add_argument('-b', '--base-dir', default='',
-                        help='Base directory to prepend to manifest file paths (not CLI entries)')
+                        help='Base directory to prepend to -f manifest file paths (not -F or CLI entries)')
     parser.add_argument('-d', '--depfile', metavar='FILE',
                         help='Write a Make-format dependency file listing all embedded files')
     parser.add_argument(
@@ -212,7 +218,7 @@ def main():
                         help='Symbol-to-file mappings')
 
     args = parser.parse_args()
-    entries = parse_entries(args.entries, args.manifest, args.base_dir)
+    entries = parse_entries(args.entries, args.manifest, args.build_manifest, args.base_dir)
 
     generators = {
         'cppembed': gen_cppembed,
@@ -236,7 +242,7 @@ def main():
     write_if_changed(header_path, header)
 
     if args.depfile:
-        deps = [filepath for _, filepath in entries] + args.manifest
+        deps = [filepath for _, filepath in entries] + args.manifest + args.build_manifest
         depfile_content = f'{args.output}: \\\n'
         depfile_content += ' \\\n'.join(f'  {d}' for d in deps)
         depfile_content += '\n'

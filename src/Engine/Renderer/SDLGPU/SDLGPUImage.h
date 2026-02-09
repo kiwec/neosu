@@ -11,14 +11,44 @@
 #include "config.h"
 
 #ifdef MCENGINE_FEATURE_SDLGPU
-#include "NullImage.h"
+#include "Image.h"
 
-class SDLGPUImage final : public NullImage {
+typedef struct SDL_Window SDL_Window;
+typedef struct SDL_GPUSampler SDL_GPUSampler;
+typedef struct SDL_GPUTexture SDL_GPUTexture;
+
+class SDLGPUInterface;
+
+class SDLGPUImage final : public Image {
     NOCOPY_NOMOVE(SDLGPUImage)
    public:
     SDLGPUImage(std::string filepath, bool mipmapped = false, bool keepInSystemMemory = false);
     SDLGPUImage(int width, int height, bool mipmapped = false, bool keepInSystemMemory = false);
-    ~SDLGPUImage() override = default;
+    ~SDLGPUImage() override;
+
+    void bind(unsigned int textureUnit = 0) const override;
+    void unbind() const override;
+
+    void setFilterMode(TextureFilterMode filterMode) override;
+    void setWrapMode(TextureWrapMode wrapMode) override;
+
+    inline SDL_GPUTexture *getTexture() const { return m_texture; }
+    inline SDL_GPUSampler *getSampler() const { return m_sampler; }
+
+   protected:
+    void init() override;
+    void initAsync() override;
+    void destroy() override;
+
+   private:
+    void createOrUpdateSampler();
+    void uploadPixelData();
+
+    SDL_GPUTexture *m_texture{nullptr};
+    SDL_GPUSampler *m_sampler{nullptr};
+
+    mutable SDL_GPUTexture *m_prevTexture{nullptr};
+    mutable SDL_GPUSampler *m_prevSampler{nullptr};
 };
 
 #endif

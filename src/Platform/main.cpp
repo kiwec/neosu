@@ -333,7 +333,11 @@ MAIN_FUNC /* int argc, char *argv[] */
             SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "dummy", SDL_HINT_OVERRIDE);
             SDL_SetHintWithPriority(SDL_HINT_AUDIO_DRIVER, "dummy", SDL_HINT_OVERRIDE);
         } else {
-            SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
+            // don't use offscreen for SDL_gpu headless, that would attempt to initialize a bunch of
+            // offscreen openGL stuff we don't want
+            if(!(Env::cfg(REND::SDLGPU) && (arg_map.contains("-sdlgpu") || arg_map.contains("-gpu")))) {
+                SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
+            }
         }
     }
 

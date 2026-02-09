@@ -20,6 +20,11 @@ struct dummyEngine {
 };
 dummyEngine *engine;
 
+struct dummyGraphics {
+    inline void takeScreenshot(std::string_view /*args*/) { ; }
+};
+dummyGraphics *g;
+
 namespace ConVarHandler::ConVarBuiltins {
 extern void find(std::string_view args);
 extern void help(std::string_view args);
@@ -100,6 +105,8 @@ CONVAR(restart, CLIENT, CFUNC(_restart));
 CONVAR(save);  // database save, set in Database
 CONVAR(showconsolebox);
 CONVAR(snd_restart);
+CONVAR(take_screenshot, CLIENT | NOLOAD | NOSAVE,
+       [](std::string_view args) -> void { g ? g->takeScreenshot(args) : (void)0; });
 CONVAR(update);
 
 // Server-callable commands

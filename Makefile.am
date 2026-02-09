@@ -1310,15 +1310,58 @@ EMBED_CACERT_DEPS := $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
 EMBED_CACERT_ARGS := curl_ca_embed:$(CACERT_INCDIR)cacert.pem
 endif
 
-$(EMBED_OUTPUT): $(EMBED_SCRIPT) $(EMBED_MANIFESTS) $(EMBED_CACERT_DEPS)
+#####################################################################################################################################################
+## SDL_GPU SHADER COMPILATION (GLSL → SPIR-V → .shdpk shader packs)
+#####################################################################################################################################################
+
+if USE_SDLGPU
+
+SDLGPU_PACK_SCRIPT := $(srcdir)/build-aux/pack_sdlgpu_shader.py
+SDLGPU_SHADER_DIR := $(builddir)/gen/shaders
+SDLGPU_SHADER_MANIFEST := $(SDLGPU_SHADER_DIR)/sdlgpu_shaders.manifest
+SDLGPU_GLSL_INPUTS := $(wildcard $(srcdir)/$(ASSETS_DIR)/shaders/SDLGPU_*_[vf].glsl)
+SDLGPU_EMBED_DEPS := $(SDLGPU_SHADER_MANIFEST)
+SDLGPU_EMBED_MANIFEST_FLAG := -F $(SDLGPU_SHADER_MANIFEST)
+
+# the manifest is the natural "stamp". pack_sdlgpu_shader.py always writes it,
+# so its mtime reflects when shaders were last compiled/packed
+$(SDLGPU_SHADER_MANIFEST): $(SDLGPU_GLSL_INPUTS) $(SDLGPU_PACK_SCRIPT)
+	$(MKDIR_P) $(SDLGPU_SHADER_DIR)
+	$(PYTHON) $(SDLGPU_PACK_SCRIPT) \
+		--shader-dir $(srcdir)/$(ASSETS_DIR)/shaders \
+		--output-dir $(SDLGPU_SHADER_DIR) \
+		--manifest $(SDLGPU_SHADER_MANIFEST) \
+		--glslc $(GLSLC)
+
+# individual .shdpk files are side effects of the manifest rule;
+# the depfile lists them, so make needs to know how to "build" them
+$(SDLGPU_SHADER_DIR)/%.shdpk: $(SDLGPU_SHADER_MANIFEST) ;
+
+else !USE_SDLGPU
+
+SDLGPU_EMBED_DEPS :=
+SDLGPU_EMBED_MANIFEST_FLAG :=
+
+endif !USE_SDLGPU
+
+# content-based stamp: only updates (and triggers re-embed) when the manifest list actually changes
+EMBED_CONFIG_STAMP := $(builddir)/gen/.embed_config
+EMBED_FULL_MANIFEST_FLAGS := $(EMBED_MANIFEST_FLAGS) $(SDLGPU_EMBED_MANIFEST_FLAG)
+$(EMBED_CONFIG_STAMP): FORCE
+	@$(MKDIR_P) $(dir $@)
+	@echo '$(EMBED_FULL_MANIFEST_FLAGS)' | cmp -s - $@ || echo '$(EMBED_FULL_MANIFEST_FLAGS)' > $@
+
+$(EMBED_OUTPUT): $(EMBED_SCRIPT) $(EMBED_MANIFESTS) $(EMBED_CACERT_DEPS) $(SDLGPU_EMBED_DEPS) $(EMBED_CONFIG_STAMP)
 	$(MKDIR_P) $(dir $@)
-	$(PYTHON) $(EMBED_SCRIPT) -t $(EMBED_TYPE) -b $(srcdir) -d $(EMBED_DEPFILE) $(EMBED_MANIFEST_FLAGS) $@ \
+	$(PYTHON) $(EMBED_SCRIPT) -t $(EMBED_TYPE) -b $(srcdir) -d $(EMBED_DEPFILE) $(EMBED_FULL_MANIFEST_FLAGS) $@ \
 		$(EMBED_CACERT_ARGS)
 
 -include $(EMBED_DEPFILE)
 
 neosu_SOURCES += $(EMBED_OUTPUT)
-CLEANFILES += $(EMBED_OUTPUT) $(builddir)/gen/binary_embed.h $(EMBED_DEPFILE)
+CLEANFILES += $(EMBED_OUTPUT) $(builddir)/gen/binary_embed.h $(EMBED_DEPFILE) $(EMBED_CONFIG_STAMP) \
+	$(builddir)/gen/shaders/*.shdpk $(builddir)/gen/shaders/*.spv \
+	$(builddir)/gen/shaders/sdlgpu_shaders.manifest $(builddir)/gen/shaders/.stamp
 
 #####################################################################################################################################################
 ## END EXTERNAL DEPENDENCY BUILD/SETUP SECTION
@@ -1747,7 +1790,7 @@ clean-deps:
 
 clean-dep-cache:
 	rm -rf $(DEPS_CACHE)
-.PHONY: clean-deps clean-dep-cache install-libs install-dirs bear-check-version
+.PHONY: clean-deps clean-dep-cache install-libs install-dirs bear-check-version FORCE
 
 maintainer-clean-local: clean-deps clean-dep-cache
 

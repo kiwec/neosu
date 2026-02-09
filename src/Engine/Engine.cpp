@@ -615,6 +615,12 @@ void Engine::stdinReaderThread(const Sync::stop_token &stopToken) {
 }
 
 void Engine::processStdinCommands() {
+    // @wait support: count down frames before resuming command processing
+    if(this->stdinWaitFrames > 0) {
+        this->stdinWaitFrames--;
+        return;
+    }
+
 #ifdef MCENGINE_PLATFORM_WASM
     // poll the JS-side line buffer (filled by process.stdin in wasm-node-polyfill.js)
     while(true) {
@@ -631,6 +637,12 @@ void Engine::processStdinCommands() {
         if(!line) break;
         std::string cmd(line);
         free(line);
+
+        if(cmd.starts_with("@wait")) {
+            this->stdinWaitFrames = std::max(1, std::atoi(cmd.c_str() + 5));
+            break;
+        }
+
         Console::processCommand(cmd);
         if(this->bShuttingDown) break;
     }
@@ -639,6 +651,12 @@ void Engine::processStdinCommands() {
     while(!this->stdinQueue.empty()) {
         std::string cmd = std::move(this->stdinQueue.front());
         this->stdinQueue.pop_front();
+
+        if(cmd.starts_with("@wait")) {
+            this->stdinWaitFrames = std::max(1, std::atoi(cmd.c_str() + 5));
+            break;
+        }
+
         Console::processCommand(cmd);
     }
 #endif
