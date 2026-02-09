@@ -317,6 +317,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     bool bClickedContinue;
     int iAllowAnyNextKeyUntilHitObjectIndex;
     std::vector<Click> clicks;
+    std::vector<Click> all_clicks;
 
     // hitobjects
     std::vector<std::unique_ptr<HitObject>> hitobjects;

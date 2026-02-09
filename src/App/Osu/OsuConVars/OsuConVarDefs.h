@@ -77,6 +77,7 @@ CONVAR(debug_osu, false, CLIENT);
 CONVAR(debug_db, false, CLIENT);
 CONVAR(debug_async_db, false, CLIENT);
 CONVAR(debug_draw_timingpoints, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(debug_draw_gameplay_clicks, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(debug_hiterrorbar_misaims, false, CLIENT);
 CONVAR(debug_pp, false, CLIENT);
 CONVAR(debug_bg_loader, false, CLIENT);

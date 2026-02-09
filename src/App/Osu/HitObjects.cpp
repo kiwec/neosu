@@ -1444,9 +1444,9 @@ void Slider::drawBody(float alpha, float from, float to) {
     if(cv::slider_body_smoothsnake.getBool()) {
         if(cv::slider_shrink.getBool() && this->fSliderSnakePercent > 0.999f) {
             alwaysPoints.push_back(this->pf->osuCoords2Pixels(this->curve->pointAt(this->fSlidePercent)));  // curpoint
-            alwaysPoints.push_back(this->pf->osuCoords2Pixels(this->getRawPosAt(
-                this->getEndTime() + 1)));  // endpoint (because setDrawPercent() causes the last
-                                                           // circle mesh to become invisible too quickly)
+            alwaysPoints.push_back(this->pf->osuCoords2Pixels(
+                this->getRawPosAt(this->getEndTime() + 1)));  // endpoint (because setDrawPercent() causes the last
+                                                              // circle mesh to become invisible too quickly)
         }
         if(cv::snaking_sliders.getBool() && this->fSliderSnakePercent < 1.0f)
             alwaysPoints.push_back(this->pf->osuCoords2Pixels(
@@ -1650,8 +1650,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
         // (for the end of the slider) is NOT checked at the exact end of the slider, but somewhere random before,
         // because fuck you
         const i32 offset = (i32)cv::slider_end_inside_check_offset.getInt();
-        const i32 lenienceHackEndTime =
-            std::max(this->click_time + this->duration / 2, (this->getEndTime()) - offset);
+        const i32 lenienceHackEndTime = std::max(this->click_time + this->duration / 2, (this->getEndTime()) - offset);
         const bool isTrackingCorrectly =
             (this->isClickHeldSlider() || (flags::has<ModFlags::Relax>(curIFaceMods))) && this->bCursorInside;
         if(isTrackingCorrectly) {
@@ -1701,8 +1700,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
 
                         // end of combo, ignore in hiterrorbar, ignore combo, subtract health
                         this->addHitResult(this->endResult, 0, this->is_end_of_combo,
-                                           this->getRawPosAt(this->getEndTime()), -1.0f, 0.0f, true,
-                                           true, false);
+                                           this->getRawPosAt(this->getEndTime()), -1.0f, 0.0f, true, true, false);
                     }
                 }
             }
@@ -1849,8 +1847,7 @@ void Slider::updateAnimations(i32 curPos) {
     if(this->bFinished) {
         this->fFollowCircleAnimationAlpha =
             1.0f -
-            std::clamp<float>((float)((curPos - (this->getEndTime()))) / 1000.0f / fadeout_fade_time,
-                              0.0f, 1.0f);
+            std::clamp<float>((float)((curPos - (this->getEndTime()))) / 1000.0f / fadeout_fade_time, 0.0f, 1.0f);
         this->fFollowCircleAnimationAlpha *= this->fFollowCircleAnimationAlpha;  // quad in
     }
 
@@ -1859,8 +1856,8 @@ void Slider::updateAnimations(i32 curPos) {
                               std::clamp<float>(fadein_scale_time, 0.0f, this->duration / 1000.0f),
                           0.0f, 1.0f);
     if(this->bFinished) {
-        this->fFollowCircleAnimationScale = std::clamp<float>(
-            (float)((curPos - (this->getEndTime()))) / 1000.0f / fadeout_scale_time, 0.0f, 1.0f);
+        this->fFollowCircleAnimationScale =
+            std::clamp<float>((float)((curPos - (this->getEndTime()))) / 1000.0f / fadeout_scale_time, 0.0f, 1.0f);
     }
     this->fFollowCircleAnimationScale =
         -this->fFollowCircleAnimationScale * (this->fFollowCircleAnimationScale - 2.0f);  // quad out
@@ -2081,8 +2078,8 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
             const bool isLazer2020Drain = false;
 
             this->addHitResult(
-                result, delta, this->is_end_of_combo, this->getRawPosAt(this->getEndTime()), -1.0f, 0.0f,
-                true, !this->bHeldTillEnd,
+                result, delta, this->is_end_of_combo, this->getRawPosAt(this->getEndTime()), -1.0f, 0.0f, true,
+                !this->bHeldTillEnd,
                 isLazer2020Drain);  // end of combo, ignore in hiterrorbar, depending on heldTillEnd increase
                                     // combo or not, increase score, increase health depending on drain type
 

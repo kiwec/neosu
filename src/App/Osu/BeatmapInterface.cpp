@@ -733,6 +733,7 @@ void BeatmapInterface::actualRestart() {
     this->resetScore();
     this->resetHitObjects(-1000);
     this->smoke_trail.clear();
+    this->all_clicks.clear();
 
     // we are waiting for an asynchronous start of the beatmap in the next update()
     this->bIsWaiting = true;
@@ -1654,6 +1655,7 @@ void BeatmapInterface::unloadObjects() {
     this->misaimObjects.clear();
     this->breaks.clear();
     this->clicks.clear();
+    this->all_clicks.clear();
 }
 
 void BeatmapInterface::resetHitObjects(i32 curPos) {
@@ -1797,6 +1799,14 @@ void BeatmapInterface::draw() {
             g->setColor(0xbb00ff00);
             vec2 pos = this->osuCoords2Pixels(misaimObject->getRawPosAt(0));
             g->fillRect(pos.x - 50, pos.y - 50, 100, 100);
+        }
+    }
+
+    // this is barely even useful for debugging in its current state, don't use it
+    if(cv::debug_draw_gameplay_clicks.getBool()) {
+        for(auto &click : this->all_clicks) {
+            g->setColor(0xbb0000ff);
+            g->fillRect(click.pos.x - 2, click.pos.y - 2, 4, 4);
         }
     }
 }
@@ -2765,6 +2775,10 @@ void BeatmapInterface::update2() {
 
         this->interpolatedMousePos *= GameRules::getPlayfieldScaleFactor();
         this->interpolatedMousePos += GameRules::getPlayfieldOffset();
+
+        if(cv::debug_draw_gameplay_clicks.getBool()) {
+            this->all_clicks.insert(this->all_clicks.end(), this->clicks.cbegin(), this->clicks.cend());
+        }
     }
 
     // for performance reasons, a lot of operations are crammed into 1 loop over all hitobjects:
