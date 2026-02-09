@@ -8,10 +8,6 @@
 
 #define SDL_h_
 
-#ifdef MCENGINE_PLATFORM_WASM
-#include <emscripten/em_asm.h>
-#endif
-
 #include "environment_private.h"
 
 #include "App.h"
@@ -30,6 +26,14 @@
 #include "Graphics.h"
 #include "SString.h"
 #include "Parsing.h"
+
+#ifdef MCENGINE_PLATFORM_WASM
+#include <emscripten/em_js.h>
+
+// EM_ASM_INT doesn't work in CI, if you have too much time feel free to find out why
+EM_JS(int, js_get_canvas_width, (), { return document.getElementById('canvas').width; });
+EM_JS(int, js_get_canvas_height, (), { return document.getElementById('canvas').width; });
+#endif
 
 // for sending keys synthetically from console
 static void sendkey(std::string_view keyName) {
@@ -658,8 +662,8 @@ bool SDLMain::createWindow() {
     //
     // By manually getting the attributes of the canvas element, we get the render size,
     // as opposed to the CSS size which is incorrect on HiDPI.
-    windowCreateWidth = EM_ASM_INT(return document.getElementById('canvas').width);
-    windowCreateHeight = EM_ASM_INT(return document.getElementById('canvas').height);
+    windowCreateWidth = js_get_canvas_width();
+    windowCreateHeight = js_get_canvas_height();
 #endif
 
     // set this size as the initial fallback window size (for Environment::getWindowSize())
