@@ -607,7 +607,8 @@ void ScoreButton::onContextMenu(const UString &text, int id) {
     }
 
     if(id == 4) {
-        auto user_url = fmt::format("https://osu.{}/u/{}", sc.server, sc.player_id);
+        auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+        auto user_url = fmt::format("{}osu.{}/u/{}", scheme, sc.server, sc.player_id);
         env->openURLInDefaultBrowser(user_url);
         return;
     }

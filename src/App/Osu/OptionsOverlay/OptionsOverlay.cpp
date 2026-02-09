@@ -3134,7 +3134,8 @@ void OptionsOverlayImpl::onLogInClicked(bool left, bool right) {
             crypto::hash::sha256(&BanchoState::oauth_verifier[0], 32, &BanchoState::oauth_challenge[0]);
 
             auto challenge_b64 = Mc::Net::urlEncode(crypto::conv::encode64(BanchoState::oauth_challenge));
-            auto url = fmt::format("https://{}/connect/start?challenge={}", BanchoState::endpoint, challenge_b64);
+            auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+            auto url = fmt::format("{}{}/connect/start?challenge={}", scheme, BanchoState::endpoint, challenge_b64);
 
             env->openURLInDefaultBrowser(url);
         } else {

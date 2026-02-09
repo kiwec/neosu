@@ -70,13 +70,21 @@ void set_activity_with_image(struct DiscordActivity* to_set) {
     to_set->assets.small_image[0] = '\0';
     to_set->assets.small_text[0] = '\0';
 
+    auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+    std::string endpoint{"ppy.sh"};
+    std::string server_icon_url{""};
+    if(BanchoState::is_online()) {
+        endpoint = BanchoState::endpoint;
+        server_icon_url = BanchoState::server_icon_url;
+    }
+
     if(bg_visible && (listening || playing)) {
-        auto url = fmt::format("https://b.{}/thumb/{}l.jpg", BanchoState::endpoint, map->getSetID());
+        auto url = fmt::format("{}b.{}/thumb/{}l.jpg", scheme, endpoint, map->getSetID());
         strncpy(&to_set->assets.large_image[0], url.c_str(), 127);
 
-        if(BanchoState::server_icon_url.length() > 0 && cv::main_menu_use_server_logo.getBool()) {
-            strncpy(&to_set->assets.small_image[0], BanchoState::server_icon_url.c_str(), 127);
-            strncpy(&to_set->assets.small_text[0], BanchoState::endpoint.c_str(), 127);
+        if(server_icon_url.length() > 0 && cv::main_menu_use_server_logo.getBool()) {
+            strncpy(&to_set->assets.small_image[0], server_icon_url.c_str(), 127);
+            strncpy(&to_set->assets.small_text[0], endpoint.c_str(), 127);
         } else {
             strcpy(&to_set->assets.small_image[0], "neosu_icon");
             to_set->assets.small_text[0] = '\0';
