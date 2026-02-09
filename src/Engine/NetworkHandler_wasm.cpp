@@ -5,6 +5,7 @@
 
 #ifdef MCENGINE_PLATFORM_WASM
 
+#include "crypto.h"
 #include "NetworkHandler.h"
 #include "Engine.h"
 #include "Logging.h"
@@ -104,6 +105,31 @@ std::string urlEncode(std::string_view input) noexcept {
     return result;
 }
 
+void encodeMimeParts(RequestOptions& options) {
+    if(options.mime_parts.empty()) return;
+
+    std::string boundary{"-------neosu--"};
+    {
+        std::array<u8, 32> rnd;
+        crypto::rng::get_rand(rnd);
+        boundary += crypto::conv::encodehex(rnd);
+    }
+
+    options.headers["Content-Type"] = "multipart/form-data; boundary=" + boundary;
+    options.post_data = "";
+
+    for(auto part : options.mime_parts) {
+        options.post_data += boundary + "\r\n";
+        options.post_data += "Content-Disposition: form-data; name=\"" + part.name + "\"";
+        if(!part.filename.empty()) options.post_data += "; filename=\"" + part.filename + "\"";
+        options.post_data += "\r\n\r\n";
+        options.post_data.append((char*)part.data.data(), part.data.size());
+        options.post_data += "\r\n";
+    }
+
+    options.post_data += boundary + "--";
+}
+
 struct NetworkImpl {
    private:
     NOCOPY_NOMOVE(NetworkImpl)
@@ -137,7 +163,7 @@ struct NetworkImpl {
     };
 
     void httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback);
-    Response httpRequestSynchronous(std::string_view url, const RequestOptions& options);
+    Response httpRequestSynchronous(std::string_view url, RequestOptions options);
     void update();
 
     std::vector<CompletedRequest> completed_requests;
@@ -239,6 +265,7 @@ void NetworkImpl::httpRequestAsync(std::string_view url, RequestOptions options,
 
     // request owns the strings; pointers into header_storage are valid until Request is deleted
     auto* request = new Request(this, url, std::move(options), std::move(callback));
+    encodeMimeParts(request->options);
 
     if(!request->options.headers.empty()) {
         request->header_storage.reserve(request->options.headers.size() * 2);
@@ -302,7 +329,9 @@ static Hash::unstable_stringmap<std::string> parseRawHeaders(const char* raw) {
     return out;
 }
 
-Response NetworkImpl::httpRequestSynchronous(std::string_view url, const RequestOptions& options) {
+Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOptions options) {
+    encodeMimeParts(options);
+
     std::string method = options.post_data.empty() ? "GET" : "POST";
     std::string url_str(url);
 
