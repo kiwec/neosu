@@ -110,7 +110,7 @@ void encodeMimeParts(RequestOptions& options) {
 
     std::string boundary{"-------neosu--"};
     {
-        std::array<u8, 32> rnd;
+        std::array<u8, 16> rnd;
         crypto::rng::get_rand(rnd);
         boundary += crypto::conv::encodehex(rnd);
     }
