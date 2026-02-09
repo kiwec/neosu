@@ -3,8 +3,8 @@
 # Compiles and packs all SDLGPU shaders into .shdpk shader pack files.
 #
 # Finds SDLGPU_*_{v,f}.glsl in --shader-dir, compiles each to SPIR-V
-# via glslc, packs GLSL source + binary into .shdpk, and writes a manifest
-# file compatible with gen_binary_embed.py.
+# via glslc or glslangValidator, packs GLSL source + binary into .shdpk,
+# and writes a manifest file compatible with gen_binary_embed.py.
 #
 # Usage:
 #   pack_sdlgpu_shader.py --shader-dir <dir> --output-dir <dir> --manifest <file> [--glslc <path>] [--dxc <path>]
@@ -70,14 +70,23 @@ def compile_hlsl(dxc, hlsl_path, dxil_path, stage):
     return True
 
 
+def is_glslang_validator(glslc):
+    """Check if the glslc path points to glslangValidator."""
+    return os.path.basename(glslc).startswith('glslangValidator')
+
+
 def compile_glsl(glslc, glsl_path, spv_path, stage):
     """Compile a GLSL file to SPIR-V. Returns True on success."""
     stage_flag = 'vert' if stage == 'v' else 'frag'
     os.makedirs(os.path.dirname(spv_path) or '.', exist_ok=True)
-    cmd = [glslc, f'-fshader-stage={stage_flag}', '--target-env=vulkan1.0', '-o', spv_path, glsl_path]
+    if is_glslang_validator(glslc):
+        cmd = [glslc, '-V', '--target-env', 'vulkan1.0', '-S', stage_flag, '-o', spv_path, glsl_path]
+    else:
+        cmd = [glslc, f'-fshader-stage={stage_flag}', '--target-env=vulkan1.0', '-o', spv_path, glsl_path]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f'glslc failed for {glsl_path}:', file=sys.stderr)
+        tool_name = 'glslangValidator' if is_glslang_validator(glslc) else 'glslc'
+        print(f'{tool_name} failed for {glsl_path}:', file=sys.stderr)
         print(result.stderr, file=sys.stderr)
         return False
     return True

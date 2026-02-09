@@ -156,10 +156,15 @@ AC_DEFUN([AC_PROG_NASM], [
 ])
 
 # needed for building SPIR-V shaders (if building it is required)
+# tries glslc first (from shaderc), falls back to glslangValidator (from glslang-tools)
 AC_DEFUN([AC_PROG_GLSLC], [
     AC_CHECK_PROG([GLSLC], [glslc], [glslc])
     if test -z "$GLSLC"; then
-        AC_MSG_ERROR([glslc not found - required for compiling GLSL shaders to SPIR-V])
+        AC_CHECK_PROG([GLSLANG_VALIDATOR], [glslangValidator], [glslangValidator])
+        if test -z "$GLSLANG_VALIDATOR"; then
+            AC_MSG_ERROR([neither glslc nor glslangValidator found - one is required for compiling GLSL shaders to SPIR-V])
+        fi
+        GLSLC="$GLSLANG_VALIDATOR"
     fi
 ])
 
