@@ -59,7 +59,7 @@ void submit_score(FinishedScore score) {
         .data = {visual_settings_b64.begin(), visual_settings_b64.end()},
     });
 
-    MD5Hash beatmap_hash = score.beatmap_hash.to_chars();
+    auto beatmap_hash = score.beatmap_hash.to_chars().string();
     options.mime_parts.push_back({
         .name = "bmk",
         .data = {beatmap_hash.begin(), beatmap_hash.end()},
