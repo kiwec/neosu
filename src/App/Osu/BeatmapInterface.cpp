@@ -3007,9 +3007,8 @@ void BeatmapInterface::update2() {
                             {
                                 if(this->iCurMusicPosWithOffsets > this->hitobjects[m]->click_time) {
                                     if(curHobj->click_time >
-                                       (this->hitobjects[m]->click_time +
-                                        this->hitobjects[m]->duration))  // NOTE: 2b exception. only force miss if
-                                                                         // objects are not overlapping.
+                                       this->hitobjects[m]->getEndTime())  // NOTE: 2b exception. only force miss if
+                                                                           // objects are not overlapping.
                                         this->hitobjects[m]->miss(this->iCurMusicPosWithOffsets);
                                 }
                             }

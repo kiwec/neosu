@@ -85,14 +85,13 @@ u32 AbstractBeatmapInterface::getScoreV1DifficultyMultiplier() const {
 
 LiveScore::HIT AbstractBeatmapInterface::getHitResult(i32 delta) const {
     // "stable-like" hit windows, see https://github.com/ppy/osu/pull/33882
-    f32 window300 = std::floor(this->getHitWindow300()) - 0.5f;
-    f32 window100 = std::floor(this->getHitWindow100()) - 0.5f;
-    f32 window50 = std::floor(this->getHitWindow50()) - 0.5f;
-    f32 windowMiss = std::floor(GameRules::getHitWindowMiss()) - 0.5f;
-    f32 fDelta = std::abs((f32)delta);
+    const f32 window300 = std::floor(this->getHitWindow300()) - 0.5f;
+    const f32 window100 = std::floor(this->getHitWindow100()) - 0.5f;
+    const f32 window50 = std::floor(this->getHitWindow50()) - 0.5f;
+    const f32 fDelta = std::abs((f32)delta);
 
     // We are 400ms away from the hitobject, don't count this as a miss
-    if(fDelta > windowMiss) {
+    if(fDelta > GameRules::getHitWindowMiss()) {
         return LiveScore::HIT::HIT_NULL;
     }
 
