@@ -163,13 +163,6 @@ AC_DEFUN([AC_PROG_GLSLC], [
     fi
 ])
 
-# needed for compiling HLSL shaders to DXIL (Windows/D3D12 only)
-AC_DEFUN([AC_PROG_DXC], [
-    AC_CHECK_PROG([DXC], [dxc], [dxc])
-    if test -z "$DXC"; then
-        AC_MSG_ERROR([dxc not found - required for compiling HLSL to DXIL])
-    fi
-])
 
 # needed for dep resolver
 #AC_PROG_WGET
@@ -391,12 +384,13 @@ AS_IF([test "x$use_dx11" = "xyes" ], [
 
 AS_IF([test "x$use_sdlgpu" = "xyes" ], [
     AC_PROG_GLSLC
-    AS_IF([test "x$use_sdlgpu" = "xyes" && test -z "$GLSLC"], [
-        AC_MSG_ERROR([glslc not found - required for compiling GLSL to SPIR-V])
-    ])
-
     AS_IF([test "$host_os" = "mingw32"], [
-        AC_PROG_DXC
+        # needed for compiling HLSL shaders to DXIL (Windows/D3D12 only)
+        # will download & cache a release from github if not available (only if building on linux though (lazy))
+        AC_CHECK_PROG([DXC], [dxc], [dxc])
+        AS_IF([test -z "$DXC" && test "$build_os" != "linux-gnu"], [
+            AC_MSG_ERROR([dxc not found - required for compiling HLSL shaders to DXIL])
+        ])
     ])
 
     use_sdlgpu=yes
@@ -1523,6 +1517,7 @@ AM_CONDITIONAL([USE_OPENGL], [test "$use_opengl" = "yes"])
 AM_CONDITIONAL([USE_OPENGLES], [test "$use_opengles32" = "yes"])
 AM_CONDITIONAL([USE_DX11], [test "$use_dx11" = "yes"])
 AM_CONDITIONAL([USE_SDLGPU], [test "$use_sdlgpu" = "yes"])
+AM_CONDITIONAL([DOWNLOAD_DXC], [test -z "$DXC" && test "$host_os" = "mingw32"])
 # this just copies some libraries on installation
 AM_CONDITIONAL([USE_DISCORDSDK], [test "$with_discord" = "yes"])
 AM_CONDITIONAL([WIN_PLATFORM], [test "$SYSNAME" = "windows"])

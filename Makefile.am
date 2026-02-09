@@ -129,10 +129,11 @@ $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
 	$(CURLCOMMAND) "https://codeberg.org/soundtouch/soundtouch/archive/$(SOUNDTOUCH_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
-# curl source for WASM builds (other platforms use prebuilt binaries)
-$(DEPS_CACHE)/curl-$(CURL_VERSION).tar.gz:
+# used for compiling HLSL shaders for SDL_gpu on mingw builds
+# hardcoded version here for now, i don't think it matters
+$(DEPS_CACHE)/linux_dxc_2025_07_14.x86_64.tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLCOMMAND) "https://curl.se/download/curl-$(CURL_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.8.2505.1/linux_dxc_2025_07_14.x86_64.tar.gz" || { rm -f $@; exit 1; }
 
 # TEMPTEMP: beatmap pack for WASM demo (pre-extracted)
 # this is going through the "osu! stable raw load" path for database loading,
@@ -1321,13 +1322,26 @@ SDLGPU_SHADER_DIR := $(builddir)/gen/shaders
 SDLGPU_SHADER_MANIFEST := $(SDLGPU_SHADER_DIR)/sdlgpu_shaders.manifest
 SDLGPU_GLSL_INPUTS := $(wildcard $(srcdir)/$(ASSETS_DIR)/shaders/SDLGPU_*_[vf].glsl)
 SDLGPU_HLSL_INPUTS := $(wildcard $(srcdir)/$(ASSETS_DIR)/shaders/SDLGPU_*_[vf].hlsl)
-SDLGPU_DXC_FLAG := $(if $(DXC),--dxc $(DXC))
 SDLGPU_EMBED_DEPS := $(SDLGPU_SHADER_MANIFEST)
 SDLGPU_EMBED_MANIFEST_FLAG := -F $(SDLGPU_SHADER_MANIFEST)
 
+SDLGPU_DXC_FLAG := $(if $(DXC),--dxc $(DXC),)
+if DOWNLOAD_DXC
+$(DEPS_CACHE)/linux_dxc_2025_07_14.x86_64.source: $(DEPS_CACHE)/linux_dxc_2025_07_14.x86_64.tar.gz
+	$(MKDIR_P) $(DEPS_CACHE)/linux_dxc_2025_07_14 && \
+	$(TAR) xf $(DEPS_CACHE)/linux_dxc_2025_07_14.x86_64.tar.gz -C $(DEPS_CACHE)/linux_dxc_2025_07_14 --strip-components=1 && \
+	test -f $(DEPS_CACHE)/linux_dxc_2025_07_14/bin/dxc && \
+	touch $@
+
+SDLGPU_DXC_FLAG += --dxc $(DEPS_CACHE)/linux_dxc_2025_07_14/bin/dxc
+SDLGPU_DXC_DEP := $(DEPS_CACHE)/linux_dxc_2025_07_14.x86_64.source
+else
+SDLGPU_DXC_DEP :=
+endif
+
 # the manifest is the natural "stamp". pack_sdlgpu_shader.py always writes it,
 # so its mtime reflects when shaders were last compiled/packed
-$(SDLGPU_SHADER_MANIFEST): $(SDLGPU_GLSL_INPUTS) $(SDLGPU_HLSL_INPUTS) $(SDLGPU_PACK_SCRIPT)
+$(SDLGPU_SHADER_MANIFEST): $(SDLGPU_DXC_DEP) $(SDLGPU_GLSL_INPUTS) $(SDLGPU_HLSL_INPUTS) $(SDLGPU_PACK_SCRIPT)
 	$(MKDIR_P) $(SDLGPU_SHADER_DIR)
 	$(PYTHON) $(SDLGPU_PACK_SCRIPT) \
 		--shader-dir $(srcdir)/$(ASSETS_DIR)/shaders \
