@@ -50,7 +50,7 @@ jobs:
           pacman -Syu --noconfirm libx11 libxi glu \
             libjpeg-turbo libglvnd sdl3 zlib wget \
             cmake meson nasm git autoconf automake libtool autoconf-archive \
-            mingw-w64-gcc ccache unzip wine freetype2 curl glslc
+            mingw-w64-gcc ccache unzip wine freetype2 curl shaderc
           if [[ "${{ matrix.arch }}" == "x64" ]]; then
             mkdir -p /opt/llvm-mingw && \
             wget -qO /opt/llvm-mingw/llvm-mingw.tar.xz "https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.LLVM_MINGW_VERSION }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64.tar.xz" && \
