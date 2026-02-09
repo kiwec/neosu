@@ -9,7 +9,7 @@
 #define SDL_h_
 
 #ifdef MCENGINE_PLATFORM_WASM
-#include <emscripten.h>
+#include <emscripten/emscripten.h>
 #endif
 
 #include "environment_private.h"
