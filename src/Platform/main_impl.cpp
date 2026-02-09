@@ -8,6 +8,10 @@
 
 #define SDL_h_
 
+#ifdef MCENGINE_PLATFORM_WASM
+#include <emscripten.h>
+#endif
+
 #include "environment_private.h"
 
 #include "App.h"
@@ -647,6 +651,16 @@ bool SDLMain::createWindow() {
             if(dm->h < windowCreateHeight) windowCreateHeight = dm->h;
         }
     }
+
+#ifdef MCENGINE_PLATFORM_WASM
+    // Set the initial window size to the browser's current canvas render size
+    // If we don't, emscripten will overwrite canvas.width/height to 1280x720, which will always be wrong
+    //
+    // By manually getting the attributes of the canvas element, we get the render size,
+    // as opposed to the CSS size which is incorrect on HiDPI.
+    windowCreateWidth = EM_ASM_INT({ return document.getElementById('canvas').width; });
+    windowCreateHeight = EM_ASM_INT({ return document.getElementById('canvas').height; });
+#endif
 
     // set this size as the initial fallback window size (for Environment::getWindowSize())
     m_vLastKnownWindowSize = vec2{static_cast<float>(windowCreateWidth), static_cast<float>(windowCreateHeight)};
