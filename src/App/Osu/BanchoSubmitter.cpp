@@ -59,10 +59,10 @@ void submit_score(FinishedScore score) {
         .data = {visual_settings_b64.begin(), visual_settings_b64.end()},
     });
 
-    auto beatmap_hash = score.beatmap_hash.to_chars().string();
+    MD5String beatmap_hash_str = score.beatmap_hash.to_chars();
     options.mime_parts.push_back({
         .name = "bmk",
-        .data = {beatmap_hash.begin(), beatmap_hash.end()},
+        .data = {beatmap_hash_str.begin(), beatmap_hash_str.end()},
     });
 
     auto unique_ids = fmt::format("{}|{}", BanchoState::get_install_id(), BanchoState::get_disk_uuid());
