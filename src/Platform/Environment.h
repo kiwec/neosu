@@ -387,6 +387,7 @@ class Environment {
         }
     }
     void onUseIMEChange(float newValue);
+    void onDebugDrawHardwareCursorChange(float newValue);
 
     bool m_bShouldListenToTextInput;
     bool m_bRawKB;

@@ -174,6 +174,7 @@ CONVAR(debug_font, false, CLIENT);
 CONVAR(debug_file, false, CLIENT);
 CONVAR(debug_image, false, CLIENT | NOSAVE);
 CONVAR(debug_mouse, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(debug_draw_hardware_cursor, false, CLIENT | NOSAVE);
 CONVAR(debug_rm, false, CLIENT);
 CONVAR(debug_rt, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "draws all rendertargets with a translucent green background");

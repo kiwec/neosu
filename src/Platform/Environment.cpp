@@ -139,6 +139,7 @@ Environment::Environment(const Mc::AppDescriptor &appDesc,
     cv::monitor.setCallback(SA::MakeDelegate<&Environment::onMonitorChange>(this));
     cv::keyboard_raw_input.setValue(m_bRawKB);  // (2)
     cv::keyboard_raw_input.setCallback(SA::MakeDelegate<&Environment::onRawKeyboardChange>(this));
+    cv::debug_draw_hardware_cursor.setCallback(SA::MakeDelegate<&Environment::onDebugDrawHardwareCursorChange>(this));
 
     // set high priority right away
     McThread::set_current_thread_prio(cv::win_processpriority.getVal<McThread::Priority>());
@@ -1063,7 +1064,9 @@ void Environment::setCursorVisible(bool visible) {
             return;
         }
         m_bHideCursorPending = false;
-        SDL_HideCursor();
+        if(!cv::debug_draw_hardware_cursor.getBool()) {
+            SDL_HideCursor();
+        }
         setCursor(CURSORTYPE::CURSOR_NORMAL);
 
         if(mouse && mouse->isRawInputWanted()) {  // re-enable rawinput
@@ -1150,6 +1153,17 @@ void Environment::onDPIChange() {
     m_fPixelDensity = SDL_GetWindowPixelDensity(m_window);
     if(m_engine && ((oldDispScale != m_fDisplayScale) || (oldPixelDensity != m_fPixelDensity))) {
         m_engine->onDPIChange();
+    }
+}
+
+void Environment::onDebugDrawHardwareCursorChange(float newValue) {
+    const bool enable = !!static_cast<int>(newValue);
+    SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_CURSOR_VISIBLE, enable ? "1" : "0", SDL_HINT_NORMAL);
+
+    if(enable) {
+        SDL_ShowCursor();
+    } else if(isOSMouseInputRaw() || isMouseInputGrabbed()) {
+        SDL_HideCursor();
     }
 }
 
