@@ -76,15 +76,14 @@ bool SDLGPUInterface::init() {
 
     // create GPU device
     // on windows, try D3D12 (DXIL) first, then fall back to vulkan (SPIRV)
-    std::vector<std::pair<std::string, unsigned int>> initOrder{{"D3D12", SDL_GPU_SHADERFORMAT_DXIL},
-                                                                {"Vulkan", SDL_GPU_SHADERFORMAT_SPIRV}};
+    std::vector<std::pair<std::string, unsigned int>> initOrder;
     const bool vkAvailable = drivers.contains("vulkan");
     const bool d3dAvailable = drivers.contains("direct3d12");
-    if(!vkAvailable) {
-        initOrder.pop_back();
+    if(d3dAvailable) {
+        initOrder.emplace_back("D3D12", SDL_GPU_SHADERFORMAT_DXIL);
     }
-    if(!d3dAvailable) {
-        initOrder.pop_back();
+    if(vkAvailable) {
+        initOrder.emplace_back("Vulkan", SDL_GPU_SHADERFORMAT_SPIRV);
     }
     if(initOrder.empty()) {
         debugLog("SDLGPUInterface: No compatible drivers available!");
