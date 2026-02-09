@@ -9,7 +9,7 @@
 #define SDL_h_
 
 #ifdef MCENGINE_PLATFORM_WASM
-#include <emscripten/emscripten.h>
+#include <emscripten/em_asm.h>
 #endif
 
 #include "environment_private.h"
@@ -658,8 +658,8 @@ bool SDLMain::createWindow() {
     //
     // By manually getting the attributes of the canvas element, we get the render size,
     // as opposed to the CSS size which is incorrect on HiDPI.
-    windowCreateWidth = EM_ASM_INT({ return document.getElementById('canvas').width; });
-    windowCreateHeight = EM_ASM_INT({ return document.getElementById('canvas').height; });
+    windowCreateWidth = EM_ASM_INT(return document.getElementById('canvas').width);
+    windowCreateHeight = EM_ASM_INT(return document.getElementById('canvas').height);
 #endif
 
     // set this size as the initial fallback window size (for Environment::getWindowSize())
