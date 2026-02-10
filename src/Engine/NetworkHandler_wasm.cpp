@@ -402,7 +402,7 @@ void NetworkHandler::httpRequestAsync(std::string_view url, RequestOptions optio
     return pImpl->httpRequestAsync(url, std::move(options), std::move(callback));
 }
 
-std::shared_ptr<WSInstance> NetworkHandler::initWebsocket(std::string_view url, const WSOptions& /*options*/) {
+std::shared_ptr<WSInstance> NetworkHandler::initWebsocket(std::string_view /*url*/, const WSOptions& /*options*/) {
     debugLog("WARNING: WebSocket support is not yet implemented for WASM");
     auto ws = std::make_shared<WSInstance>();
     ws->status = WSStatus::UNSUPPORTED;
