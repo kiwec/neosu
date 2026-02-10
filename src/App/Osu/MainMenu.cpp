@@ -159,8 +159,8 @@ MainMenu::MainMenu() : UIScreen() {
     this->bDidUserUpdateFromOlderVersion = false;
     this->bDrawVersionNotificationArrow = false;
     {
-        if(Environment::fileExists(MCENGINE_DATA_DIR "version.txt")) {
-            File versionFile(MCENGINE_DATA_DIR "version.txt");
+        if(Environment::fileExists(NEOSU_DATA_DIR "version.txt")) {
+            File versionFile(NEOSU_DATA_DIR "version.txt");
             std::string linebuf{};
             double version = -1.;
             u64 buildstamp = 0;
@@ -249,7 +249,9 @@ MainMenu::MainMenu() : UIScreen() {
         ->setClickCallback(SA::MakeDelegate<&MainMenu::onMultiplayerButtonPressed>(this));
     this->addMainMenuButton("Options (CTRL + O)")
         ->setClickCallback(SA::MakeDelegate<&MainMenu::onOptionsButtonPressed>(this));
-    this->addMainMenuButton("Exit")->setClickCallback(SA::MakeDelegate<&MainMenu::onExitButtonPressed>(this));
+    if constexpr(!Env::cfg(OS::WASM)) {
+        this->addMainMenuButton("Exit")->setClickCallback(SA::MakeDelegate<&MainMenu::onExitButtonPressed>(this));
+    }
 
     this->pauseButton = new PauseButton(0, 0, 0, 0, "", "");
     this->pauseButton->setClickCallback(SA::MakeDelegate<&MainMenu::onPausePressed>(this));
@@ -822,8 +824,9 @@ void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
     bgih->draw(bgih->getLoadBackgroundImage(beatmap, true), alpha);
 }
 
-void MainMenu::drawBanner() {
-    UString bannerText = "---- DirectX11 Test ----";
+void MainMenu::drawTestBanner() {
+    if(!env->usingDX11() && !env->usingSDLGPU()) return;
+    static const UString bannerText = env->usingDX11() ? "---- DirectX11 Test ----" : "---- SDL_gpu Test ----";
 
     McFont *bannerFont = osu->getSubTitleFont();
     float bannerStringWidth = bannerFont->getStringWidth(bannerText);
@@ -863,15 +866,6 @@ void MainMenu::draw() {
         // background_shader->setUniform1f("time", engine->getTime());
         // background_shader->setUniform2f("resolution", osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
-        // Check if we need to update the background
-        auto *currentOsuMap = osu->getMapInterface() ? osu->getMapInterface()->getBeatmap() : nullptr;
-        if(this->mapFadeAnim == 1.f && this->currentMap != currentOsuMap) {
-            this->lastMap = this->currentMap ? this->currentMap : currentOsuMap;  // don't fade from NULL?
-            this->currentMap = currentOsuMap;
-            this->mapFadeAnim = 0.f;
-            anim::moveLinear(&this->mapFadeAnim, 1.f, cv::main_menu_background_fade_duration.getFloat(), true);
-        }
-
         if(this->lastMap && this->lastMap != this->currentMap) {
             this->drawMapBackground(this->lastMap, 1.f - this->mapFadeAnim);
         }
@@ -882,10 +876,8 @@ void MainMenu::draw() {
         // background_shader->disable();
     }
 
-    // draw dx11 test banner
-    if(env->usingDX11()) {
-        this->drawBanner();
-    }
+    // draw test banner
+    this->drawTestBanner();
 
     // draw notification arrow for changelog (version button)
     if(this->bDrawVersionNotificationArrow) {
@@ -950,7 +942,18 @@ void MainMenu::draw() {
 void MainMenu::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
-    if(cv::is_bleedingedge.getBool()) {
+    if(cv::draw_menu_background.getBool()) {
+        // Check if we need to update the background
+        auto *currentOsuMap = osu->getMapInterface() ? osu->getMapInterface()->getBeatmap() : nullptr;
+        if(this->mapFadeAnim == 1.f && this->currentMap != currentOsuMap) {
+            this->lastMap = this->currentMap ? this->currentMap : currentOsuMap;  // don't fade from NULL?
+            this->currentMap = currentOsuMap;
+            this->mapFadeAnim = 0.f;
+            anim::moveLinear(&this->mapFadeAnim, 1.f, cv::main_menu_background_fade_duration.getFloat(), true);
+        }
+    }
+
+    if(osu->isBleedingEdge()) {
         static UString versionString =
             fmt::format("Version {:.2f} ({:s})", cv::version.getFloat(), cv::build_timestamp.getString());
         this->versionButton->setTextColor(rgb(255, 220, 220));
@@ -1486,11 +1489,11 @@ void MainMenu::setMenuElementsVisible(bool visible, bool animate) {
 
 void MainMenu::writeVersionFile() {
     // remember, don't show the notification arrow until the version changes again
-    io->write(MCENGINE_DATA_DIR "version.txt",
+    io->write(NEOSU_DATA_DIR "version.txt",
               fmt::format("{}\n{}", cv::version.getString(), cv::build_timestamp.getString()),
               [](bool success) -> void {
                   if(!success) {
-                      debugLog("Warning: failed to write new version to {}", MCENGINE_DATA_DIR "version.txt");
+                      debugLog("Warning: failed to write new version to {}", NEOSU_DATA_DIR "version.txt");
                   }
               });
 }
@@ -1578,6 +1581,8 @@ void MainMenu::onOptionsButtonPressed() {
 }
 
 void MainMenu::onExitButtonPressed() {
+    if constexpr(Env::cfg(OS::WASM)) return;
+
     this->fShutdownScheduledTime = engine->getTime() + 0.3f;
     this->bWasCleanShutdown = true;
     this->setMenuElementsVisible(false);
@@ -1684,6 +1689,10 @@ MainMenu::SongsFolderEnumerator::SongsFolderEnumerator() : Resource(APPDEFINED) 
 
     resourceManager->requestNextLoadAsync();
     resourceManager->loadResource(this);
+}
+
+MainMenu::SongsFolderEnumerator::~SongsFolderEnumerator() {
+    resourceManager->destroyResource(this, ResourceDestroyFlags::RDF_NODELETE);
 }
 
 void MainMenu::SongsFolderEnumerator::rebuild() {

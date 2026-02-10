@@ -6,8 +6,9 @@
 #include "Logging.h"
 #include "Engine.h"
 #include "SString.h"
+#include "Graphics.h"
 
-#include "misc_bin.h"
+#include "binary_embed.h"
 
 #include "fmt/chrono.h"
 
@@ -312,8 +313,8 @@ void ConVarHandler::ConVarBuiltins::listcommands(void) {
 
 void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
     // in assets/misc/convar_template.html
-    std::string html_template{reinterpret_cast<const char *>(convar_template),
-                              static_cast<size_t>(convar_template_size())};
+    assert(ALL_BINMAP.contains("convar_template"));
+    std::string html_template{ALL_BINMAP.at("convar_template")};
 
     std::vector<ConVar *> convars = cvars().getConVarArray();
     std::ranges::sort(

@@ -642,10 +642,10 @@ void CBaseUIScrollView::updateClipping() {
     this->previousClippingTotalElements = elements.size();
 
     const bool useCache = this->bVerticalScrolling &&                                              //
-                          this->container.usVisibleElements.size() > 2 &&                           // sanity checks
+                          this->container.usVisibleElements.size() > 2 &&                          // sanity checks
                           elements.size() > 0 &&                                                   //
                           prevVisibleSize > 0 &&                                                   //
-                          prevVisibleSize == this->container.usVisibleElements.size() &&            //
+                          prevVisibleSize == this->container.usVisibleElements.size() &&           //
                           prevTotalSize == elements.size() &&                                      //
                           !(2.f * this->getSize().y >= -this->vScrollPos.y ||                      // overscroll, top
                             2.f * this->getSize().y >= this->vScrollPos.y + this->vScrollSize.y);  // overscroll, bottom

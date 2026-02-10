@@ -104,6 +104,9 @@ struct UI final {
 
    private:
     friend UIScreen;
+    // for debugging
+    void setScreenByName(std::string_view screenGetterNameWithoutGet);
+
     NullScreen* dummy;
     NotificationOverlay* notificationOverlay;
     static constexpr const size_t EARLY_SCREENS{2};  // dummy+notificationOverlay

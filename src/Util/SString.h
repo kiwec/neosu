@@ -3,6 +3,8 @@
 #include "noinclude.h"
 
 #include <algorithm>
+#include <array>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <type_traits>
@@ -37,11 +39,11 @@ std::vector<R> split_newlines(std::string_view s);
 // NOTE: delim_len is unnecessary to pass, only used as an internal optimization
 template <typename R = std::string_view, typename S = char, split_ret_enabled_t<R> = true,
           split_join_enabled_t<S> = true>
-void split(std::vector<R> &ret, std::string_view s, S d, size_t delim_len = 0);
+void split(std::vector<R>& ret, std::string_view s, S d, size_t delim_len = 0);
 
 // split on newlines, handling both \n and \r\n line endings
 template <typename R = std::string_view, split_ret_enabled_t<R> = true>
-void split_newlines(std::vector<R> &ret, std::string_view s);
+void split_newlines(std::vector<R>& ret, std::string_view s);
 
 // join a vector of std::strings
 template <typename S = char, split_join_enabled_t<S> = true>
@@ -102,5 +104,8 @@ static forceinline std::string to_lower(const std::string_view str) {
     lower_inplace(lstr);
     return lstr;
 }
+
+// format a non-negative integer with thousands separators (commas)
+std::string thousands(uint64_t n);
 
 }  // namespace SString

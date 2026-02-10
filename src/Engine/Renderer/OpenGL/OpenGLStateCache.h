@@ -39,8 +39,11 @@ inline void setViewport(int x, int y, int width, int height) {
 
 void bindArrayBuffer(unsigned int GLbuffer);
 
+// legacy client state functions - only available in desktop OpenGL, not GLES
+#if defined(MCENGINE_FEATURE_OPENGL) && !defined(MCENGINE_FEATURE_GLES32)
 void enableClientState(unsigned int GLarray);
 void disableClientState(unsigned int GLarray);
+#endif
 
 // initialize cache with actual GL states (once at startup)
 void initialize();

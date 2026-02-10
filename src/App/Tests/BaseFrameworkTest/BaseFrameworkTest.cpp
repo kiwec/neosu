@@ -84,6 +84,21 @@ void BaseFrameworkTest::draw() {
     g->drawImage(testImage);
     g->popTransform();
 
+    assert(MISSING_TEXTURE);
+
+    // test smooth clipping
+    g->setColor(0xffffffff);
+    g->pushTransform();
+    {
+        const float cx = engine->getScreenWidth() * 0.5f + 200;
+        const float cy = engine->getScreenHeight() * 0.35f;
+        const float hw = (float)MISSING_TEXTURE->getWidth() * 0.3f;
+        const float hh = (float)MISSING_TEXTURE->getHeight() * 0.3f;
+        g->translate(cx, cy);
+        g->drawImage(MISSING_TEXTURE, AnchorPoint::CENTER, 20.0f, McRect(cx - hw, cy - hh, hw * 2, hh * 2));
+    }
+    g->popTransform();
+
     // test button
     m_testButton->draw();
 

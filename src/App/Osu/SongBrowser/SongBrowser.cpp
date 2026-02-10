@@ -791,7 +791,7 @@ void SongBrowser::draw() {
     UIScreen::draw();
 
     // no beatmaps found (osu folder is probably invalid)
-    if(db->getBeatmapSets().size() == 0) {
+    if(db->getBeatmapSets().size() == 0 && !Env::cfg(OS::WASM)) {
         UString errorMessage1 = "Invalid osu! folder (or no beatmaps found): ";
         errorMessage1.append(this->sLastOsuFolder);
         UString errorMessage2 = "Go to Options -> osu!folder";
@@ -3100,7 +3100,9 @@ void SongBrowser::onSortScoresChange(const UString &text, int /*id*/) {
 
 void SongBrowser::onWebClicked(CBaseUIButton * /*button*/) {
     if(this->songInfo->getBeatmapID() > 0) {
-        env->openURLInDefaultBrowser(fmt::format("https://osu.ppy.sh/b/{}", this->songInfo->getBeatmapID()));
+        auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+        auto endpoint = BanchoState::is_online() ? BanchoState::endpoint : "ppy.sh";
+        env->openURLInDefaultBrowser(fmt::format("{}osu.{}/b/{}", scheme, endpoint, this->songInfo->getBeatmapID()));
         ui->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
     }
 }

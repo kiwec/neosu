@@ -1,21 +1,5 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 
-#ifdef _WIN32
-
-#include "WinDebloatDefs.h"
-#include <windows.h>
-#include <cinttypes>
-
-#elif __APPLE__
-// nothing
-#else
-
-#include <linux/limits.h>
-#include <sys/stat.h>
-#include "dynutils.h"
-
-#endif
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -47,7 +31,24 @@
 #include "Timing.h"
 #include "Logging.h"
 #include "UserCard.h"
+#include "File.h"
 #include "UI.h"
+
+#ifdef MCENGINE_PLATFORM_WINDOWS
+
+#include "WinDebloatDefs.h"
+#include <windows.h>
+#include <cinttypes>
+
+#elif defined(MCENGINE_PLATFORM_WASM)
+#include <emscripten/emscripten.h>
+#elif defined(MCENGINE_PLATFORM_LINUX)
+
+#include <linux/limits.h>
+#include <sys/stat.h>
+#include "dynutils.h"
+
+#endif
 
 // defs
 // some of these are atomic due to multithreaded access
@@ -207,6 +208,20 @@ void BanchoState::handle_packet(Packet &packet) {
 
             const bool is_online = (new_user_id > 0) || (new_user_id < -10000);
             if(is_online) {
+                // Prevent getting into an invalid state where we are "logged in" but can't send any packets
+                if(BanchoState::cho_token.empty()) {
+                    ui->getNotificationOverlay()->addToast("Failed to log in: Server didn't send a cho-token header.",
+                                                           ERROR_TOAST);
+                    if constexpr(Env::cfg(OS::WASM)) {
+                        ui->getNotificationOverlay()->addToast(
+                            "Most likely, some CORS headers are missing (did you set Access-Control-Expose-Headers?)",
+                            ERROR_TOAST);
+                    }
+
+                    BanchoState::disconnect();
+                    return;
+                }
+
                 debugLog("Logged in as user #{:d}.", new_user_id);
                 cv::mp_autologin.setValue(true);
                 BanchoState::print_new_channels = true;
@@ -1051,6 +1066,8 @@ const std::string &BanchoState::get_disk_uuid() {
             BanchoState::disk_uuid = get_disk_uuid_win32();
         } else if constexpr(Env::cfg(OS::LINUX)) {
             BanchoState::disk_uuid = get_disk_uuid_blkid();
+        } else if constexpr(Env::cfg(OS::WASM)) {
+            BanchoState::disk_uuid = get_disk_uuid_wasm();
         } else {
             BanchoState::disk_uuid = "error getting disk uuid (unsupported platform)";
         }
@@ -1192,4 +1209,26 @@ std::string BanchoState::get_disk_uuid_win32() {
 
 #endif
     return retuuid;
+}
+
+std::string BanchoState::get_disk_uuid_wasm() {
+#ifdef MCENGINE_PLATFORM_WASM
+    FILE *f = File::fopen_c("/persist/client_id", "r");
+    if(f) {
+        std::array<char, 64> buf{};
+        fgets(buf.data(), buf.size(), f);
+        fclose(f);
+        if(buf[0]) return std::string{std::string_view{buf}};
+    }
+
+    const char *uuid = emscripten_run_script_string("crypto.randomUUID()");
+    f = File::fopen_c("/persist/client_id", "w");
+    if(f) {
+        fputs(uuid, f);
+        fclose(f);
+    }
+    return uuid;
+#else
+    return "error getting disk uuid (unsupported platform)";
+#endif
 }

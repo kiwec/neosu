@@ -564,8 +564,8 @@ void ModFPoSu::makePlayfield() {
     this->vao->clear();
     this->meshList.clear();
 
-    const float topTC = env->usingDX11() ? 0.f : 1.f;
-    const float bottomTC = env->usingDX11() ? 1.f : 0.f;
+    const float topTC = !env->usingGL() ? 0.f : 1.f;
+    const float bottomTC = !env->usingGL() ? 1.f : 0.f;
 
     const float dist = -cv::fposu_distance.getFloat();
 

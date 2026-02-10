@@ -1,6 +1,7 @@
 #ifndef UTIL_MD5HASH_H
 #define UTIL_MD5HASH_H
 
+#include <algorithm>
 #include <cstring>
 #include <array>
 #include <string_view>
@@ -80,9 +81,7 @@ struct ALIGNED_TO(16) MD5Hash final : public std::array<MD5Byte, 16> {
     [[nodiscard]] constexpr size_t length() const { return this->size(); }
 
     [[nodiscard]] constexpr inline MD5String to_chars() const { return MD5String{*this}; }
-    [[nodiscard]] inline bool operator==(const std::string &other) const {
-        return this->to_chars().string() == other;
-    }
+    [[nodiscard]] inline bool operator==(const std::string &other) const { return this->to_chars().string() == other; }
     [[nodiscard]] bool operator==(const UString &other) const;
 
     inline void clear() { std::memset(this->data(), 0, this->size() * sizeof(MD5Byte)); }
@@ -94,6 +93,10 @@ struct ALIGNED_TO(16) MD5Hash final : public std::array<MD5Byte, 16> {
         }
         return true;
     }
+
+    // this is just a fast heuristic check, a better one would be to check if there's a sequence of contiguous
+    // zero memory over a certain length instead of the absolute number of zeros, but that's much slower
+    [[nodiscard]] inline bool is_suspicious() const { return std::ranges::count(*this, 0) >= 10; }
 
     static const MD5Hash sentinel;
 };
@@ -146,7 +149,8 @@ struct Hash::flat::hash<MD5Hash> : Hash::flat::hash<std::string_view> {
     using is_avalanching = void;
 
     size_t operator()(const MD5Hash &md5) const noexcept {
-        return Hash::flat::hash<std::string_view>{}(std::string_view(reinterpret_cast<const char *>(md5.data()), md5.size()));
+        return Hash::flat::hash<std::string_view>{}(
+            std::string_view(reinterpret_cast<const char *>(md5.data()), md5.size()));
     }
 };
 

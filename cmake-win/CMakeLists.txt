@@ -112,7 +112,10 @@ set(EXTERNAL_PROJECT_CMAKE_ARGS
     -DCMAKE_SHARED_LINKER_FLAGS_DEBUG=${DEBUG_LINK_FLAGS_STR}
     -DCMAKE_SHARED_LINKER_FLAGS_RELEASE=${RELEASE_LINK_FLAGS_STR}
     -DCMAKE_STATIC_LINKER_FLAGS_RELEASE=${RELEASE_LINK_FLAGS_STR}
-    -DBZIP2_LIBRARIES=${DEPS_INSTALL_DIR}/lib/bz2_static.lib # bzip2's .pc file is literally just broken
+    -DBZIP2_INCLUDE_DIR=${DEPS_INSTALL_DIR}/include # bzip2's .pc file is literally just broken
+    -DBZIP2_LIBRARIES=${DEPS_INSTALL_DIR}/lib/bz2_static.lib
+    -DBZIP2_LIBRARY_RELEASE=${DEPS_INSTALL_DIR}/lib/bz2_static.lib
+    -DBZIP2_LIBRARY_DEBUG=${DEPS_INSTALL_DIR}/lib/bz2_static.lib
 )
 
 # Build dependencies - order matters due to interdependencies
@@ -373,14 +376,21 @@ add_external_project(discordsdk
 )
 
 # BASS audio libraries (pre-built binaries)
-add_external_project(bass
+add_external_project(bass_header
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
     BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bass/include
+        COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/c/bass.h ${DEPS_CACHE}/bass-${BASS_VERSION}/bass/include/
+)
+
+add_external_project(bass
+    DEPENDS bass_header_external
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
+    INSTALL_COMMAND
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bass/lib/windows/i686
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bass/lib/windows/x86_64
-        COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/bass.h ${DEPS_CACHE}/bass-${BASS_VERSION}/bass/include/
         COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/bass.dll ${DEPS_CACHE}/bass-${BASS_VERSION}/bass/lib/windows/i686/
         COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/x64/bass.dll ${DEPS_CACHE}/bass-${BASS_VERSION}/bass/lib/windows/x86_64/
 )
@@ -492,6 +502,7 @@ ExternalProject_Add(neosu_main
         simdutf_external
         ctre_external
         discordsdk_external
+        bass_header_external
         bass_external
         bassfx_external
         bassmix_external

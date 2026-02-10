@@ -190,7 +190,7 @@ struct McFontImpl final {
    public:
     McFontImpl() = delete;
     McFontImpl(McFont *parent, int fontSize, bool antialiasing, int fontDPI);
-    McFontImpl(McFont *parent, const char16_t *characters, size_t numCharacters, int fontSize, bool antialiasing,
+    McFontImpl(McFont *parent, const std::span<const char16_t> &characters, int fontSize, bool antialiasing,
                int fontDPI);
 
     ~McFontImpl() { destroy(); }
@@ -225,7 +225,7 @@ struct McFontImpl final {
 
    private:
     // Shared ctor helper
-    void constructor(const char16_t *characters, size_t numCharacters, int fontSize, bool antialiasing, int fontDPI);
+    void constructor(const std::span<const char16_t> &characters, int fontSize, bool antialiasing, int fontDPI);
 
     // Internal helper methods below here
     bool initializeFreeType();
@@ -284,9 +284,9 @@ struct McFontImpl final {
 McFont::McFont(std::string filepath, int fontSize, bool antialiasing, int fontDPI)
     : Resource(FONT, std::move(filepath)), pImpl(this, fontSize, antialiasing, fontDPI) {}
 
-McFont::McFont(std::string filepath, const char16_t *characters, size_t numCharacters, int fontSize, bool antialiasing,
+McFont::McFont(std::string filepath, const std::span<const char16_t> &characters, int fontSize, bool antialiasing,
                int fontDPI)
-    : Resource(FONT, std::move(filepath)), pImpl(this, characters, numCharacters, fontSize, antialiasing, fontDPI) {}
+    : Resource(FONT, std::move(filepath)), pImpl(this, characters, fontSize, antialiasing, fontDPI) {}
 
 McFont::~McFont() { destroy(); }
 
@@ -321,27 +321,27 @@ McFontImpl::McFontImpl(McFont *parent, int fontSize, bool antialiasing, int font
       m_vao(g->createVertexArrayObject(
           (Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::TRIANGLES : DrawPrimitive::QUADS),
           DrawUsageType::DYNAMIC, false)) {
-    std::vector<char16_t> characters;
-    characters.reserve(96);  // reserve space for basic ASCII, load the rest as needed
+    std::array<char16_t, 96> characters;
+    // initialize with basic ASCII, load the rest as needed
     for(int i = 32; i < 128; i++) {
-        characters.push_back(static_cast<char16_t>(i));
+        characters[i - 32] = static_cast<char16_t>(i);
     }
     m_bTryFindFallbacks = true;
-    constructor(characters.data(), characters.size(), fontSize, antialiasing, fontDPI);
+    constructor(characters, fontSize, antialiasing, fontDPI);
 }
 
-McFontImpl::McFontImpl(McFont *parent, const char16_t *characters, size_t numCharacters, int fontSize,
-                       bool antialiasing, int fontDPI)
+McFontImpl::McFontImpl(McFont *parent, const std::span<const char16_t> &characters, int fontSize, bool antialiasing,
+                       int fontDPI)
     : m_parent(parent),
       m_vao(g->createVertexArrayObject(
           (Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::TRIANGLES : DrawPrimitive::QUADS),
           DrawUsageType::DYNAMIC, false)) {
     // don't try to find fallbacks if we had an explicitly-passed character set on construction
     m_bTryFindFallbacks = false;
-    constructor(characters, numCharacters, fontSize, antialiasing, fontDPI);
+    constructor(characters, fontSize, antialiasing, fontDPI);
 }
 
-void McFontImpl::constructor(const char16_t *characters, size_t numCharacters, int fontSize, bool antialiasing,
+void McFontImpl::constructor(const std::span<const char16_t> &characters, int fontSize, bool antialiasing,
                              int fontDPI) {
     m_iFontSize = fontSize;
     m_bAntialiasing = antialiasing;
@@ -373,9 +373,9 @@ void McFontImpl::constructor(const char16_t *characters, size_t numCharacters, i
                     .inAtlas = true};
 
     // pre-allocate space for initial glyphs
-    m_vInitialGlyphs.reserve(numCharacters);
-    for(int i = 0; i < numCharacters; ++i) {
-        m_vInitialGlyphs.push_back(characters[i]);
+    m_vInitialGlyphs.reserve(characters.size());
+    for(char16_t character : characters) {
+        m_vInitialGlyphs.push_back(character);
     }
 }
 
@@ -467,7 +467,14 @@ void McFontImpl::drawString(const UString &text, std::optional<TextShadow> shado
                     markSlotUsed(ch);
                 }
             } else if(ch >= 32) {
-                assert(gm->inAtlas);
+                if constexpr(Env::cfg(OS::WASM)) {
+                    if(!gm->inAtlas) {
+                        fprintf(stderr, "%s %hd was not in the texture atlas, aborting\n", text.toUtf8(), ch);
+                        fubar_abort();
+                    }
+                } else {
+                    assert(gm->inAtlas);
+                }
             }
         }
 

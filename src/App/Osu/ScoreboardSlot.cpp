@@ -10,9 +10,8 @@
 #include "SongBrowser/SongBrowser.h"
 #include "Skin.h"
 #include "SkinImage.h"
+#include "SString.h"
 #include "UI.h"
-
-#include <cinttypes>
 
 ScoreboardSlot::ScoreboardSlot(const SCORE_ENTRY &score, int index) {
     this->avatar = std::make_unique<UIAvatar>(score.player_id, 0.f, 0.f, 0.f, 0.f);
@@ -141,9 +140,7 @@ void ScoreboardSlot::draw() {
     // draw combo
     g->pushTransform();
     {
-        char combobuf[256]{};
-        int written = std::snprintf(&combobuf[0], sizeof(combobuf), "%'dx", this->score.maxCombo);
-        const UString comboString{&combobuf[0], written >= 0 && written < sizeof(combobuf) ? written : 0};
+        const UString comboString{fmt::format("{}x", SString::thousands(this->score.maxCombo))};
         const float stringWidth = font_normal->getStringWidth(comboString);
 
         g->scale(scoreScale, scoreScale);
@@ -181,9 +178,7 @@ void ScoreboardSlot::draw() {
             } break;
             // other conditions fall through to scorev1
             default: {
-                char scorebuf[256]{};
-                int written = std::snprintf(&scorebuf[0], sizeof(scorebuf), "%'" PRIu64 "", this->score.score);
-                wincond_based_scoretext = {&scorebuf[0], written >= 0 && written < sizeof(scorebuf) ? written : 0};
+                wincond_based_scoretext = SString::thousands(this->score.score);
             } break;
         }
 

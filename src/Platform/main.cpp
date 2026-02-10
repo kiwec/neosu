@@ -15,10 +15,13 @@
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_process.h>
 
+#ifdef MCENGINE_PLATFORM_WINDOWS
 #include "CrashHandler.h"
+#endif
 #include "Profiler.h"
 #include "UString.h"
 #include "Thread.h"
+#include "Engine.h"
 #include "DiffCalcTool.h"
 
 #include "environment_private.h"
@@ -33,6 +36,14 @@
 #include <filesystem>
 #include <locale>
 #include <clocale>
+
+#ifdef MCENGINE_PLATFORM_WASM
+#include <emscripten/emscripten.h>
+
+// Our html shell overrides window.alert to display fatal errors properly.
+// (we override window.alert so this code also falls back nicely on the default shell)
+EM_JS(void, js_fatal_error, (const char *str), { alert(UTF8ToString(str)); });
+#endif
 
 #ifdef WITH_LIVEPP
 #include "LPP_API_x64_CPP.h"
@@ -73,7 +84,14 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 // Init/Iterate/Event
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     if(!appstate || result == SDL_APP_FAILURE) {
-        debugLog("Force exiting now, a fatal error occurred. (SDL error: {})", SDL_GetError());
+        auto err_msg = SDL_GetError();
+        debugLog("Force exiting now, a fatal error occurred. (SDL error: {})", err_msg);
+
+#ifdef MCENGINE_PLATFORM_WASM
+        // Display the error to the user (as opposed to a black screen)
+        js_fatal_error(err_msg);
+#endif
+
         std::exit(-1);
     }
 
@@ -88,7 +106,29 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
         restartArgs = fmain->getCommandLine();
     }
 
-    fmain->shutdown(result);  // FIXME: redundant?
+    // we might be called directly instead of through events, so check this again
+    if(fmain->m_bRunning) {
+        fmain->m_bRunning = false;
+        if(fmain->m_engine && !fmain->m_engine->isShuttingDown()) {
+            fmain->m_engine->shutdown();
+        }
+    }
+#ifdef MCENGINE_PLATFORM_WASM
+    // flush IDBFS to IndexedDB after config/scores have been saved.
+    // keep the runtime alive until the async sync completes, otherwise the IDB
+    // connection gets torn down before the data reaches IndexedDB.
+    // clang-format off
+    EM_ASM(
+        if(typeof FS !== 'undefined' && FS.syncfs) {
+            runtimeKeepalivePush();
+            FS.syncfs(false, function(e) {
+                if(e) console.error('syncfs error:', e);
+                runtimeKeepalivePop();
+            });
+        }
+    );
+    // clang-format on
+#endif
     if constexpr(Env::cfg(OS::WASM) || Env::cfg(FEAT::MAINCB)) {
         // we allocated it with new
         delete fmain;
@@ -170,25 +210,7 @@ MAIN_FUNC /* int argc, char *argv[] */
         return (SDL_AppResult)NEOSU_run_diffcalc(argc, argv);
     }
 
-    // if we have an "existing window handler", let it run very early
-    // for the neosu implementation, this checks if an existing instance is running, and if it is,
-    // sends it a message (with the current argc+argv) and quits the current instance (so we might never proceed further in this process)
-    // (only works on windows for now)
-    const auto &appDesc = Mc::getDefaultAppDescriptor();
-    if(appDesc.handleExistingWindow) {
-        appDesc.handleExistingWindow(argc, argv);
-    }
-
-    CrashHandler::init();  // initialize minidump handling
-
-    // this sets and caches the path in getPathToSelf, so this must be called here
-    const auto &selfpath = Environment::getPathToSelf(argv[0]);
-    // set the current working directory to the executable directory, so that relative paths
-    // work as expected
-    setcwdexe(selfpath);
-
     // parse args here
-
     // simple vector representation of the whole cmdline including the program name (as the first element)
     auto arg_cmdline = std::vector<std::string>(argv, argv + argc);
 
@@ -213,6 +235,40 @@ MAIN_FUNC /* int argc, char *argv[] */
         }
         return args;
     }();
+
+    // if we have an "existing window handler", let it run very early
+    // use the handler for the desired app-to-launch, so we don't collide with a running instance of a different kind of app
+    const Mc::AppDescriptor *appDesc{nullptr};
+    if(arg_map.contains("-testapp") && arg_map["-testapp"].has_value()) {
+        const auto &testappName = arg_map["-testapp"].value();
+        for(const auto &entry : Mc::getAllAppDescriptors()) {
+            if(testappName == entry.name) {
+                appDesc = &entry;
+                break;
+            }
+        }
+    }
+    if(!appDesc) {
+        appDesc = &Mc::getDefaultAppDescriptor();
+    }
+
+    assert(appDesc);
+
+    // for the neosu (default) implementation, this checks if an existing instance is running, and if it is,
+    // sends it a message (with the current argc+argv) and quits the current instance (so we might never proceed further in this process)
+    if(appDesc->handleExistingWindow) {
+        appDesc->handleExistingWindow(argc, argv);
+    }
+
+#ifdef MCENGINE_PLATFORM_WINDOWS
+    CrashHandler::init();
+#endif
+
+    // this sets and caches the path in getPathToSelf, so this must be called here
+    const auto &selfpath = Environment::getPathToSelf(argv[0]);
+    // set the current working directory to the executable directory, so that relative paths
+    // work as expected
+    setcwdexe(selfpath);
 
     // improve floating point perf in case this isn't already enabled by the compiler
     // -nofpu to disable (debug)
@@ -259,21 +315,30 @@ MAIN_FUNC /* int argc, char *argv[] */
     }
 #endif
 
-    if(!arg_map.contains("-ime")) {
-        // FIXME(spec):
-        // we want SDL_EVENT_TEXT_INPUT for utf char events all the time, but we don't want a text editing composition window to show up.
-        // set this hint so that SDL thinks we can handle IME stuff internally, so it doesn't show any OS-level IME window.
-        // !!!this is not good because it doesn't let the user use their native IME to input text in text fields!!!
-        // a better/less hacky fix would be to always notify when we actually need text input, such as when a textbox is active,
-        // and disable it otherwise, but until then, this is the simplest workaround.
-        // followup in main_impl.cpp::SDLMain::configureEvents()
-        SDL_SetHintWithPriority(SDL_HINT_IME_IMPLEMENTED_UI, "candidates,composition", SDL_HINT_NORMAL);
-    }
+    // double FIXME: disabled for now, try to enable/disable text input on a best-effort basis
+    // if(!arg_map.contains("-ime")) {
+    //     // FIXME(spec):
+    //     // we want SDL_EVENT_TEXT_INPUT for utf char events all the time, but we don't want a text editing composition window to show up.
+    //     // set this hint so that SDL thinks we can handle IME stuff internally, so it doesn't show any OS-level IME window.
+    //     // !!!this is not good because it doesn't let the user use their native IME to input text in text fields!!!
+    //     // a better/less hacky fix would be to always notify when we actually need text input, such as when a textbox is active,
+    //     // and disable it otherwise, but until then, this is the simplest workaround.
+    //     // followup in main_impl.cpp::SDLMain::configureEvents()
+    //     SDL_SetHintWithPriority(SDL_HINT_IME_IMPLEMENTED_UI, "candidates,composition", SDL_HINT_NORMAL);
+    // }
 
     if(headless) {
-        // use the offscreen video driver if we're going to run in headless mode
-        // (does not create a visible window)
-        SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
+        // use a video driver that doesn't need a real display
+        if constexpr(Env::cfg(OS::WASM)) {
+            SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "dummy", SDL_HINT_OVERRIDE);
+            SDL_SetHintWithPriority(SDL_HINT_AUDIO_DRIVER, "dummy", SDL_HINT_OVERRIDE);
+        } else {
+            // don't use offscreen for SDL_gpu headless, that would attempt to initialize a bunch of
+            // offscreen openGL stuff we don't want
+            if(!(Env::cfg(REND::SDLGPU) && (arg_map.contains("-sdlgpu") || arg_map.contains("-gpu")))) {
+                SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
+            }
+        }
     }
 
     if(!SDL_Init(SDL_INIT_VIDEO))  // other subsystems can be init later
@@ -290,13 +355,13 @@ MAIN_FUNC /* int argc, char *argv[] */
     VPROF_ENTER_SCOPE("Main", VPROF_BUDGETGROUP_ROOT);
     VPROF_ENTER_SCOPE("SDL", VPROF_BUDGETGROUP_BETWEENFRAMES);
 
-    auto *fmain = new SDLMain(appDesc, arg_map, arg_cmdline);  // need to allocate dynamically
+    auto *fmain = new SDLMain(*appDesc, arg_map, arg_cmdline);  // need to allocate dynamically
     *appstate = fmain;
     return !fmain ? SDL_APP_FAILURE : fmain->initialize();
 #else
 
     // otherwise just put it on the stack
-    SDLMain fmain{appDesc, arg_map, arg_cmdline};
+    SDLMain fmain{*appDesc, arg_map, arg_cmdline};
     if(fmain.initialize() == SDL_APP_FAILURE) {
         SDL_AppQuit(&fmain, SDL_APP_FAILURE);
     }

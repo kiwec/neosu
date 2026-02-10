@@ -3,6 +3,7 @@
 // jthreads (+ stop token support)
 
 #include "config.h"
+#include "SyncStoptoken.h"
 
 #ifdef MCENGINE_PLATFORM_WASM
 
@@ -13,7 +14,6 @@ using jthread = std::jthread;
 }
 
 #else
-#include "SyncStoptoken.h"
 
 #include <functional>
 

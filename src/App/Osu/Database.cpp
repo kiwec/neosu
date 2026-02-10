@@ -288,22 +288,24 @@ void Database::startLoader() {
     VolNormalization::abort();
 
     // only clear diffs/sets for full reloads (only handled for raw re-loading atm)
-    const bool lastLoadWasRaw{this->needs_raw_load};
+    // const bool lastLoadWasRaw{this->needs_raw_load};
+    // TODO: fix delta load logic
     // TODO: raw loading from other folders
-    this->needs_raw_load = !cv::database_enabled.getBool() &&  // TODO: new cvar like "force raw load"
-                           Environment::directoryExists(Database::getOsuSongsFolder()) &&
-                           !isOsuDBReadable(getDBPath(DatabaseType::STABLE_MAPS));
-    const bool nextLoadIsRaw{this->needs_raw_load};
+    // TODO: new cvar like "force raw load"
+    const bool songsFolderExists = Environment::directoryExists(Database::getOsuSongsFolder());
+    this->needs_raw_load = songsFolderExists &&
+                           (!cv::database_enabled.getBool() || !isOsuDBReadable(getDBPath(DatabaseType::STABLE_MAPS)));
+    // const bool nextLoadIsRaw{this->needs_raw_load};
 
-    if(!lastLoadWasRaw || !nextLoadIsRaw) {
-        this->loudness_to_calc.clear();
-        {
-            Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-            this->beatmap_difficulties.clear();
-        }
-        this->temp_loading_beatmapsets.clear();
-        this->beatmapsets.clear();
+    this->is_first_load = true;
+
+    this->loudness_to_calc.clear();
+    {
+        Sync::unique_lock lock(this->beatmap_difficulties_mtx);
+        this->beatmap_difficulties.clear();
     }
+    this->temp_loading_beatmapsets.clear();
+    this->beatmapsets.clear();
 
     // append, the copy will only be cleared if loading them succeeded
     this->extern_db_paths_to_import_async_copy.insert(this->extern_db_paths_to_import_async_copy.end(),
@@ -395,10 +397,8 @@ void Database::update() {
                std::cmp_greater(this->cur_raw_load_idx, (this->raw_load_beatmap_folders.size() - 1))) {
                 this->raw_load_beatmap_folders.clear();
                 this->raw_load_scheduled = false;
-                this->importTimer->update();
 
-                this->beatmapsets = std::move(this->temp_loading_beatmapsets);
-                this->temp_loading_beatmapsets.clear();
+                this->importTimer->update();
 
                 debugLog("Refresh finished, added {} beatmaps in {:f} seconds.", this->beatmapsets.size(),
                          this->importTimer->getElapsedTime());
@@ -454,12 +454,47 @@ void Database::save() {
 //       See loadRawBeatmap()
 //       (unless is_peppy is specified, in which case we're loading a raw osu folder and not saving the things we loaded)
 BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override, bool is_peppy) {
-    // TODO: deduplication logic
-    // needs to handle different loading states that we might be in currently
     std::unique_ptr<BeatmapSet> mapset = this->loadRawBeatmap(beatmapFolderPath, is_peppy);
     if(mapset == nullptr) return nullptr;
 
     BeatmapSet *raw_mapset = mapset.get();
+
+    {
+        // deduplicate diffs
+        // TODO: this will disallow adding a neosu beatmapset if we already have a peppy beatmapset that is the same (and vice versa)!
+        Sync::unique_lock lock(this->beatmap_difficulties_mtx);
+        for(auto diffit = mapset->difficulties->begin(); diffit != mapset->difficulties->end();) {
+            const auto &diff = *diffit;
+            auto [existingit, inserted] = this->beatmap_difficulties.try_emplace(diff->getMD5(), diff.get());
+            if(!inserted) {
+                // update set id just in case we had an override, though
+                const i32 real_set_id = set_id_override != -1 ? set_id_override : mapset->iSetID;
+
+                BeatmapDifficulty *diffparent = existingit->second->parentSet;
+                if(const i32 old_set_id = diffparent->iSetID; old_set_id == -1 && real_set_id > 0) {
+                    logIfCV(debug_db, "updating old set {} id {} -> {}", diffparent->getFolder(), old_set_id,
+                            real_set_id);
+                    diffparent->iSetID = set_id_override;
+                    for(auto &existingdiff : diffparent->getDifficulties()) {
+                        existingdiff->iSetID = set_id_override;
+                    }
+                }
+                logIfCV(debug_db, "skipping raw {} (already in beatmap_difficulties), current size: {}", diff->getMD5(),
+                        this->beatmap_difficulties.size());
+                diffit = mapset->difficulties->erase(diffit);
+            } else {
+                logIfCV(debug_db, "adding raw {} to beatmap_difficulties, current size: {}", diff->getMD5(),
+                        this->beatmap_difficulties.size());
+                ++diffit;
+            }
+        }
+    }
+
+    if(mapset->difficulties->empty()) {
+        logIfCV(debug_db, "WARNING: not adding raw mapset {} id {}, only had duplicate difficulties!",
+                mapset->getFolder(), set_id_override != -1 ? set_id_override : mapset->iSetID);
+        return nullptr;
+    }
 
     // Some beatmaps don't provide beatmap/beatmapset IDs in the .osu files
     // But we know the beatmapset ID because we just downloaded it!
@@ -470,22 +505,12 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
         }
     }
 
-    {
-        Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-        for(const auto &diff : mapset->getDifficulties()) {
-            this->beatmap_difficulties[diff->getMD5()] = diff.get();
-        }
-    }
+    this->beatmapsets.push_back(std::move(mapset));
 
-    // do not add to songbrowser yet unless we are finished loading
+    // only notify songbrowser if loading is done (it rebuilds from beatmapsets in onDatabaseLoadingFinished)
     if(this->isFinished()) {
-        this->beatmapsets.push_back(std::move(mapset));
-
         ui->getSongBrowser()->addBeatmapSet(raw_mapset);
         this->bPendingBatchDiffCalc = true;  // picked up by SongBrowser::update
-    } else {
-        // FIXME: this is just completely wrong, this vector cant just be appended to like that here
-        this->temp_loading_beatmapsets.push_back(std::move(mapset));
     }
 
     return raw_mapset;
@@ -724,7 +749,6 @@ Database::PlayerStats Database::calculatePlayerStats(const std::string &playerNa
     // "If n is the amount of scores giving more pp than a given score, then the score's weight is 0.95^n"
     // "Total pp = PP[1] * 0.95^0 + PP[2] * 0.95^1 + PP[3] * 0.95^2 + ... + PP[n] * 0.95^(n-1)"
     // also, total accuracy is apparently weighted the same as pp
-
     float pp = 0.0f;
     float acc = 0.0f;
     for(uSz i = 0; i < ps.ppScores.size(); i++) {
@@ -1420,13 +1444,13 @@ void Database::loadMaps() {
                         this->num_beatmaps_to_load, md5hash);
 
                 bool overrides_found = false;
-                MapOverrides override;
+                MapOverrides override_;
                 {
                     Sync::shared_lock lock(this->peppy_overrides_mtx);
                     auto overrides = this->peppy_overrides.find(md5hash);
                     overrides_found = overrides != this->peppy_overrides.end();
                     if(overrides_found) {
-                        override = overrides->second;
+                        override_ = overrides->second;
                     }
                 }
                 std::string osuFileName = dbr.read_string();
@@ -1503,11 +1527,11 @@ void Database::loadMaps() {
                 BPMInfo bpm;
                 auto nb_timing_points = dbr.read<u32>();
                 if(overrides_found &&
-                   override.min_bpm != -1) {  // only use cached override bpm if it's not the sentinel -1
+                   override_.min_bpm != -1) {  // only use cached override bpm if it's not the sentinel -1
                     dbr.skip_bytes(sizeof(DB_TIMINGPOINT) * nb_timing_points);
-                    bpm.min = override.min_bpm;
-                    bpm.max = override.max_bpm;
-                    bpm.most_common = override.avg_bpm;
+                    bpm.min = override_.min_bpm;
+                    bpm.max = override_.max_bpm;
+                    bpm.most_common = override_.avg_bpm;
                 } else if(nb_timing_points > 0) {
                     timing_points_buffer.resize(nb_timing_points);
                     if(dbr.read_bytes((u8 *)timing_points_buffer.data(), sizeof(DB_TIMINGPOINT) * nb_timing_points) !=
@@ -1678,14 +1702,14 @@ void Database::loadMaps() {
                 if(diffp != nullptr) {  // if we actually added it
                     bool loudness_found = false;
                     if(overrides_found) {
-                        diffp->iLocalOffset = override.local_offset;
-                        diffp->iOnlineOffset = override.online_offset;
-                        diffp->fStarsNomod = override.star_rating;
-                        diffp->ppv2Version = override.ppv2_version;
-                        diffp->loudness = override.loudness;
-                        diffp->draw_background = override.draw_background;
-                        diffp->sBackgroundImageFileName = override.background_image_filename;
-                        if(override.loudness != 0.f) {
+                        diffp->iLocalOffset = override_.local_offset;
+                        diffp->iOnlineOffset = override_.online_offset;
+                        diffp->fStarsNomod = override_.star_rating;
+                        diffp->ppv2Version = override_.ppv2_version;
+                        diffp->loudness = override_.loudness;
+                        diffp->draw_background = override_.draw_background;
+                        diffp->sBackgroundImageFileName = override_.background_image_filename;
+                        if(override_.loudness != 0.f) {
                             loudness_found = true;
                         }
                     } else {
@@ -1772,7 +1796,7 @@ void Database::loadMaps() {
     // link each diff's star_ratings pointer to its entry in the star_ratings map
     {
         Sync::shared_lock sr_lock(this->star_ratings_mtx);
-        Sync::shared_lock diff_lock(this->beatmap_difficulties_mtx);
+        Sync::unique_lock diff_lock(this->beatmap_difficulties_mtx);
         for(const auto &[hash, diff] : this->beatmap_difficulties) {
             if(auto it = this->star_ratings.find(hash); it != this->star_ratings.end()) {
                 diff->star_ratings = it->second.get();
@@ -1885,31 +1909,31 @@ void Database::saveMaps() {
     u32 nb_overrides = 0;
     Hash::flat::map<MD5Hash, MapOverrides> real_overrides;
 
-    // avoid adding overrides with empty/0 hash
+    // avoid adding overrides with empty/0/"suspicious" hashes
     {
         // only need read lock here
         Sync::shared_lock lock(this->peppy_overrides_mtx);
         real_overrides.reserve(this->peppy_overrides.size());
 
         for(const auto &it : this->peppy_overrides) {
-            if(it.first.empty()) continue;
+            if(it.first.is_suspicious()) continue;
             real_overrides.emplace(it);
         }
     }
 
     maps.write<u32>(real_overrides.size());
-    for(const auto &[hash, override] : real_overrides) {
+    for(const auto &[hash, override_] : real_overrides) {
         maps.write_hash_digest(hash);
-        maps.write<i16>(override.local_offset);
-        maps.write<i16>(override.online_offset);
-        maps.write<f32>(override.star_rating);
-        maps.write<f32>(override.loudness);
-        maps.write<i32>(override.min_bpm);
-        maps.write<i32>(override.max_bpm);
-        maps.write<i32>(override.avg_bpm);
-        maps.write<u8>(override.draw_background);
-        maps.write_string(override.background_image_filename);
-        maps.write<u32>(override.ppv2_version);
+        maps.write<i16>(override_.local_offset);
+        maps.write<i16>(override_.online_offset);
+        maps.write<f32>(override_.star_rating);
+        maps.write<f32>(override_.loudness);
+        maps.write<i32>(override_.min_bpm);
+        maps.write<i32>(override_.max_bpm);
+        maps.write<i32>(override_.avg_bpm);
+        maps.write<u8>(override_.draw_background);
+        maps.write_string(override_.background_image_filename);
+        maps.write<u32>(override_.ppv2_version);
 
         nb_overrides++;
     }

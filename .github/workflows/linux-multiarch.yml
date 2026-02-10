@@ -3,9 +3,23 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'cmake-win/**'
+      - 'tools/**'
+      - '*.md'
+      - '.clangd-template'
+      - '.gitignore'
+      - '.git-blame-ignore-revs'
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - 'cmake-win/**'
+      - 'tools/**'
+      - '*.md'
+      - '.clangd-template'
+      - '.gitignore'
+      - '.git-blame-ignore-revs'
   workflow_dispatch:
 
 env:
@@ -75,7 +89,7 @@ jobs:
           cd build-out && \
           ../configure \
             ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
-            --with-audio="bass,soloud" --host=${{ matrix.host }} && \
+            --with-audio="bass,soloud" --with-renderer="opengl,sdlgpu" --host=${{ matrix.host }} && \
           make install
 
       - name: Package artifacts (fix symlinks)

@@ -61,7 +61,7 @@ class MainMenu final : public UIScreen, public MouseListener {
     friend class MainButton;
     float button_sound_cooldown{0.f};
 
-    void drawBanner();
+    void drawTestBanner();
     void drawVersionInfo();
     void drawMainButton();
     void drawLogoImage(const McRect &mainButtonRect);
@@ -157,7 +157,7 @@ class MainMenu final : public UIScreen, public MouseListener {
         NOCOPY_NOMOVE(SongsFolderEnumerator)
        public:
         SongsFolderEnumerator();
-        ~SongsFolderEnumerator() override = default;
+        ~SongsFolderEnumerator() override;
 
         [[nodiscard]] inline const std::vector<std::string> &getEntries() const { return this->entries; }
         [[nodiscard]] inline std::string getFolderPath() const { return this->osuSongsFolderPath; }

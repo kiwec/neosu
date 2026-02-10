@@ -14,8 +14,6 @@
 #include "VertexArrayObject.h"
 #include "Logging.h"
 
-#include "shaders.h"
-
 #include <limits>
 
 namespace SliderRenderer {
@@ -57,7 +55,7 @@ struct UniformCache {
 UniformCache s_uniformCache;
 
 // helper function to update color uniforms (after ->enable-ing the shader)
-void updateColorUniforms(const Color &borderColor, const Color &bodyColor);
+void updateColorUniforms(Color borderColor, Color bodyColor);
 // check if convar-dependent uniforms need to be updated (after ->enable-ing the shader)
 void updateConfigUniforms();
 
@@ -232,6 +230,8 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
 
             if(!useGradientImage) {
                 s_BLEND_SHADER->disable();
+            } else {
+                osu->getSkin()->i_slider_gradient->unbind();
             }
         }
         osu->getSliderFrameBuffer()->disable();
@@ -248,8 +248,8 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
 
     osu->getSliderFrameBuffer()->setColor(argb(alpha * cv::slider_alpha_multiplier.getFloat(), 1.0f, 1.0f, 1.0f));
     osu->getSliderFrameBuffer()->drawRect(s_fBoundingBoxMinX, s_fBoundingBoxMinY,
-                                         s_fBoundingBoxMaxX - s_fBoundingBoxMinX,
-                                         s_fBoundingBoxMaxY - s_fBoundingBoxMinY);
+                                          s_fBoundingBoxMaxX - s_fBoundingBoxMinX,
+                                          s_fBoundingBoxMaxY - s_fBoundingBoxMinY);
 }
 
 void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 translation, float scale,
@@ -297,6 +297,8 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
 
             if(!useGradientImage) {
                 s_BLEND_SHADER->disable();
+            } else {
+                osu->getSkin()->i_slider_gradient->unbind();
             }
         }
 
@@ -350,7 +352,7 @@ void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject 
 void checkUpdateVars(float hitcircleDiameter) {
     // static globals
 
-    if(env->usingDX11()) {
+    if(!env->usingGL()) {
         // NOTE: compensate for zn/zf Camera::buildMatrixOrtho2DDXLH() differences compared to OpenGL
         if(s_MESH_CENTER_HEIGHT > 0.0f) s_MESH_CENTER_HEIGHT = -s_MESH_CENTER_HEIGHT;
     }
@@ -359,9 +361,7 @@ void checkUpdateVars(float hitcircleDiameter) {
     if(s_BLEND_SHADER == nullptr)  // only do this once
     {
         // build shaders
-        s_BLEND_SHADER = resourceManager->createShader(
-            env->usingDX11() ? VSH_STRING(DX11_, slider) : VSH_STRING(GL_, slider),
-            env->usingDX11() ? FSH_STRING(DX11_, slider) : FSH_STRING(GL_, slider), "slider");
+        s_BLEND_SHADER = resourceManager->createShaderAuto("slider");
     }
 
     const int subdivisions = cv::slider_body_unit_circle_subdivisions.getInt();
@@ -465,7 +465,7 @@ void checkUpdateVars(float hitcircleDiameter) {
 }
 
 // helper function to update color uniforms
-void updateColorUniforms(const Color &borderColor, const Color &bodyColor) {
+void updateColorUniforms(Color borderColor, Color bodyColor) {
     if(!s_BLEND_SHADER) return;
 
     if(s_uniformCache.lastBorderColor != borderColor) {

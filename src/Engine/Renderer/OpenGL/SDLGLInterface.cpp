@@ -13,11 +13,11 @@
 #include "Environment.h"
 #include "ConVar.h"
 
+#ifndef MCENGINE_PLATFORM_WASM
 #ifdef MCENGINE_FEATURE_GLES32
 #include "glad/glad_egl.h"
 #endif
 
-#ifndef MCENGINE_PLATFORM_WASM
 namespace {  // static
 #ifdef MCENGINE_FEATURE_GLES32
 bool EGLLoaded{false};
@@ -26,7 +26,7 @@ bool GLESLoaded{false};
 bool GLLoaded{false};
 #endif
 }  // namespace
-#endif
+#endif // MCENGINE_PLATFORM_WASM
 
 // resolve GL functions (static, called before construction)
 void SDLGLInterface::load() {
@@ -92,6 +92,8 @@ void SDLGLInterface::unload() {
 
 SDLGLInterface::SDLGLInterface(SDL_Window *window)
     : BackendGLInterface(), window(window), syncobj(std::make_unique<OpenGLSync>()) {}
+
+SDLGLInterface::~SDLGLInterface() = default;
 
 void SDLGLInterface::beginScene() {
     // block on frame queue (if enabled)
@@ -281,7 +283,12 @@ std::string glDebugSeverityString(GLenum severity) {
 }  // namespace
 
 void SDLGLInterface::setGLLog(bool on) {
-    if(!g || !g.get() || !glDebugMessageCallbackARB) return;
+    if(!g || !g.get()) return;
+#ifdef MCENGINE_FEATURE_GLES32
+    // GLES 3.2 has debug functions as core, always available
+#else
+    if(!glDebugMessageCallbackARB) return;
+#endif
     if(on) {
         glEnable(GL_DEBUG_OUTPUT);
     } else {

@@ -1,0 +1,18 @@
+# Binary resources to embed in the executable.
+# Format: symbol_name : path/relative/to/project/root
+# The build system prefixes paths with the source directory via --base-dir.
+# Build artifacts (e.g. cacert.pem) are passed as extra CLI arguments.
+
+# HLSL shaders (DirectX 11)
+DX11_default_vsh            : assets/shaders/DX11_default_v.hlsl
+DX11_default_fsh            : assets/shaders/DX11_default_f.hlsl
+DX11_cursortrail_vsh        : assets/shaders/DX11_cursortrail_v.hlsl
+DX11_cursortrail_fsh        : assets/shaders/DX11_cursortrail_f.hlsl
+DX11_slider_vsh             : assets/shaders/DX11_slider_v.hlsl
+DX11_slider_fsh             : assets/shaders/DX11_slider_f.hlsl
+DX11_flashlight_vsh         : assets/shaders/DX11_flashlight_v.hlsl
+DX11_flashlight_fsh         : assets/shaders/DX11_flashlight_f.hlsl
+DX11_actual_flashlight_vsh  : assets/shaders/DX11_actual_flashlight_v.hlsl
+DX11_actual_flashlight_fsh  : assets/shaders/DX11_actual_flashlight_f.hlsl
+DX11_smoothclip_vsh         : assets/shaders/DX11_smoothclip_v.hlsl
+DX11_smoothclip_fsh         : assets/shaders/DX11_smoothclip_f.hlsl

@@ -56,6 +56,7 @@ enum class WinFlags : uint64_t {
     F_TOOLTIP =             0x0000000000040000, /**< window should be treated as a tooltip and does not get mouse or keyboard focus, requires a parent window */
     F_POPUP_MENU =          0x0000000000080000, /**< window should be treated as a popup menu, requires a parent window */
     F_KEYBOARD_GRABBED =    0x0000000000100000, /**< window has grabbed keyboard input */
+    F_FILL_DOCUMENT =       0x0000000000200000, /**< window is in fill-document mode (Emscripten only), since SDL 3.4.0 */
     F_VULKAN =              0x0000000010000000, /**< window usable for Vulkan surface */
     F_METAL =               0x0000000020000000, /**< window usable for Metal view */
     F_TRANSPARENT =         0x0000000040000000, /**< window with transparent buffer */
@@ -98,9 +99,21 @@ class Environment {
     // engine/factory
     Graphics *createRenderer();
 #ifdef MCENGINE_FEATURE_DIRECTX11
-    [[nodiscard]] inline bool usingDX11() const { return m_bUsingDX11; }
+    [[nodiscard]] inline bool usingDX11() const { return m_renderer == RuntimeRenderer::DX11; }
 #else
     [[nodiscard]] constexpr forceinline bool usingDX11() const { return false; }
+#endif
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_OPENGLES32)
+    [[nodiscard]] inline bool usingGL() const {
+        return m_renderer == RuntimeRenderer::GL || m_renderer == RuntimeRenderer::GLES;
+    }
+#else
+    [[nodiscard]] constexpr forceinline bool usingGL() const { return false; }
+#endif
+#ifdef MCENGINE_FEATURE_SDLGPU
+    [[nodiscard]] inline bool usingSDLGPU() const { return m_renderer == RuntimeRenderer::SDLGPU; }
+#else
+    [[nodiscard]] constexpr forceinline bool usingSDLGPU() const { return false; }
 #endif
 
     // system
@@ -108,6 +121,7 @@ class Environment {
     void restart();
     [[nodiscard]] inline bool isRunning() const { return m_bRunning; }
     [[nodiscard]] inline bool isRestartScheduled() const { return m_bIsRestartScheduled; }
+    [[nodiscard]] inline bool isHeadless() const { return m_bHeadless; }
     [[nodiscard]] inline Interop &getEnvInterop() { return *m_interop; }
 
     // resolved and cached at early startup with argv[0]
@@ -200,14 +214,14 @@ class Environment {
     [[nodiscard]] constexpr float getDisplayRefreshRate() const { return m_fDisplayHz; }
     [[nodiscard]] constexpr float getDisplayRefreshTime() const { return m_fDisplayHzSecs; }
 
-    [[nodiscard]] inline vec2 getWindowPos() const { return m_vLastKnownWindowPos; }
-    [[nodiscard]] inline vec2 getWindowSize() const { return m_vLastKnownWindowSize; }
+    [[nodiscard]] constexpr vec2 getWindowPos() const { return m_vLastKnownWindowPos; }
+    [[nodiscard]] constexpr vec2 getWindowSize() const { return m_vLastKnownWindowSize; }
     [[nodiscard]] McRect getWindowRect() const;
 
     [[nodiscard]] int getMonitor() const;
     [[nodiscard]] const std::unordered_map<unsigned int, McRect> &getMonitors() const;
 
-    [[nodiscard]] inline vec2 getNativeScreenSize() const { return m_vLastKnownNativeScreenSize; }
+    [[nodiscard]] constexpr vec2 getNativeScreenSize() const { return m_vLastKnownNativeScreenSize; }
     [[nodiscard]] McRect getDesktopRect() const;
 
     [[nodiscard]] int getDPI() const;
@@ -284,10 +298,12 @@ class Environment {
     SDL_Window *m_window;
     SDL_WindowID m_windowID;
     std::string m_sdldriver;
-    bool m_bUsingDX11;
+    enum class RuntimeRenderer : uint8_t { GL, GLES, DX11, SDLGPU };
+    RuntimeRenderer m_renderer;
 
     bool m_bRunning;
     bool m_bIsRestartScheduled;
+    bool m_bHeadless;
 
     bool m_bRestoreFullscreen;
     bool m_bMinimizeSupported;
@@ -384,6 +400,7 @@ class Environment {
         }
     }
     void onUseIMEChange(float newValue);
+    void onDebugDrawHardwareCursorChange(float newValue);
 
     bool m_bShouldListenToTextInput;
     bool m_bRawKB;

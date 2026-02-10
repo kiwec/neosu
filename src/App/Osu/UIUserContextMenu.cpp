@@ -136,7 +136,8 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
         auto endpoint = BanchoState::endpoint;
         if(endpoint == "") endpoint = "ppy.sh";
 
-        auto url = fmt::format("https://osu.{}/u/{}", endpoint, this->user_id);
+        auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+        auto url = fmt::format("{}osu.{}/u/{}", scheme, endpoint, this->user_id);
         ui->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
         env->openURLInDefaultBrowser(url);
     } else if(user_action == UA_ADD_FRIEND) {

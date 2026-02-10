@@ -1,7 +1,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "UIAvatar.h"
 
-#include "AvatarManager.h"
+#include "ThumbnailManager.h"
 #include "Bancho.h"
 #include "Engine.h"
 #include "Environment.h"
@@ -19,20 +19,20 @@ UIAvatar::UIAvatar(i32 player_id, float xPos, float yPos, float xSize, float ySi
     this->setClickCallback(SA::MakeDelegate<&UIAvatar::onAvatarClicked>(this));
 
     // add to load queue
-    osu->getAvatarManager()->add_avatar(this->player_id_for_endpoint);
+    osu->getThumbnailManager()->request_image(this->player_id_for_endpoint);
 }
 
 UIAvatar::~UIAvatar() {
     // remove from load queue
-    if(AvatarManager *am = osu && osu->getAvatarManager() ? osu->getAvatarManager().get() : nullptr) {
-        am->remove_avatar(this->player_id_for_endpoint);
+    if(ThumbnailManager *am = osu && osu->getThumbnailManager() ? osu->getThumbnailManager().get() : nullptr) {
+        am->discard_image(this->player_id_for_endpoint);
     }
 }
 
 void UIAvatar::draw_avatar(float alpha) {
     if(!this->on_screen) return;  // Comment when you need to debug on_screen logic
 
-    auto *avatar_image = osu->getAvatarManager()->get_avatar(this->player_id_for_endpoint);
+    auto *avatar_image = osu->getThumbnailManager()->try_get_image(this->player_id_for_endpoint);
     if(avatar_image) {
         g->pushTransform();
         g->setColor(Color(0xffffffff).setA(alpha));

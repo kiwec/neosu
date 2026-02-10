@@ -10,13 +10,13 @@
 #include <type_traits>
 #include <utility>
 
-#ifndef forceinline
+#ifndef really_forceinline
 #if defined(__GNUC__) || defined(__clang__)
-#define forceinline __attribute__((always_inline)) inline
+#define really_forceinline __attribute__((always_inline)) inline
 #elif defined(_MSC_VER)
-#define forceinline __forceinline
+#define really_forceinline __forceinline
 #else
-#define forceinline inline
+#define really_forceinline inline
 #endif
 #endif
 
@@ -43,22 +43,22 @@ class StaticPImpl {
     void (*m_destructor)(void *);
 
    public:
-    [[nodiscard]] forceinline T *operator->() noexcept { return std::launder(reinterpret_cast<T *>(m_buffer)); }
+    [[nodiscard]] really_forceinline T *operator->() noexcept { return std::launder(reinterpret_cast<T *>(m_buffer)); }
 
-    [[nodiscard]] forceinline const T *operator->() const noexcept {
+    [[nodiscard]] really_forceinline const T *operator->() const noexcept {
         return std::launder(reinterpret_cast<const T *>(m_buffer));
     }
 
-    [[nodiscard]] forceinline T &operator*() noexcept { return *std::launder(reinterpret_cast<T *>(m_buffer)); }
+    [[nodiscard]] really_forceinline T &operator*() noexcept { return *std::launder(reinterpret_cast<T *>(m_buffer)); }
 
-    [[nodiscard]] forceinline const T &operator*() const noexcept {
+    [[nodiscard]] really_forceinline const T &operator*() const noexcept {
         return *std::launder(reinterpret_cast<const T *>(m_buffer));
     }
 
     // Construct a derived type U in-place (U must be T or derived from T)
     template <typename U, typename... Args>
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
-    [[nodiscard]] forceinline explicit StaticPImpl(std::in_place_type_t<U> /**/, Args &&...args)
+    [[nodiscard]] really_forceinline explicit StaticPImpl(std::in_place_type_t<U> /**/, Args &&...args)
         : m_destructor([](void *ptr) { static_cast<U *>(ptr)->~U(); }) {
         static_assert(sizeof(U) <= PMUL_(RealImplSize));
         static_assert(alignof(U) <= BufferAlignment);
@@ -69,34 +69,34 @@ class StaticPImpl {
 
     template <typename... Args>
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
-    [[nodiscard]] forceinline explicit StaticPImpl(Args &&...args)
+    [[nodiscard]] really_forceinline explicit StaticPImpl(Args &&...args)
         : StaticPImpl(std::in_place_type<T>, std::forward<Args>(args)...) {}
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
-    [[nodiscard]] forceinline StaticPImpl(const StaticPImpl &rhs)
+    [[nodiscard]] really_forceinline StaticPImpl(const StaticPImpl &rhs)
         : m_destructor([](void *ptr) { static_cast<T *>(ptr)->~T(); }) {
         new(m_buffer) T(*std::launder(reinterpret_cast<const T *>(rhs.m_buffer)));
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
-    [[nodiscard]] forceinline StaticPImpl(StaticPImpl &&rhs) noexcept
+    [[nodiscard]] really_forceinline StaticPImpl(StaticPImpl &&rhs) noexcept
         : m_destructor([](void *ptr) { static_cast<T *>(ptr)->~T(); }) {
         new(m_buffer) T(static_cast<T &&>(*std::launder(reinterpret_cast<T *>(rhs.m_buffer))));
     }
 
     // NOLINTNEXTLINE(bugprone-unhandled-self-assignment, cert-oop54-cpp) // let the actual object handle self assignment
-    forceinline StaticPImpl &operator=(const StaticPImpl &rhs) {
+    really_forceinline StaticPImpl &operator=(const StaticPImpl &rhs) {
         *std::launder(reinterpret_cast<T *>(m_buffer)) = *std::launder(reinterpret_cast<const T *>(rhs.m_buffer));
         return *this;
     }
 
-    forceinline StaticPImpl &operator=(StaticPImpl &&rhs) noexcept {
+    really_forceinline StaticPImpl &operator=(StaticPImpl &&rhs) noexcept {
         *std::launder(reinterpret_cast<T *>(m_buffer)) =
             static_cast<T &&>(*std::launder(reinterpret_cast<T *>(rhs.m_buffer)));
         return *this;
     }
 
-    forceinline ~StaticPImpl() {
+    really_forceinline ~StaticPImpl() {
         if(m_destructor) {
             m_destructor(m_buffer);
         }

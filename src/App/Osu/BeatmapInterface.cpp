@@ -53,8 +53,6 @@
 #include "UI.h"
 #include "UIModSelectorModButton.h"
 
-#include "shaders.h"
-
 using namespace flags::operators;
 BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface(), ppv2_calc(this) {
     // vars
@@ -270,8 +268,8 @@ void BeatmapInterface::drawBackground() {
 
         if(this->hitobjectsSortedByEndTime.size() > 0) {
             HitObject *lastHitObject = this->hitobjectsSortedByEndTime.back();
-            if(lastHitObject->isFinished() && this->iCurMusicPos > lastHitObject->click_time + lastHitObject->duration +
-                                                                       (i32)cv::end_skip_time.getInt()) {
+            if(lastHitObject->isFinished() &&
+               this->iCurMusicPos > lastHitObject->getEndTime() + (i32)cv::end_skip_time.getInt()) {
                 g->setColor(0xff00ffff);
                 g->fillRect(50, y, 50, 50);
             }
@@ -735,6 +733,7 @@ void BeatmapInterface::actualRestart() {
     this->resetScore();
     this->resetHitObjects(-1000);
     this->smoke_trail.clear();
+    this->all_clicks.clear();
 
     // we are waiting for an asynchronous start of the beatmap in the next update()
     this->bIsWaiting = true;
@@ -809,8 +808,7 @@ void BeatmapInterface::pause(bool quitIfWaiting) {
             HitObject *lastHitObject =
                 this->hitobjectsSortedByEndTime.size() > 0 ? this->hitobjectsSortedByEndTime.back() : nullptr;
             if(lastHitObject != nullptr && lastHitObject->isFinished() &&
-               (this->iCurMusicPos >
-                lastHitObject->click_time + lastHitObject->duration + (i32)cv::end_skip_time.getInt()) &&
+               (this->iCurMusicPos > lastHitObject->getEndTime() + (i32)cv::end_skip_time.getInt()) &&
                cv::end_skip.getBool()) {
                 this->stop(false);
             } else {
@@ -1462,14 +1460,12 @@ bool BeatmapInterface::sortHitObjectByStartTimeComp(HitObject const *a, HitObjec
 bool BeatmapInterface::sortHitObjectByEndTimeComp(HitObject const *a, HitObject const *b) {
     if(a == b) return false;
 
-    if((a->click_time + a->duration) != (b->click_time + b->duration))
-        return (a->click_time + a->duration) < (b->click_time + b->duration);
+    if((a->getEndTime()) != (b->getEndTime())) return (a->getEndTime()) < (b->getEndTime());
 
     if(a->type != b->type) return static_cast<int>(a->type) < static_cast<int>(b->type);
     if(a->combo_number != b->combo_number) return a->combo_number < b->combo_number;
 
-    auto aPosAtEndTime = a->getRawPosAt(a->click_time + a->duration),
-         bPosAtClickTime = b->getRawPosAt(b->click_time + b->duration);
+    auto aPosAtEndTime = a->getRawPosAt(a->getEndTime()), bPosAtClickTime = b->getRawPosAt(b->getEndTime());
     if(aPosAtEndTime != bPosAtClickTime) return vec::all(vec::lessThan(aPosAtEndTime, bPosAtClickTime));
 
     return false;  // equivalent
@@ -1659,6 +1655,7 @@ void BeatmapInterface::unloadObjects() {
     this->misaimObjects.clear();
     this->breaks.clear();
     this->clicks.clear();
+    this->all_clicks.clear();
 }
 
 void BeatmapInterface::resetHitObjects(i32 curPos) {
@@ -1804,6 +1801,14 @@ void BeatmapInterface::draw() {
             g->fillRect(pos.x - 50, pos.y - 50, 100, 100);
         }
     }
+
+    // this is barely even useful for debugging in its current state, don't use it
+    if(cv::debug_draw_gameplay_clicks.getBool()) {
+        for(auto &click : this->all_clicks) {
+            g->setColor(0xbb0000ff);
+            g->fillRect(click.pos.x - 2, click.pos.y - 2, 4, 4);
+        }
+    }
 }
 
 void BeatmapInterface::drawFlashlight(FLType type) {
@@ -1836,9 +1841,7 @@ void BeatmapInterface::drawFlashlight(FLType type) {
     if(type == FLType::NORMAL_FL) {
         // Lazy-load shader
         if(!this->flashlight_shader) {
-            this->flashlight_shader = resourceManager->createShader(
-                env->usingDX11() ? VSH_STRING(DX11_, flashlight) : VSH_STRING(GL_, flashlight),
-                env->usingDX11() ? FSH_STRING(DX11_, flashlight) : FSH_STRING(GL_, flashlight), "flashlight");
+            this->flashlight_shader = resourceManager->createShaderAuto("flashlight");
         }
 
         // Dim screen when holding a slider
@@ -1851,7 +1854,7 @@ void BeatmapInterface::drawFlashlight(FLType type) {
         this->flashlight_shader->setUniform1f("max_opacity", opacity);
         this->flashlight_shader->setUniform1f("flashlight_radius", fl_radius);
 
-        if(env->usingDX11()) {  // don't flip Y position for DX11
+        if(!env->usingGL()) {  // don't flip Y position for DX11
             this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
         } else {
             this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
@@ -1867,10 +1870,7 @@ void BeatmapInterface::drawFlashlight(FLType type) {
     if(type == FLType::ACTUAL_FL) {
         // Lazy-load shader
         if(!this->actual_flashlight_shader) {
-            this->actual_flashlight_shader = resourceManager->createShader(
-                env->usingDX11() ? VSH_STRING(DX11_, actual_flashlight) : VSH_STRING(GL_, actual_flashlight),
-                env->usingDX11() ? FSH_STRING(DX11_, actual_flashlight) : FSH_STRING(GL_, actual_flashlight),
-                "actual_flashlight");
+            this->actual_flashlight_shader = resourceManager->createShaderAuto("actual_flashlight");
         }
 
         // Brighten screen when holding a slider
@@ -1883,7 +1883,7 @@ void BeatmapInterface::drawFlashlight(FLType type) {
         this->actual_flashlight_shader->setUniform1f("max_opacity", opacity);
         this->actual_flashlight_shader->setUniform1f("flashlight_radius", anti_fl_radius);
 
-        if(env->usingDX11()) {  // don't flip Y position for DX11
+        if(!env->usingGL()) {  // don't flip Y position for DX11
             this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
         } else {
             this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
@@ -2122,7 +2122,7 @@ void BeatmapInterface::drawHitObjects() {
             // PVS optimization (reversed)
             HitObject *obj = this->hitobjectsSortedByEndTime[i];
             if(usePVS) {
-                const i32 endTime = obj->click_time + obj->duration;
+                const i32 endTime = obj->getEndTime();
 
                 if(obj->isFinished() && (curPos - pvs > endTime))  // past objects
                     break;
@@ -2157,7 +2157,7 @@ void BeatmapInterface::drawHitObjects() {
             // NOTE: to fix mayday simultaneous sliders with increasing endtime getting culled here, would have to
             // switch from m_hitobjectsSortedByEndTime to m_hitobjects PVS optimization
             if(usePVS) {
-                if(obj->isFinished() && (curPos - pvs > obj->click_time + obj->duration))  // past objects
+                if(obj->isFinished() && (curPos - pvs > obj->getEndTime()))  // past objects
                     continue;
 
                 if((obj->click_time > mostDistantFutureObjectPVS))  // future objects
@@ -2775,6 +2775,10 @@ void BeatmapInterface::update2() {
 
         this->interpolatedMousePos *= GameRules::getPlayfieldScaleFactor();
         this->interpolatedMousePos += GameRules::getPlayfieldOffset();
+
+        if(cv::debug_draw_gameplay_clicks.getBool()) {
+            this->all_clicks.insert(this->all_clicks.end(), this->clicks.cbegin(), this->clicks.cend());
+        }
     }
 
     // for performance reasons, a lot of operations are crammed into 1 loop over all hitobjects:
@@ -2846,7 +2850,7 @@ void BeatmapInterface::update2() {
                     this->iNextHitObjectTime = curHobj->click_time;
                 else {
                     this->currentHitObject = curHobj;
-                    const i32 actualPrevHitObjectTime = curHobj->click_time + curHobj->duration;
+                    const i32 actualPrevHitObjectTime = curHobj->getEndTime();
                     this->iPreviousHitObjectTime = actualPrevHitObjectTime;
 
                     if(this->iCurMusicPosWithOffsets >
@@ -2858,7 +2862,7 @@ void BeatmapInterface::update2() {
             // PVS optimization
             if(usePVS) {
                 if(curHobj->isFinished() &&
-                   (this->iCurMusicPosWithOffsets - pvs > curHobj->click_time + curHobj->duration))  // past objects
+                   (this->iCurMusicPosWithOffsets - pvs > curHobj->getEndTime()))  // past objects
                 {
                     // ************ live pp block start ************ //
                     if(isCircle) this->iCurrentNumCircles++;
@@ -2875,8 +2879,7 @@ void BeatmapInterface::update2() {
             }
 
             // ************ live pp block start ************ //
-            if(this->iCurMusicPosWithOffsets >= curHobj->click_time + curHobj->duration)
-                this->iCurrentHitObjectIndex = i;
+            if(this->iCurMusicPosWithOffsets >= curHobj->getEndTime()) this->iCurrentHitObjectIndex = i;
             // ************ live pp block end ************** //
 
             // main hitobject update
@@ -2886,7 +2889,7 @@ void BeatmapInterface::update2() {
             // XXX: there might be a "better" way to do it?
             if(isSpinner) {
                 bool spinner_started = this->iCurMusicPosWithOffsets >= curHobj->click_time;
-                bool spinner_ended = this->iCurMusicPosWithOffsets > curHobj->click_time + curHobj->duration;
+                bool spinner_ended = this->iCurMusicPosWithOffsets > curHobj->getEndTime();
                 spinner_active |= (spinner_started && !spinner_ended);
             }
 
@@ -2914,8 +2917,7 @@ void BeatmapInterface::update2() {
                             if(isSlider || isSpinner) {
                                 if((i + 1) < this->hitobjects.size()) {
                                     if((isSpinner || currentSliderPointer->isStartCircleFinished()) &&
-                                       (this->hitobjects[i + 1]->click_time <=
-                                        (curHobj->click_time + curHobj->duration + tolerance2B)))
+                                       (this->hitobjects[i + 1]->click_time <= (curHobj->getEndTime() + tolerance2B)))
                                         blockNextNotes = false;
                                 }
                             }
@@ -2968,8 +2970,7 @@ void BeatmapInterface::update2() {
                     // blockNextNotes if that is the case note that we still only unlock within duration + tolerance2B
                     // (same as in (1))
                     if((i + 1) < this->hitobjects.size()) {
-                        if((this->hitobjects[i + 1]->click_time <=
-                            (curHobj->click_time + curHobj->duration + tolerance2B)))
+                        if((this->hitobjects[i + 1]->click_time <= (curHobj->getEndTime() + tolerance2B)))
                             blockNextNotes = false;
                     }
                 }
@@ -3020,9 +3021,8 @@ void BeatmapInterface::update2() {
                             {
                                 if(this->iCurMusicPosWithOffsets > this->hitobjects[m]->click_time) {
                                     if(curHobj->click_time >
-                                       (this->hitobjects[m]->click_time +
-                                        this->hitobjects[m]->duration))  // NOTE: 2b exception. only force miss if
-                                                                         // objects are not overlapping.
+                                       this->hitobjects[m]->getEndTime())  // NOTE: 2b exception. only force miss if
+                                                                           // objects are not overlapping.
                                         this->hitobjects[m]->miss(this->iCurMusicPosWithOffsets);
                                 }
                             }
@@ -3931,7 +3931,7 @@ void BeatmapInterface::updateAutoCursorPos() {
 
             // get previous object
             if(o->click_time <= curMusicPos) {
-                prevTime = o->click_time + o->duration;
+                prevTime = o->getEndTime();
                 prevPos = o->getAutoCursorPos(curMusicPos);
                 if(o->duration > 0 && curMusicPos - o->click_time <= o->duration) {
                     if(cv::auto_cursordance.getBool()) {
@@ -3978,7 +3978,7 @@ void BeatmapInterface::updateAutoCursorPos() {
 
                                 prevTime = endTime;
                                 prevPos = this->osuCoords2Pixels(o->getRawPosAt(prevTime));
-                                nextTime = o->click_time + o->duration;
+                                nextTime = o->getEndTime();
                                 nextPos = this->osuCoords2Pixels(o->getRawPosAt(nextTime));
                             }
 
@@ -4010,9 +4010,8 @@ void BeatmapInterface::updateAutoCursorPos() {
 
             // get previous object
             if(o->isFinished() ||
-               (curMusicPos >
-                o->click_time + o->duration + (i32)(this->getHitWindow50() * cv::autopilot_lenience.getFloat()))) {
-                prevTime = o->click_time + o->duration + o->getAutopilotDelta();
+               (curMusicPos > o->getEndTime() + (i32)(this->getHitWindow50() * cv::autopilot_lenience.getFloat()))) {
+                prevTime = o->getEndTime() + o->getAutopilotDelta();
                 prevPos = o->getAutoCursorPos(curMusicPos);
             } else if(!o->isFinished())  // get next object
             {
@@ -4170,10 +4169,9 @@ void BeatmapInterface::calculateStacks() {
 
                     if(isSpinnerN) continue;
 
-                    if(objectI->click_time - (approachTime * stackLeniency) > (objectN->click_time + objectN->duration))
-                        break;
+                    if(objectI->click_time - (approachTime * stackLeniency) > (objectN->getEndTime())) break;
 
-                    vec2 objectNEndPosition = objectN->getOriginalRawPosAt(objectN->click_time + objectN->duration);
+                    vec2 objectNEndPosition = objectN->getOriginalRawPosAt(objectN->getEndTime());
                     if(objectN->duration != 0 &&
                        vec::length(objectNEndPosition - objectI->getOriginalRawPosAt(objectI->click_time)) <
                            STACK_LENIENCE) {
@@ -4204,9 +4202,8 @@ void BeatmapInterface::calculateStacks() {
 
                     if(objectI->click_time - (approachTime * stackLeniency) > objectN->click_time) break;
 
-                    if(vec::length(((objectN->duration != 0
-                                         ? objectN->getOriginalRawPosAt(objectN->click_time + objectN->duration)
-                                         : objectN->getOriginalRawPosAt(objectN->click_time)) -
+                    if(vec::length(((objectN->duration != 0 ? objectN->getOriginalRawPosAt(objectN->getEndTime())
+                                                            : objectN->getOriginalRawPosAt(objectN->click_time)) -
                                     objectI->getOriginalRawPosAt(objectI->click_time))) < STACK_LENIENCE) {
                         objectN->setStack(objectI->getStack() + 1);
                         objectI = objectN;
@@ -4229,7 +4226,7 @@ void BeatmapInterface::calculateStacks() {
 
             if(currHitObject->getStack() != 0 && !isSlider) continue;
 
-            i32 startTime = currHitObject->click_time + currHitObject->duration;
+            i32 startTime = currHitObject->getEndTime();
             int sliderStack = 0;
 
             for(int j = i + 1; j < this->hitobjects.size(); j++) {
@@ -4239,19 +4236,18 @@ void BeatmapInterface::calculateStacks() {
 
                 // "The start position of the hitobject, or the position at the end of the path if the hitobject is a
                 // slider"
-                vec2 position2 =
-                    isSlider ? sliderPointer->getOriginalRawPosAt(sliderPointer->click_time + sliderPointer->duration)
-                             : currHitObject->getOriginalRawPosAt(currHitObject->click_time);
+                vec2 position2 = isSlider ? sliderPointer->getOriginalRawPosAt(sliderPointer->getEndTime())
+                                          : currHitObject->getOriginalRawPosAt(currHitObject->click_time);
 
                 if(vec::length((objectJ->getOriginalRawPosAt(objectJ->click_time) -
                                 currHitObject->getOriginalRawPosAt(currHitObject->click_time))) < 3) {
                     currHitObject->setStack(currHitObject->getStack() + 1);
-                    startTime = objectJ->click_time + objectJ->duration;
+                    startTime = objectJ->getEndTime();
                 } else if(vec::length((objectJ->getOriginalRawPosAt(objectJ->click_time) - position2)) < 3) {
                     // "Case for sliders - bump notes down and right, rather than up and left."
                     sliderStack++;
                     objectJ->setStack(objectJ->getStack() - sliderStack);
-                    startTime = objectJ->click_time + objectJ->duration;
+                    startTime = objectJ->getEndTime();
                 }
             }
         }
@@ -4375,7 +4371,7 @@ void BeatmapInterface::computeDrainRate() {
 
                 testPlayer.decreaseHealth(testDrop * (h->click_time - lastTime - breakTime));
 
-                lastTime = (int)(h->click_time + h->duration);
+                lastTime = (int)(h->getEndTime());
 
                 if(testPlayer.health < lowestHp) lowestHp = testPlayer.health;
 

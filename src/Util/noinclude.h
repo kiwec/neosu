@@ -51,21 +51,30 @@ inline bool isInt(float f) { return (f == static_cast<float>(static_cast<int>(f)
 #if defined(__GNUC__) || defined(__clang__)
 #define likely(x) __builtin_expect(bool(x), 1)
 #define unlikely(x) __builtin_expect(bool(x), 0)
-#define forceinline __attribute__((always_inline)) inline
+#define really_forceinline __attribute__((always_inline)) inline
 
 // force all functions in the function body to be inlined into it
-// different from "forceinline", because the function itself won't necessarily be inlined at all call sites
-#define INLINE_BODY __attribute__((flatten))
+// different from "really_forceinline", because the function itself won't necessarily be inlined at all call sites
+#define REALLY_INLINE_BODY __attribute__((flatten))
 
 #else
 #define likely(x) (x)
 #define unlikely(x) (x)
 #ifdef _MSC_VER
-#define forceinline __forceinline
+#define really_forceinline __forceinline
 #else
-#define forceinline inline
+#define really_forceinline inline
 #endif
+#define REALLY_INLINE_BODY
+#endif
+
+// avoid always_inline for debug builds because it 1. slows down compilation and 2. makes debugging harder
+#ifdef _DEBUG
+#define forceinline inline
 #define INLINE_BODY
+#else
+#define forceinline really_forceinline
+#define INLINE_BODY REALLY_INLINE_BODY
 #endif
 
 #if defined(__clang__)

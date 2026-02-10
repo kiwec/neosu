@@ -1,7 +1,7 @@
 #include "OsuDirectScreen.h"
 
 #include "AnimationHandler.h"
-#include "AvatarManager.h"
+#include "ThumbnailManager.h"
 #include "BackgroundImageHandler.h"
 #include "BanchoApi.h"
 #include "Bancho.h"
@@ -35,11 +35,14 @@
 
 #include <charconv>
 
-// FUCK IT WE BALL - CLAUDE CODE WOULD NEVER - HAPPY NEW YEAR!
-class MapBGManager : public AvatarManager {
+// Using ThumbnailManager for map backgrounds, since the behavior is pretty much the same as for avatars.
+class MapBGManager : public ThumbnailManager {
     NOCOPY_NOMOVE(MapBGManager)
    public:
-    MapBGManager() : AvatarManager() { this->url_format = "{:s}assets.{}/beatmaps/{:d}/covers/list@2x.jpg"; }
+    MapBGManager() : ThumbnailManager() {
+        // Also valid: "{:s}b.{}/thumb/{:d}l.jpg" ("l" stands for "large")
+        this->url_format = "{:s}b.{}/thumb/{:d}.jpg";
+    }
     ~MapBGManager() override = default;
 };
 
@@ -97,11 +100,11 @@ OnlineMapListing::OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapS
 
     this->set_id_for_endpoint = {this->meta.set_id, fmt::format("{}/thumbs/{}/{}", env->getCacheDir(),
                                                                 BanchoState::endpoint, this->meta.set_id)};
-    this->directScreen->bg_mgr->add_avatar(this->set_id_for_endpoint);
+    this->directScreen->bg_mgr->request_image(this->set_id_for_endpoint);
 }
 
 OnlineMapListing::~OnlineMapListing() {
-    this->directScreen->bg_mgr->remove_avatar(this->set_id_for_endpoint);
+    this->directScreen->bg_mgr->discard_image(this->set_id_for_endpoint);
 
     anim::deleteExistingAnimation(&this->click_anim);
     anim::deleteExistingAnimation(&this->hover_anim);
@@ -234,7 +237,7 @@ void OnlineMapListing::draw() {
         g->fillRect(x, y, map_bg_size, map_bg_size);
 
         // Map thumbnail
-        auto* map_thumbnail = this->directScreen->bg_mgr->get_avatar(this->set_id_for_endpoint);
+        auto* map_thumbnail = this->directScreen->bg_mgr->try_get_image(this->set_id_for_endpoint);
         if(map_thumbnail) {
             g->pushTransform();
             g->setColor(Color(0xffffffff));

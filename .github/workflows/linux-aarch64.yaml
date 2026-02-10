@@ -3,9 +3,23 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'cmake-win/**'
+      - 'tools/**'
+      - '*.md'
+      - '.clangd-template'
+      - '.gitignore'
+      - '.git-blame-ignore-revs'
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - 'cmake-win/**'
+      - 'tools/**'
+      - '*.md'
+      - '.clangd-template'
+      - '.gitignore'
+      - '.git-blame-ignore-revs'
   workflow_dispatch:
 
 env:

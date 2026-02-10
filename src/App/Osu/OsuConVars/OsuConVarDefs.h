@@ -77,10 +77,11 @@ CONVAR(debug_osu, false, CLIENT);
 CONVAR(debug_db, false, CLIENT);
 CONVAR(debug_async_db, false, CLIENT);
 CONVAR(debug_draw_timingpoints, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(debug_draw_gameplay_clicks, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(debug_hiterrorbar_misaims, false, CLIENT);
 CONVAR(debug_pp, false, CLIENT);
 CONVAR(debug_bg_loader, false, CLIENT);
-CONVAR(debug_avatars, false, CLIENT);
+CONVAR(debug_thumbs, false, CLIENT);
 CONVAR(slider_debug_draw, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "draw hitcircle at every curve point and nothing else (no vao, no rt, no shader, nothing) "
        "(requires enabling legacy slider renderer)");
@@ -285,7 +286,7 @@ CONVAR(draw_statistics_pp, false, CLIENT | SKINS | SERVER);
 CONVAR(draw_statistics_sliderbreaks, false, CLIENT | SKINS | SERVER);
 CONVAR(draw_statistics_totalstars, false, CLIENT | SKINS | SERVER);
 CONVAR(draw_statistics_ur, false, CLIENT | SKINS | SERVER);
-CONVAR(draw_statistics_audio_offset, false, CLIENT); // DEBUG
+CONVAR(draw_statistics_audio_offset, false, CLIENT);  // DEBUG
 CONVAR(draw_target_heatmap, true, CLIENT | SKINS | SERVER);
 CONVAR(hud_accuracy_scale, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(hud_combo_scale, 1.0f, CLIENT | SKINS | SERVER);
@@ -857,7 +858,7 @@ CONVAR(relax_offset, -12, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "osu!relax always hits -12 ms too early, so set this to -12 (note the negative) if you want it to be the same");
 CONVAR(resolution, "1x1"sv, CLIENT | SKINS | SERVER);
 CONVAR(letterboxed_resolution, "1x1"sv, CLIENT | SKINS | SERVER);
-CONVAR(windowed_resolution, "1280x720"sv, CLIENT | SKINS | SERVER);
+CONVAR(windowed_resolution, "1280x720"sv, CLIENT | SKINS | SERVER | (Env::cfg(OS::WASM) ? NOLOAD : 0));
 CONVAR(resolution_keep_aspect_ratio, false, CLIENT | SKINS | SERVER);
 CONVAR(restart_sound_engine_before_playing, false, CLIENT | SKINS | SERVER,
        "jank fix for users who experience sound issues after playing for a while");

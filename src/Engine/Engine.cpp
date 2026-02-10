@@ -3,6 +3,10 @@
 
 #include "Environment.h"
 
+#ifdef MCENGINE_PLATFORM_WASM
+#include <emscripten/emscripten.h>
+#endif
+
 #include "AppRunner.h"
 #include "MakeDelegateWrapper.h"
 
@@ -63,8 +67,6 @@ Engine::Engine() {
     debugLog("-= Engine Startup =-");
     debugLog("cmdline: {:s}", SString::join(env->getCommandLine()));
 
-    this->bHeadless = env->getLaunchArgs().contains("-headless");
-
     // timing
     this->iFrameCount = 0;
     this->iVsyncFrameCount = 0;
@@ -83,6 +85,7 @@ Engine::Engine() {
     // custom
     this->bDrawing = false;
     this->bShuttingDown = false;
+    this->bShouldProcessStdin = env->isHeadless() || env->getLaunchArgs().contains("-console");
 
     // initialize all engine subsystems (the order does matter!)
     debugLog("Engine: Initializing subsystems ...");
@@ -137,7 +140,7 @@ Engine::Engine() {
 Engine::~Engine() {
     debugLog("-= Engine Shutdown =-");
 
-    if(this->bHeadless) {
+    if(this->bShouldProcessStdin && this->stdinThread.joinable()) {
         // there's no portable way to programmatically unblock a thread std::getline, wtf?
         // this just leaves a zombie thread alive until you send an input/close the terminal...
         // oh well, we're shutting down anyways
@@ -259,7 +262,8 @@ void Engine::loadApp() {
         keyboard->addListener(app.get());
 
         // start stdin reader thread for headless mode
-        if(this->bHeadless) {
+        // on WASM, stdin is polled from the main thread via JS (pthreads can't do blocking stdin reads)
+        if(this->bShouldProcessStdin && !Env::cfg(OS::WASM)) {
             this->stdinThread = Sync::jthread{stdinReaderThread};
         }
     }
@@ -344,7 +348,7 @@ void Engine::onUpdate() {
     }
 
     // process stdin in headless
-    if(this->bHeadless) {
+    if(this->bShouldProcessStdin) {
         this->processStdinCommands();
     }
 
@@ -603,17 +607,59 @@ void Engine::stdinReaderThread(const Sync::stop_token &stopToken) {
         if(stopToken.stop_requested()) return;
 
         Sync::scoped_lock lock(engine->stdinMutex);
+        // this is a bit of a hack but there's no easy way to unblock std::getline from the main thread
+        const bool gotExit = (line == "exit"sv || line == "shutdown"sv || line == "restart"sv || line == "crash"sv);
         engine->stdinQueue.push_back(std::move(line));
+        if(gotExit) return;
     }
 }
 
 void Engine::processStdinCommands() {
+    // @wait support: count down frames before resuming command processing
+    if(this->stdinWaitFrames > 0) {
+        this->stdinWaitFrames--;
+        return;
+    }
+
+#ifdef MCENGINE_PLATFORM_WASM
+    // poll the JS-side line buffer (filled by process.stdin in wasm-node-polyfill.js)
+    while(true) {
+        char *line = (char *)EM_ASM_PTR({
+            if(globalThis.__stdinLines && globalThis.__stdinLines.length > 0) {
+                var line = globalThis.__stdinLines.shift();
+                var len = lengthBytesUTF8(line) + 1;
+                var ptr = _malloc(len);
+                stringToUTF8(line, ptr, len);
+                return ptr;
+            }
+            return 0;
+        });
+        if(!line) break;
+        std::string cmd(line);
+        free(line);
+
+        if(cmd.starts_with("@wait")) {
+            this->stdinWaitFrames = std::max(1, std::atoi(cmd.c_str() + 5));
+            break;
+        }
+
+        Console::processCommand(cmd);
+        if(this->bShuttingDown) break;
+    }
+#else
     Sync::scoped_lock lock(this->stdinMutex);
     while(!this->stdinQueue.empty()) {
         std::string cmd = std::move(this->stdinQueue.front());
         this->stdinQueue.pop_front();
+
+        if(cmd.starts_with("@wait")) {
+            this->stdinWaitFrames = std::max(1, std::atoi(cmd.c_str() + 5));
+            break;
+        }
+
         Console::processCommand(cmd);
     }
+#endif
 }
 
 //**********************//

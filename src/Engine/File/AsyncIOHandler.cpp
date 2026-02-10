@@ -1,15 +1,89 @@
-// Copyright (c) 2025, WH, All rights reserved.
+// Copyright (c) 2025-2026, WH, All rights reserved.
 #include "AsyncIOHandler.h"
 #include "ConVar.h"
 #include "Logging.h"
 #include "Timing.h"
 #include "File.h"
 
+#include <cstring>
+#include <string>
+
+#ifdef MCENGINE_PLATFORM_WASM
+// WASM: synchronous I/O shim (SDL_AsyncIO not supported)
+#include <cstdio>
+
+class AsyncIOHandler::InternalIOContext final {
+    NOCOPY_NOMOVE(InternalIOContext)
+   public:
+    InternalIOContext() = default;
+    ~InternalIOContext() = default;
+
+    void cleanup() {}
+
+    bool read(std::string_view path, ReadCallback callback) {
+        std::string pathStr(path);
+        FILE* f = fopen(pathStr.c_str(), "rb");
+        if(!f) {
+            logIfCV(debug_file, "WARNING: failed to open {} for reading", pathStr);
+            if(callback) callback({});
+            return false;
+        }
+
+        fseek(f, 0, SEEK_END);
+        long size = ftell(f);
+        fseek(f, 0, SEEK_SET);
+
+        if(size <= 0 || size > (1L * 1024 * 1024 * 1024)) {
+            if(size == 0) {
+                logIfCV(debug_file, "WARNING: {} has size 0!", pathStr);
+            } else if(size > 0) {
+                debugLog("ERROR: {} is over 1GB in size!", pathStr);
+            }
+            fclose(f);
+            if(callback) callback({});
+            return false;
+        }
+
+        std::vector<u8> data(size);
+        size_t bytesRead = fread(data.data(), 1, size, f);
+        fclose(f);
+
+        if(bytesRead != static_cast<size_t>(size)) {
+            debugLog("ERROR: only read {}/{} bytes from {}", bytesRead, size, pathStr);
+            data.resize(bytesRead);
+        }
+
+        if(callback) callback(std::move(data));
+        return true;
+    }
+
+    bool write(std::string_view path, std::vector<u8> data, WriteCallback callback) {
+        std::string pathStr(path);
+        FILE* f = fopen(pathStr.c_str(), "wb");
+        if(!f) {
+            debugLog("ERROR: failed to open {} for writing", pathStr);
+            if(callback) callback(false);
+            return false;
+        }
+
+        size_t written = fwrite(data.data(), 1, data.size(), f);
+        fclose(f);
+
+        bool success = (written == data.size());
+        if(!success) {
+            debugLog("ERROR: only wrote {}/{} bytes to {}", written, data.size(), pathStr);
+        }
+
+        if(callback) callback(success);
+        return true;
+    }
+};
+
+#else
+// native platforms: SDL_AsyncIO
 #include <SDL3/SDL_asyncio.h>
 #include <SDL3/SDL_error.h>
 
-#include <cstring>
-#include <string>
 #include <atomic>
 #include <unordered_set>
 
@@ -258,7 +332,7 @@ class AsyncIOHandler::InternalIOContext final {
             debugLog("ERROR: failed to close {}: {}", closeContext->path, SDL_GetError());
             m_activeFiles.erase(closeContext->path);
             if(closeContext->readCallback) {
-                PERFORM_CALLBACK(closeContext->readCallback(closeContext->operationBuffer));
+                PERFORM_CALLBACK(closeContext->readCallback(std::move(closeContext->operationBuffer)));
             }
             delete closeContext;
         }
@@ -318,7 +392,7 @@ class AsyncIOHandler::InternalIOContext final {
         } else if(context->readCallback) {
             // we don't really propagate errors here besides the log in
             // handleReadComplete and an empty/partially filled buffer here...
-            PERFORM_CALLBACK(context->readCallback(context->operationBuffer));
+            PERFORM_CALLBACK(context->readCallback(std::move(context->operationBuffer)));
         }
 
         delete context;
@@ -331,6 +405,7 @@ class AsyncIOHandler::InternalIOContext final {
 
     std::atomic<size_t> m_activeCallbacks{0};
 };
+#endif  // MCENGINE_PLATFORM_WASM
 
 AsyncIOHandler::AsyncIOHandler() : m_impl() {}
 AsyncIOHandler::~AsyncIOHandler() { cleanup(); }
@@ -338,10 +413,13 @@ AsyncIOHandler::~AsyncIOHandler() { cleanup(); }
 void AsyncIOHandler::cleanup() { m_impl->cleanup(); }
 
 // if this doesn't succeed (checked once on startup), the engine immediately exits
+#ifdef MCENGINE_PLATFORM_WASM
+bool AsyncIOHandler::succeeded() const { return true; }
+void AsyncIOHandler::update() {}
+#else
 bool AsyncIOHandler::succeeded() const { return m_impl->m_queue != nullptr; }
-
-// passthroughs
 void AsyncIOHandler::update() { m_impl->update(); }
+#endif
 
 bool AsyncIOHandler::read(std::string_view path, ReadCallback callback) {
     return m_impl->read(path, std::move(callback));

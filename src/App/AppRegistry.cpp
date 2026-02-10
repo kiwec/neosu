@@ -3,6 +3,7 @@
 
 #include "Osu.h"
 #include "BaseFrameworkTest.h"
+#include "AudioTester.h"
 #include "NeosuEnvInterop.h"
 
 #include <array>
@@ -12,6 +13,7 @@ namespace Mc {
 static constexpr std::array sDescriptors{
     AppDescriptor{"neosu", [] -> App * { return new Osu(); }, neosu::createInterop, neosu::handleExistingWindow},
     AppDescriptor{"BaseFrameworkTest", [] -> App * { return new Mc::Tests::BaseFrameworkTest(); }},
+    AppDescriptor{"AudioTester", [] -> App * { return new Mc::Tests::AudioTester(); }},
 };
 
 std::span<const AppDescriptor> getAllAppDescriptors() { return sDescriptors; }

@@ -1,5 +1,7 @@
 #pragma once
 // Copyright (c) 2015, PG & 2025, WH & 2025, kiwec, All rights reserved.
+#include "config.h"
+
 #include "noinclude.h"
 #include "types.h"
 #include "StaticPImpl.h"
@@ -13,7 +15,9 @@
 #include <vector>
 
 // forward defs
+#ifndef MCENGINE_PLATFORM_WASM
 typedef void CURL;
+#endif
 class Engine;
 
 // generic networking things, not BANCHO::Net
@@ -57,12 +61,14 @@ struct WSInstance {
     f64 time_created{0.f};
 
    private:
+#ifndef MCENGINE_PLATFORM_WASM
     CURL* handle{nullptr};
 
     // Servers can send fragmented packets, we want to only append them
     // to "in" once the packets are complete.
     std::vector<u8> in_partial;
     u64 max_recv{0};  // in bytes
+#endif
 };
 
 // async request options
@@ -94,8 +100,10 @@ struct Response {
    private:
     friend class NetworkHandler;
     friend struct NetworkImpl;
+#ifndef MCENGINE_PLATFORM_WASM
     // HACK for passing websocket handle
     CURL* easy_handle{nullptr};
+#endif
 
    public:
     long response_code{0};
@@ -133,11 +141,16 @@ class NetworkHandler {
     friend class ::Engine;
     void update();
 
+    // implementation details
     friend struct NetworkImpl;
-    StaticPImpl<NetworkImpl, 704> pImpl;  // implementation details
+#ifdef MCENGINE_PLATFORM_WASM
+    StaticPImpl<NetworkImpl, 128> pImpl;
+#else
+    StaticPImpl<NetworkImpl, 704> pImpl;
+#endif
 };
 
-}  // namespace NeoNet
+}  // namespace Mc::Net
 
 using Mc::Net::NetworkHandler;
 extern std::unique_ptr<NetworkHandler> networkHandler;

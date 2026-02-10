@@ -27,6 +27,14 @@
 #include "SString.h"
 #include "Parsing.h"
 
+#ifdef MCENGINE_PLATFORM_WASM
+#include <emscripten/em_js.h>
+
+// EM_ASM_INT doesn't work in CI, if you have too much time feel free to find out why
+EM_JS(int, js_get_canvas_width, (), { return document.getElementById('canvas').width; });
+EM_JS(int, js_get_canvas_height, (), { return document.getElementById('canvas').width; });
+#endif
+
 // for sending keys synthetically from console
 static void sendkey(std::string_view keyName) {
     SDL_Scancode sc = SDL_GetScancodeFromName(std::string(keyName).c_str());
@@ -97,7 +105,7 @@ SDLMain::~SDLMain() {
     m_engine.reset();
 
     // clean up GL context
-    if(m_context && (!m_bUsingDX11)) {
+    if(m_context) {
         SDL_GL_DestroyContext(m_context);
         m_context = nullptr;
     }
@@ -109,10 +117,17 @@ SDLMain::~SDLMain() {
 }
 
 void SDLMain::setFgFPS() {
-    if constexpr(Env::cfg(FEAT::MAINCB))
+    if constexpr(Env::cfg(OS::WASM)) {
+        // actually just set it to 0 (requestAnimationFrame) for WASM
+        SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "0");
+        return;
+    }
+
+    if constexpr(Env::cfg(FEAT::MAINCB)) {
         SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, fmt::format("{}", m_iFpsMax).c_str());
-    else
+    } else {
         FPSLimiter::reset();
+    }
 }
 
 void SDLMain::setBgFPS() {
@@ -134,8 +149,17 @@ void SDLMain::fps_max_background_callback(float newVal) {
 }
 
 SDL_AppResult SDLMain::initialize() {
-    doEarlyCmdlineOverrides();
     setupLogging();
+
+    // WASM headless (Node.js): no window, no GL, no events, just engine + app
+    if constexpr(Env::cfg(OS::WASM)) {
+        if(isHeadless()) {
+            m_engine = std::make_unique<Engine>();
+            if(!m_engine || m_engine->isShuttingDown()) return SDL_APP_FAILURE;
+            m_engine->loadApp();
+            return SDL_APP_CONTINUE;
+        }
+    }
 
     // create window with props
     if(!createWindow()) {
@@ -171,7 +195,7 @@ SDL_AppResult SDLMain::initialize() {
 
     // make window visible now, after we loaded the config and set the wanted window size & fullscreen state
     // (unless running headless, then just never show the window)
-    if(!getLaunchArgs().contains("-headless")) {
+    if(!isHeadless()) {
         SDL_ShowWindow(m_window);
         SDL_RaiseWindow(m_window);
     }
@@ -518,13 +542,19 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 SDL_AppResult SDLMain::iterate() {
     if(!m_bRunning) return SDL_APP_SUCCESS;
 
+    // WASM: measure true display Hz from rAF frame intervals (after init settles)
+    if constexpr(Env::cfg(OS::WASM)) {
+        if(!isHeadless()) calibrateDisplayHzWASM();
+    }
+
     // update
     {
         m_engine->onUpdate();
     }
 
     // draw
-    if(!winMinimized() && !m_bRestoreFullscreen) {
+    // (always draw in headless to make it more realistic/representative)
+    if(m_bHeadless || (!winMinimized() && !m_bRestoreFullscreen)) {
         m_engine->onPaint();
     }
 
@@ -552,7 +582,7 @@ static constexpr auto WINDOW_HEIGHT_MIN = 240;
 
 bool SDLMain::createWindow() {
     // pre window-creation settings
-    if(!m_bUsingDX11) {  // these are only for opengl
+    if(usingGL()) {  // these are only for opengl
         SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -594,7 +624,7 @@ bool SDLMain::createWindow() {
     // set vulkan for linux dxvk-native, opengl otherwise (or none for windows dx11)
     const i64 windowFlags =
         SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_HIGH_PIXEL_DENSITY |
-        (!m_bUsingDX11 ? SDL_WINDOW_OPENGL : (Env::cfg(OS::LINUX, REND::DX11) ? SDL_WINDOW_VULKAN : 0LL));
+        (usingGL() ? SDL_WINDOW_OPENGL : (Env::cfg(OS::LINUX, REND::DX11) ? SDL_WINDOW_VULKAN : 0LL));
 
     // limit default window size so it fits the screen
     i32 windowCreateWidth = WINDOW_WIDTH;
@@ -627,11 +657,21 @@ bool SDLMain::createWindow() {
         }
     }
 
+#ifdef MCENGINE_PLATFORM_WASM
+    // Set the initial window size to the browser's current canvas render size
+    // If we don't, emscripten will overwrite canvas.width/height to 1280x720, which will always be wrong
+    //
+    // By manually getting the attributes of the canvas element, we get the render size,
+    // as opposed to the CSS size which is incorrect on HiDPI.
+    windowCreateWidth = js_get_canvas_width();
+    windowCreateHeight = js_get_canvas_height();
+#endif
+
     // set this size as the initial fallback window size (for Environment::getWindowSize())
     m_vLastKnownWindowSize = vec2{static_cast<float>(windowCreateWidth), static_cast<float>(windowCreateHeight)};
 
     SDL_PropertiesID props = SDL_CreateProperties();
-    if(m_bUsingDX11) SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, true);
+    if(usingDX11()) SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, true);
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, WINDOW_TITLE);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED_DISPLAY(initDisplayID));
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED_DISPLAY(initDisplayID));
@@ -645,6 +685,8 @@ bool SDLMain::createWindow() {
 
     if constexpr(Env::cfg(OS::LINUX)) {
         SDL_SetHintWithPriority(SDL_HINT_MOUSE_AUTO_CAPTURE, "0", SDL_HINT_NORMAL);
+    } else if constexpr(Env::cfg(OS::WASM)) {
+        SDL_SetHintWithPriority(SDL_HINT_MOUSE_AUTO_CAPTURE, "1", SDL_HINT_NORMAL);
     }
 
     SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "0", SDL_HINT_NORMAL);
@@ -671,7 +713,7 @@ bool SDLMain::createWindow() {
     }
 
     // create gl context
-    if(!m_bUsingDX11) {
+    if(usingGL()) {
         m_context = SDL_GL_CreateContext(m_window);
         if(!m_context) {
             debugLog("Couldn't create OpenGL context: {:s}", SDL_GetError());
@@ -691,7 +733,9 @@ bool SDLMain::createWindow() {
 
     // initialize with the display refresh rate of the current monitor
     m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = queryDisplayHz());
-    {
+
+    // wait for calibration to finish before setting custom iteration rates in WASM
+    if constexpr(!Env::cfg(OS::WASM)) {
         const auto hz = std::round(m_fDisplayHz);
         const auto fourxhz = std::round(std::clamp<float>(hz * 4.0f, hz, 1000.0f));
 
@@ -700,24 +744,91 @@ bool SDLMain::createWindow() {
         cv::fps_max.setValue(fourxhz);
         cv::fps_max_menu.setDefaultDouble(hz);
         cv::fps_max_menu.setValue(hz);
-    }
+    } else {
+        cv::fps_max.setDefaultDouble(0.);
+        cv::fps_max.setValue(0.);
+        cv::fps_max_menu.setDefaultDouble(0.);
+        cv::fps_max_menu.setValue(0.);
 
-    // initialize window flags and state
-    updateWindowStateCache();
+        // set it to 0
+        SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "0");
+    }
 
     // init dpi
     m_fDisplayScale = SDL_GetWindowDisplayScale(m_window);
     m_fPixelDensity = SDL_GetWindowPixelDensity(m_window);
 
+    // initialize window flags and state
+    updateWindowStateCache();
+
     return true;
 }
 
+void SDLMain::calibrateDisplayHzWASM() {
+    // redundant check to make sure this gets compiled out otherwise
+    if constexpr(!Env::cfg(OS::WASM)) return;
+
+    constexpr uint64_t kInitDelayNS = WASM_HZ_INIT_DELAY_SECONDS * Timing::NS_PER_SECOND;
+    if(m_iHzMeasureFrames < WASM_HZ_FRAMES_TO_MEASURE) {
+        const auto now = Timing::getTicksNS();
+        if(m_iHzMeasureFrames == -1) {
+            // wait for init to settle before measuring
+            if(m_iHzMeasureStartNS == 0)
+                m_iHzMeasureStartNS = now;
+            else if(now - m_iHzMeasureStartNS >= kInitDelayNS)
+                m_iHzMeasureFrames = 0;
+        }
+        if(m_iHzMeasureFrames == 0) {
+            m_iHzMeasureStartNS = now;
+        }
+        if(m_iHzMeasureFrames >= 0) m_iHzMeasureFrames++;
+        if(m_iHzMeasureFrames == WASM_HZ_FRAMES_TO_MEASURE) {
+            const auto elapsedNS = now - m_iHzMeasureStartNS;
+            const double avgFrameSecs =
+                static_cast<double>(elapsedNS) / Timing::NS_PER_SECOND / (WASM_HZ_FRAMES_TO_MEASURE - 1);
+            if(avgFrameSecs > 0.0) {
+                const auto measuredHz = std::clamp(static_cast<float>(1.0 / avgFrameSecs), 30.0f, 540.0f);
+
+                debugLog("Measured display refresh rate: {:.1f} Hz", measuredHz);
+                m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = measuredHz);
+
+                // update these to the true result
+                const auto hz = std::round(m_fDisplayHz);
+                const auto fourxhz = std::round(std::clamp<float>(hz * 4.0f, hz, 1000.0f));
+
+                cv::fps_max.setDefaultDouble(fourxhz);
+                cv::fps_max.setValue(fourxhz);
+                cv::fps_max_menu.setDefaultDouble(hz);
+                cv::fps_max_menu.setValue(hz);
+                setFgFPS();
+            }
+        }
+    }
+}
+
 float SDLMain::queryDisplayHz() {
-    // get the screen refresh rate, and set fps_max to that as default
-    if constexpr(!Env::cfg(OS::WASM))  // not in WASM
-    {
+    // on WASM, once we've measured from rAF intervals, keep that value
+    if constexpr(Env::cfg(OS::WASM)) {
+        if(m_iHzMeasureFrames >= WASM_HZ_FRAMES_TO_MEASURE) return m_fDisplayHz;
+    } else {  // get the screen refresh rate, and set fps_max to that as default
+        // doesn't work in wasm
         const SDL_DisplayID display = SDL_GetDisplayForWindow(m_window);
-        const SDL_DisplayMode *currentDisplayMode = display ? SDL_GetCurrentDisplayMode(display) : nullptr;
+        const SDL_DisplayMode *currentDisplayMode = [display, window = m_window]() -> const SDL_DisplayMode * {
+            // fallbacks
+            if(!display) {
+                return SDL_GetWindowFullscreenMode(window);
+            }
+
+            if(const auto *curdisp = SDL_GetCurrentDisplayMode(display); curdisp) {
+                return curdisp;
+            } else if(const auto *curdesktop = SDL_GetDesktopDisplayMode(display); curdesktop) {
+                return curdesktop;
+            } else {
+                return SDL_GetWindowFullscreenMode(window);
+            }
+
+            return nullptr;
+        }();
 
         if(currentDisplayMode && currentDisplayMode->refresh_rate > 0) {
             if((m_fDisplayHz > currentDisplayMode->refresh_rate + 0.01) ||
@@ -732,7 +843,7 @@ float SDLMain::queryDisplayHz() {
                 debugLog("Couldn't SDL_GetCurrentDisplayMode(SDL display: {:d}): {:s}", display, SDL_GetError());
         }
     }
-    // in wasm or if we couldn't get the refresh rate just return a sane value to use for "vsync"-related calculations
+    // if we couldn't get the refresh rate (or in wasm pre-measurement) just return a sane value to use for "vsync"-related calculations
     return std::clamp<float>(cv::fps_max.getFloat(), 60.0f, 360.0f);
 }
 
@@ -825,34 +936,6 @@ void SDLMain::setupLogging() {
     SDL_SetLogOutputFunction(SDLLogCB, nullptr);
 }
 
-#ifdef MCENGINE_PLATFORM_WINDOWS
-#include "WinDebloatDefs.h"
-#include <objbase.h>
-#include "dynutils.h"
-#endif
-
-void SDLMain::doEarlyCmdlineOverrides() {
-#if defined(MCENGINE_PLATFORM_WINDOWS) || (defined(_WIN32) && !defined(__linux__))
-    using namespace dynutils;
-    // disable IME text input if -noime (or if the feature won't be supported)
-#ifdef MCENGINE_FEATURE_IMESUPPORT
-    if(m_mArgMap.contains("-noime"))
-#endif
-    {
-        auto *imm32_handle = load_lib_system("imm32.dll");
-        if(imm32_handle) {
-            auto disable_ime_func = load_func<BOOL WINAPI(DWORD)>(imm32_handle, "ImmDisableIME");
-            if(disable_ime_func) disable_ime_func(-1);
-            unload_lib(imm32_handle);
-        }
-    }
-
-#else
-    // nothing yet
-    return;
-#endif
-}
-
 void SDLMain::shutdown(SDL_AppResult result) {
     if(result == SDL_APP_FAILURE)  // force quit now
         return;
@@ -879,10 +962,12 @@ bool SDLMain::resizeCallback(void *userdata, SDL_Event *event) {
     return false;
 }
 
-#if defined(MCENGINE_PLATFORM_WINDOWS) && !defined(SDL_main_h_)
-extern "C" {
-extern SDL_DECLSPEC void SDLCALL SDL_UnregisterApp(void);
-}
+#if defined(MCENGINE_PLATFORM_WINDOWS)
+#if !defined(SDL_main_h_)
+extern "C" SDL_DECLSPEC void SDLCALL SDL_UnregisterApp(void);
+#endif
+// avoid including windows.h here for 1 function
+extern "C" __declspec(dllimport) char *__stdcall GetCommandLineA(void);
 #endif
 
 void SDLMain::restart(const std::vector<std::string> &args) {

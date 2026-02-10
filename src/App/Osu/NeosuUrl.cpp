@@ -31,7 +31,8 @@ void handle_neosu_url(const char *url) {
 
         auto code = Mc::Net::urlEncode(params[4]);
         auto proof = Mc::Net::urlEncode(crypto::conv::encode64(BanchoState::oauth_verifier));
-        auto url = fmt::format("https://{}/connect/finish?code={}&proof={}", endpoint, code, proof);
+        auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+        auto url = fmt::format("{}{}/connect/finish?code={}&proof={}", scheme, endpoint, code, proof);
 
         Mc::Net::RequestOptions options{
             .user_agent = BanchoState::user_agent,

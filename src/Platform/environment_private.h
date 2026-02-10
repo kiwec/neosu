@@ -22,6 +22,8 @@ struct AppDescriptor;
 
 class SDLMain final : public Environment {
     NOCOPY_NOMOVE(SDLMain)
+    friend void SDL_AppQuit(void *appstate, SDL_AppResult result);
+
    public:
     SDLMain(const Mc::AppDescriptor &appDesc, const std::unordered_map<std::string, std::optional<std::string>> &argMap,
             const std::vector<std::string> &argVec);
@@ -40,7 +42,6 @@ class SDLMain final : public Environment {
     void setupLogging();
     void configureEvents();
     float queryDisplayHz();
-    void doEarlyCmdlineOverrides();
 
     // callback handlers
     void fps_max_callback(float newVal);
@@ -49,6 +50,9 @@ class SDLMain final : public Environment {
     // set iteration rate for callbacks
     void setFgFPS();
     void setBgFPS();
+
+    // no way to query refresh rate in WASM so do it by measuring a few frames on startup
+    [[maybe_unused]] void calibrateDisplayHzWASM();
 
     // for live resizing on windows
     // SDL will call this on the main thread when the window needs to be redrawn
@@ -67,4 +71,11 @@ class SDLMain final : public Environment {
 
     // for profiling with main callbacks
     bool m_bInIterate{false};
+
+    // WASM: measure display Hz from rAF frame intervals
+    uint64_t m_iHzMeasureStartNS{0};
+    int m_iHzMeasureFrames{-1};  // -1 = waiting for init delay, 0..N = measuring, N = done
+
+    static constexpr const int WASM_HZ_FRAMES_TO_MEASURE{50};
+    static constexpr const int WASM_HZ_INIT_DELAY_SECONDS{5};
 };

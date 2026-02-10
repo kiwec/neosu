@@ -117,7 +117,12 @@ void OpenGLImage::destroy() {
 }
 
 void OpenGLImage::deleteGL() {
-    if(this->GLTexture != 0 && glDeleteTextures != nullptr && glIsTexture != nullptr) {
+#ifdef MCENGINE_FEATURE_GLES32
+    constexpr bool hasGLFuncs = true;
+#else
+    const bool hasGLFuncs = glDeleteTextures != nullptr && glIsTexture != nullptr;
+#endif
+    if(this->GLTexture != 0 && hasGLFuncs) {
         if(!glIsTexture(this->GLTexture)) {
             debugLog("WARNING: tried to glDeleteTexture on {} ({:p}), which is not a valid GL texture!", this->sName,
                      static_cast<const void*>(&this->GLTexture));

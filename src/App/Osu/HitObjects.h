@@ -57,6 +57,7 @@ class HitObject {
     // }  // how much combo this hitobject is "worth"
 
     // Gameplay logic
+    [[nodiscard]] forceinline i32 getEndTime() const { return this->click_time + this->duration; }
     i32 click_time;
     i32 duration{0};
 
@@ -321,7 +322,6 @@ class Slider final : public HitObject {
     float fSliderTimeWithoutRepeats;
 
     float fSlidePercent{0.f};        // 0.0f - 1.0f - 0.0f - 1.0f - etc.
-    float fActualSlidePercent{0.f};  // 0.0f - 1.0f
     float fSliderSnakePercent{0.f};
     float fReverseArrowAlpha{0.f};
     float fBodyAlpha{0.f};

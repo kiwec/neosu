@@ -1,7 +1,7 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "Osu.h"
 
-#include "AvatarManager.h"
+#include "ThumbnailManager.h"
 #include "BackgroundImageHandler.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
@@ -147,18 +147,6 @@ Osu::Osu()
 
     cvars().setCVSubmittableCheckFunc(Osu::globalOnAreAllCvarsSubmittableCallback);
 
-    if(Env::cfg(BUILD::DEBUG)) {
-        BanchoState::neosu_version = fmt::format("dev-{}", cv::build_timestamp.getVal<u64>());
-    } else if(cv::is_bleedingedge.getBool()) {  // FIXME: isn't this always false here...?
-        BanchoState::neosu_version = fmt::format("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
-    } else {
-        BanchoState::neosu_version = fmt::format("release-{:.2f}", cv::version.getFloat());
-    }
-
-    BanchoState::user_agent = "Mozilla/5.0 (compatible; neosu/";
-    BanchoState::user_agent.append(BanchoState::neosu_version);
-    BanchoState::user_agent.append("; " OS_NAME "; +https://" NEOSU_DOMAIN "/)");
-
     // create cache dir, with migration for old versions
     Environment::createDirectory(env->getCacheDir());
     if(Environment::directoryExists(NEOSU_DATA_DIR "avatars")) {
@@ -246,7 +234,7 @@ Osu::Osu()
     this->ui_memb = std::make_unique<UI>();
     this->score = std::make_unique<LiveScore>(false);
     this->updateHandler = std::make_unique<UpdateHandler>();
-    this->avatarManager = std::make_unique<AvatarManager>();
+    this->thumbnailManager = std::make_unique<ThumbnailManager>();
     this->backgroundImageHandler = std::make_unique<BGImageHandler>();
     this->fposu = std::make_unique<ModFPoSu>();
 
@@ -281,6 +269,19 @@ Osu::Osu()
     cv::skin_reload.setCallback(SA::MakeDelegate<&Osu::onSkinReload>(this));
     // load skin
     this->onSkinChange(cv::skin.getString());
+
+    // Init neosu_version after loading config for correct bleedingedge detection
+    if(Env::cfg(BUILD::DEBUG)) {
+        BanchoState::neosu_version = fmt::format("dev-{}", cv::build_timestamp.getVal<u64>());
+    } else if(this->isBleedingEdge()) {
+        BanchoState::neosu_version = fmt::format("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
+    } else {
+        BanchoState::neosu_version = fmt::format("release-{:.2f}", cv::version.getFloat());
+    }
+
+    BanchoState::user_agent = "Mozilla/5.0 (compatible; neosu/";
+    BanchoState::user_agent.append(BanchoState::neosu_version);
+    BanchoState::user_agent.append("; " OS_NAME "; +https://" NEOSU_DOMAIN "/)");
 
     // Convar callbacks that should be set after loading the config
     cv::mod_mafham.setCallback(SA::MakeDelegate<&Osu::rebuildRenderTargets>(this));
@@ -336,8 +337,7 @@ Osu::Osu()
             Environment::renameFile(oldIconFontPath, newIconFontPath);
         }
     }
-    this->fontIcons = resourceManager->loadFont("forkawesome.ttf", "FONT_OSU_ICONS", Icons::icons.data(),
-                                                Icons::icons.size(), 26, true, newDPI);
+    this->fontIcons = resourceManager->loadFont("forkawesome.ttf", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
 
     this->fonts.push_back(defaultFont);
     this->fonts.push_back(this->titleFont);
@@ -348,9 +348,7 @@ Osu::Osu()
 
     float averageIconHeight = 0.0f;
     for(char16_t icon : Icons::icons) {
-        UString iconString;
-        iconString.insert(0, icon);
-        const float height = this->fontIcons->getStringHeight(iconString);
+        const float height = this->fontIcons->getGlyphHeight(icon);
         if(height > averageIconHeight) averageIconHeight = height;
     }
     this->fontIcons->setHeight(averageIconHeight);
@@ -364,7 +362,9 @@ Osu::Osu()
     this->userButton = std::make_unique<UserCard>(BanchoState::get_uid());
 
     this->bUILoaded = ui->init();
+}
 
+void Osu::doDeferredInitTasks() {
     // do this after reading configs if we wanted to set a windowed resolution
     if(this->last_res_change_req_src & R_CV_WINDOWED_RESOLUTION) {
         this->onWindowedResolutionChanged(cv::windowed_resolution.getString());
@@ -381,7 +381,7 @@ Osu::Osu()
         BanchoState::reconnect();
     }
 
-    if constexpr(!Env::cfg(BUILD::DEBUG)) {  // don't auto-update debug builds
+    if constexpr(!Env::cfg(BUILD::DEBUG) && !Env::cfg(OS::WASM)) {  // don't auto-update debug/web builds
         // don't auto update if this env var is set to anything other than 0 or empty (if it is set)
         const std::string extUpdater = Environment::getEnvVariable("NEOSU_EXTERNAL_UPDATE_PROVIDER");
         if(cv::auto_update.getBool() && (extUpdater.empty() || Parsing::strto<bool>(extUpdater) == false)) {
@@ -571,12 +571,17 @@ void Osu::draw() {
 
 void Osu::update() {
     if(unlikely(!this->UIReady())) return;  // TODO: guarantee that this can't happen
+    if(unlikely(!this->bFirstUpdateTasksDone)) {
+        this->bFirstUpdateTasksDone = true;
+        this->doDeferredInitTasks();
+    }
+
     if(this->skin.get()) this->skin->update();
 
     this->fposu->update();
 
     // only update if not playing
-    if(!this->isInPlayModeAndNotPaused()) this->avatarManager->update();
+    if(!this->isInPlayModeAndNotPaused()) this->thumbnailManager->update();
 
     ui->update();
 
@@ -1234,60 +1239,66 @@ void Osu::saveScreenshot() {
     while(env->fileExists(fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber)))
         screenshotNumber++;
 
-    const auto screenshotFilename = fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber);
-
+    auto screenshotFilename = fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber);
     constexpr u8 screenshotChannels{3};
-    std::vector<u8> pixels = g->getScreenshot(screenshotChannels > 3 /* withAlpha = false */);
 
-    if(pixels.empty()) {
-        static uint8_t once = 0;
-        if(!once++)
-            ui->getNotificationOverlay()->addNotification("Error: Couldn't grab a screenshot :(", 0xffff0000, false,
-                                                          3.0f);
-        debugLog("failed to get pixel data for screenshot");
-        return;
-    }
+    static const auto saveFunc = [currentRes = this->internalRect, &skin = this->skin,
+                                  filename = std::move(screenshotFilename)](std::vector<u8> pixels) -> void {
+        if(!osu) return; // paranoia
+        if(pixels.empty()) {
+            static uint8_t once = 0;
+            if(!once++)
+                ui->getNotificationOverlay()->addNotification("Error: Couldn't grab a screenshot :(", 0xffff0000, false,
+                                                              3.0f);
+            debugLog("failed to get pixel data for screenshot");
+            return;
+        }
 
-    const f32 outerWidth = g->getResolution().x;
-    const f32 outerHeight = g->getResolution().y;
-    const f32 innerWidth = this->internalRect.getWidth();
-    const f32 innerHeight = this->internalRect.getHeight();
+        const f32 outerWidth = g->getResolution().x;
+        const f32 outerHeight = g->getResolution().y;
+        const f32 innerWidth = currentRes.getWidth();
+        const f32 innerHeight = currentRes.getHeight();
 
-    soundEngine->play(this->skin->s_shutter);
-    ui->getNotificationOverlay()->addToast(fmt::format("Saved screenshot to {}", screenshotFilename.c_str()),
-                                           CHAT_TOAST,
-                                           [screenshotFilename] { env->openFileBrowser(screenshotFilename); });
+        if(skin) {
+            soundEngine->play(skin->s_shutter);
+        }
+        ui->getNotificationOverlay()->addToast(fmt::format("Saved screenshot to {}", filename), CHAT_TOAST,
+                                               [filename] { env->openFileBrowser(filename); });
 
-    // don't need cropping
-    if(!cv::crop_screenshots.getBool() || (g->getResolution() == this->getVirtScreenSize())) {
-        Image::saveToImage(pixels.data(), static_cast<i32>(outerWidth), static_cast<i32>(outerHeight),
-                           screenshotChannels, screenshotFilename);
-        return;
-    }
+        // don't need cropping
+        if(!cv::crop_screenshots.getBool() || (g->getResolution() == currentRes.getSize())) {
+            Image::saveToImage(pixels.data(), static_cast<i32>(outerWidth), static_cast<i32>(outerHeight),
+                               screenshotChannels, filename);
+            return;
+        }
 
-    // need cropping
-    f32 offsetXpct = 0, offsetYpct = 0;
-    if((g->getResolution() != this->getVirtScreenSize()) && cv::letterboxing.getBool()) {
-        offsetXpct = cv::letterboxing_offset_x.getFloat();
-        offsetYpct = cv::letterboxing_offset_y.getFloat();
-    }
+        // need cropping
+        f32 offsetXpct = 0, offsetYpct = 0;
+        if((g->getResolution() != currentRes.getSize()) && cv::letterboxing.getBool()) {
+            offsetXpct = cv::letterboxing_offset_x.getFloat();
+            offsetYpct = cv::letterboxing_offset_y.getFloat();
+        }
 
-    const i32 startX = std::clamp<i32>(static_cast<i32>((outerWidth - innerWidth) * (1 + offsetXpct) / 2), 0,
-                                       static_cast<i32>(outerWidth - innerWidth));
-    const i32 startY = std::clamp<i32>(static_cast<i32>((outerHeight - innerHeight) * (1 + offsetYpct) / 2), 0,
-                                       static_cast<i32>(outerHeight - innerHeight));
+        const i32 startX = std::clamp<i32>(static_cast<i32>((outerWidth - innerWidth) * (1 + offsetXpct) / 2), 0,
+                                           static_cast<i32>(outerWidth - innerWidth));
+        const i32 startY = std::clamp<i32>(static_cast<i32>((outerHeight - innerHeight) * (1 + offsetYpct) / 2), 0,
+                                           static_cast<i32>(outerHeight - innerHeight));
 
-    std::vector<u8> croppedPixels(static_cast<size_t>(innerWidth * innerHeight * screenshotChannels));
+        std::vector<u8> croppedPixels(static_cast<size_t>(innerWidth * innerHeight * screenshotChannels));
 
-    for(sSz y = 0; y < static_cast<sSz>(innerHeight); ++y) {
-        auto srcRowStart = pixels.begin() + ((startY + y) * static_cast<sSz>(outerWidth) + startX) * screenshotChannels;
-        auto destRowStart = croppedPixels.begin() + (y * static_cast<sSz>(innerWidth)) * screenshotChannels;
-        // copy the entire row
-        std::ranges::copy_n(srcRowStart, static_cast<sSz>(innerWidth) * screenshotChannels, destRowStart);
-    }
+        for(sSz y = 0; y < static_cast<sSz>(innerHeight); ++y) {
+            auto srcRowStart =
+                pixels.begin() + ((startY + y) * static_cast<sSz>(outerWidth) + startX) * screenshotChannels;
+            auto destRowStart = croppedPixels.begin() + (y * static_cast<sSz>(innerWidth)) * screenshotChannels;
+            // copy the entire row
+            std::ranges::copy_n(srcRowStart, static_cast<sSz>(innerWidth) * screenshotChannels, destRowStart);
+        }
 
-    Image::saveToImage(croppedPixels.data(), static_cast<i32>(innerWidth), static_cast<i32>(innerHeight),
-                       screenshotChannels, screenshotFilename);
+        Image::saveToImage(croppedPixels.data(), static_cast<i32>(innerWidth), static_cast<i32>(innerHeight),
+                           screenshotChannels, filename);
+    };
+
+    g->takeScreenshot({.savePath = {}, .dataCB = saveFunc, .withAlpha = screenshotChannels > 3});
 }
 
 void Osu::onPlayEnd(const FinishedScore &score, bool quit) {
@@ -1443,7 +1454,7 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
     // NOTE: when only changing DPI, "prevUIScale" is already the new UI scale!
     const float prevUIScale = getUIScale();
 
-    const bool resolution_changed = (osu->getSliderFrameBuffer()->getSize() != newResolution);  // HACK
+    const bool resolution_changed = (this->getSliderFrameBuffer()->getSize() != newResolution);  // HACK
     this->internalRect = {vec2{}, newResolution};
 
     // update dpi specific engine globals
@@ -1549,8 +1560,9 @@ void Osu::updateWindowsKeyDisable() {
 
     // this is kind of a weird place to put this, but we don't care about text input when in gameplay
     // on some platforms, text input being enabled might result in an on-screen keyboard showing up
-    // TODO: check if this breaks chat while playing
-    env->listenToTextInput(!isPlayerPlaying);
+    // ultra hack: we have no way of knowing whether there are any char event consumers currently listening
+    // special case chat to allow chat while playing (chat->setVisible will call this function too)
+    env->listenToTextInput(!isPlayerPlaying || ui->getChat()->isVisible());
 }
 
 void Osu::onWindowedResolutionChanged(std::string_view args) {
@@ -1667,7 +1679,7 @@ void Osu::onMinimized() { ui->getVolumeOverlay()->loseFocus(); }
 bool Osu::onShutdown() {
     debugLog("Osu::onShutdown()");
 
-    if(!cv::alt_f4_quits_even_while_playing.getBool() && this->isInPlayMode()) {
+    if(!Env::cfg(OS::WASM) && !cv::alt_f4_quits_even_while_playing.getBool() && this->isInPlayMode()) {
         this->map_iface->stop();
         return false;
     }
@@ -1984,6 +1996,14 @@ bool Osu::getModTD() const { return cv::mod_touchdevice.getBool() || cv::mod_tou
 bool Osu::getModDT() const { return cv::mod_doubletime_dummy.getBool(); }
 bool Osu::getModNC() const { return cv::mod_doubletime_dummy.getBool() && cv::nightcore_enjoyer.getBool(); }
 bool Osu::getModHT() const { return cv::mod_halftime_dummy.getBool(); }
+
+bool Osu::isBleedingEdge() const {
+    if constexpr(Env::cfg(OS::WASM)) {
+        return env->getEnvVariable("IS_BLEEDINGEDGE") == "1";
+    } else {
+        return cv::is_bleedingedge.getBool();
+    }
+}
 
 // part 1 of callback
 void Osu::audioRestartCallbackBefore() {

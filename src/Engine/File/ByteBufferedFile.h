@@ -19,6 +19,16 @@ struct MD5Hash;
 // Reader("pathA");
 // because that would deadlock.
 
+// clang annoyingly inlines this stuff too eagerly and slows down compilation
+// (even without __attribute__((always_inline)) )
+#if defined(_DEBUG) && (defined(__GNUC__) || defined(__clang__))
+#define default_inline_attr inline __attribute__((__noinline__))
+#define never_inline_attr inline __attribute__((__noinline__))
+#else
+#define default_inline_attr forceinline
+#define never_inline_attr inline
+#endif
+
 class ByteBufferedFile {
    private:
     static constexpr const uSz READ_BUFFER_SIZE{4ULL * 1024 * 1024};
@@ -33,7 +43,7 @@ class ByteBufferedFile {
         ~Reader();
 
         // always_inline is a 2x speedup here
-        [[nodiscard]] forceinline uSz read_bytes(u8 *out, uSz len) {
+        [[nodiscard]] default_inline_attr uSz read_bytes(u8 *out, uSz len) {
             if(this->error_flag) {
                 if(out != nullptr) {
                     memset(out, 0, len);
@@ -121,7 +131,7 @@ class ByteBufferedFile {
         }
 
         template <typename T>
-        [[nodiscard]] T read() {
+        [[nodiscard]] never_inline_attr T read() {
             static_assert(sizeof(T) < READ_BUFFER_SIZE);
 
             T result;
@@ -131,7 +141,7 @@ class ByteBufferedFile {
             return result;
         }
 
-        forceinline void skip_bytes(u32 n) {
+        default_inline_attr void skip_bytes(u32 n) {
             if(this->error_flag) {
                 return;
             }
@@ -167,7 +177,7 @@ class ByteBufferedFile {
         }
 
         template <typename T>
-        void skip() {
+        never_inline_attr void skip() {
             static_assert(sizeof(T) < READ_BUFFER_SIZE);
             this->skip_bytes(sizeof(T));
         }
@@ -218,11 +228,11 @@ class ByteBufferedFile {
         void write_hash_chars(const MD5String &hash_str);
         void write_hash_digest(const MD5Hash &hash_digest);
         void write_uleb128(u32 num);
-        inline void write_string(const char *str) {
+        never_inline_attr void write_string(const char *str) {
             if(this->write_string_isnull(str)) return;
             this->write_string_nonnull(str, strlen(str));
         }
-        inline void write_string(std::string_view strview) {
+        never_inline_attr void write_string(std::string_view strview) {
             if(strview.empty()) {
                 const u8 zero = 0;
                 this->write<u8>(zero);
@@ -232,7 +242,7 @@ class ByteBufferedFile {
         }
 
         template <typename T>
-        void write(T t) {
+        never_inline_attr void write(T t) {
             this->write_bytes(reinterpret_cast<const u8 *>(&t), sizeof(T));
         }
 
@@ -256,3 +266,5 @@ class ByteBufferedFile {
         std::string last_error;
     };
 };
+
+#undef default_inline_attr

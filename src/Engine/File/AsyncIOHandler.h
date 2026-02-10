@@ -1,6 +1,7 @@
-// Copyright (c) 2025, WH, All rights reserved.
+// Copyright (c) 2025-2026, WH, All rights reserved.
 #pragma once
 
+#include "config.h"
 #include "noinclude.h"
 #include "StaticPImpl.h"
 #include "types.h"
@@ -45,7 +46,11 @@ class AsyncIOHandler final {
 
    private:
     class InternalIOContext;
+#ifdef MCENGINE_PLATFORM_WASM
+    StaticPImpl<InternalIOContext, 8> m_impl; // basically a passthrough to synchronous I/O
+#else
     StaticPImpl<InternalIOContext, 96> m_impl;
+#endif
 };
 
 extern std::unique_ptr<AsyncIOHandler> io;

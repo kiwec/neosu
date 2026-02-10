@@ -21,6 +21,7 @@
 #include "OptionsOverlay.h"
 #include "ResourceManager.h"
 #include "SongBrowser.h"
+#include "SString.h"
 #include "Timing.h"
 #include "UserCard.h"
 #include "UI.h"
@@ -98,6 +99,13 @@ void attempt_logging_in() {
             auto errmsg = fmt::format("Failed to log in: {}", response.error_msg);
             ui->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
             BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
+
+            if(Env::cfg(OS::WASM) && response.response_code == 0) {
+                // Provide extra guidance since "Connection failed" isn't very descriptive
+                ui->getNotificationOverlay()->addToast(
+                    "Either you are offline, or the server doesn't support the web version of neosu.", ERROR_TOAST);
+            }
+
             return;
         }
 
@@ -105,6 +113,11 @@ void attempt_logging_in() {
         auto cho_token_it = response.headers.find("cho-token");
         if(cho_token_it != response.headers.end()) {
             auth_token = cho_token_it->second;
+
+            // Emscripten seems to add a space at the start of the header... This is obviously wrong.
+            // Maybe we shouldn't trim spaces at the *end*, but surely no server uses such weird tokens.
+            SString::trim_inplace(auth_token);
+
             BanchoState::cho_token = auth_token;
             use_websockets = cv::prefer_websockets.getBool();
         }
@@ -316,7 +329,7 @@ void BanchoState::disconnect(bool shutdown) {
 
     // Logout
     // This is a blocking call, but we *do* want this to block when quitting the game.
-    if(BanchoState::is_online()) {
+    if(BanchoState::is_online() && !BANCHO::Net::auth_token.empty()) {
         Packet packet;
         packet.write<u16>(OUTP_LOGOUT);
         packet.write<u8>(0);

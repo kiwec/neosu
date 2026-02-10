@@ -38,6 +38,7 @@ enum class REND : uint8_t {
     GL = 1 << 0,
     GLES32 = 1 << 1,
     DX11 = 1 << 2,
+    SDLGPU = 1 << 3,
     NONE = 0,
 };
 
@@ -128,7 +129,11 @@ consteval REND getRenderers() {
 #ifdef MCENGINE_FEATURE_DIRECTX11
         REND::DX11 |
 #endif
-#if !(defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32) || defined(MCENGINE_FEATURE_DIRECTX11))
+#ifdef MCENGINE_FEATURE_SDLGPU
+        REND::SDLGPU |
+#endif
+#if !(defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32) || defined(MCENGINE_FEATURE_DIRECTX11) || \
+      defined(MCENGINE_FEATURE_SDLGPU))
 #error "No renderer is defined! Check the build configuration, or \"config.h\"."
 #endif
         REND::NONE;
@@ -306,6 +311,8 @@ typedef SSIZE_T ssize_t;
 #define MC_ARCH64
 #elif defined(_ARM64_) || defined(__aarch64__) || defined(__arm64__)
 #define MC_AARCH64
+#elif defined(__wasm32__) || defined(__EMSCRIPTEN__)
+#define MC_WASM32
 #else
 MC_MESSAGE("WARNING: unknown compilation arch??")
 #endif
@@ -332,6 +339,8 @@ MC_MESSAGE("WARNING: unknown compilation arch??")
 #define MC_ARCHSTR "i686"
 #elif defined(MC_AARCH64)
 #define MC_ARCHSTR "aarch64"
+#elif defined(MC_WASM32)
+#define MC_ARCHSTR "wasm32"
 #else
 #define MC_ARCHSTR "?"
 #endif  // MC_ARCH64
@@ -340,6 +349,8 @@ MC_MESSAGE("WARNING: unknown compilation arch??")
 #define OS_NAME "linux-" MC_ARCHSTR
 #elif defined(__APPLE__)
 #define OS_NAME "macos-" MC_ARCHSTR
+#elif defined(MCENGINE_PLATFORM_WASM) || defined(__EMSCRIPTEN__)
+#define OS_NAME "wasm-" MC_ARCHSTR
 #endif
 
 #endif  // MCENGINE_PLATFORM_WINDOWS

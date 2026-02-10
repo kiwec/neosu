@@ -9,6 +9,8 @@
 #ifndef RESOURCEMANAGER_H
 #define RESOURCEMANAGER_H
 
+#include "config.h"
+
 #include "noinclude.h"
 #include "types.h"
 #include "StaticPImpl.h"
@@ -17,6 +19,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <span>
 
 enum class MultisampleType : uint8_t;
 enum class DrawPrimitive : uint8_t;
@@ -68,7 +71,7 @@ class ResourceManager final {
     void setSyncLoadMaxBatchSize(size_t resourcesToLoad);
 
     // can't allow directly setting resource names, otherwise the map will go out of sync
-    void setResourceName(Resource *res, std::string name);
+    void setResourceName(Resource *res, std::string_view name);
 
     // resources which will be garbage collected on shutdown
     // userPtr must contain a pre-created (allocated with new) resource of any type
@@ -87,8 +90,8 @@ class ResourceManager final {
     // fonts
     McFont *loadFont(std::string filepath, const std::string &resourceName, int fontSize = 16, bool antialiasing = true,
                      int fontDPI = 96);
-    McFont *loadFont(std::string filepath, const std::string &resourceName, const char16_t *characters,
-                     size_t numCharacters, int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
+    McFont *loadFont(std::string filepath, const std::string &resourceName, const std::span<const char16_t> &characters,
+                     int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
 
     // sounds
     Sound *loadSound(std::string filepath, const std::string &resourceName, bool stream = false,
@@ -102,6 +105,10 @@ class ResourceManager final {
     Shader *loadShader(std::string vertexShaderFilePath, std::string fragmentShaderFilePath);
     Shader *createShader(std::string vertexShader, std::string fragmentShader, const std::string &resourceName);
     Shader *createShader(std::string vertexShader, std::string fragmentShader);
+
+    // automatically loads opengl/dx11 vertex and fragment shaders
+    // sets the resource name to the shaderBasename as well
+    Shader *createShaderAuto(std::string_view shaderBasename);
 
     // rendertargets
     RenderTarget *createRenderTarget(int x, int y, int width, int height,

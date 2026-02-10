@@ -10,7 +10,7 @@
 #include <vector>
 #include <array>
 
-class AvatarManager;
+class ThumbnailManager;
 class ConVar;
 class Image;
 class McFont;
@@ -154,7 +154,9 @@ class Osu final : public App, public MouseListener {
     [[nodiscard]] inline const std::unique_ptr<LiveScore> &getScore() const { return this->score; }
     [[nodiscard]] inline const std::unique_ptr<UpdateHandler> &getUpdateHandler() const { return this->updateHandler; }
     [[nodiscard]] inline const std::unique_ptr<BeatmapInterface> &getMapInterface() const { return this->map_iface; }
-    [[nodiscard]] inline const std::unique_ptr<AvatarManager> &getAvatarManager() const { return this->avatarManager; }
+    [[nodiscard]] inline const std::unique_ptr<ThumbnailManager> &getThumbnailManager() const {
+        return this->thumbnailManager;
+    }
 
     [[nodiscard]] inline RenderTarget *getBackBuffer() const { return this->backBuffer; }
     [[nodiscard]] inline RenderTarget *getPlayfieldBuffer() const { return this->playfieldBuffer; }
@@ -194,6 +196,7 @@ class Osu final : public App, public MouseListener {
     [[nodiscard]] bool getModNC() const;
     [[nodiscard]] bool getModHT() const;
 
+    [[nodiscard]] bool isBleedingEdge() const;
     [[nodiscard]] constexpr bool isInPlayMode() const { return this->bIsPlayingASelectedBeatmap; }
     [[nodiscard]] inline bool isSkinLoading() const {
         return this->bSkinLoadScheduled ||
@@ -264,11 +267,15 @@ class Osu final : public App, public MouseListener {
     bool bUILoaded{false};
     [[nodiscard]] inline bool UIReady() const { return !!this->ui_memb && this->bUILoaded; };
 
+    void doDeferredInitTasks();
+    // defer some things to post-construction on the first update tick so that we're fully initialized
+    bool bFirstUpdateTasksDone{false};
+
     // interfaces (other)
     std::unique_ptr<Skin> skin{nullptr};
     std::unique_ptr<BeatmapInterface> map_iface{nullptr};
     std::unique_ptr<UpdateHandler> updateHandler{nullptr};
-    std::unique_ptr<AvatarManager> avatarManager{nullptr};
+    std::unique_ptr<ThumbnailManager> thumbnailManager{nullptr};
     std::unique_ptr<UserCard> userButton{nullptr};
     std::unique_ptr<BGImageHandler> backgroundImageHandler{nullptr};
     std::unique_ptr<LiveScore> score{nullptr};

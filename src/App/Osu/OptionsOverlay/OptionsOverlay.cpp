@@ -325,7 +325,7 @@ struct OptionsOverlayImpl final {
 
     bool updating_layout{false};
 
-    bool should_use_oauth_login();
+    [[nodiscard]] bool should_use_oauth_login() const;
 
     OptionsOverlay *parent;
 };
@@ -854,6 +854,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
         loginElement->cvars[keepCbx] = &cv::mp_autologin;
     }
 
+#ifndef MCENGINE_PLATFORM_WASM
     this->addSubSection_("osu!folder");
     this->addLabel_("1) If you have an existing osu!stable installation:")->setTextColor(0xff666666);
     this->addLabel_("2) osu! > Options > \"Open osu! folder\"")->setTextColor(0xff666666);
@@ -865,7 +866,6 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
         if(SettingsImporter::import_from_osu_stable()) {
             ui->getNotificationOverlay()->addToast(US_("Successfully imported settings from osu!stable."),
                                                    SUCCESS_TOAST);
-
         } else {
             ui->getNotificationOverlay()->addToast(
                 US_("Error: Couldn't find osu!stable install directory or config file!"), ERROR_TOAST);
@@ -879,6 +879,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
         "Load osu! collection.db (read-only)",
         "If you have an existing osu! installation,\nalso load and display your created collections from there.",
         &cv::collections_legacy_enabled);
+#endif
 
     this->addSpacer();
     this->addCheckboxTooltip_(
@@ -929,7 +930,9 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     // this->addTextbox(cv::chat_highlight_words.getString().c_str(), "Chat word highlight list (space-separated):", &cv::chat_highlight_words);
 
     this->addSubSection_("Privacy");
+#ifndef MCENGINE_PLATFORM_WASM
     this->addCheckbox_("Automatically update neosu to the latest version", &cv::auto_update);
+#endif
     // this->addCheckbox_("Allow private messages from strangers", &cv::allow_stranger_dms);
     // this->addCheckbox_("Allow game invites from strangers", &cv::allow_mp_invites);
     this->addCheckbox_("Replace main menu logo with server logo", &cv::main_menu_use_server_logo);
@@ -943,12 +946,6 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
             &cv::rich_presence);
         this->addCheckbox_("Draw map backgrounds in Discord Rich Presence", &cv::rich_presence_map_backgrounds);
 
-        // there's an issue where if the game starts with discord closed, then the SDK fails to initialize, and there's
-        // no way to try reinitializing it (without restarting the game)
-        // so allow "turning it off and on again" to try reinitializing
-        // (DiscRPC::init() does nothing if already initialized)
-        cv::rich_presence.setCallback([](float newValue) -> void { return newValue > 0 ? DiscRPC::init() : (void)0; });
-
         // XXX: have a generic "update_activity"
         cv::rich_presence_map_backgrounds.setCallback([]() { DiscRPC::clear_activity(); });
     }
@@ -958,8 +955,10 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     CBaseUIElement *sectionGraphics = this->addSection_("Graphics");
 
     this->addSubSection_("Renderer");
-    this->addCheckboxTooltip_("VSync", "If enabled: plz enjoy input lag.", &cv::vsync);
-
+    // makes the game run worse
+    if constexpr(!Env::cfg(OS::WASM)) {
+        this->addCheckboxTooltip_("VSync", "If enabled: plz enjoy input lag.", &cv::vsync);
+    }
     this->addCheckboxTooltip_("High Priority", "Sets the game process priority to high", &cv::win_processpriority);
 
     this->addCheckbox_("Show FPS Counter", &cv::draw_fps);
@@ -1267,6 +1266,11 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     this->addSubSection_("Skin");
     this->addSkinPreview();
     {
+        if constexpr(Env::cfg(OS::WASM)) {
+            this->addLabel_("To import a skin, just drop the .osk file on this window!")->setTextColor(0xff666666);
+            this->addSpacer();
+        }
+
         {
             OptionsElement *skinSelect = this->addButtonLabel_("Select Skin", "default");
             this->skinSelectLocalButton = static_cast<CBaseUIButton *>(skinSelect->baseElems[0].get());
@@ -1275,8 +1279,10 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
         this->skinSelectLocalButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onSkinSelect>(this));
 
-        this->addButton_("Open current Skin folder")
-            ->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::openCurrentSkinFolder>(this));
+        if constexpr(!Env::cfg(OS::WASM)) {
+            this->addButton_("Open current Skin folder")
+                ->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::openCurrentSkinFolder>(this));
+        }
 
         OptionsElement *skinReload = this->addButtonButton("Reload Skin", "Random Skin");
         auto *skinReloadBtn = static_cast<UIButton *>(skinReload->baseElems[0].get());
@@ -1742,6 +1748,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
     this->addSubSection_("Import/Reset");
 
+#ifndef MCENGINE_PLATFORM_WASM
     UIButton *importMcOsuSettingsButton = this->addButton_("Import collections/scores/settings from McOsu");
     importMcOsuSettingsButton->setClickCallback(SA::MakeDelegate([]() -> void {
         auto conclude_import = [](bool success) {
@@ -1782,12 +1789,17 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
             conclude_import(imported);
         });
     }));
+#endif
 
     UIButton *resetAllSettingsButton = this->addButton_("Reset all settings");
     resetAllSettingsButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onResetEverythingClicked>(this));
     resetAllSettingsButton->setColor(0xffd90000);
+
+#ifndef MCENGINE_PLATFORM_WASM
     this->addSubSection_("Testing");
     this->addCheckbox_("Use bleeding edge release stream", &cv::bleedingedge);
+#endif
+
     this->addSpacer();
     this->addSpacer();
     this->addSpacer();
@@ -3122,7 +3134,8 @@ void OptionsOverlayImpl::onLogInClicked(bool left, bool right) {
             crypto::hash::sha256(&BanchoState::oauth_verifier[0], 32, &BanchoState::oauth_challenge[0]);
 
             auto challenge_b64 = Mc::Net::urlEncode(crypto::conv::encode64(BanchoState::oauth_challenge));
-            auto url = fmt::format("https://{}/connect/start?challenge={}", BanchoState::endpoint, challenge_b64);
+            auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+            auto url = fmt::format("{}{}/connect/start?challenge={}", scheme, BanchoState::endpoint, challenge_b64);
 
             env->openURLInDefaultBrowser(url);
         } else {
@@ -4186,7 +4199,7 @@ void OptionsOverlayImpl::openAndScrollToSkinSection() {
         this->options->scrollToElement(this->skinSection, 0, 100 * Osu::getUIScale());
 }
 
-bool OptionsOverlayImpl::should_use_oauth_login() {
+bool OptionsOverlayImpl::should_use_oauth_login() const {
     if(cv::force_oauth.getBool()) {
         return true;
     }

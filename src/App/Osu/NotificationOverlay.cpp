@@ -105,7 +105,7 @@ void NotificationOverlay::update(CBaseUIEventCtx &c) {
     bool a_toast_is_hovered = false;
     const vec2 &screen{osu->getVirtScreenSize()};
     f64 bottom_y = screen.y - TOAST_SCREEN_BOTTOM_MARGIN;
-    for(const auto &t : this->toasts) {
+    for(const auto &t : this->toasts | std::views::reverse) {
         if(t->type == ToastElement::TYPE::CHAT && !chat_toasts_visible) continue;
 
         bottom_y -= TOAST_OUTER_Y_MARGIN + t->getSize().y;

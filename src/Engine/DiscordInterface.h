@@ -28,6 +28,7 @@ struct DiscordActivity {
 
 namespace DiscRPC {
 void init();
+void deinit();
 void tick();
 void destroy();
 void clear_activity();

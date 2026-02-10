@@ -35,6 +35,27 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
+# early emscripten detection - must happen before checks that use host_os
+# emconfigure sets CC=emcc before running configure
+AS_IF([[case "$CC" in
+  *emcc*) WASM_CC=$CC ;;
+esac]])
+AS_IF([test -n "$WASM_CC"], [
+    # override host triplet so subsequent checks see WASM, not linux
+    host_cpu=wasm32
+    host_vendor=local
+    host_os=unknown-emscripten
+    host=${host_cpu}-${host_vendor}-${host_os}
+    host_alias=$host
+    target_cpu=$host_cpu
+    target_vendor=$host_vendor
+    target_os=$host_os
+    target=$host
+    target_alias=''
+    # WASM uses OpenGL ES 3.2
+    AS_IF([test -z "$with_renderer"], [with_renderer=opengles])
+])
+
 AC_USE_SYSTEM_EXTENSIONS
 
 AC_DEFUN([AX_COUNT_CPUS], [
@@ -106,6 +127,12 @@ AC_DEFUN([AC_PROG_CMAKE], [
         AC_MSG_ERROR([cmake not found - required for building dependencies])
     fi
 ])
+AC_DEFUN([AC_PROG_PYTHON], [
+    AC_CHECK_PROG([PYTHON], [python3], [python3])
+    if test -z "$PYTHON"; then
+        AC_CHECK_PROG([PYTHON], [python], [python])
+    fi
+])
 AC_DEFUN([AC_PROG_MESON], [
     AC_CHECK_PROG([MESON], [meson], [meson])
     if test -z "$MESON"; then
@@ -138,6 +165,20 @@ AC_DEFUN([AC_PROG_NASM], [
     fi
 ])
 
+# needed for building SPIR-V shaders (if building it is required)
+# tries glslc first (from shaderc), falls back to glslangValidator (from glslang-tools)
+AC_DEFUN([AC_PROG_GLSLC], [
+    AC_CHECK_PROG([GLSLC], [glslc], [glslc])
+    if test -z "$GLSLC"; then
+        AC_CHECK_PROG([GLSLANG_VALIDATOR], [glslangValidator], [glslangValidator])
+        if test -z "$GLSLANG_VALIDATOR"; then
+            AC_MSG_ERROR([neither glslc nor glslangValidator found - one is required for compiling GLSL shaders to SPIR-V])
+        fi
+        GLSLC="$GLSLANG_VALIDATOR"
+    fi
+])
+
+
 # needed for dep resolver
 #AC_PROG_WGET
 AC_PROG_CURLBIN
@@ -148,6 +189,8 @@ AC_PROG_NINJA
 AC_PROG_UNZIP
 AC_PROG_MESON
 AC_PROG_CMAKE
+AC_PROG_PYTHON
+AC_SUBST([PYTHON])
 
 AC_CHECK_PROG([BEAR], [bear], [bear])
 AC_SUBST([BEAR])
@@ -190,9 +233,11 @@ AC_ARG_ENABLE([werror],
     AS_HELP_STRING([--enable-werror], [Build with -Werror (default: yes)]))
 AC_ARG_ENABLE([pch],
     AS_HELP_STRING([--enable-pch], [Build and use a pre-compiled header to speed up rebuild time (default: yes)]))
+AC_ARG_ENABLE([redistributable],
+    AS_HELP_STRING([--enable-redistributable], [Don't bundle any non-redistributable content (currently only relevant for WASM, skips bundling beatmaps, default: yes)]))
 
 AC_ARG_WITH([renderer],
-    AS_HELP_STRING([--with-renderer={opengl,dx11,opengles}], [The (comma separated list of) renderer backend(s) to build with (default: opengl)]))
+    AS_HELP_STRING([--with-renderer={opengl,dx11,opengles,sdlgpu}], [The (comma separated list of) renderer backend(s) to build with (default: opengl)]))
 
 AC_ARG_WITH([audio],
     AS_HELP_STRING([--with-audio={bass,soloud}], [The (comma separated list of) audio backend(s) to build with (default: soloud)]))
@@ -207,6 +252,14 @@ AC_ARG_WITH([discord],
     AS_HELP_STRING([--with-discord], [Build with Discord rich presence support (default on if supported (Windows, Linux 64-bit))]))
 
 # setup defaults
+AS_IF([test "x$enable_redistributable" != "xno"], [
+    enable_redistributable=yes
+    disable_redistributable=no
+], [
+    enable_redistributable=no
+    disable_redistributable=yes
+])
+
 AS_IF([test "x$enable_static" != "xno"], [
     enable_static=yes
     disable_static=no
@@ -289,6 +342,7 @@ use_opengl_default=yes # ugly
 use_opengl=unset
 use_opengles32=unset
 use_dx11=unset
+use_sdlgpu=unset
 
 AS_VAR_SET_IF([with_renderer],
     [ac_save_IFS=$IFS
@@ -303,10 +357,12 @@ AS_VAR_SET_IF([with_renderer],
             opengles*) use_opengles32=yes ;;
             dx11) use_dx11=yes ;;
             directx*) use_dx11=yes ;;
+            *sdl*) use_sdlgpu=yes ;;
+            *gpu*) use_sdlgpu=yes ;;
             esac
         done])
 
-AS_IF([test "x$use_dx11" = "xyes" || test "x$use_opengles32" = "xyes"], [
+AS_IF([test "x$use_dx11" = "xyes" || test "x$use_opengles32" = "xyes" || test "x$use_sdlgpu" = "xyes"], [
     use_opengl_default=no
     AS_IF([test "x$use_opengles32" = "xyes"], [
         # can't combine GL and GL ES
@@ -340,6 +396,37 @@ AS_IF([test "x$use_dx11" = "xyes" ], [
 ], [
     use_dx11=no
 ])
+
+AS_IF([test "x$use_sdlgpu" = "xyes" ], [
+    AC_PROG_GLSLC
+    AS_IF([test "$host_os" = "mingw32"], [
+        # needed for compiling HLSL shaders to DXIL (Windows/D3D12 only)
+        # will download & cache a release from github if not available (only if building on linux though (lazy))
+        AC_CHECK_PROG([DXC], [dxc], [dxc])
+        AS_IF([test -z "$DXC" && test "$build_os" != "linux-gnu"], [
+            AC_MSG_ERROR([dxc not found - required for compiling HLSL shaders to DXIL])
+        ])
+    ])
+
+    use_sdlgpu=yes
+    AC_DEFINE([MCENGINE_FEATURE_SDLGPU], [1], [Defined if the SDL_gpu backend is to be used.])
+    rendbackendlist="$rendbackendlist sdlgpu"
+], [
+    use_sdlgpu=no
+])
+
+# build the list of binary embed manifests based on renderer selection
+EMBED_MANIFESTS="\$(srcdir)/\$(ASSETS_DIR)/binary/misc_embed.manifest"
+AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
+    EMBED_MANIFESTS="$EMBED_MANIFESTS \$(srcdir)/\$(ASSETS_DIR)/binary/gl_shaders_embed.manifest"
+])
+AS_IF([test "x$use_dx11" = "xyes"], [
+    EMBED_MANIFESTS="$EMBED_MANIFESTS \$(srcdir)/\$(ASSETS_DIR)/binary/dx_shaders_embed.manifest"
+])
+
+# SDL_gpu shader packs are compiled and embedded via pack_sdlgpu_shader.py,
+# not through a static manifest (see Makefile.am).
+AC_SUBST([EMBED_MANIFESTS])
 
 AUDBACKENDLIST=""
 
@@ -422,28 +509,58 @@ AS_IF([test "x$enable_lto" != "xno"], [
     disable_lto=no
 ])
 
-AS_IF([test "x$enable_clang" = "xyes"], [
-    CC=clang
-    CXX=clang++
-    CXXFLAGS="$CXXFLAGS -Qunused-arguments -Wno-c2x-extensions"
-    CFLAGS="$CFLAGS -Qunused-arguments"
-    LDFLAGS="$LDFLAGS"
-    CLANG=yes
+# detect emscripten (CC=emcc when using emconfigure)
+AS_IF([[case "$CC" in
+  *emcc*) WASM_CC=$CC ;;
+esac]])
+
+AS_IF([test -n "$WASM_CC"], [
+    # emscripten/WASM build
+    CXXFLAGS="$CXXFLAGS -sWASM_WORKERS=1 -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument -Wno-c2x-extensions"
+    CFLAGS="$CFLAGS -sWASM_WORKERS=1 -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument"
+    LDFLAGS="$LDFLAGS -sWASM_WORKERS=1 -pthread -msimd128 -Qunused-arguments -Wno-unused-command-line-argument"
     _ccache_ctype="clang"
-    _cid="Clang"
-    AC_SUBST([CLANG])
-],[
-    CC=gcc
-    CXX=g++
-    CXXFLAGS="$CXXFLAGS -fno-semantic-interposition"
-    CFLAGS="$CFLAGS -fno-semantic-interposition"
-    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -fimplicit-constexpr"
-    _ccache_ctype="gcc"
-    _cid="GNU"
+    _cid="Emscripten"
+], [
+    AS_IF([test "x$enable_clang" = "xyes"], [
+        CC=clang
+        CXX=clang++
+        CXXFLAGS="$CXXFLAGS -Qunused-arguments -Wno-c2x-extensions"
+        CFLAGS="$CFLAGS -Qunused-arguments"
+        LDFLAGS="$LDFLAGS"
+        CLANG=yes
+        _ccache_ctype="clang"
+        _cid="Clang"
+        AC_SUBST([CLANG])
+    ],[
+        CC=gcc
+        CXX=g++
+        CXXFLAGS="$CXXFLAGS -fno-semantic-interposition"
+        CFLAGS="$CFLAGS -fno-semantic-interposition"
+        NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -fimplicit-constexpr"
+        _ccache_ctype="gcc"
+        _cid="GNU"
+    ])
 ])
 
-AS_IF([test "$host_cpu" = "x86_64" && test -z "$LLVMMINGW"], [
-    # this is only possible on x86_64, and not with llvm-mingw
+# WASM-specific defaults: disable nsync+mimalloc unless explicitly requested
+AS_IF([test -n "$WASM_CC"], [
+    # python is required for WASM builds (for generating #embed source files)
+    AS_IF([test -z "$PYTHON"], [
+        AC_MSG_ERROR([python3 not found - required for WASM builds to generate embedded binary sources])
+    ])
+    # nsync doesn't build properly with emscripten
+    AS_IF([test "x$with_nsync" != "xyes"], [
+        with_nsync=no
+    ])
+    # mimalloc has issues with emscripten's -xnone handling
+    AS_IF([test "x$with_mimalloc" != "xyes"], [
+        with_mimalloc=no
+    ])
+])
+
+AS_IF([test "$host_cpu" = "x86_64" && test -z "$LLVMMINGW" && test -z "$WASM_CC"], [
+    # this is only possible on x86_64, and not with llvm-mingw or wasm
     # faster tls access
     CFLAGS="$CFLAGS -mtls-dialect=gnu2"
     CXXFLAGS="$CXXFLAGS -mtls-dialect=gnu2"
@@ -462,7 +579,45 @@ AC_SUBST([PKG_CONFIG_PATH])
 AC_SUBST([PKG_CONFIG_PATH_CUSTOM])
 
 win_subsystem_ver=6.00
-AS_IF([test "$host_os" = "linux-gnu"], [
+AS_IF([test -n "$WASM_CC"], [
+    # WASM/Emscripten build
+    WASM_POLYFILL_DEP="\$(srcdir)/src/Platform/WASM/wasm-node-polyfill.js"
+    EMSCRIPTEN_FLAGS="-sPTHREAD_POOL_SIZE=32 -sAUDIO_WORKLET=1 -sWASM=1 -sWASM_WORKERS=1 -sUSE_PTHREADS=1 -sFETCH=1 -sEXPORTED_RUNTIME_METHODS=callMain,ENV -sINCOMING_MODULE_JS_API=locateFile,onAbort,onRuntimeInitialized,noInitialRun,print -sMAX_WEBGL_VERSION=2 -sLLD_REPORT_UNDEFINED -sSTACK_SIZE=1MB -sENVIRONMENT=web,worker,node"
+
+    NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -U__linux__ -D__EMSCRIPTEN__"
+    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS $EMSCRIPTEN_FLAGS"
+    # --emrun for support for running the .html with emrun (useful for offline testing)
+    NEOSU_LDFLAGS="$NEOSU_LDFLAGS $EMSCRIPTEN_FLAGS -sWEBSOCKET_URL=wss:// -sFULL_ES3 -sINITIAL_MEMORY=1536MB -lidbfs.js -lnodefs.js --pre-js $WASM_POLYFILL_DEP --emrun"
+
+    WASM_PRELOAD_FLAGS="--preload-file \$(srcdir)/\$(ASSETS_DIR)/fonts@fonts --preload-file \$(srcdir)/\$(ASSETS_DIR)/materials@materials"
+    AS_IF([test "x$enable_redistributable" = "xno"], [
+        # bundle some copyrighted beatmaps for non-redistributable builds
+        # useful for testing purposes to have something to immediately play
+        WASM_PRELOAD_FLAGS="$WASM_PRELOAD_FLAGS --preload-file \$(builddir)/wasm-maps@/libsdl/Songs"
+    ])
+    AC_SUBST([WASM_PRELOAD_FLAGS])
+    AC_SUBST([WASM_POLYFILL_DEP])
+
+    # pkg-config wrapper for emscripten
+    install -Dm755 /dev/stdin $PWD/build/pkg-config <<__EOF__
+#!/usr/bin/env bash
+PKG_CONFIG_PATH="$PKG_CONFIG_PATH" $PKGCONF $pc_addflags "\$@"
+__EOF__
+
+    # forward these for building dependencies
+    AC_SUBST([CMAKE_CONF_PFX], [emcmake])
+    AC_SUBST([MAKE_PFX], [emmake])
+    AC_SUBST([CONFIGURE_PFX], [emconfigure])
+
+    CMAKE_SYSTEM_NAME="Emscripten"
+    CMAKE_GEN="Ninja"
+    SYSNAME="wasm"
+    DLLEXT=".so"
+    LIBPREFIX="lib"
+    EXEEXT=".html"
+    AC_DEFINE([MCENGINE_PLATFORM_WASM], [1], [Define if compiling for WASM with Emscripten.])
+    AC_DEFINE([NEOSU_DATA_DIR], ["/persist/"], [Persistent writable data directory for WASM.])
+], [test "$host_os" = "linux-gnu"], [
     AS_IF([test "$host_cpu" = "i686"], [
         install -Dm755 /dev/stdin $PWD/build/$target-$CC <<EOF
 #!/usr/bin/env bash
@@ -505,6 +660,10 @@ __EOF__
     SYSNAME="linux"
     DLLEXT=".so"
     LIBPREFIX="lib"
+
+    # fixup linker runtime paths
+    NATIVE_LDFLAGS="-Wl,-rpath='\$\$ORIGIN/lib',-rpath='\$\$ORIGIN'"
+    AC_SUBST([NATIVE_LDFLAGS])
 
     AC_DEFINE([MCENGINE_PLATFORM_LINUX], [1], [Define if compiling for Linux.])
 ], [case "$host_os" in
@@ -595,6 +754,7 @@ AC_CHECK_PROG([CCACHE], [ccache], [ccache])
 # for linux and macOS, so AC_PATH_PROG doesn't work for that (and isn't needed anyways)
 # this is done mostly for mingw targets so that configure --host=x86_64-w64-mingw32 --enable-clang
 # saves the full path to the llvm-mingw compiler, in case $PATH changes for future compiles
+# for wasm, emconfigure sets CC/CXX to full paths already
 case "$host_os" in
     linux-gnu|darwin*)
         AS_VAR_SET([CC_REAL], [$CC])
@@ -730,17 +890,21 @@ AC_SUBST([DLLEXT])
 AC_SUBST([LIBPREFIX])
 
 # don't omit frame pointers, it's not worth it on 64-bit, and having them makes profiling/debugging better
-AS_IF([test "$host_cpu" != "i686"], [COMMON_FLAGS="$COMMON_FLAGS -mcmodel=small -fno-omit-frame-pointer -momit-leaf-frame-pointer"])
+AS_IF([test "$host_cpu" != "i686" && test -z "$WASM_CC"], [COMMON_FLAGS="$COMMON_FLAGS -mcmodel=small -fno-omit-frame-pointer -momit-leaf-frame-pointer"])
 
 CPPFLAGS="$CPPFLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64"
-COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing -ftls-model=initial-exec -pthread"
+AS_IF([test -z "$WASM_CC"], [
+    COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing -ftls-model=initial-exec -pthread"
+    AS_IF([test "$SYSNAME" = "macos"], [
+        LDFLAGS="$LDFLAGS -pthread"
+    ], [
+        LDFLAGS="$LDFLAGS -static-libstdc++ -static-libgcc -pthread"
+    ])
+], [
+    COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing"
+])
 CXXFLAGS="$CXXFLAGS $COMMON_FLAGS -fno-exceptions" # -fno-unwind-tables -fno-rtti
 CFLAGS="$CFLAGS $COMMON_FLAGS"
-AS_IF([test "$SYSNAME" != "macos"], [
-    LDFLAGS="$LDFLAGS -static-libstdc++ -static-libgcc -pthread"
-], [
-    LDFLAGS="$LDFLAGS -pthread"
-])
 
 AC_SUBST([CXXFLAGS])
 AC_SUBST([CFLAGS])
@@ -864,24 +1028,37 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         CXXFLAGS="$CXXFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
         CFLAGS="$CFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
     ])
+    AS_IF([test -n "$WASM_CC"], [
+        CXXFLAGS="$CXXFLAGS -gsource-map"
+        CFLAGS="$CFLAGS -gsource-map"
+        LDFLAGS="$LDFLAGS -gsource-map"
+    ])
+
     ENABLE_DEBUG=$enable_debug
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -D_DEBUG"
-    AS_IF([test -z "$CLANG"], [
+    AS_IF([test -z "$CLANG" && test -z "$WASM_CC"], [
         NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -Wcast-align -Wpacked-not-aligned"
         # CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
         # CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG"
     ])
+    # assertions breaks in a couple places due to calling malloc/free in the soloud mixer (inside SoundTouch)
+    # hopefully it's not fatal to ignore...
+    # AS_IF([test -n "$WASM_CC"], [
+    #     NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -sASSERTIONS"
+    #     NEOSU_LDFLAGS="$NEOSU_LDFLAGS -sASSERTIONS"
+    # ])
     AC_SUBST([ENABLE_DEBUG])
     AS_IF([test "x$enable_strip" != "xyes"], [enable_strip=no]) # disable stripping unless its explicitly requested for debug (why tho?)
 ], [
     AS_IF([test "x$enable_optimize" != "xno"], [
         CPPFLAGS="$CPPFLAGS -DNDEBUG -D_NDEBUG"
         # put it at the start so -O3 is overrideable from the command line
-        CXXFLAGS="-O3 ${CXXFLAGS//-O2/}" # where do those -g -O2 flags even come from...
-        CFLAGS="-O3 ${CFLAGS//-O2/}"
+        CXXFLAGS="-O3 $(printf '%s' "$CXXFLAGS" | sed 's/-O2//g')" # where do those -g -O2 flags even come from...
+        CFLAGS="-O3 $(printf '%s' "$CFLAGS" | sed 's/-O2//g')"
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-O1"
 
-        AS_IF([test "x$enable_clang" != "xyes"], [
+        AS_IF([test "x$enable_clang" != "xyes" && test -z "$WASM_CC"], [
+            # -fipa-pta is GCC-only, skip for clang and emscripten
             CXXFLAGS="$CXXFLAGS -fipa-pta"
             CFLAGS="$CFLAGS -fipa-pta"
         ])
@@ -889,9 +1066,11 @@ AS_IF([test "x$enable_debug" = "xyes"], [
     AS_IF([test "x$enable_strip" != "xno"], [
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-s" # strip flag
     ], [
-        # add minimal debug info
-        CXXFLAGS="-g $CXXFLAGS"
-        CFLAGS="-g $CFLAGS"
+        AS_IF([test -z "$WASM_CC"],[
+            # add minimal debug info
+            CXXFLAGS="-g $CXXFLAGS"
+            CFLAGS="-g $CFLAGS"
+        ])
     ])
     AS_IF([test "$host_os" = "mingw32"], [
         AS_IF([test "x$enable_clang" = "xyes"], [
@@ -914,10 +1093,16 @@ AS_IF([test "x$enable_omp" = "xyes"], [
 _using_gcc_lto=
 AS_IF([test "x$enable_lto" != "xno"], [
     AX_CHECK_COMPILE_FLAG([-flto=thin], [
-        AX_CHECK_LINK_FLAG([-flto=thin -fno-fat-lto-objects -fwhole-program-vtables], [
-            CXXFLAGS="$CXXFLAGS -flto=thin -fno-fat-lto-objects -fwhole-program-vtables"
-            CFLAGS="$CFLAGS -flto=thin -fno-fat-lto-objects -fwhole-program-vtables"
-            LDFLAGS="$LDFLAGS -flto=thin -fno-fat-lto-objects -fwhole-program-vtables"
+        # -fwhole-program-vtables causes LTO unit splitting issues with emscripten
+        AS_IF([test -n "$WASM_CC"], [
+            _lto_flags="-flto=thin -fno-fat-lto-objects"
+        ], [
+            _lto_flags="-flto=thin -fno-fat-lto-objects -fwhole-program-vtables"
+        ])
+        AX_CHECK_LINK_FLAG([$_lto_flags], [
+            CXXFLAGS="$CXXFLAGS $_lto_flags"
+            CFLAGS="$CFLAGS $_lto_flags"
+            LDFLAGS="$LDFLAGS $_lto_flags"
             AS_IF([test -z "$MSYS2_BUILD"], [
                 mkdir -p $PWD/.ltocache-clang
                 AX_CHECK_LINK_FLAG([-Wl,--thinlto-cache-dir=$PWD/.ltocache-clang], [
@@ -1026,6 +1211,12 @@ AS_IF([test "x$enable_werror" != "xno"], [
     AX_CHECK_COMPILE_FLAG([-Wno-error=format-y2k], [
         werror_flags_temp="$werror_flags_temp -Wno-error=format-y2k"
     ])
+    AS_IF([test -n "$WASM_CC"], [
+        # not exactly sure why the above tests pass but then the actual compilation fails due to -Werror=unknown-warning-option
+        AX_CHECK_COMPILE_FLAG([-Wno-unknown-warning-option], [
+            werror_flags_temp="$werror_flags_temp -Wno-unknown-warning-option"
+        ])
+    ])
     NEOSU_CXXFLAGS="$werror_flags_temp $NEOSU_CXXFLAGS"
 ])
 
@@ -1051,19 +1242,9 @@ AC_SUBST([AUDIO_LIBS])
 BUNDLED_INCLUDES="-I\$(srcdir)/libraries -I\$(srcdir)/libraries/delegatesv2 -I\$(srcdir)/libraries/unordered_dense -I\$(srcdir)/libraries/glad"
 AC_SUBST([BUNDLED_INCLUDES])
 
-# misc. resources to be included as binary data
-MISC_INCDIR="$srcdir/$ASSETS_DIR/misc/"
-INCBIN_FLAGS="$INCBIN_FLAGS -I$MISC_INCDIR"
-
-AC_SUBST([MISC_INCDIR])
-AC_SUBST([INCBIN_FLAGS])
-
 AC_MSG_CHECKING([for shaders in $srcdir/$ASSETS_DIR/shaders])
 AS_IF([test -f "$srcdir/$ASSETS_DIR/shaders/GL_slider_f.glsl"], [
     AC_MSG_RESULT([yes])
-    SHADERS_INCDIR="$srcdir/$ASSETS_DIR/shaders/"
-    INCBIN_FLAGS="$INCBIN_FLAGS -I$SHADERS_INCDIR"
-    AC_SUBST([SHADERS_INCDIR])
 ], [
     AC_MSG_RESULT([no])
     AC_MSG_ERROR([neosu shader resources are missing!])
@@ -1152,7 +1333,7 @@ AS_IF([test "x$use_dx11" = "xyes"], [
 ])
 
 SDL3_MIN_VERSION=3.4.0
-SDL3_BUILD_VERSION=a6c0052f39eaf7e14ed2e351ba57b31052794640 # git
+SDL3_BUILD_VERSION=267e681a0be6d351020060824da9e2cd48d8fc80 # git
 FREETYPE2_MIN_VERSION=2.10.0
 FREETYPE2_BUILD_VERSION=2.14.1
 LIBJPEG_MIN_VERSION=3.0.0
@@ -1173,6 +1354,7 @@ LIBACL_MIN_VERSION=2.3.1
 LIBACL_BUILD_VERSION=2.3.2
 CURL_MIN_VERSION=8.16.0 # due to websocket things, only very recent curl works
 CURL_BUILD_VERSION=8.18.0
+MBEDTLS_BUILD_VERSION=4.0.0 # for WASM SSL support
 OPENSSL_MIN_VERSION=3.0.0 # only for --enable-system-deps
 MPG123_MIN_VERSION=1.30.0
 MPG123_BUILD_VERSION=a06133928e6518bd65314c9cea12ccb5588703e9 # git mirror, latest as of Jan 13th, 2026 (1.33.5)
@@ -1186,7 +1368,7 @@ CTRE_MIN_VERSION=3.10.0 # regex support that doesn't have exceptions FORCED enab
 CTRE_BUILD_VERSION=6225211806c48230e5d17a1e555ef69e7325051c # git as of Jan 28th, 2026
 
 # always build these from source if we want to use them
-AC_SUBST([SOLOUD_VERSION], [40564fc8f9c7f162eb418c33f325952fd95e903a]) # neoloud fork
+AC_SUBST([SOLOUD_VERSION], [800cb5eb24756eac79fab0803d8704d1c5fe28c5]) # neoloud fork
 #AC_SUBST([SOLOUD_VERSION], [cb174f53804d8ba3fc81a2dfa49879103fbbcb2e])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [b8e2a5f3f04483691962ab1a36ffa166abdcd675])
@@ -1202,7 +1384,7 @@ AC_SUBST([FFMPEG_VERSION], [8.0])
 
 AC_SUBST([DISCORDSDK_VERSION], [2.5.6]) # pre-built
 
-AC_SUBST([BASS_VERSION], [20250813]) # just mark the date so we can invalidate the cache if necessary
+AC_SUBST([BASS_VERSION], [20260208_202602]) # just mark the date so we can invalidate the cache if necessary
 
 AS_IF([test "$SYSNAME" = "linux" || test "$SYSNAME" = "macos"], [
     AS_IF([test "x$enable_system_deps" != "xno"], [
@@ -1210,8 +1392,11 @@ AS_IF([test "$SYSNAME" = "linux" || test "$SYSNAME" = "macos"], [
         PKG_CHECK_AUTO([LIBACL], [libacl >= $LIBACL_MIN_VERSION], [have_libacl=yes], [have_libacl=no])
     ])
 ], [
-    EXTRA_WIN_LDFLAGS="-lcomctl32"
-    AC_SUBST([EXTRA_WIN_LDFLAGS])
+    AS_IF([test "$SYSNAME" = "windows"], [
+        # Windows-specific libraries
+        EXTRA_WIN_LDFLAGS="-lcomctl32"
+        AC_SUBST([EXTRA_WIN_LDFLAGS])
+    ])
     have_curl="no"
     have_libacl="not required"
 ])
@@ -1347,13 +1532,24 @@ LIBACL_PREFIX="${DEPS_PREFIX}"
 AC_SUBST([LIBACL_VERSION])
 AC_SUBST([LIBACL_PREFIX])
 
-AS_IF([test "x$have_curl" != "xyes"], [have_curl="download"])
+AS_IF([test "x$have_curl" != "xyes"], [
+    AS_IF([test -n "$WASM_CC"], [
+        # WASM doesn't use curl (browser networking goes through emscripten fetch API)
+        have_curl="not required"
+        have_openssl="not required"
+    ], [
+        # other platforms download prebuilt curl with OpenSSL
+        have_curl="download"
+    ])
+])
 CURL_VERSION=$CURL_BUILD_VERSION
 CURL_PREFIX="${DEPS_PREFIX}"
 AC_SUBST([CURL_VERSION])
 AC_SUBST([CURL_PREFIX])
+MBEDTLS_VERSION=$MBEDTLS_BUILD_VERSION
+AC_SUBST([MBEDTLS_VERSION])
 
-# if we are using the prebuilt curl, we dont need libcrypto from the system
+# if we are using the prebuilt curl (with bundled OpenSSL), we don't need libcrypto from the system
 AS_IF([test "x$have_curl" = "xdownload" || test "x$have_openssl" = "xyes"], [
     AC_DEFINE([USE_OPENSSL], [1], [Defined if OpenSSL cryptographic primitives are available.])
 ])
@@ -1396,7 +1592,7 @@ AM_CONDITIONAL([BUILD_LIBARCHIVE], [test "x$have_libarchive" != "xyes"])
 AM_CONDITIONAL([BUILD_SIMDUTF], [test "x$have_simdutf" != "xyes"])
 AM_CONDITIONAL([BUILD_CTRE], [test "x$have_ctre" != "xyes"])
 AM_CONDITIONAL([BUILD_LIBACL], [test "x$have_libacl" = "xbuild from source"])
-AM_CONDITIONAL([BUILD_CURL], [test "x$have_curl" != "xyes"])
+AM_CONDITIONAL([BUILD_CURL], [test "x$have_curl" != "xyes" && test "x$have_curl" != "xnot required"])
 AM_CONDITIONAL([BUILD_MPG123], [test "$with_soloud" = "yes" && test "x$have_mpg123" != "xyes"])
 AM_CONDITIONAL([BUILD_SPDLOG], [test "x$have_spdlog" != "xyes"])
 AM_CONDITIONAL([BUILD_NSYNC], [test "x$have_nsync" = "xbuild from source"])
@@ -1408,12 +1604,21 @@ AM_CONDITIONAL([BUILD_MIMALLOC], [{ test "x$enable_debug" != "xyes" || test "x$w
 
 AM_CONDITIONAL([USE_BASS], [test "$with_bass" = "yes"])
 AM_CONDITIONAL([USE_SOLOUD], [test "$with_soloud" = "yes"])
+# FFmpeg enabled for Linux and Windows (disabled for macOS - no build rules yet, and WASM due to size)
+AM_CONDITIONAL([ENABLE_FFMPEG], [test "$SYSNAME" = "linux" -o "$SYSNAME" = "windows"])
+AM_CONDITIONAL([USE_GL], [test "$use_opengl" = "yes" || test "$use_opengles32" = "yes"])
+AM_CONDITIONAL([USE_OPENGL], [test "$use_opengl" = "yes"])
+AM_CONDITIONAL([USE_OPENGLES], [test "$use_opengles32" = "yes"])
+AM_CONDITIONAL([USE_DX11], [test "$use_dx11" = "yes"])
+AM_CONDITIONAL([USE_SDLGPU], [test "$use_sdlgpu" = "yes"])
+AM_CONDITIONAL([DOWNLOAD_DXC], [test -z "$DXC" && test "$host_os" = "mingw32"])
 # this just copies some libraries on installation
 AM_CONDITIONAL([USE_DISCORDSDK], [test "$with_discord" = "yes"])
 AM_CONDITIONAL([WIN_PLATFORM], [test "$SYSNAME" = "windows"])
 AM_CONDITIONAL([WIN32_PLATFORM], [test "$SYSNAME" = "windows" && test "$host_cpu" = "i686"])
 AM_CONDITIONAL([MACOS_PLATFORM], [test "$SYSNAME" = "macos"])
 AM_CONDITIONAL([LINUX_PLATFORM], [test "$SYSNAME" = "linux"])
+AM_CONDITIONAL([WASM_PLATFORM], [test -n "$WASM_CC"])
 AM_CONDITIONAL([CLANG_BUILD], [test "$CLANG" = "yes"])
 
 AM_CONDITIONAL([STRIPBINS], [test "x$enable_strip" != "xno" && ! { test "$SYSNAME" = "windows" && test "$host_cpu" = "i686" ; } ])
@@ -1439,6 +1644,7 @@ AM_CONDITIONAL([BUILD_WINPTHREAD_NOVERSION],
     [test "$host_os" = "mingw32" && test "x$enable_static" = "xyes"])
 
 AM_CONDITIONAL([AUDIO_SHORTCUTS], [test -n "$make_audio_shortcuts" && test -n "$WINE" && test "$SYSNAME" = "windows"])
+AM_CONDITIONAL([BUNDLE_BEATMAPS], [test -n "$WASM_CC" && test "x$enable_redistributable" = "xno"])
 
 # output makefile and build timestamp
 AC_CONFIG_FILES([Makefile src/build_timestamp.h])
@@ -1467,6 +1673,7 @@ neosu build configuration:
     Discord:            ${with_discord-yes}
     IME enabled:        ${enable_ime-yes}
     Hardened build:     ${hardened_build-no}
+    Redistrib. build:   ${enable_redistributable-yes}
     LTO:                ${enable_lto-auto}
     OpenMP:             ${enable_omp-no}
     Debug build:        ${enable_debug-no}

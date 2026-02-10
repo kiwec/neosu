@@ -14,7 +14,19 @@
 #include "Thread.h"
 
 #include "AppDescriptor.h"
+
+#if defined(MCENGINE_FEATURE_DIRECTX11)
 #include "DirectX11Interface.h"
+#endif
+
+#if defined(MCENGINE_FEATURE_SDLGPU)
+#include "SDLGPUInterface.h"
+#endif
+
+#ifdef MCENGINE_PLATFORM_WASM
+#include "NullGraphics.h"
+#endif
+
 #include "SDLGLInterface.h"
 
 #include <algorithm>
@@ -37,7 +49,7 @@
 #include <X11/Xlib.h>
 #endif
 #elif defined(__EMSCRIPTEN__)
-// TODO
+// TODO (?)
 #endif
 
 #include <SDL3/SDL.h>
@@ -77,6 +89,7 @@ Environment::Environment(const Mc::AppDescriptor &appDesc,
 
     m_bRunning = true;
     m_bIsRestartScheduled = false;
+    m_bHeadless = m_mArgMap.contains("-headless");
 
     m_fDisplayHz = 360.0f;
     m_fDisplayHzSecs = 1.0f / m_fDisplayHz;
@@ -120,16 +133,37 @@ Environment::Environment(const Mc::AppDescriptor &appDesc,
 
     // use directx if:
     // we we built with support for it, and
-    // (either OpenGL(ES) is missing, or
+    // (either OpenGL(ES) + SDLGPU is missing, or
     // (-directx or -dx11 are specified on the command line))
-    m_bUsingDX11 = Env::cfg(REND::DX11) && (!Env::cfg(REND::GL | REND::GLES32) ||
-                                            (m_mArgMap.contains("-directx") || m_mArgMap.contains("-dx11")));
+    // use SDLGPU if:
+    // we we built with support for it, and
+    // (either OpenGL(ES) + DX11 is missing, or
+    // (-sdlgpu or -gpu are specified on the command line))
+    // otherwise, use whichever of GLES32/GL are available
+    {
+        using enum RuntimeRenderer;
+        // clang-format off
+        m_renderer = 
+            (Env::cfg(REND::DX11) &&
+                (!(Env::cfg(REND::GL | REND::GLES32 | REND::SDLGPU)) ||
+                  (m_mArgMap.contains("-directx") || m_mArgMap.contains("-dx11"))))
+            ? DX11
+        : (Env::cfg(REND::SDLGPU) && 
+                (!(Env::cfg(REND::GL | REND::GLES32 | REND::DX11)) ||
+                  (m_mArgMap.contains("-sdlgpu") || m_mArgMap.contains("-gpu"))))
+            ? SDLGPU
+        : Env::cfg(REND::GLES32) 
+            ? GLES
+        : GL;
+        // clang-format on
+    }
 
     // setup callbacks
     cv::debug_env.setCallback(SA::MakeDelegate<&Environment::onLogLevelChange>(this));
     cv::monitor.setCallback(SA::MakeDelegate<&Environment::onMonitorChange>(this));
     cv::keyboard_raw_input.setValue(m_bRawKB);  // (2)
     cv::keyboard_raw_input.setCallback(SA::MakeDelegate<&Environment::onRawKeyboardChange>(this));
+    cv::debug_draw_hardware_cursor.setCallback(SA::MakeDelegate<&Environment::onDebugDrawHardwareCursorChange>(this));
 
     // set high priority right away
     McThread::set_current_thread_prio(cv::win_processpriority.getVal<McThread::Priority>());
@@ -158,9 +192,16 @@ void Environment::update() {
 }
 
 Graphics *Environment::createRenderer() {
+#ifdef MCENGINE_PLATFORM_WASM
+    if(m_bHeadless) return new NullGraphics();
+#endif
 #ifdef MCENGINE_FEATURE_DIRECTX11
-    if(m_bUsingDX11)  // only if specified on the command line, for now
+    if(usingDX11())  // only if specified on the command line, for now
         return new DirectX11Interface(Env::cfg(OS::WINDOWS) ? getHwnd() : reinterpret_cast<HWND>(m_window));
+#endif
+#ifdef MCENGINE_FEATURE_SDLGPU
+    if(usingSDLGPU())
+        return new SDLGPUInterface(m_window);
 #endif
 #if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
     // need to load stuff dynamically before the base class constructors
@@ -170,6 +211,8 @@ Graphics *Environment::createRenderer() {
 }
 
 void Environment::shutdown() {
+    if(!isRunning()) return;
+
     setRawMouseInput(false);
 
     SDL_Event event{};
@@ -278,8 +321,13 @@ const std::string &Environment::getCacheDir() const noexcept {
         }
     }
 
-    // ./cache
-    m_sCacheDir = MCENGINE_DATA_DIR "cache";
+    if constexpr(Env::cfg(OS::WASM)) {
+        // /persist/cache
+        m_sCacheDir = "/persist/cache";
+    } else {
+        // ./cache
+        m_sCacheDir = MCENGINE_DATA_DIR "cache";
+    }
     return m_sCacheDir;
 }
 
@@ -489,6 +537,11 @@ std::vector<UString> Environment::getLogicalDrives() {
 const std::string &Environment::getPathToSelf(const char *argv0) {
     static std::string pathStr{};
     if(!pathStr.empty()) return pathStr;
+    if constexpr(Env::cfg(OS::WASM)) {
+        pathStr = MCENGINE_DATA_DIR;
+        return pathStr;
+    }
+
     namespace fs = std::filesystem;
 
     std::error_code ec;
@@ -821,6 +874,9 @@ void Environment::maximizeWindow() {
 
 void Environment::enableFullscreen() {
     // NOTE: "fake" fullscreen since we don't want a videomode change
+    if constexpr(Env::cfg(OS::WASM)) {
+        SDL_SetWindowFillDocument(m_window, true);
+    }
 
     // some weird hack that apparently makes this behave better on macos?
     SDL_SetWindowFullscreenMode(m_window, nullptr);
@@ -836,6 +892,10 @@ void Environment::disableFullscreen() {
         debugLog("Failed to disable fullscreen: {:s}", SDL_GetError());
     } else {
         SDL_SetWindowBordered(m_window, true);
+    }
+
+    if constexpr(Env::cfg(OS::WASM)) {
+        SDL_SetWindowFillDocument(m_window, false);
     }
 }
 
@@ -1032,7 +1092,9 @@ void Environment::setCursorVisible(bool visible) {
             return;
         }
         m_bHideCursorPending = false;
-        SDL_HideCursor();
+        if(!cv::debug_draw_hardware_cursor.getBool()) {
+            SDL_HideCursor();
+        }
         setCursor(CURSORTYPE::CURSOR_NORMAL);
 
         if(mouse && mouse->isRawInputWanted()) {  // re-enable rawinput
@@ -1119,6 +1181,17 @@ void Environment::onDPIChange() {
     m_fPixelDensity = SDL_GetWindowPixelDensity(m_window);
     if(m_engine && ((oldDispScale != m_fDisplayScale) || (oldPixelDensity != m_fPixelDensity))) {
         m_engine->onDPIChange();
+    }
+}
+
+void Environment::onDebugDrawHardwareCursorChange(float newValue) {
+    const bool enable = !!static_cast<int>(newValue);
+    SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_CURSOR_VISIBLE, enable ? "1" : "0", SDL_HINT_NORMAL);
+
+    if(enable) {
+        SDL_ShowCursor();
+    } else if(isOSMouseInputRaw() || isMouseInputGrabbed()) {
+        SDL_HideCursor();
     }
 }
 

@@ -42,13 +42,12 @@ void try_load_funcs() noexcept {
 #else
 #include <pthread.h>
 namespace {
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 thread_local char thread_name_buffer[16];
 #elif defined(__FreeBSD__)
 thread_local char thread_name_buffer[256];
-#else
-thread_local char thread_name_buffer[256];
 #endif
+// note: other platforms (like WASM) don't use thread_name_buffer
 }  // namespace
 #endif
 
@@ -98,6 +97,7 @@ void on_thread_init() noexcept {
 
 // WARNING: must be called from within the thread itself! otherwise, the main process name will be changed
 bool set_current_thread_name(const UString &name) noexcept {
+    (void)name;  // may be unused on some platforms
 #if defined(_WIN32)
     try_load_funcs();
     if(pset_thread_desc) {

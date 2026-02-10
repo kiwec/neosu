@@ -1,0 +1,92 @@
+name: web-wasm32
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'cmake-win/**'
+      - 'tools/**'
+      - '*.md'
+      - '.clangd-template'
+      - '.gitignore'
+      - '.git-blame-ignore-revs'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - 'cmake-win/**'
+      - 'tools/**'
+      - '*.md'
+      - '.clangd-template'
+      - '.gitignore'
+      - '.git-blame-ignore-revs'
+  workflow_dispatch:
+
+env:
+  CCACHE_DIR: /tmp/.ccache
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: emscripten/emsdk:latest
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y automake autoconf autoconf-archive libtool pkgconf ninja-build meson nasm ccache
+
+      - name: Set up build directory
+        run: |
+          mkdir -p "$(pwd)"/build-out/build
+          mkdir -p "$(pwd)"/build-out/.ltocache-gcc
+          mkdir -p "$(pwd)"/build-out/.ltocache-clang
+          mkdir -p ${{ env.CCACHE_DIR }}
+
+      - name: Cache dependency tarballs
+        uses: actions/cache@v4
+        with:
+          path: |
+            build-aux/cache
+          key: tarballs-web-wasm32-${{ hashFiles('configure.ac', 'Makefile.am') }}
+          restore-keys: |
+            tarballs-web-wasm32-
+
+      - name: Cache built dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build-out/build/deps
+          key: deps-web-wasm32-${{ hashFiles('configure.ac', 'Makefile.am') }}
+          restore-keys: |
+            deps-web-wasm32-
+
+      - name: ccache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.CCACHE_DIR }}
+            build-out/.ltocache-clang
+            /emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/thinlto
+          key: ccache-web-wasm32-${{ github.sha }}
+          restore-keys: |
+            ccache-web-wasm32-
+
+      - name: Building neosu
+        run: |
+          ./autogen.sh
+          export MAKEFLAGS="-j$(nproc)"
+          export CCACHE_DIR="${{ env.CCACHE_DIR }}"
+          cd build-out && \
+          emconfigure ../configure && \
+          emmake make install
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neosu-web-wasm32
+          path: build-out/dist/bin-wasm32

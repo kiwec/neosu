@@ -1,4 +1,8 @@
 // Copyright (c) 2015, PG & 2025, WH & 2025, kiwec, All rights reserved.
+#include "config.h"
+
+#ifndef MCENGINE_PLATFORM_WASM
+
 #include "NetworkHandler.h"
 #include "Engine.h"
 #include "Thread.h"
@@ -9,7 +13,7 @@
 #include "SyncJthread.h"
 #include "SyncCV.h"
 
-#include "curl_blob.h"
+#include "binary_embed.h"
 #include <curl/curl.h>
 
 #include <utility>
@@ -25,43 +29,45 @@ namespace Mc::Net {
 namespace {
 // Platform-specific wakeup mechanism for the network thread.
 // On Linux: uses eventfd to wake up curl_multi_poll
-// On other platforms: no-op (uses condition variable instead)
+// On other platforms: passthrough to condition_variable_any
+class WakeupCall : public Sync::condition_variable_any {
 #ifdef MCENGINE_PLATFORM_LINUX
-class WakeupFd {
-    NOCOPY_NOMOVE(WakeupFd)
+    NOCOPY_NOMOVE(WakeupCall)
    public:
-    WakeupFd() : fd(eventfd(0, EFD_NONBLOCK)) {}
-    ~WakeupFd() {
+    WakeupCall() : fd(eventfd(0, EFD_NONBLOCK)) {}
+    ~WakeupCall() {
         if(fd >= 0) close(fd);
     }
 
-    [[nodiscard]] bool valid() const { return fd >= 0; }
-    [[nodiscard]] int get() const { return fd; }
-
-    void signal() const {
-        if(!valid()) return;
+    void signal() {
+        if(!valid_fd()) {
+            Sync::condition_variable_any::notify_one();
+            return;
+        }
         uint64_t val = 1;
         [[maybe_unused]] auto _ = write(fd, &val, sizeof(val));
     }
 
-    void drain() const {
-        if(!valid()) return;
+    [[nodiscard]] bool valid_fd() const { return fd >= 0; }
+    [[nodiscard]] int get_fd() const { return fd; }
+
+    void clear_fd() {
+        if(!valid_fd()) return;
         uint64_t val;
         [[maybe_unused]] auto _ = read(fd, &val, sizeof(val));
     }
 
    private:
     int fd{-1};
-};
 #else
-class WakeupFd {
    public:
-    [[nodiscard]] constexpr bool valid() const { return false; }
-    [[nodiscard]] constexpr int get() const { return -1; }
-    constexpr void signal() const {}
-    constexpr void drain() const {}
-};
+    void signal() { Sync::condition_variable_any::notify_one(); }
+
+    [[nodiscard]] constexpr bool valid_fd() const { return false; }
+    [[nodiscard]] constexpr int get_fd() const { return -1; }
+    constexpr void clear_fd() {}
 #endif
+};
 }  // namespace
 
 std::string urlEncode(std::string_view unencodedString) noexcept {
@@ -239,7 +245,7 @@ struct NetworkImpl {
 
     // request queuing
     Sync::mutex request_queue_mutex;
-    Sync::condition_variable_any request_queue_cv;
+    WakeupCall waitcond;
     std::queue<std::unique_ptr<Request>> pending_requests;
 
     // active requests tracking
@@ -264,7 +270,6 @@ struct NetworkImpl {
 
     // IPC socket for instance detection (Linux)
     int ipc_socket_fd{-1};
-    WakeupFd wakeup_fd;
     IPCCallback ipc_callback;
     Sync::mutex ipc_mutex;
     std::vector<std::vector<std::string>> pending_ipc_messages;
@@ -288,7 +293,7 @@ void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
     // register callback to wake up poll when stop is requested
-    Sync::stop_callback stop_cb(stopToken, [this] { this->wakeup_fd.signal(); });
+    Sync::stop_callback stop_cb(stopToken, [this] { this->waitcond.signal(); });
 
     while(!stopToken.stop_requested()) {
         processNewRequests();
@@ -306,11 +311,10 @@ void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
 
         // wait for activity on curl handles, wakeup fd, and/or IPC socket
         int numfds = 0;
-        if(this->wakeup_fd.valid()) {
+        if(this->waitcond.valid_fd()) {
             // use eventfd-based waiting (can wait indefinitely, woken by eventfd)
-            // TODO: use CURLMOPT_NOTIFYFUNCTION instead?
             std::array<curl_waitfd, 2> extra_fds{
-                {{.fd = (curl_socket_t)this->wakeup_fd.get(), .events = CURL_WAIT_POLLIN, .revents = {}},
+                {{.fd = (curl_socket_t)this->waitcond.get_fd(), .events = CURL_WAIT_POLLIN, .revents = {}},
                  {.fd = (curl_socket_t)this->ipc_socket_fd, .events = CURL_WAIT_POLLIN, .revents = {}}}};
             const short& wakeup_revent = extra_fds[0].revents;
             const short& ipc_revent = extra_fds[1].revents;
@@ -320,9 +324,9 @@ void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
             // infinite timeout (-1) isn't supported for some reason
             curl_multi_poll(this->multi_handle, &extra_fds[0], nfds, 60000, &numfds);
 
-            // drain wakeup_fd if signaled
+            // clear wakeup_fd if signaled
             if(wakeup_revent & CURL_WAIT_POLLIN) {
-                this->wakeup_fd.drain();
+                this->waitcond.clear_fd();
             }
 
             // handle IPC if signaled
@@ -333,7 +337,7 @@ void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
             if(this->active_requests.empty() && !stopToken.stop_requested()) {
                 // wait for new requests via condition variable
                 Sync::unique_lock lock{this->request_queue_mutex};
-                this->request_queue_cv.wait(lock, stopToken, [this] { return !this->pending_requests.empty(); });
+                this->waitcond.wait(lock, stopToken, [this] { return !this->pending_requests.empty(); });
             } else {
                 curl_multi_poll(this->multi_handle, nullptr, 0, 100, &numfds);
             }
@@ -457,7 +461,7 @@ i32 NetworkImpl::progressCallback(void* clientp, i64 dltotal, i64 dlnow, i64 /*u
 #ifndef _MSC_VER
 namespace {  // static
 // this is unnecessary with our MSVC build of curl, since it uses schannel instead of openssl
-// curl_ca_embed included from curl_blob.h
+// curl_ca_embed included from binary_embed.h
 struct curl_blob cert_blob{
     .data = (void*)curl_ca_embed, .len = (size_t)curl_ca_embed_size(), .flags = CURL_BLOB_NOCOPY};
 }  // namespace
@@ -649,8 +653,7 @@ void NetworkImpl::httpRequestAsync(std::string_view url, RequestOptions options,
 
     Sync::scoped_lock lock{this->request_queue_mutex};
     this->pending_requests.push(std::move(request));
-    this->request_queue_cv.notify_one();
-    this->wakeup_fd.signal();
+    this->waitcond.signal();
 }
 
 std::shared_ptr<WSInstance> NetworkImpl::initWebsocket(const WSOptions& options) {
@@ -702,8 +705,7 @@ Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOption
     {
         Sync::scoped_lock lock{this->request_queue_mutex};
         this->pending_requests.push(std::move(request));
-        this->request_queue_cv.notify_one();
-        this->wakeup_fd.signal();
+        this->waitcond.signal();
     }
 
     // wait for completion
@@ -727,7 +729,7 @@ Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOption
 void NetworkImpl::setIPCSocket(int fd, IPCCallback callback) {
     this->ipc_socket_fd = fd;
     this->ipc_callback = std::move(callback);
-    this->wakeup_fd.signal();
+    this->waitcond.signal();
 }
 
 void NetworkImpl::handleIPCConnection() {
@@ -795,3 +797,5 @@ void NetworkHandler::setIPCSocket(int fd, IPCCallback callback) { return pImpl->
 void NetworkHandler::update() { return pImpl->update(); }
 
 }  // namespace Mc::Net
+
+#endif  // !MCENGINE_PLATFORM_WASM

@@ -1,0 +1,16 @@
+# Binary resources to embed in the executable.
+# Format: symbol_name : path/relative/to/project/root
+# The build system prefixes paths with the source directory via --base-dir.
+# Build artifacts (e.g. cacert.pem) are passed as extra CLI arguments.
+
+# GLSL shaders (OpenGL / GLES)
+GL_cursortrail_vsh  : assets/shaders/GL_cursortrail_v.glsl
+GL_cursortrail_fsh  : assets/shaders/GL_cursortrail_f.glsl
+GL_slider_vsh       : assets/shaders/GL_slider_v.glsl
+GL_slider_fsh       : assets/shaders/GL_slider_f.glsl
+GL_flashlight_vsh   : assets/shaders/GL_flashlight_v.glsl
+GL_flashlight_fsh   : assets/shaders/GL_flashlight_f.glsl
+GL_actual_flashlight_vsh : assets/shaders/GL_actual_flashlight_v.glsl
+GL_actual_flashlight_fsh : assets/shaders/GL_actual_flashlight_f.glsl
+GL_smoothclip_vsh   : assets/shaders/GL_smoothclip_v.glsl
+GL_smoothclip_fsh   : assets/shaders/GL_smoothclip_f.glsl

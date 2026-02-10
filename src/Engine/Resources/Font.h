@@ -16,11 +16,14 @@
 
 #include <vector>
 #include <optional>
+#include <span>
 
 class Graphics;
 class OpenGLInterface;
 class OpenGLES32Interface;
 class DirectX11Interface;
+class NullGraphics;
+class SDLGPUInterface;
 struct TextShadow;
 class UString;
 
@@ -32,11 +35,13 @@ class McFont final : public Resource {
     friend OpenGLInterface;
     friend OpenGLES32Interface;
     friend DirectX11Interface;
+    friend NullGraphics;
+    friend SDLGPUInterface;
     void drawString(const UString &text, std::optional<TextShadow> shadow);
 
    public:
     McFont(std::string filepath, int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
-    McFont(std::string filepath, const char16_t *characters, size_t numCharacters, int fontSize = 16,
+    McFont(std::string filepath, const std::span<const char16_t> &characters, int fontSize = 16,
            bool antialiasing = true, int fontDPI = 96);
     ~McFont() override;
 

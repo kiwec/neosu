@@ -161,11 +161,12 @@ class Engine final : public KeyboardListener {
     bool bShuttingDown;
     bool bDrawing;
 
-    // stdin input for headless mode
-    bool bHeadless{false};
+    // stdin input for headless/console mode
+    bool bShouldProcessStdin;
     Sync::jthread stdinThread;
     Sync::mutex stdinMutex;
     std::deque<std::string> stdinQueue;
+    int stdinWaitFrames{0};  // @wait support: skip N frames before processing more commands
     static void stdinReaderThread(const Sync::stop_token &stopToken);
     void processStdinCommands();
 };

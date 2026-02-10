@@ -7,6 +7,10 @@
 
 #include "ResourceManager.h"
 
+#ifdef MCENGINE_PLATFORM_WASM
+#include <emscripten/threading.h>
+#endif
+
 #include "Font.h"
 #include "Image.h"
 #include "RenderTarget.h"
@@ -27,6 +31,8 @@
 #include "Engine.h"
 #include "Logging.h"
 #include "Environment.h"
+
+#include "binary_embed.h"
 
 #include <stack>
 #include <utility>
@@ -283,6 +289,10 @@ void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destfla
         if(flags::has<RDF_FORCE_BLOCKING>(destflags)) {
             do {
                 this->update();
+#ifdef MCENGINE_PLATFORM_WASM
+                // pthreads proxy I/O to the main thread; drain the queue so the loader thread can make progress
+                emscripten_main_thread_process_queued_calls();
+#endif
             } while(pImpl->asyncLoader.isLoadingResource(rs));
         }
 
@@ -388,6 +398,9 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
 
         while(!asyncLoadingList.empty()) {
             this->update();
+#ifdef MCENGINE_PLATFORM_WASM
+            emscripten_main_thread_process_queued_calls();
+#endif
             for(auto resit = asyncLoadingList.begin(); resit != asyncLoadingList.end();) {
                 if(pImpl->asyncLoader.isLoadingResource(*resit)) {
                     ++resit;
@@ -406,7 +419,7 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
     pImpl->asyncLoader.reloadResources(resources);
 }
 
-void ResourceManager::setResourceName(Resource *res, std::string name) {
+void ResourceManager::setResourceName(Resource *res, std::string_view name) {
     if(!res) {
         logIfCV(debug_rm, "attempted to set name {:s} on NULL resource!", name);
         return;
@@ -509,14 +522,15 @@ McFont *ResourceManager::loadFont(std::string filepath, const std::string &resou
     return fnt;
 }
 
-McFont *ResourceManager::loadFont(std::string filepath, const std::string &resourceName, const char16_t *characters,
-                                  size_t numCharacters, int fontSize, bool antialiasing, int fontDPI) {
+McFont *ResourceManager::loadFont(std::string filepath, const std::string &resourceName,
+                                  const std::span<const char16_t> &characters, int fontSize, bool antialiasing,
+                                  int fontDPI) {
     auto res = pImpl->checkIfExistsAndHandle<McFont>(resourceName);
     if(res != nullptr) return res;
 
     // create instance and load it
     filepath.insert(0, MCENGINE_FONTS_PATH "/");
-    auto *fnt = new McFont(std::move(filepath), characters, numCharacters, fontSize, antialiasing, fontDPI);
+    auto *fnt = new McFont(std::move(filepath), characters, fontSize, antialiasing, fontDPI);
     setResourceName(fnt, resourceName);
 
     loadResource(fnt, true);
@@ -596,6 +610,23 @@ Shader *ResourceManager::createShader(std::string vertexShader, std::string frag
 Shader *ResourceManager::createShader(std::string vertexShader, std::string fragmentShader) {
     Shader *shader = g->createShaderFromSource(std::move(vertexShader), std::move(fragmentShader));
 
+    loadResource(shader, true);
+
+    return shader;
+}
+
+Shader *ResourceManager::createShaderAuto(std::string_view shaderBasename) {
+    auto *shader = pImpl->checkIfExistsAndHandle<Shader>(shaderBasename);
+    if(shader != nullptr) return shader;
+
+    // create instance and load it
+    const std::string_view pfx = env->usingDX11() ? "DX11" : env->usingSDLGPU() ? "SDLGPU" : "GL";
+    assert(ALL_BINMAP.contains(fmt::format("{}_{}_vsh", pfx, shaderBasename)) &&
+           ALL_BINMAP.contains(fmt::format("{}_{}_fsh", pfx, shaderBasename)));
+    shader = g->createShaderFromSource(std::string{ALL_BINMAP.at(fmt::format("{}_{}_vsh", pfx, shaderBasename))},
+                                       std::string{ALL_BINMAP.at(fmt::format("{}_{}_fsh", pfx, shaderBasename))});
+
+    setResourceName(shader, shaderBasename);
     loadResource(shader, true);
 
     return shader;

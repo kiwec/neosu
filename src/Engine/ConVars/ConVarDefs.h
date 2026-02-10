@@ -20,6 +20,11 @@ struct dummyEngine {
 };
 dummyEngine *engine;
 
+struct dummyGraphics {
+    inline void takeScreenshot(std::string_view /*args*/) { ; }
+};
+dummyGraphics *g;
+
 namespace ConVarHandler::ConVarBuiltins {
 extern void find(std::string_view args);
 extern void help(std::string_view args);
@@ -100,6 +105,8 @@ CONVAR(restart, CLIENT, CFUNC(_restart));
 CONVAR(save);  // database save, set in Database
 CONVAR(showconsolebox);
 CONVAR(snd_restart);
+CONVAR(take_screenshot, CLIENT | NOLOAD | NOSAVE,
+       [](std::string_view args) -> void { g ? g->takeScreenshot(args) : (void)0; });
 CONVAR(update);
 
 // Server-callable commands
@@ -132,7 +139,8 @@ CONVAR(snd_freq, 44100, CLIENT | NOSAVE, "output sampling rate in Hz");
 CONVAR(snd_soloud_buffer, 0, CLIENT | NOSAVE, "SoLoud audio device buffer size (recommended to leave this on 0/auto)");
 CONVAR(snd_soloud_backend, "MiniAudio"sv, CLIENT, R"(SoLoud backend, "MiniAudio" or "SDL3" (MiniAudio is default))");
 CONVAR(snd_soloud_offset_compensation_strategy, 1, CLIENT,
-       R"(For debugging: 0 = naive (no auto offset), anything else = WSOLA pipeline model)");
+       R"(For debugging: 0 = naive (no auto offset), 1 and 2 are slightly different WSOLA pipeline model variants)");
+
 CONVAR(snd_sanity_simultaneous_limit, 128, CLIENT | NOSAVE,
        "The maximum number of overlayable sounds that are allowed to be active at once");
 CONVAR(snd_soloud_resampler, "linear", CLIENT,
@@ -173,6 +181,7 @@ CONVAR(debug_font, false, CLIENT);
 CONVAR(debug_file, false, CLIENT);
 CONVAR(debug_image, false, CLIENT | NOSAVE);
 CONVAR(debug_mouse, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(debug_draw_hardware_cursor, false, CLIENT | NOSAVE);
 CONVAR(debug_rm, false, CLIENT);
 CONVAR(debug_rt, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "draws all rendertargets with a translucent green background");
@@ -282,9 +291,7 @@ CONVAR(ui_scrollview_resistance, 5.0f, CLIENT | SKINS | SERVER,
 CONVAR(ui_scrollview_scrollbarwidth, 15.0f, CLIENT | SKINS | SERVER);
 CONVAR(ui_textbox_caret_blink_time, 0.5f, CLIENT | SKINS | SERVER);
 CONVAR(ui_textbox_text_offset_x, 3, CLIENT | SKINS | SERVER);
-CONVAR(use_ime, false, CLIENT,
-       "enable the use of the OS IME window for editing text (currently disabled by default due to UI textbox "
-       "constraints)");
+CONVAR(use_ime, true, CLIENT, "enable the use of the OS IME window for editing text");
 CONVAR(ui_window_animspeed, 0.29f, CLIENT | SKINS | SERVER);
 CONVAR(vsync, false, CLIENT);  // callback set in Graphics.cpp
 CONVAR(archive_threads, 1, CLIENT, "default number of threads to use for compressing archives");

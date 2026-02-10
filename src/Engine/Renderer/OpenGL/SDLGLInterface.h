@@ -44,6 +44,8 @@ class OpenGLSync;
 
 typedef struct SDL_Window SDL_Window;
 class SDLGLInterface final : public BackendGLInterface {
+    NOCOPY_NOMOVE(SDLGLInterface);
+
     friend class Environment;
     friend class OpenGLInterface;
     friend class OpenGLVertexArrayObject;
@@ -55,6 +57,9 @@ class SDLGLInterface final : public BackendGLInterface {
 
    public:
     SDLGLInterface(SDL_Window *window);
+    SDLGLInterface() = delete;
+
+    ~SDLGLInterface() override;
 
     // scene
     void beginScene() override;

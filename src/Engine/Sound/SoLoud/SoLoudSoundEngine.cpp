@@ -18,6 +18,7 @@
 #include "ResourceManager.h"
 
 #include <utility>
+#include <cstdlib>
 
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_audio.h>
@@ -60,6 +61,14 @@ unsigned int SoLoudSoundEngine::getResamplerFromCV() {
 }
 
 SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
+    // in WASM headless, use no-op audio backends (because Node.js doesn't have audio)
+#ifdef MCENGINE_PLATFORM_WASM
+    if(env->isHeadless()) {
+        cv::snd_soloud_backend.setValue("SDL3", false);
+        setenv("SOLOUD_MINIAUDIO_DRIVER", "null", 1);
+    }
+#endif
+
 #if SOLOUD_VERSION >= 202512
     {
         static SoLoud::logFunctionType SoLoudLogCB = +[](const char *message, void * /*userdata*/) -> void {
@@ -121,6 +130,13 @@ void SoLoudSoundEngine::restart() {
             initID = -2;
         }
         this->setOutputDeviceInt(OUTPUT_DEVICE{.id = initID, .name = initName, .driver = getMAorSDLCV()}, true);
+        // if constexpr(Env::cfg(OS::WASM)) {
+        //     // TODO: this makes no sense, but audio is really messed up unless you restart again after the first init
+        //     // weirdly, this happens with either miniaudio or SDL
+        //     if(this->bWasBackendEverReady) {
+        //         this->restart();
+        //     }
+        // }
     }
 }
 
@@ -693,10 +709,15 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
              : cv::snd_freq.getVal<unsigned int>());
     if(sampleRate < 22500 || sampleRate > 192000) sampleRate = SoLoud::Soloud::AUTO;
 
-    unsigned int bufferSize = (cv::snd_soloud_buffer.getVal<unsigned int>() ==
-                                       static_cast<unsigned int>(cv::snd_soloud_buffer.getDefaultFloat())
-                                   ? (unsigned int)SoLoud::Soloud::AUTO
-                                   : cv::snd_soloud_buffer.getVal<unsigned int>());
+    // WASM: browser complains if buffer size isn't explicitly a power of 2, so just set it to a power of 2 here
+    // (512 is quite low but seems okay on my hardware)
+    // TODO: maybe it could be lower? users can adjust with ingame convar if they want, for now
+    unsigned int bufferSize = Env::cfg(OS::WASM)
+                                  ? 512
+                                  : (cv::snd_soloud_buffer.getVal<unsigned int>() ==
+                                             static_cast<unsigned int>(cv::snd_soloud_buffer.getDefaultFloat())
+                                         ? (unsigned int)SoLoud::Soloud::AUTO
+                                         : cv::snd_soloud_buffer.getVal<unsigned int>());
     if(bufferSize > 2048) bufferSize = SoLoud::Soloud::AUTO;
 
     // use stereo output

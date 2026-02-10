@@ -35,8 +35,6 @@
 #include "score.h"
 #include "Sound.h"
 
-#include "shaders.h"
-
 HUD::CursorTrail::CursorTrail() : buffer(std::clamp(cv::cursor_trail_max_size.getInt() * 2, 1, 32768)) {}
 
 // cv::cursor_trail_max_size callback
@@ -53,9 +51,7 @@ void HUD::onCursorTrailMaxChange() {
 HUD::HUD() : UIScreen() {
     // resources
     this->tempFont = engine->getDefaultFont();
-    this->cursorTrailShader = resourceManager->createShader(
-        env->usingDX11() ? VSH_STRING(DX11_, cursortrail) : VSH_STRING(GL_, cursortrail),
-        env->usingDX11() ? FSH_STRING(DX11_, cursortrail) : FSH_STRING(GL_, cursortrail), "cursortrail");
+    this->cursorTrailShader = resourceManager->createShaderAuto("cursortrail");
 
     cv::cursor_trail_max_size.setCallback(SA::MakeDelegate<&HUD::onCursorTrailMaxChange>(this));
 
@@ -2615,7 +2611,7 @@ void HUD::drawRuntimeInfo() {
                 osstr = "lnx";
                 break;
             case OS::WASM:
-                osstr = "wsm";
+                osstr = "web";
                 break;
             case OS::MAC:
                 osstr = "mac";
@@ -2629,7 +2625,10 @@ void HUD::drawRuntimeInfo() {
                            cv::build_timestamp.getString(),  //
                            osstr,                            //
                            MC_ARCHSTR, /* e.g. x32/x64/arm64 for windows or x86/x86-64/aarch64 for non-windows */
-                           env->usingDX11() ? "dx" : "gl",  //
+                           env->usingDX11()         ? "dx"
+                           : env->usingSDLGPU()     ? "sdlgpu"
+                           : Env::cfg(REND::GLES32) ? "gles"
+                                                    : "gl",  //
                            soundEngine->getTypeId() == SoundEngine::BASS ? "bss" : "sld");
     }();
 
