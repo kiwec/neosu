@@ -45,7 +45,7 @@ OpenGLInterface::OpenGLInterface()
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
-    // glDisable(GL_FRAMEBUFFER_SRGB);
+    glDisable(GL_FRAMEBUFFER_SRGB);
 
     // shading
     glShadeModel(GL_SMOOTH);

@@ -50,7 +50,7 @@ OpenGLES32Interface::OpenGLES32Interface() : Graphics(), m_vResolution(engine->g
     // disable
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
-    // glDisable(GL_FRAMEBUFFER_SRGB);
+    glDisable(GL_FRAMEBUFFER_SRGB);
 
     // blending
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
