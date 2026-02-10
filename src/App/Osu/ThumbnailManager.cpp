@@ -191,6 +191,7 @@ bool ThumbnailManager::download_image(const ThumbIdentifier& id_folder) {
     // TODO: only download a single (response_code == 404) result and share it
     Downloader::download(img_url.c_str(), &progress, this->temp_img_download_data, &response_code);
     if(progress == -1.f) this->id_blacklist.insert(id_folder);
+    if(progress == 1.f && response_code != 200) this->id_blacklist.insert(id_folder);
 
     return (progress == 1.f && !this->temp_img_download_data.empty());
 }
