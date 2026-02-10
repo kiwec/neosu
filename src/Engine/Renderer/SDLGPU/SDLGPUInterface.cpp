@@ -1664,8 +1664,7 @@ void SDLGPUInterface::onRestored() { onResolutionChange(m_viewport.size); }
 // transforms
 
 void SDLGPUInterface::onTransformUpdate() {
-    // push MVP to vertex uniform buffer on next draw call
-    // (SDL_gpu uses push constants, so we push in uploadAndDrawVertexBatch)
+    // will be updated in draw() or when necessary
 }
 
 void SDLGPUInterface::setTexturing(bool enabled, bool force) {

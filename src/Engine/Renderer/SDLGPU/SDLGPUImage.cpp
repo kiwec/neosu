@@ -73,7 +73,7 @@ void SDLGPUImage::init() {
         }
     }
 
-    // upload pixel data
+    // upload pixel data (and generate mipmaps if needed)
     if(this->totalBytes() >= (u64)this->iWidth * this->iHeight * Image::NUM_CHANNELS) {
         this->uploadPixelData();
     }
@@ -92,15 +92,6 @@ void SDLGPUImage::init() {
     if(!m_sampler) {
         debugLog("SDLGPUImage Error: Couldn't CreateGPUSampler() on file {:s}!", this->sFilePath);
         return;
-    }
-
-    // generate mipmaps
-    if(this->bMipmapped) {
-        auto *cmdBuf = SDL_AcquireGPUCommandBuffer(device);
-        if(cmdBuf) {
-            SDL_GenerateMipmapsForGPUTexture(cmdBuf, m_texture);
-            SDL_SubmitGPUCommandBuffer(cmdBuf);
-        }
     }
 
     this->setReady(true);
@@ -125,7 +116,7 @@ void SDLGPUImage::uploadPixelData() {
         SDL_UnmapGPUTransferBuffer(device, transferBuf);
     }
 
-    // upload via copy pass
+    // upload via copy pass, then generate mipmaps
     auto *cmdBuf = SDL_AcquireGPUCommandBuffer(device);
     if(cmdBuf) {
         auto *copyPass = SDL_BeginGPUCopyPass(cmdBuf);
@@ -142,6 +133,11 @@ void SDLGPUImage::uploadPixelData() {
             SDL_UploadToGPUTexture(copyPass, &src, &dst, false);
             SDL_EndGPUCopyPass(copyPass);
         }
+
+        if(this->bMipmapped) {
+            SDL_GenerateMipmapsForGPUTexture(cmdBuf, m_texture);
+        }
+
         SDL_SubmitGPUCommandBuffer(cmdBuf);
     }
 
