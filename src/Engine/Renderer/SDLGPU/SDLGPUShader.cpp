@@ -219,7 +219,6 @@ void SDLGPUShader::writeUniform(std::string_view name, const void *data, u32 dat
 
     auto &var = m_uniformBlocks[bi].vars[vi];
     std::memcpy(m_uniformBlocks[bi].buffer.data() + var.offset, data, std::min(dataSize, var.size));
-    m_uniformBlocks[bi].dirty = true;
 }
 
 void SDLGPUShader::setUniform1f(std::string_view name, float value) { writeUniform(name, &value, sizeof(float)); }
@@ -404,7 +403,6 @@ std::vector<SDLGPUShader::UniformBlock> SDLGPUShader::parseUniformBlocks(const s
             block.vars.push_back({std::string(varName), alignedOffset, size});
         }
 
-        block.dirty = true;
         ret.push_back(std::move(block));
     }
 

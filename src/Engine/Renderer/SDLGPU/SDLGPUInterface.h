@@ -280,10 +280,10 @@ class SDLGPUInterface final : public Graphics {
 
         // uniform block snapshots
         struct UniformBlock {
+            alignas(16) std::array<u8, 80> data;
             u32 slot;
             u32 size;
             bool isVertex;  // true=vertex, false=fragment
-            alignas(16) u8 data[80];
         };
         u8 numUniformBlocks;
         UniformBlock uniformBlocks[4];
@@ -358,8 +358,8 @@ class SDLGPUInterface final : public Graphics {
     // render pass boundaries for deferred RT switching
     // each boundary marks the start of a new render pass at a given draw index
     struct RenderPassBoundary {
-        u32 drawIndex;
         RenderTargetState state;
+        u32 drawIndex;
     };
     std::vector<RenderPassBoundary> m_renderPassBoundaries;
 

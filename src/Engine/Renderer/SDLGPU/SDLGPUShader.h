@@ -77,11 +77,10 @@ class SDLGPUShader final : public Shader {
     };
 
     struct UniformBlock {
-        u32 set;
-        u32 binding;
         std::vector<UniformVar> vars;
         std::vector<u8> buffer;  // cpu-side data
-        bool dirty{true};
+        u32 set;
+        u32 binding;
     };
 
     // access uniform blocks for snapshotting into deferred draw commands
