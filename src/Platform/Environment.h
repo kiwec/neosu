@@ -99,9 +99,21 @@ class Environment {
     // engine/factory
     Graphics *createRenderer();
 #ifdef MCENGINE_FEATURE_DIRECTX11
-    [[nodiscard]] inline bool usingDX11() const { return m_bUsingDX11; }
+    [[nodiscard]] inline bool usingDX11() const { return m_renderer == RuntimeRenderer::DX11; }
 #else
     [[nodiscard]] constexpr forceinline bool usingDX11() const { return false; }
+#endif
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_OPENGLES32)
+    [[nodiscard]] inline bool usingGL() const {
+        return m_renderer == RuntimeRenderer::GL || m_renderer == RuntimeRenderer::GLES;
+    }
+#else
+    [[nodiscard]] constexpr forceinline bool usingGL() const { return false; }
+#endif
+#ifdef MCENGINE_FEATURE_SDLGPU
+    [[nodiscard]] inline bool usingSDLGPU() const { return m_renderer == RuntimeRenderer::SDLGPU; }
+#else
+    [[nodiscard]] constexpr forceinline bool usingSDLGPU() const { return false; }
 #endif
 
     // system
@@ -286,7 +298,8 @@ class Environment {
     SDL_Window *m_window;
     SDL_WindowID m_windowID;
     std::string m_sdldriver;
-    bool m_bUsingDX11;
+    enum class RuntimeRenderer : uint8_t { GL, GLES, DX11, SDLGPU };
+    RuntimeRenderer m_renderer;
 
     bool m_bRunning;
     bool m_bIsRestartScheduled;

@@ -6,6 +6,7 @@
 #include "Logging.h"
 #include "Engine.h"
 #include "SString.h"
+#include "Graphics.h"
 
 #include "binary_embed.h"
 

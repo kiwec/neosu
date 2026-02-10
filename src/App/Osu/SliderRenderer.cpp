@@ -352,7 +352,7 @@ void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject 
 void checkUpdateVars(float hitcircleDiameter) {
     // static globals
 
-    if(env->usingDX11()) {
+    if(!env->usingGL()) {
         // NOTE: compensate for zn/zf Camera::buildMatrixOrtho2DDXLH() differences compared to OpenGL
         if(s_MESH_CENTER_HEIGHT > 0.0f) s_MESH_CENTER_HEIGHT = -s_MESH_CENTER_HEIGHT;
     }

@@ -155,6 +155,20 @@ AC_DEFUN([AC_PROG_NASM], [
     fi
 ])
 
+# needed for building SPIR-V shaders (if building it is required)
+# tries glslc first (from shaderc), falls back to glslangValidator (from glslang-tools)
+AC_DEFUN([AC_PROG_GLSLC], [
+    AC_CHECK_PROG([GLSLC], [glslc], [glslc])
+    if test -z "$GLSLC"; then
+        AC_CHECK_PROG([GLSLANG_VALIDATOR], [glslangValidator], [glslangValidator])
+        if test -z "$GLSLANG_VALIDATOR"; then
+            AC_MSG_ERROR([neither glslc nor glslangValidator found - one is required for compiling GLSL shaders to SPIR-V])
+        fi
+        GLSLC="$GLSLANG_VALIDATOR"
+    fi
+])
+
+
 # needed for dep resolver
 #AC_PROG_WGET
 AC_PROG_CURLBIN
@@ -213,7 +227,7 @@ AC_ARG_ENABLE([redistributable],
     AS_HELP_STRING([--enable-redistributable], [Don't bundle any non-redistributable content (currently only relevant for WASM, skips bundling beatmaps, default: yes)]))
 
 AC_ARG_WITH([renderer],
-    AS_HELP_STRING([--with-renderer={opengl,dx11,opengles}], [The (comma separated list of) renderer backend(s) to build with (default: opengl)]))
+    AS_HELP_STRING([--with-renderer={opengl,dx11,opengles,sdlgpu}], [The (comma separated list of) renderer backend(s) to build with (default: opengl)]))
 
 AC_ARG_WITH([audio],
     AS_HELP_STRING([--with-audio={bass,soloud}], [The (comma separated list of) audio backend(s) to build with (default: soloud)]))
@@ -318,6 +332,7 @@ use_opengl_default=yes # ugly
 use_opengl=unset
 use_opengles32=unset
 use_dx11=unset
+use_sdlgpu=unset
 
 AS_VAR_SET_IF([with_renderer],
     [ac_save_IFS=$IFS
@@ -332,10 +347,12 @@ AS_VAR_SET_IF([with_renderer],
             opengles*) use_opengles32=yes ;;
             dx11) use_dx11=yes ;;
             directx*) use_dx11=yes ;;
+            *sdl*) use_sdlgpu=yes ;;
+            *gpu*) use_sdlgpu=yes ;;
             esac
         done])
 
-AS_IF([test "x$use_dx11" = "xyes" || test "x$use_opengles32" = "xyes"], [
+AS_IF([test "x$use_dx11" = "xyes" || test "x$use_opengles32" = "xyes" || test "x$use_sdlgpu" = "xyes"], [
     use_opengl_default=no
     AS_IF([test "x$use_opengles32" = "xyes"], [
         # can't combine GL and GL ES
@@ -370,6 +387,24 @@ AS_IF([test "x$use_dx11" = "xyes" ], [
     use_dx11=no
 ])
 
+AS_IF([test "x$use_sdlgpu" = "xyes" ], [
+    AC_PROG_GLSLC
+    AS_IF([test "$host_os" = "mingw32"], [
+        # needed for compiling HLSL shaders to DXIL (Windows/D3D12 only)
+        # will download & cache a release from github if not available (only if building on linux though (lazy))
+        AC_CHECK_PROG([DXC], [dxc], [dxc])
+        AS_IF([test -z "$DXC" && test "$build_os" != "linux-gnu"], [
+            AC_MSG_ERROR([dxc not found - required for compiling HLSL shaders to DXIL])
+        ])
+    ])
+
+    use_sdlgpu=yes
+    AC_DEFINE([MCENGINE_FEATURE_SDLGPU], [1], [Defined if the SDL_gpu backend is to be used.])
+    rendbackendlist="$rendbackendlist sdlgpu"
+], [
+    use_sdlgpu=no
+])
+
 # build the list of binary embed manifests based on renderer selection
 EMBED_MANIFESTS="\$(srcdir)/\$(ASSETS_DIR)/binary/misc_embed.manifest"
 AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
@@ -378,6 +413,9 @@ AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
 AS_IF([test "x$use_dx11" = "xyes"], [
     EMBED_MANIFESTS="$EMBED_MANIFESTS \$(srcdir)/\$(ASSETS_DIR)/binary/dx_shaders_embed.manifest"
 ])
+
+# SDL_gpu shader packs are compiled and embedded via pack_sdlgpu_shader.py,
+# not through a static manifest (see Makefile.am).
 AC_SUBST([EMBED_MANIFESTS])
 
 AUDBACKENDLIST=""
@@ -1208,7 +1246,7 @@ AS_IF([test "x$use_dx11" = "xyes"], [
 ])
 
 SDL3_MIN_VERSION=3.4.0
-SDL3_BUILD_VERSION=d063cb01e9f2e22c8a1531d1859788a72f24b696 # git
+SDL3_BUILD_VERSION=267e681a0be6d351020060824da9e2cd48d8fc80 # git
 FREETYPE2_MIN_VERSION=2.10.0
 FREETYPE2_BUILD_VERSION=2.14.1
 LIBJPEG_MIN_VERSION=3.0.0
@@ -1483,6 +1521,8 @@ AM_CONDITIONAL([USE_GL], [test "$use_opengl" = "yes" || test "$use_opengles32" =
 AM_CONDITIONAL([USE_OPENGL], [test "$use_opengl" = "yes"])
 AM_CONDITIONAL([USE_OPENGLES], [test "$use_opengles32" = "yes"])
 AM_CONDITIONAL([USE_DX11], [test "$use_dx11" = "yes"])
+AM_CONDITIONAL([USE_SDLGPU], [test "$use_sdlgpu" = "yes"])
+AM_CONDITIONAL([DOWNLOAD_DXC], [test -z "$DXC" && test "$host_os" = "mingw32"])
 # this just copies some libraries on installation
 AM_CONDITIONAL([USE_DISCORDSDK], [test "$with_discord" = "yes"])
 AM_CONDITIONAL([WIN_PLATFORM], [test "$SYSNAME" = "windows"])

@@ -217,6 +217,8 @@ void OpenGLES32Interface::endScene() {
 
     checkStackLeaks();
 
+    this->processPendingScreenshot();
+
     if(m_clipRectStack.size() > 0) {
         engine->showMessageErrorFatal("ClipRect Stack Leak", "Make sure all push*() have a pop*()!");
         engine->shutdown();

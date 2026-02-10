@@ -104,6 +104,8 @@ void OpenGLInterface::endScene() {
         }
     }
 
+    this->processPendingScreenshot();
+
     this->bInScene = false;
 }
 

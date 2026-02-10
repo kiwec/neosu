@@ -2626,6 +2626,7 @@ void HUD::drawRuntimeInfo() {
                            osstr,                            //
                            MC_ARCHSTR, /* e.g. x32/x64/arm64 for windows or x86/x86-64/aarch64 for non-windows */
                            env->usingDX11()         ? "dx"
+                           : env->usingSDLGPU()     ? "sdlgpu"
                            : Env::cfg(REND::GLES32) ? "gles"
                                                     : "gl",  //
                            soundEngine->getTypeId() == SoundEngine::BASS ? "bss" : "sld");

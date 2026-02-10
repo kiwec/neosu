@@ -4,73 +4,7 @@
 
 #include "Graphics.h"
 
-#include "Image.h"
-#include "RenderTarget.h"
-#include "Shader.h"
-#include "VertexArrayObject.h"
-
-// image that does CPU-side pixel loading but never uploads to GPU
-class NullImage final : public Image {
-   public:
-    NullImage(std::string filepath, bool mipmapped = false, bool keepInSystemMemory = false);
-    NullImage(i32 width, i32 height, bool mipmapped = false, bool keepInSystemMemory = false);
-
-    void bind(unsigned int textureUnit) const override;
-    void unbind() const override;
-
-   private:
-    void init() override;
-    void initAsync() override;
-    void destroy() override;
-};
-
-class NullShader final : public Shader {
-   public:
-    NullShader();
-
-    void enable() override;
-    void disable() override;
-    void setUniform1f(std::string_view name, float value) override;
-    void setUniform1fv(std::string_view name, int count, const float *const values) override;
-    void setUniform1i(std::string_view name, int value) override;
-    void setUniform2f(std::string_view name, float x, float y) override;
-    void setUniform2fv(std::string_view name, int count, const float *const vectors) override;
-    void setUniform3f(std::string_view name, float x, float y, float z) override;
-    void setUniform3fv(std::string_view name, int count, const float *const vectors) override;
-    void setUniform4f(std::string_view name, float x, float y, float z, float w) override;
-    void setUniformMatrix4fv(std::string_view name, const Matrix4 &matrix) override;
-    void setUniformMatrix4fv(std::string_view name, const float *const v) override;
-
-   private:
-    void init() override;
-    void initAsync() override;
-    void destroy() override;
-};
-
-class NullRenderTarget final : public RenderTarget {
-   public:
-    NullRenderTarget(int x, int y, int width, int height, MultisampleType multiSampleType = MultisampleType::X0);
-
-    void enable() override;
-    void disable() override;
-    void bind(unsigned int textureUnit = 0) override;
-    void unbind() override;
-
-   private:
-    void init() override;
-    void initAsync() override;
-    void destroy() override;
-};
-
-class NullVertexArrayObject final : public VertexArrayObject {
-   public:
-    NullVertexArrayObject(DrawPrimitive primitive = DrawPrimitive::TRIANGLES,
-                          DrawUsageType usage = DrawUsageType::STATIC, bool keepInSystemMemory = false);
-
-    void draw() override;
-};
-
-class NullGraphics final : public Graphics {
+class NullGraphics : public Graphics {
    public:
     // scene
     void beginScene() override;

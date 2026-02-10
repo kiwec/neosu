@@ -105,7 +105,7 @@ SDLMain::~SDLMain() {
     m_engine.reset();
 
     // clean up GL context
-    if(m_context && (!m_bUsingDX11)) {
+    if(m_context) {
         SDL_GL_DestroyContext(m_context);
         m_context = nullptr;
     }
@@ -553,7 +553,8 @@ SDL_AppResult SDLMain::iterate() {
     }
 
     // draw
-    if(!winMinimized() && !m_bRestoreFullscreen) {
+    // (always draw in headless to make it more realistic/representative)
+    if(m_bHeadless || (!winMinimized() && !m_bRestoreFullscreen)) {
         m_engine->onPaint();
     }
 
@@ -581,7 +582,7 @@ static constexpr auto WINDOW_HEIGHT_MIN = 240;
 
 bool SDLMain::createWindow() {
     // pre window-creation settings
-    if(!m_bUsingDX11) {  // these are only for opengl
+    if(usingGL()) {  // these are only for opengl
         SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -623,7 +624,7 @@ bool SDLMain::createWindow() {
     // set vulkan for linux dxvk-native, opengl otherwise (or none for windows dx11)
     const i64 windowFlags =
         SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_HIGH_PIXEL_DENSITY |
-        (!m_bUsingDX11 ? SDL_WINDOW_OPENGL : (Env::cfg(OS::LINUX, REND::DX11) ? SDL_WINDOW_VULKAN : 0LL));
+        (usingGL() ? SDL_WINDOW_OPENGL : (Env::cfg(OS::LINUX, REND::DX11) ? SDL_WINDOW_VULKAN : 0LL));
 
     // limit default window size so it fits the screen
     i32 windowCreateWidth = WINDOW_WIDTH;
@@ -670,7 +671,7 @@ bool SDLMain::createWindow() {
     m_vLastKnownWindowSize = vec2{static_cast<float>(windowCreateWidth), static_cast<float>(windowCreateHeight)};
 
     SDL_PropertiesID props = SDL_CreateProperties();
-    if(m_bUsingDX11) SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, true);
+    if(usingDX11()) SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, true);
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, WINDOW_TITLE);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED_DISPLAY(initDisplayID));
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED_DISPLAY(initDisplayID));
@@ -712,7 +713,7 @@ bool SDLMain::createWindow() {
     }
 
     // create gl context
-    if(!m_bUsingDX11) {
+    if(usingGL()) {
         m_context = SDL_GL_CreateContext(m_window);
         if(!m_context) {
             debugLog("Couldn't create OpenGL context: {:s}", SDL_GetError());

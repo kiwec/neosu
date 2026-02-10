@@ -1239,62 +1239,66 @@ void Osu::saveScreenshot() {
     while(env->fileExists(fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber)))
         screenshotNumber++;
 
-    const auto screenshotFilename = fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber);
-
+    auto screenshotFilename = fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber);
     constexpr u8 screenshotChannels{3};
-    std::vector<u8> pixels = g->getScreenshot(screenshotChannels > 3 /* withAlpha = false */);
 
-    if(pixels.empty()) {
-        static uint8_t once = 0;
-        if(!once++)
-            ui->getNotificationOverlay()->addNotification("Error: Couldn't grab a screenshot :(", 0xffff0000, false,
-                                                          3.0f);
-        debugLog("failed to get pixel data for screenshot");
-        return;
-    }
+    static const auto saveFunc = [currentRes = this->internalRect, &skin = this->skin,
+                                  filename = std::move(screenshotFilename)](std::vector<u8> pixels) -> void {
+        if(!osu) return; // paranoia
+        if(pixels.empty()) {
+            static uint8_t once = 0;
+            if(!once++)
+                ui->getNotificationOverlay()->addNotification("Error: Couldn't grab a screenshot :(", 0xffff0000, false,
+                                                              3.0f);
+            debugLog("failed to get pixel data for screenshot");
+            return;
+        }
 
-    const f32 outerWidth = g->getResolution().x;
-    const f32 outerHeight = g->getResolution().y;
-    const f32 innerWidth = this->internalRect.getWidth();
-    const f32 innerHeight = this->internalRect.getHeight();
+        const f32 outerWidth = g->getResolution().x;
+        const f32 outerHeight = g->getResolution().y;
+        const f32 innerWidth = currentRes.getWidth();
+        const f32 innerHeight = currentRes.getHeight();
 
-    if(const auto &skin = this->skin; !!skin) {
-        soundEngine->play(skin->s_shutter);
-    }
-    ui->getNotificationOverlay()->addToast(fmt::format("Saved screenshot to {}", screenshotFilename.c_str()),
-                                           CHAT_TOAST,
-                                           [screenshotFilename] { env->openFileBrowser(screenshotFilename); });
+        if(skin) {
+            soundEngine->play(skin->s_shutter);
+        }
+        ui->getNotificationOverlay()->addToast(fmt::format("Saved screenshot to {}", filename), CHAT_TOAST,
+                                               [filename] { env->openFileBrowser(filename); });
 
-    // don't need cropping
-    if(!cv::crop_screenshots.getBool() || (g->getResolution() == this->getVirtScreenSize())) {
-        Image::saveToImage(pixels.data(), static_cast<i32>(outerWidth), static_cast<i32>(outerHeight),
-                           screenshotChannels, screenshotFilename);
-        return;
-    }
+        // don't need cropping
+        if(!cv::crop_screenshots.getBool() || (g->getResolution() == currentRes.getSize())) {
+            Image::saveToImage(pixels.data(), static_cast<i32>(outerWidth), static_cast<i32>(outerHeight),
+                               screenshotChannels, filename);
+            return;
+        }
 
-    // need cropping
-    f32 offsetXpct = 0, offsetYpct = 0;
-    if((g->getResolution() != this->getVirtScreenSize()) && cv::letterboxing.getBool()) {
-        offsetXpct = cv::letterboxing_offset_x.getFloat();
-        offsetYpct = cv::letterboxing_offset_y.getFloat();
-    }
+        // need cropping
+        f32 offsetXpct = 0, offsetYpct = 0;
+        if((g->getResolution() != currentRes.getSize()) && cv::letterboxing.getBool()) {
+            offsetXpct = cv::letterboxing_offset_x.getFloat();
+            offsetYpct = cv::letterboxing_offset_y.getFloat();
+        }
 
-    const i32 startX = std::clamp<i32>(static_cast<i32>((outerWidth - innerWidth) * (1 + offsetXpct) / 2), 0,
-                                       static_cast<i32>(outerWidth - innerWidth));
-    const i32 startY = std::clamp<i32>(static_cast<i32>((outerHeight - innerHeight) * (1 + offsetYpct) / 2), 0,
-                                       static_cast<i32>(outerHeight - innerHeight));
+        const i32 startX = std::clamp<i32>(static_cast<i32>((outerWidth - innerWidth) * (1 + offsetXpct) / 2), 0,
+                                           static_cast<i32>(outerWidth - innerWidth));
+        const i32 startY = std::clamp<i32>(static_cast<i32>((outerHeight - innerHeight) * (1 + offsetYpct) / 2), 0,
+                                           static_cast<i32>(outerHeight - innerHeight));
 
-    std::vector<u8> croppedPixels(static_cast<size_t>(innerWidth * innerHeight * screenshotChannels));
+        std::vector<u8> croppedPixels(static_cast<size_t>(innerWidth * innerHeight * screenshotChannels));
 
-    for(sSz y = 0; y < static_cast<sSz>(innerHeight); ++y) {
-        auto srcRowStart = pixels.begin() + ((startY + y) * static_cast<sSz>(outerWidth) + startX) * screenshotChannels;
-        auto destRowStart = croppedPixels.begin() + (y * static_cast<sSz>(innerWidth)) * screenshotChannels;
-        // copy the entire row
-        std::ranges::copy_n(srcRowStart, static_cast<sSz>(innerWidth) * screenshotChannels, destRowStart);
-    }
+        for(sSz y = 0; y < static_cast<sSz>(innerHeight); ++y) {
+            auto srcRowStart =
+                pixels.begin() + ((startY + y) * static_cast<sSz>(outerWidth) + startX) * screenshotChannels;
+            auto destRowStart = croppedPixels.begin() + (y * static_cast<sSz>(innerWidth)) * screenshotChannels;
+            // copy the entire row
+            std::ranges::copy_n(srcRowStart, static_cast<sSz>(innerWidth) * screenshotChannels, destRowStart);
+        }
 
-    Image::saveToImage(croppedPixels.data(), static_cast<i32>(innerWidth), static_cast<i32>(innerHeight),
-                       screenshotChannels, screenshotFilename);
+        Image::saveToImage(croppedPixels.data(), static_cast<i32>(innerWidth), static_cast<i32>(innerHeight),
+                           screenshotChannels, filename);
+    };
+
+    g->takeScreenshot({.savePath = {}, .dataCB = saveFunc, .withAlpha = screenshotChannels > 3});
 }
 
 void Osu::onPlayEnd(const FinishedScore &score, bool quit) {

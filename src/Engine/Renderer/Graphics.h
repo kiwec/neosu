@@ -9,9 +9,12 @@
 #include "Vectors.h"
 
 #include <memory>
+#include <string>
+#include <string_view>
 #include <vector>
 #include <array>
 #include <optional>
+#include <functional>
 
 class ConVar;
 class UString;
@@ -26,7 +29,7 @@ class VertexArrayObject;
 struct TextShadow {
     Color col_text{rgb(255, 255, 255)};
     Color col_shadow{rgb(0, 0, 0)};
-    int offs_px{1}; // not scaled to display DPI
+    int offs_px{1};  // not scaled to display DPI
 };
 
 enum class AnchorPoint : uint8_t {
@@ -71,6 +74,12 @@ class Graphics {
         float x{0.f}, y{0.f}, width{0.f}, height{0.f}, lineThickness{1.f};
         Color top{(Color)-1}, right{(Color)-1}, bottom{(Color)-1}, left{(Color)-1};
         bool withColor{false};
+    };
+
+    struct ScreenshotParams {
+        std::string savePath;  // if dataCB supplied, savePath is ignored
+        std::function<void(std::vector<u8>)> dataCB;
+        bool withAlpha;
     };
 
    public:
@@ -211,7 +220,15 @@ class Graphics {
 
     // renderer actions
     virtual void flush() = 0;
+
+    // must be called in draw()
     virtual std::vector<u8> getScreenshot(bool withAlpha = false) = 0;
+
+    // can be called any time
+    void takeScreenshot(ScreenshotParams params);
+    inline void takeScreenshot(std::string_view savePath) {
+        return takeScreenshot(ScreenshotParams{std::string{savePath}, {}, false});
+    }
 
     // renderer info
     virtual const char *getName() const = 0;
@@ -280,6 +297,9 @@ class Graphics {
 
     void updateTransform(bool force = false);
     void checkStackLeaks();
+
+    void processPendingScreenshot();
+    std::vector<ScreenshotParams> pendingScreenshots;
 
     // transforms
     std::vector<Matrix4> worldTransformStack;

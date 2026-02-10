@@ -36,6 +36,16 @@ DX11_SOURCES := \
 	$(NULL)
 endif
 
+if USE_SDLGPU
+SDLGPU_SOURCES := \
+	src/Engine/Renderer/SDLGPU/SDLGPUImage.cpp \
+	src/Engine/Renderer/SDLGPU/SDLGPUInterface.cpp \
+	src/Engine/Renderer/SDLGPU/SDLGPURenderTarget.cpp \
+	src/Engine/Renderer/SDLGPU/SDLGPUShader.cpp \
+	src/Engine/Renderer/SDLGPU/SDLGPUVertexArrayObject.cpp \
+	$(NULL)
+endif
+
 if USE_SOLOUD
 SOLOUD_SOURCES := \
 	src/Engine/Sound/SoLoud/SoLoudFX.cpp \
@@ -70,7 +80,7 @@ GLAD_EGL_SOURCES := \
 	$(NULL)
 endif
 if WIN_PLATFORM
-if !USE_OPENGLES
+if USE_OPENGL
 GLAD_EGL_SOURCES := \
 	libraries/glad/glad_egl.cpp \
 	$(NULL)
@@ -203,7 +213,11 @@ neosu_SOURCES = \
 	src/Engine/Profiler.cpp \
 	src/Engine/Renderer/Camera.cpp \
 	src/Engine/Renderer/Graphics.cpp \
-	src/Engine/Renderer/NullGraphics.cpp \
+	src/Engine/Renderer/NullGraphics/NullGraphics.cpp \
+	src/Engine/Renderer/NullGraphics/NullImage.cpp \
+	src/Engine/Renderer/NullGraphics/NullRenderTarget.cpp \
+	src/Engine/Renderer/NullGraphics/NullShader.cpp \
+	src/Engine/Renderer/NullGraphics/NullVertexArrayObject.cpp \
 	src/Engine/Renderer/RenderTarget.cpp \
 	src/Engine/Renderer/Shader.cpp \
 	src/Engine/Renderer/VertexArrayObject.cpp \
@@ -251,6 +265,7 @@ neosu_SOURCES = \
 	$(GL_CORE_SOURCES) \
 	$(GLES_SOURCES) \
 	$(DX11_SOURCES) \
+	$(SDLGPU_SOURCES) \
 	$(GLAD_GL_SOURCES) \
 	$(GLAD_EGL_SOURCES) \
 	$(SOLOUD_SOURCES) \

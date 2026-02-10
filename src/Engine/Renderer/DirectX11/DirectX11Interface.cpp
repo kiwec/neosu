@@ -359,6 +359,7 @@ void DirectX11Interface::endScene() {
     }
 
     this->popTransform();
+    this->processPendingScreenshot();
 
     const UINT presentFlags = ((!this->bFlipping || this->bVSync) ? 0 : DXGI_PRESENT_ALLOW_TEARING);
     // | DXGI_PRESENT_DO_NOT_WAIT // look into this, causes issues under high load
