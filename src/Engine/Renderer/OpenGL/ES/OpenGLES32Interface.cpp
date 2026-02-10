@@ -50,7 +50,12 @@ OpenGLES32Interface::OpenGLES32Interface() : Graphics(), m_vResolution(engine->g
     // disable
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
+
+    // this should probably be GL_FRAMEBUFFER_SRGB_EXT or something but
+    // this is only here to work around bugs on windows anyways
+#ifndef MCENGINE_PLATFORM_WASM
     glDisable(GL_FRAMEBUFFER_SRGB);
+#endif
 
     // blending
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
