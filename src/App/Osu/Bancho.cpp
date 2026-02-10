@@ -893,12 +893,10 @@ void BanchoState::handle_packet(Packet &packet) {
             }
 
             // craft submission url now, file read may complete after auth params changed
-            auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-            auto url = fmt::format("{}osu.{}/web/neosu-submit-map.php", scheme, BanchoState::endpoint);
-            url.append(fmt::format("?hash={}", md5));
+            std::string url = fmt::format("osu.{}/web/neosu-submit-map.php?hash={}", BanchoState::endpoint, md5);
             BANCHO::Api::append_auth_params(url);
 
-            auto file_path = map->getFilePath();
+            std::string file_path = map->getFilePath();
 
             DatabaseBeatmap::MapFileReadDoneCallback callback = [url, md5,
                                                                  file_path](std::vector<u8> osu_file) -> void {

@@ -174,8 +174,8 @@ struct NetworkImpl {
         bool is_sync{false};
         void* sync_id{nullptr};
 
-        Request(std::string_view url, RequestOptions opts, AsyncCallback cb = {})
-            : url(url), options(std::move(opts)), callback(std::move(cb)) {}
+        Request(std::string url, RequestOptions opts, AsyncCallback cb = {})
+            : url(std::move(url)), options(std::move(opts)), callback(std::move(cb)) {}
 
         void setupCurlHandle();
 
@@ -239,7 +239,7 @@ struct NetworkImpl {
     void httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback = {});
 
     // websockets
-    std::shared_ptr<WSInstance> initWebsocket(const WSOptions& options);
+    std::shared_ptr<WSInstance> initWebsocket(std::string_view url, const WSOptions& options);
 
     void update();
 
@@ -649,15 +649,23 @@ void NetworkImpl::update() {
 }
 
 void NetworkImpl::httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback) {
-    auto request = std::make_unique<Request>(url, std::move(options), std::move(callback));
+    assert(!url.starts_with("https://") && !url.starts_with("http://"));
+
+    std::string urlWithScheme = (url.starts_with("wss://") || url.starts_with("ws://"))
+                                    ? std::string{url}
+                                    : fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
+    auto request = std::make_unique<Request>(std::move(urlWithScheme), std::move(options), std::move(callback));
 
     Sync::scoped_lock lock{this->request_queue_mutex};
     this->pending_requests.push(std::move(request));
     this->waitcond.signal();
 }
 
-std::shared_ptr<WSInstance> NetworkImpl::initWebsocket(const WSOptions& options) {
-    assert(options.url.starts_with("ws://") || options.url.starts_with("wss://"));
+std::shared_ptr<WSInstance> NetworkImpl::initWebsocket(std::string_view url, const WSOptions& options) {
+    assert(!url.starts_with("ws://") && !url.starts_with("wss://") && !url.starts_with("http://") &&
+           !url.starts_with("https://"));
+
+    std::string urlWithScheme = fmt::format("{}{}", cv::use_https.getBool() ? "wss://" : "ws://", url);
 
     auto websocket = std::make_shared<WSInstance>();
     websocket->max_recv = options.max_recv;
@@ -669,7 +677,7 @@ std::shared_ptr<WSInstance> NetworkImpl::initWebsocket(const WSOptions& options)
                                .connect_timeout = options.connect_timeout,
                                .is_websocket = true};
 
-    this->httpRequestAsync(options.url, httpOptions, [this, websocket](const Response& response) {
+    this->httpRequestAsync(std::move(urlWithScheme), httpOptions, [this, websocket](const Response& response) {
         if(response.success) {
             websocket->handle = response.easy_handle;
             websocket->status = WSStatus::CONNECTED;
@@ -684,6 +692,9 @@ std::shared_ptr<WSInstance> NetworkImpl::initWebsocket(const WSOptions& options)
 
 // synchronous API (blocking)
 Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOptions options) {
+    assert(!url.starts_with("https://") && !url.starts_with("http://"));
+    std::string urlWithScheme = fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
+
     Response result;
     Sync::condition_variable cv;
     Sync::mutex cv_mutex;
@@ -697,7 +708,7 @@ Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOption
     }
 
     // create sync request
-    auto request = std::make_unique<Request>(url, std::move(options));
+    auto request = std::make_unique<Request>(std::move(urlWithScheme), std::move(options));
     request->is_sync = true;
     request->sync_id = sync_id;
 
@@ -788,8 +799,8 @@ void NetworkHandler::httpRequestAsync(std::string_view url, RequestOptions optio
     return pImpl->httpRequestAsync(url, std::move(options), std::move(callback));
 }
 
-std::shared_ptr<WSInstance> NetworkHandler::initWebsocket(const WSOptions& options) {
-    return pImpl->initWebsocket(options);
+std::shared_ptr<WSInstance> NetworkHandler::initWebsocket(std::string_view url, const WSOptions& options) {
+    return pImpl->initWebsocket(url, options);
 }
 
 void NetworkHandler::setIPCSocket(int fd, IPCCallback callback) { return pImpl->setIPCSocket(fd, std::move(callback)); }

@@ -281,6 +281,7 @@ CONVAR(mouse_sensitivity, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(pen_input, true, CLIENT | SKINS | SERVER, "support OTD Artist Mode and native tablet drivers' pen events");
 CONVAR(rich_presence, true, CLIENT | SKINS | SERVER);  // callback set in DiscordInterface
 CONVAR(ssl_verify, true, CLIENT);
+CONVAR(use_https, true, CLIENT);
 CONVAR(ui_scrollview_kinetic_approach_time, 0.075f, CLIENT | SKINS | SERVER,
        "approach target afterscroll delta over this duration");
 CONVAR(ui_scrollview_kinetic_energy_multiplier, 24.0f, CLIENT, "afterscroll delta multiplier");

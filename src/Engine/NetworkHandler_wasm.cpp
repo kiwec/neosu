@@ -8,6 +8,7 @@
 #include "crypto.h"
 #include "NetworkHandler.h"
 #include "Engine.h"
+#include "ConVar.h"
 #include "Logging.h"
 
 #include <emscripten/fetch.h>
@@ -152,8 +153,8 @@ struct NetworkImpl {
         std::vector<std::string> header_storage;
         std::vector<const char*> header_ptrs;  // null-terminated array of alternating key/value
 
-        Request(NetworkImpl* impl, std::string_view url, RequestOptions opts, AsyncCallback cb = {})
-            : url(url), options(std::move(opts)), callback(std::move(cb)), impl(impl) {}
+        Request(NetworkImpl* impl, std::string url, RequestOptions opts, AsyncCallback cb = {})
+            : url(std::move(url)), options(std::move(opts)), callback(std::move(cb)), impl(impl) {}
     };
 
     // necessary data for deferred callback execution
@@ -255,6 +256,10 @@ void NetworkImpl::fetchProgress(emscripten_fetch_t* fetch) {
 }
 
 void NetworkImpl::httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback) {
+    assert(!url.starts_with("https://") && !url.starts_with("http://"));
+
+    const std::string url_with_scheme = fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
+
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
 
@@ -264,7 +269,7 @@ void NetworkImpl::httpRequestAsync(std::string_view url, RequestOptions options,
     attr.withCredentials = false;
 
     // request owns the strings; pointers into header_storage are valid until Request is deleted
-    auto* request = new Request(this, url, std::move(options), std::move(callback));
+    auto* request = new Request(this, std::move(url_with_scheme), std::move(options), std::move(callback));
     encodeMimeParts(request->options);
 
     if(!request->options.headers.empty()) {
@@ -332,8 +337,10 @@ static Hash::unstable_stringmap<std::string> parseRawHeaders(const char* raw) {
 Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOptions options) {
     encodeMimeParts(options);
 
+    assert(!url.starts_with("https://") && !url.starts_with("http://"));
+    const std::string url_with_scheme = fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
+
     std::string method = options.post_data.empty() ? "GET" : "POST";
-    std::string url_str(url);
 
     // format headers as "Key: Value\r\n" pairs
     std::string headers_str;
@@ -348,7 +355,7 @@ Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOption
     char* out_headers = nullptr;
     char* out_error = nullptr;
 
-    int status = sync_xhr(method.c_str(), url_str.c_str(), headers_str.empty() ? nullptr : headers_str.c_str(),
+    int status = sync_xhr(method.c_str(), url_with_scheme.c_str(), headers_str.empty() ? nullptr : headers_str.c_str(),
                           options.post_data.empty() ? nullptr : options.post_data.c_str(),
                           static_cast<int>(options.post_data.length()), &out_body, &out_headers, &out_error);
 

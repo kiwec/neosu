@@ -93,8 +93,7 @@ void send_request(const Request &request) {
         .connect_timeout = 5,
     };
 
-    auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-    auto query_url = fmt::format("{:s}osu.{:s}{:s}", scheme, BanchoState::endpoint, request.path);
+    auto query_url = fmt::format("osu.{:s}{:s}", BanchoState::endpoint, request.path);
 
     networkHandler->httpRequestAsync(query_url, std::move(options), [request](Mc::Net::Response response) {
         if(response.success) {

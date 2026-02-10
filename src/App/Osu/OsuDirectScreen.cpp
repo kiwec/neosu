@@ -489,8 +489,7 @@ void OsuDirectScreen::search(std::string_view query) {
 
     const i32 offset = this->results->container.getElements().size();
     const i32 filter = cv::direct_ranking_status_filter.getInt();
-    auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-    std::string url = fmt::format("{}osu.{}/web/osu-search.php?m=0&r={}&q={}&p={}", scheme, BanchoState::endpoint,
+    std::string url = fmt::format("osu.{}/web/osu-search.php?m=0&r={}&q={}&p={}", BanchoState::endpoint,
                                   filter, Mc::Net::urlEncode(query), offset);
     BANCHO::Api::append_auth_params(url);
 

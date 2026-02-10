@@ -88,8 +88,7 @@ void attempt_logging_in() {
 
     options.headers["x-mcosu-ver"] = BanchoState::neosu_version;
 
-    auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-    auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
+    auto query_url = fmt::format("c.{:s}/", BanchoState::endpoint);
 
     last_packet_ms = Timing::getTicksMS();
 
@@ -152,8 +151,7 @@ void send_bancho_packet_http(Packet outgoing) {
     // copy outgoing packet data for POST
     options.post_data = std::string(reinterpret_cast<char *>(outgoing.memory), outgoing.pos);
 
-    auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-    auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
+    auto query_url = fmt::format("c.{:s}/", BanchoState::endpoint);
 
     networkHandler->httpRequestAsync(query_url, std::move(options), [](Mc::Net::Response response) {
         if(!response.success) {
@@ -184,10 +182,9 @@ void send_bancho_packet_ws(Packet outgoing) {
         options.headers["x-mcosu-ver"] = BanchoState::neosu_version;
         options.headers["osu-token"] = auth_token;
 
-        auto scheme = cv::use_https.getBool() ? "wss://" : "ws://";
-        options.url = fmt::format("{}c.{}/ws/", scheme, BanchoState::endpoint);
+        std::string url = fmt::format("c.{}/ws/", BanchoState::endpoint);
 
-        auto new_websocket = networkHandler->initWebsocket(options);
+        auto new_websocket = networkHandler->initWebsocket(url, options);
         if(websocket != nullptr) new_websocket->out = websocket->out;  // don't lose outgoing packet queue
         websocket = new_websocket;
     }
@@ -347,8 +344,7 @@ void BanchoState::disconnect(bool shutdown) {
         options.headers["osu-token"] = BANCHO::Net::auth_token;
         BANCHO::Net::auth_token = "";
 
-        auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-        auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
+        auto query_url = fmt::format("c.{:s}/", BanchoState::endpoint);
 
         // use sync request for logout on shutdown to make sure it completes
         if(shutdown) {

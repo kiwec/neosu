@@ -971,7 +971,6 @@ CONVAR(ui_window_shadow_radius, 13.0f, CLIENT | SKINS | SERVER);
 CONVAR(universal_offset, 0.0f, CLIENT, "rate-dependent offset for music (multiplied by playback speed)");
 CONVAR(universal_offset_norate, 0.0f, CLIENT, "rate-independent offset for music");
 CONVAR(universal_offset_hardcoded_blamepeppy, 0.0f, CLIENT, "this is in lazer");
-CONVAR(use_https, true, CLIENT);
 CONVAR(use_ppv3, false, CLIENT | SKINS | SERVER, "use ppv3 instead of ppv2 (experimental)");
 CONVAR(user_draw_accuracy, true, CLIENT | SKINS | SERVER);
 CONVAR(user_draw_level, true, CLIENT | SKINS | SERVER);

@@ -13,9 +13,6 @@
 
 #include <sys/stat.h>
 
-class Osu;
-extern Osu* osu;
-
 Image* ThumbnailManager::try_get_image(const ThumbIdentifier& identifier) {
     auto it = this->images.find(identifier);
     if(it == this->images.end()) {
@@ -79,7 +76,8 @@ void ThumbnailManager::update() {
             // write async
             io->write(identifier.save_path, std::move(this->temp_img_download_data),
                       [&images = this->images, key = identifier](bool success) -> void {
-                          if(!osu) return;  // do not run callback if osu has shut down
+                          if(engine->isShuttingDown())
+                              return;  // dirty but there's not really a better way to detect this scenario atm
                           if(success) {
                               images[key] = {.file_path = key.save_path, .image = nullptr, .last_access_time = 0.0};
                           }
@@ -175,13 +173,11 @@ void ThumbnailManager::prune_oldest_entries() {
 }
 
 bool ThumbnailManager::download_image(const ThumbIdentifier& identifier) {
-    const std::string_view scheme = cv::use_https.getBool() ? "https://"sv : "http://"sv;
-    const std::string url = fmt::format("{}{}", scheme, identifier.download_url);
     float progress = -1.f;
     int response_code;
     // TODO: constantly requesting the full download is a bad API, should be a way to just check if it's already downloading
     // TODO: only download a single (response_code == 404) result and share it
-    Downloader::download(url, &progress, this->temp_img_download_data, &response_code);
+    Downloader::download(identifier.download_url, &progress, this->temp_img_download_data, &response_code);
     if(progress == -1.f) this->id_blacklist.insert(identifier);
     if(progress == 1.f && response_code != 200) this->id_blacklist.insert(identifier);
 

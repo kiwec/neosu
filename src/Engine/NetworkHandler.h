@@ -37,7 +37,6 @@ enum class WSStatus : u8 {
 };
 
 struct WSOptions {
-    std::string url;
     Hash::unstable_stringmap<std::string> headers;
     std::string user_agent;
     long timeout{5};
@@ -116,6 +115,7 @@ struct Response {
 using AsyncCallback = std::function<void(Response response)>;
 using IPCCallback = std::function<void(std::vector<std::string>)>;
 
+// NOTE: do not prepend url with https:// or http:// (or wss:// ws:// for initWebsocket), this will be auto-prepended depending on the use_https ConVar
 class NetworkHandler {
     NOCOPY_NOMOVE(NetworkHandler)
    public:
@@ -131,7 +131,7 @@ class NetworkHandler {
     // websockets
     // TODO: consolidate websocket/http to avoid needing this entirely
     // (should be able to just choose the implementation based off of http(s):// or ws(s):// protocol prefix)
-    std::shared_ptr<WSInstance> initWebsocket(const WSOptions& options);
+    std::shared_ptr<WSInstance> initWebsocket(std::string_view url, const WSOptions& options);
 
     // IPC socket for instance detection (Linux)
     void setIPCSocket(int fd, IPCCallback callback);

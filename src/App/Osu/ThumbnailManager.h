@@ -33,11 +33,11 @@ template <>
 struct hash<ThumbIdentifier> : ::ankerl::unordered_dense::hash<ThumbIdentifier> {};
 }  // namespace std
 
-class ThumbnailManager {
+class ThumbnailManager final {
     NOCOPY_NOMOVE(ThumbnailManager)
    public:
     ThumbnailManager() { this->load_queue.reserve(128); };
-    virtual ~ThumbnailManager() { this->clear(); }
+    ~ThumbnailManager() { this->clear(); }
 
     // this is run during Osu::update(), while not in unpaused gameplay
     void update();
