@@ -28,6 +28,7 @@
 #include "Logging.h"
 #include "VisualProfiler.h"
 #include "SString.h"
+#include "Parsing.h"
 #include "crypto.h"
 #include "Font.h"
 #include "Image.h"
@@ -639,7 +640,7 @@ void Engine::processStdinCommands() {
         free(line);
 
         if(cmd.starts_with("@wait")) {
-            this->stdinWaitFrames = std::max(1, std::atoi(cmd.c_str() + 5));
+            this->stdinWaitFrames = std::max(1, Parsing::strto<int>(cmd.substr("@wait"sv.size())));
             break;
         }
 
@@ -653,7 +654,7 @@ void Engine::processStdinCommands() {
         this->stdinQueue.pop_front();
 
         if(cmd.starts_with("@wait")) {
-            this->stdinWaitFrames = std::max(1, std::atoi(cmd.c_str() + 5));
+            this->stdinWaitFrames = std::max(1, Parsing::strto<int>(cmd.substr("@wait"sv.size())));
             break;
         }
 

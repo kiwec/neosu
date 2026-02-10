@@ -76,7 +76,7 @@ class OnlineMapListing : public CBaseUIContainer {
     // Cache
     std::string full_title;
     f32 creator_width{0.f};
-    std::pair<i32, std::string> set_id_for_endpoint;
+    ThumbIdentifier set_id_for_endpoint;
 
     f32 hover_anim{0.f};
     f32 click_anim{0.f};
