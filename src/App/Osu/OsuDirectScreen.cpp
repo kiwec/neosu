@@ -35,17 +35,6 @@
 
 #include <charconv>
 
-// Using ThumbnailManager for map backgrounds, since the behavior is pretty much the same as for avatars.
-class MapBGManager : public ThumbnailManager {
-    NOCOPY_NOMOVE(MapBGManager)
-   public:
-    MapBGManager() : ThumbnailManager() {
-        // Also valid: "{:s}b.{}/thumb/{:d}l.jpg" ("l" stands for "large")
-        this->url_format = "{:s}b.{}/thumb/{:d}.jpg";
-    }
-    ~MapBGManager() override = default;
-};
-
 // represents: one single beatmapset element inside the OsuDirectScreen scrollview
 // it's a container because it contains UIIcons with tooltips for difficulties
 class OnlineMapListing : public CBaseUIContainer {
@@ -76,7 +65,7 @@ class OnlineMapListing : public CBaseUIContainer {
     // Cache
     std::string full_title;
     f32 creator_width{0.f};
-    ThumbIdentifier set_id_for_endpoint;
+    ThumbIdentifier thumb_id;
 
     f32 hover_anim{0.f};
     f32 click_anim{0.f};
@@ -88,8 +77,17 @@ class OnlineMapListing : public CBaseUIContainer {
     bool download_failed{false};
 };
 
+// "b.{}/thumb/{:d}.jpg";
 OnlineMapListing::OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapSetMetadata meta)
-    : directScreen(parent), font(engine->getDefaultFont()), meta(std::move(meta)) {
+    : directScreen(parent),
+      font(engine->getDefaultFont()),
+      meta(std::move(meta)),
+      thumb_id(
+          {.save_path = fmt::format("{}/thumbs/{}/{}", env->getCacheDir(), BanchoState::endpoint, this->meta.set_id),
+           .download_url =
+               fmt::format("b.{}/thumb/{:d}.jpg", BanchoState::endpoint,
+                           this->meta.set_id),  // Also valid: "b.{}/thumb/{:d}l.jpg" ("l" stands for "large")
+           .id = this->meta.set_id}) {
     if(this->meta.beatmaps.size() > 1) {
         // reverse
         std::ranges::sort(this->meta.beatmaps, std::ranges::greater{}, [](const auto& bm) { return bm.star_rating; });
@@ -98,13 +96,11 @@ OnlineMapListing::OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapS
     this->installed = db->getBeatmapSet(this->meta.set_id) != nullptr;
     this->onResolutionChange(osu->getVirtScreenSize());
 
-    this->set_id_for_endpoint = {this->meta.set_id, fmt::format("{}/thumbs/{}/{}", env->getCacheDir(),
-                                                                BanchoState::endpoint, this->meta.set_id)};
-    this->directScreen->bg_mgr->request_image(this->set_id_for_endpoint);
+    osu->getThumbnailManager()->request_image(this->thumb_id);
 }
 
 OnlineMapListing::~OnlineMapListing() {
-    this->directScreen->bg_mgr->discard_image(this->set_id_for_endpoint);
+    osu->getThumbnailManager()->discard_image(this->thumb_id);
 
     anim::deleteExistingAnimation(&this->click_anim);
     anim::deleteExistingAnimation(&this->hover_anim);
@@ -237,7 +233,7 @@ void OnlineMapListing::draw() {
         g->fillRect(x, y, map_bg_size, map_bg_size);
 
         // Map thumbnail
-        auto* map_thumbnail = this->directScreen->bg_mgr->try_get_image(this->set_id_for_endpoint);
+        auto* map_thumbnail = osu->getThumbnailManager()->try_get_image(this->thumb_id);
         if(map_thumbnail) {
             g->pushTransform();
             g->setColor(Color(0xffffffff));
@@ -292,7 +288,7 @@ void OnlineMapListing::draw() {
     g->popClipRect();
 }
 
-OsuDirectScreen::OsuDirectScreen() : bg_mgr(std::make_unique<MapBGManager>()) {
+OsuDirectScreen::OsuDirectScreen() {
     this->title = new CBaseUILabel(0, 0, 0, 0, "", "Online Beatmaps");
     this->title->setDrawFrame(false);
     this->title->setDrawBackground(false);
@@ -333,9 +329,7 @@ OsuDirectScreen::OsuDirectScreen() : bg_mgr(std::make_unique<MapBGManager>()) {
     this->addBaseUIElement(this->results);
 }
 
-OsuDirectScreen::~OsuDirectScreen() {
-    this->freeElements();  // destroy children now, while bg_mgr is still valid
-}
+OsuDirectScreen::~OsuDirectScreen() = default;
 
 void OsuDirectScreen::onRankedCheckboxChange(CBaseUICheckbox* checkbox) {
     cv::direct_ranking_status_filter.setValue(checkbox->isChecked() ? RankingStatusFilter::RANKED
@@ -409,8 +403,6 @@ void OsuDirectScreen::update(CBaseUIEventCtx& c) {
     if(this->results->isAtBottom() && this->last_search_time + 1.0 < engine->getTime()) {
         this->search(this->current_query);
     }
-
-    this->bg_mgr->update();
 }
 
 void OsuDirectScreen::onBack() { ui->setScreen(ui->getMainMenu()); }

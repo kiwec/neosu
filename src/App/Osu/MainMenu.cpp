@@ -1146,7 +1146,7 @@ void MainMenu::update(CBaseUIEventCtx &c) {
         float progress = -1.f;
         std::vector<u8> data;
         int response_code;
-        Downloader::download(BanchoState::server_icon_url.c_str(), &progress, data, &response_code);
+        Downloader::download(BanchoState::server_icon_url, &progress, data, &response_code);
         if(progress == -1.f || response_code != 200) BanchoState::server_icon_url = "";
         if(!data.empty()) {
             io->write(icon_path, data, [icon_path](bool success) {

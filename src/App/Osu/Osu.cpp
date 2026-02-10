@@ -580,8 +580,9 @@ void Osu::update() {
 
     this->fposu->update();
 
-    // only update if not playing
-    if(!this->isInPlayModeAndNotPaused()) this->thumbnailManager->update();
+    // only update if not playing (and online)
+    // TODO: offline/local avatars?
+    if(!this->isInPlayModeAndNotPaused() && BanchoState::is_online()) this->thumbnailManager->update();
 
     ui->update();
 

@@ -73,7 +73,7 @@ class DownloadManager {
         request->downloading.store(true, std::memory_order_release);
         this->per_host_retry_after[request->host] = now + std::chrono::milliseconds(100);
 
-        debugLog("Downloading {:s}", request->url.c_str());
+        debugLog("Downloading {:s}", request->url);
 
         Mc::Net::RequestOptions options{
             .user_agent = BanchoState::user_agent,
@@ -145,18 +145,18 @@ class DownloadManager {
         }
     }
 
-    std::shared_ptr<DownloadRequest> start_download(const std::string& url) {
+    std::shared_ptr<DownloadRequest> start_download(std::string_view url) {
         if(this->shutting_down.load(std::memory_order_acquire)) return nullptr;
 
         Sync::scoped_lock lock(this->queue_mutex);
 
         // check if already downloading or cached
-        if(this->queue.contains(url)) {
-            auto dl = this->queue[url];
+        if(auto it = this->queue.find(url); it != this->queue.end()) {
+            std::shared_ptr<DownloadRequest> dl = it->second;
 
             // remove from queue once we finished the download
             if(dl->completed.load(std::memory_order_acquire)) {
-                this->queue.erase(url);
+                this->queue.erase(it);
             }
 
             // if we have been rate limited, we might need to resume downloads manually
@@ -223,12 +223,12 @@ void abort_downloads() {
     }
 }
 
-void download(const char* url, float* progress, std::vector<u8>& out, int* response_code) {
+void download(std::string_view url, float* progress, std::vector<u8>& out, int* response_code) {
     if(!s_download_manager) {
         s_download_manager = std::make_shared<DownloadManager>();
     }
 
-    auto request = s_download_manager->start_download(std::string(url));
+    auto request = s_download_manager->start_download(url);
     if(!request) {
         *progress = -1.0f;
         *response_code = 0;

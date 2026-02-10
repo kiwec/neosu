@@ -6,6 +6,7 @@
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
+#include "ThumbnailManager.h"
 #include "UI.h"
 #include "Osu.h"
 #include "Graphics.h"
@@ -25,7 +26,7 @@ void UserCard2::update_userid(i32 new_userid) {
 
     if(!this->info ||                                                               //
        (this->info != (new_userinfo = BANCHO::User::get_user_info(new_userid))) ||  //
-       (new_userid != (old_userid = this->avatar->player_id_for_endpoint.first))    //
+       (new_userid != (old_userid = this->avatar->thumb_id->id))                    //
     ) {
         this->info = new_userinfo ? new_userinfo : BANCHO::User::get_user_info(new_userid);  // don't request it twice
         this->avatar = std::make_unique<UIAvatar>(new_userid, 0.f, 0.f, 0.f, 0.f);

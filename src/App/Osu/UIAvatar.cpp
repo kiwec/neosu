@@ -12,27 +12,28 @@
 #include "MakeDelegateWrapper.h"
 
 UIAvatar::UIAvatar(i32 player_id, float xPos, float yPos, float xSize, float ySize)
-    : CBaseUIButton(xPos, yPos, xSize, ySize, "avatar", "") {
-    this->player_id_for_endpoint = {
-        player_id, fmt::format("{}/avatars/{}/{}", env->getCacheDir(), BanchoState::endpoint, player_id)};
-
+    : CBaseUIButton(xPos, yPos, xSize, ySize, "avatar", ""),
+      thumb_id(new ThumbIdentifier{
+          .save_path = fmt::format("{}/avatars/{}/{}", env->getCacheDir(), BanchoState::endpoint, player_id),
+          .download_url = fmt::format("a.{}/{:d}", BanchoState::endpoint, player_id),
+          .id = player_id}) {
     this->setClickCallback(SA::MakeDelegate<&UIAvatar::onAvatarClicked>(this));
 
     // add to load queue
-    osu->getThumbnailManager()->request_image(this->player_id_for_endpoint);
+    osu->getThumbnailManager()->request_image(*this->thumb_id);
 }
 
 UIAvatar::~UIAvatar() {
     // remove from load queue
     if(ThumbnailManager *am = osu && osu->getThumbnailManager() ? osu->getThumbnailManager().get() : nullptr) {
-        am->discard_image(this->player_id_for_endpoint);
+        am->discard_image(*this->thumb_id);
     }
 }
 
 void UIAvatar::draw_avatar(float alpha) {
     if(!this->on_screen) return;  // Comment when you need to debug on_screen logic
 
-    auto *avatar_image = osu->getThumbnailManager()->try_get_image(this->player_id_for_endpoint);
+    auto *avatar_image = osu->getThumbnailManager()->try_get_image(*this->thumb_id);
     if(avatar_image) {
         g->pushTransform();
         g->setColor(Color(0xffffffff).setA(alpha));
@@ -63,5 +64,5 @@ void UIAvatar::onAvatarClicked(CBaseUIButton * /*btn*/) {
         return;
     }
 
-    ui->getUserActions()->open(this->player_id_for_endpoint.first);
+    ui->getUserActions()->open(this->thumb_id->id);
 }

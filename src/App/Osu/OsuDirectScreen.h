@@ -15,7 +15,6 @@ class CBaseUIScrollView;
 class CBaseUITextbox;
 class UIButton;
 class OnlineMapListing;
-class MapBGManager;
 
 class OsuDirectScreen final : public ScreenBackable {
     NOCOPY_NOMOVE(OsuDirectScreen)
@@ -44,9 +43,6 @@ class OsuDirectScreen final : public ScreenBackable {
 
    private:
     void onRankedCheckboxChange(CBaseUICheckbox* checkbox);
-
-    // Cursed
-    std::unique_ptr<MapBGManager> bg_mgr{nullptr};
 
     CBaseUILabel* title{nullptr};
     CBaseUITextbox* search_bar{nullptr};

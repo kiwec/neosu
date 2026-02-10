@@ -3,6 +3,8 @@
 
 #include "CBaseUIButton.h"
 
+struct ThumbIdentifier;
+
 class UIAvatar final : public CBaseUIButton {
     NOCOPY_NOMOVE(UIAvatar)
    public:
@@ -14,6 +16,6 @@ class UIAvatar final : public CBaseUIButton {
 
     void onAvatarClicked(CBaseUIButton *btn);
 
-    std::pair<i32, std::string> player_id_for_endpoint;
+    std::unique_ptr<ThumbIdentifier> thumb_id;
     bool on_screen{false};
 };
