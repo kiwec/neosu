@@ -1242,9 +1242,9 @@ void Osu::saveScreenshot() {
     auto screenshotFilename = fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber);
     constexpr u8 screenshotChannels{3};
 
-    static const auto saveFunc = [currentRes = this->internalRect, &skin = this->skin,
-                                  filename = std::move(screenshotFilename)](std::vector<u8> pixels) -> void {
-        if(!osu) return; // paranoia
+    const auto saveFunc = [currentRes = this->internalRect, &skin = this->skin,
+                           filename = std::move(screenshotFilename)](std::vector<u8> pixels) -> void {
+        if(!osu) return;  // paranoia
         if(pixels.empty()) {
             static uint8_t once = 0;
             if(!once++)
