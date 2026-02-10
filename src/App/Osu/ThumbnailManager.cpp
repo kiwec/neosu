@@ -9,11 +9,14 @@
 #include "OsuConVars.h"
 #include "File.h"
 #include "Logging.h"
+#include "Thread.h"
 #include "Timing.h"
 
 #include <sys/stat.h>
 
 Image* ThumbnailManager::try_get_image(const ThumbIdentifier& identifier) {
+    assert(McThread::is_main_thread());
+
     auto it = this->images.find(identifier);
     if(it == this->images.end()) {
         return nullptr;
@@ -22,13 +25,27 @@ Image* ThumbnailManager::try_get_image(const ThumbIdentifier& identifier) {
     ThumbEntry& entry = it->second;
     entry.last_access_time = engine->getTime();
 
-    // lazy load if not in memory (won't block)
-    if(!entry.image) {
-        this->load_image(entry);
+    // not yet downloaded/found on disk
+    if(entry.file_path.empty()) {
+        return nullptr;
     }
 
+    // lazy load if not in memory (won't block)
+    if(!entry.image) {
+        entry.image = this->load_image(entry);
+    }
+
+    assert(entry.image && "ThumbnailManager::try_get_image: malloc failed");
+
     // return only if ready (async loading complete)
-    return (entry.image && entry.image->isReady()) ? entry.image : nullptr;
+    if(entry.image->isReady()) {
+        return entry.image;
+    } else if(entry.image->failedLoad()) {
+        // blacklist files we couldn't load
+        this->id_blacklist.insert(it->first);
+        entry.last_access_time = 0.0;  // deprioritize it completely
+    }
+    return nullptr;
 }
 
 // this is run during Osu::update(), while not in unpaused gameplay
@@ -48,12 +65,13 @@ void ThumbnailManager::update() {
     // but we'll check again next update
     static constexpr const uSz ELEMS_TO_CHECK{4};
 
-    this->last_checked_queue_element %= cur_load_queue_size;  // wrap at ends
+    // sort by priority: items that had try_get_image called recently come first
+    std::ranges::stable_sort(this->load_queue, [this](const ThumbIdentifier& a, const ThumbIdentifier& b) {
+        return this->images[a].last_access_time > this->images[b].last_access_time;
+    });
 
-    for(uSz i = this->last_checked_queue_element, num_checked = 0;
-        num_checked < ELEMS_TO_CHECK && i < this->load_queue.size();
-        ++num_checked, ++i, ++this->last_checked_queue_element) {
-        auto identifier = this->load_queue[i];
+    for(uSz i = 0, num_checked = 0; num_checked < ELEMS_TO_CHECK && i < this->load_queue.size(); ++num_checked, ++i) {
+        auto& identifier = this->load_queue[i];
 
         bool exists_on_disk = false;
         struct stat64 attr;
@@ -67,11 +85,11 @@ void ThumbnailManager::update() {
             }
         }
 
-        // if we have the file or the download just finished, create the entry
-        // but only actually load it when it's needed (in get_image)
+        // if we have the file or the download just finished, mark the entry as resolved
+        // but only actually load the image when it's needed (in try_get_image)
         bool newly_downloaded = false;
         if(exists_on_disk) {
-            this->images[identifier] = {.file_path = identifier.save_path, .image = nullptr, .last_access_time = 0.0};
+            this->images[identifier].file_path = identifier.save_path;
         } else if((newly_downloaded = this->download_image(identifier))) {
             // write async
             io->write(identifier.save_path, std::move(this->temp_img_download_data),
@@ -79,7 +97,7 @@ void ThumbnailManager::update() {
                           if(engine->isShuttingDown())
                               return;  // dirty but there's not really a better way to detect this scenario atm
                           if(success) {
-                              images[key] = {.file_path = key.save_path, .image = nullptr, .last_access_time = 0.0};
+                              images[key].file_path = key.save_path;
                           }
                       });
         }
@@ -91,20 +109,18 @@ void ThumbnailManager::update() {
 }
 
 void ThumbnailManager::request_image(const ThumbIdentifier& identifier) {
+    assert(McThread::is_main_thread());
     const bool debug = cv::debug_thumbs.getBool();
 
     // increment refcount even if we didn't add to load queue
-    const u32 current_refcount = this->image_refcount[identifier].fetch_add(1, std::memory_order_relaxed) + 1;
+    auto& entry = this->images[identifier];
+    const u32 current_refcount = ++entry.refcount;
     logIf(debug, "trying to add {} to load queue, current refcount: {}", identifier.id, current_refcount);
 
-    {
-        bool already_added = false;
-        if(current_refcount > 1 || this->id_blacklist.contains(identifier) ||
-           (already_added = this->images.contains(identifier))) {
-            logIf(debug, "not adding {} to load queue, {}", identifier.id,
-                  current_refcount > 1 ? "refcount > 1" : (already_added ? "already have it" : "blacklisted"));
-            return;
-        }
+    if(current_refcount > 1 || this->id_blacklist.contains(identifier) || !entry.file_path.empty()) {
+        logIf(debug, "not adding {} to load queue, {}", identifier.id,
+              current_refcount > 1 ? "refcount > 1" : (!entry.file_path.empty() ? "already have it" : "blacklisted"));
+        return;
     }
 
     if(resourceManager->getImage(identifier.save_path)) {
@@ -121,7 +137,8 @@ void ThumbnailManager::request_image(const ThumbIdentifier& identifier) {
 }
 
 void ThumbnailManager::discard_image(const ThumbIdentifier& identifier) {
-    const u32 current_refcount = this->image_refcount[identifier].fetch_sub(1, std::memory_order_acq_rel) - 1;
+    assert(McThread::is_main_thread());
+    const u32 current_refcount = --this->images[identifier].refcount;
     logIfCV(debug_thumbs, "current refcount for {} is {}", identifier.id, current_refcount);
 
     if(current_refcount == 0) {
@@ -132,14 +149,12 @@ void ThumbnailManager::discard_image(const ThumbIdentifier& identifier) {
     }
 }
 
-void ThumbnailManager::load_image(ThumbEntry& entry) {
-    if(entry.image || entry.file_path.empty()) {
-        return;
-    }
+Image* ThumbnailManager::load_image(ThumbEntry& entry) {
+    assert(!entry.image && !entry.file_path.empty());
 
     resourceManager->requestNextLoadAsync();
     // the path *is* the resource name
-    entry.image = resourceManager->loadImageAbs(entry.file_path, entry.file_path);
+    return resourceManager->loadImageAbs(entry.file_path, entry.file_path);
 }
 
 void ThumbnailManager::prune_oldest_entries() {
@@ -150,7 +165,8 @@ void ThumbnailManager::prune_oldest_entries() {
     std::vector<Hash::flat::map<ThumbIdentifier, ThumbEntry>::iterator> loaded_entries;
 
     for(auto it = this->images.begin(); it != this->images.end(); ++it) {
-        if(it->second.image && it->second.image->isReady()) {
+        const Image* image = it->second.image;
+        if(image && (image->isReady() || image->failedLoad() || image->isInterrupted())) {
             loaded_entries.push_back(it);
         }
     }

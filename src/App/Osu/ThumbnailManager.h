@@ -57,24 +57,22 @@ class ThumbnailManager final {
     // only keep this many thumbnail Image resources loaded in VRAM at once
     static constexpr size_t MAX_LOADED_IMAGES{256};
 
+    // entries are created by request_image and remain alive forever, but the actual Image resource
+    // will be unloaded (by priority of access time) to keep VRAM/RAM usage sustainable
     struct ThumbEntry {
-        std::string file_path;
-        Image* image{nullptr};  // null if not loaded in memory
-        double last_access_time{0.0};
+        u32 refcount{0};
+        double last_access_time{0.0};  // timestamp of last try_get_image call; used for queue priority and VRAM eviction
+        std::string file_path;         // empty until downloaded/found on disk
+        Image* image{nullptr};         // null if not loaded in memory
     };
+    static Image *load_image(ThumbEntry& entry);
 
     void prune_oldest_entries();
     bool download_image(const ThumbIdentifier& identifier);
-    void load_image(ThumbEntry& entry);
     void clear();
 
-    // all ThumbEntries added through request_image remain alive forever, but the actual Image resource
-    // it references will be unloaded (by priority of access time) to keep VRAM/RAM usage sustainable
     Hash::flat::map<ThumbIdentifier, ThumbEntry> images;
     std::vector<ThumbIdentifier> load_queue;
-    std::unordered_map<ThumbIdentifier, std::atomic<u32>> image_refcount;
     Hash::flat::set<ThumbIdentifier> id_blacklist;
     std::vector<u8> temp_img_download_data;  // if it has something in it, we just downloaded something
-
-    size_t last_checked_queue_element{0};
 };
