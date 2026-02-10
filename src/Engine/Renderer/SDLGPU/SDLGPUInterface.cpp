@@ -856,6 +856,7 @@ void SDLGPUInterface::drawVAO(VertexArrayObject *vao) {
     const std::vector<vec3> &vertices = vao->getVertices();
     const std::vector<vec2> &texcoords = vao->getTexcoords();
     const std::vector<Color> &vcolors = vao->getColors();
+    // maybe TODO: handle normals (not currently used in app code)
 
     if(vertices.size() < 2) return;
 
@@ -1386,8 +1387,10 @@ void SDLGPUInterface::setColorWriting(bool r, bool g, bool b, bool a) {
 }
 
 void SDLGPUInterface::setColorInversion(bool enabled) {
+    if(m_bColorInversion == enabled) return;
+
     m_bColorInversion = enabled;
-    m_defaultShader->setUniform4f("misc", m_bTexturingEnabled ? 1.f : 0.f, enabled ? 1.f : 0.f, 0.f, 0.f);
+    setTexturing(m_bTexturingEnabled, true /* force */);  // re-apply with new inversion state
 }
 
 void SDLGPUInterface::setCulling(bool enabled) {
@@ -1621,7 +1624,9 @@ void SDLGPUInterface::onTransformUpdate() {
     // (SDL_gpu uses push constants, so we push in uploadAndDrawVertexBatch)
 }
 
-void SDLGPUInterface::setTexturing(bool enabled) {
+void SDLGPUInterface::setTexturing(bool enabled, bool force) {
+    if(!force && enabled == m_bTexturingEnabled) return;
+
     m_bTexturingEnabled = enabled;
     m_defaultShader->setUniform4f("misc", enabled ? 1.f : 0.f, m_bColorInversion ? 1.f : 0.f, 0.f, 0.f);
     if(enabled) {

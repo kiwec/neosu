@@ -70,6 +70,7 @@ void SDLGPUVertexArrayObject::init() {
     // convert vertices (quads/fans → triangles)
     m_convertedVertices.clear();
 
+    // maybe TODO: handle normals (not currently used in app code)
     std::vector<vec3> finalVertices = this->vertices;
     std::vector<vec2> finalTexcoords = this->texcoords;
     std::vector<vec4> colors;

@@ -178,7 +178,6 @@ class SDLGPUInterface final : public Graphics {
 
     // sdlgpu-specific accessors
     inline SDL_GPUDevice *getDevice() const { return m_device; }
-    void setTexturing(bool enabled);
 
     // texture binding state (set by SDLGPUImage::bind/unbind)
     inline SDL_GPUTexture *getBoundTexture() const { return m_boundTexture; }
@@ -200,6 +199,8 @@ class SDLGPUInterface final : public Graphics {
 
     // SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM
     static const SDLGPUTextureFormat DEFAULT_TEXTURE_FORMAT;
+
+    void setTexturing(bool enabled, bool force = false);
 
    protected:
     bool init() override;
