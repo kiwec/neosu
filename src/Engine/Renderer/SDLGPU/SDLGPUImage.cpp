@@ -56,7 +56,7 @@ void SDLGPUImage::init() {
     if(m_texture == nullptr) {
         SDL_GPUTextureCreateInfo texInfo{};
         texInfo.type = SDL_GPU_TEXTURETYPE_2D;
-        texInfo.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+        texInfo.format = (SDL_GPUTextureFormat)SDLGPUInterface::DEFAULT_TEXTURE_FORMAT;
         texInfo.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
         if(this->bMipmapped) texInfo.usage |= SDL_GPU_TEXTUREUSAGE_COLOR_TARGET;  // needed for GenerateMipmaps
         texInfo.width = (u32)this->iWidth;

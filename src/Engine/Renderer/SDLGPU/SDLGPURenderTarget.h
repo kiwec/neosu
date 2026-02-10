@@ -16,8 +16,8 @@
 typedef struct SDL_GPUTexture SDL_GPUTexture;
 typedef struct SDL_GPUSampler SDL_GPUSampler;
 
-// HACKHACK for forward declaration
-using SDLGPUSampleCount = u32;
+// can't forward declare unsized enums, these correspond to the SDL_ prefixed enums of the same name
+using SDLGPUSampleCount = u8;
 
 class SDLGPURenderTarget final : public RenderTarget {
     NOCOPY_NOMOVE(SDLGPURenderTarget)

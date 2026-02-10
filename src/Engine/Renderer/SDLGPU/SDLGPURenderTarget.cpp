@@ -25,7 +25,8 @@ SDLGPURenderTarget::SDLGPURenderTarget(int x, int y, int width, int height, Mult
 void SDLGPURenderTarget::init() {
     debugLog("Building RenderTarget ({}x{}) ...", (int)this->getSize().x, (int)this->getSize().y);
 
-    auto *device = static_cast<SDLGPUInterface *>(g.get())->getDevice();
+    auto *gpu = static_cast<SDLGPUInterface *>(g.get());
+    auto *device = gpu->getDevice();
     const u32 w = (u32)this->getSize().x;
     const u32 h = (u32)this->getSize().y;
 
@@ -48,17 +49,20 @@ void SDLGPURenderTarget::init() {
 
     // create color texture (resolve target when MSAA, or direct render target when not)
     // always needs SAMPLER usage since we read from it after rendering
-    SDL_GPUTextureCreateInfo colorInfo{};
-    colorInfo.type = SDL_GPU_TEXTURETYPE_2D;
-    colorInfo.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-    colorInfo.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER;
-    colorInfo.width = w;
-    colorInfo.height = h;
-    colorInfo.layer_count_or_depth = 1;
-    colorInfo.num_levels = 1;
-    colorInfo.sample_count = SDL_GPU_SAMPLECOUNT_1;
+    {
+        SDL_GPUTextureCreateInfo colorInfo{};
+        colorInfo.type = SDL_GPU_TEXTURETYPE_2D;
+        colorInfo.format = (SDL_GPUTextureFormat)SDLGPUInterface::DEFAULT_TEXTURE_FORMAT;
+        colorInfo.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        colorInfo.width = w;
+        colorInfo.height = h;
+        colorInfo.layer_count_or_depth = 1;
+        colorInfo.num_levels = 1;
+        colorInfo.sample_count = SDL_GPU_SAMPLECOUNT_1;
 
-    m_colorTexture = SDL_CreateGPUTexture(device, &colorInfo);
+        m_colorTexture = SDL_CreateGPUTexture(device, &colorInfo);
+    }
+
     if(!m_colorTexture) {
         debugLog("SDLGPURenderTarget Error: Couldn't create color texture: {}", SDL_GetError());
         return;
@@ -68,7 +72,7 @@ void SDLGPURenderTarget::init() {
     if(this->isMultiSampled()) {
         SDL_GPUTextureCreateInfo msaaInfo{};
         msaaInfo.type = SDL_GPU_TEXTURETYPE_2D;
-        msaaInfo.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+        msaaInfo.format = (SDL_GPUTextureFormat)SDLGPUInterface::DEFAULT_TEXTURE_FORMAT;
         msaaInfo.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET;  // no SAMPLER - can't sample multisampled textures
         msaaInfo.width = w;
         msaaInfo.height = h;
@@ -86,17 +90,20 @@ void SDLGPURenderTarget::init() {
     }
 
     // create depth texture (must match sample count)
-    SDL_GPUTextureCreateInfo depthInfo{};
-    depthInfo.type = SDL_GPU_TEXTURETYPE_2D;
-    depthInfo.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT;
-    depthInfo.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
-    depthInfo.width = w;
-    depthInfo.height = h;
-    depthInfo.layer_count_or_depth = 1;
-    depthInfo.num_levels = 1;
-    depthInfo.sample_count = this->isMultiSampled() ? (SDL_GPUSampleCount)m_sampleCount : SDL_GPU_SAMPLECOUNT_1;
+    {
+        SDL_GPUTextureCreateInfo depthInfo{};
+        depthInfo.type = SDL_GPU_TEXTURETYPE_2D;
+        depthInfo.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT;
+        depthInfo.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+        depthInfo.width = w;
+        depthInfo.height = h;
+        depthInfo.layer_count_or_depth = 1;
+        depthInfo.num_levels = 1;
+        depthInfo.sample_count = this->isMultiSampled() ? (SDL_GPUSampleCount)m_sampleCount : SDL_GPU_SAMPLECOUNT_1;
 
-    m_depthTexture = SDL_CreateGPUTexture(device, &depthInfo);
+        m_depthTexture = SDL_CreateGPUTexture(device, &depthInfo);
+    }
+
     if(!m_depthTexture) {
         debugLog("SDLGPURenderTarget Error: Couldn't create depth texture: {}", SDL_GetError());
         if(m_msaaTexture) {
@@ -222,8 +229,8 @@ void SDLGPURenderTarget::enable() {
     SDL_GPUTexture *renderTex = m_msaaTexture ? m_msaaTexture : m_colorTexture;
     SDL_GPUTexture *resolveTex = m_msaaTexture ? m_colorTexture : nullptr;
 
-    gpu->pushRenderTarget(renderTex, m_depthTexture, SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, this->bClearColorOnDraw,
-                          clearCol, resolveTex, m_sampleCount);
+    // NOTE: we currently always implicitly use SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM for the format
+    gpu->pushRenderTarget(renderTex, m_depthTexture, this->bClearColorOnDraw, clearCol, resolveTex, m_sampleCount);
 }
 
 void SDLGPURenderTarget::disable() {

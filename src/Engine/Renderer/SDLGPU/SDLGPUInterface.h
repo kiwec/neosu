@@ -31,9 +31,10 @@ typedef struct SDL_GPUBuffer SDL_GPUBuffer;
 typedef struct SDL_GPUTransferBuffer SDL_GPUTransferBuffer;
 typedef struct SDL_GPUShader SDL_GPUShader;
 
-// HACKHACK for forward declaration
-using SDLGPUPrimitiveType = u32;
-using SDLGPUTextureFormat = u32;
+// can't forward declare unsized enums, these correspond to the SDL_ prefixed enums of the same name
+using SDLGPUPrimitiveType = u8;
+using SDLGPUTextureFormat = u8;
+using SDLGPUSampleCount = u8;
 
 struct SDLGPUSimpleVertex {
     vec3 pos;
@@ -41,12 +42,9 @@ struct SDLGPUSimpleVertex {
     vec2 tex;
 };
 
-using SDLGPUSampleCount = u32;
-
 struct PipelineKey {
     SDL_GPUShader *vertexShader;
     SDL_GPUShader *fragmentShader;
-    SDLGPUTextureFormat targetFormat;
     SDLGPUPrimitiveType primitiveType;
     DrawBlendMode blendMode;
     SDLGPUSampleCount sampleCount;
@@ -69,9 +67,7 @@ struct PipelineKeyHash {
         uint64_t h = 0;
         h ^= Hash::flat::hash<uint64_t>{}(reinterpret_cast<uintptr_t>(k.vertexShader));
         h ^= Hash::flat::hash<uint64_t>{}(reinterpret_cast<uintptr_t>(k.fragmentShader)) * 0x9e3779b97f4a7c15ULL;
-        h ^= Hash::flat::hash<uint64_t>{}(
-            (uint64_t)k.targetFormat | ((uint64_t)k.primitiveType << 32)
-        ) * 0x517cc1b727220a95ULL;
+        h ^= Hash::flat::hash<uint64_t>{}((uint64_t)k.primitiveType) * 0x517cc1b727220a95ULL;
         h ^= Hash::flat::hash<uint64_t>{}((uint64_t)k.sampleCount) * 0x3c6ef372fe94f82aULL;
         uint64_t packed = (uint64_t)k.blendMode
                         | ((uint64_t)k.stencilState << 8)
@@ -160,7 +156,7 @@ class SDLGPUInterface final : public Graphics {
 
     // renderer info
     const char *getName() const override;
-    [[nodiscard]] vec2 getResolution() const override;
+    [[nodiscard]] inline vec2 getResolution() const override { return m_viewport.size; }
     UString getVendor() override;
     UString getModel() override;
     UString getVersion() override;
@@ -191,9 +187,8 @@ class SDLGPUInterface final : public Graphics {
     inline void setBoundSampler(SDL_GPUSampler *sampler) { m_boundSampler = sampler; }
 
     // render target support
-    void pushRenderTarget(SDL_GPUTexture *colorTex, SDL_GPUTexture *depthTex, SDLGPUTextureFormat colorFormat,
-                          bool clearColor, Color clearCol, SDL_GPUTexture *resolveTex = nullptr,
-                          SDLGPUSampleCount sampleCount = 0);
+    void pushRenderTarget(SDL_GPUTexture *colorTex, SDL_GPUTexture *depthTex, bool clearColor, Color clearCol,
+                          SDL_GPUTexture *resolveTex = nullptr, SDLGPUSampleCount sampleCount = 0);
     void popRenderTarget();
 
     // record a baked VAO draw into the deferred command list
@@ -203,12 +198,15 @@ class SDLGPUInterface final : public Graphics {
     void setActiveShader(SDLGPUShader *shader);
     inline SDLGPUShader *getActiveShader() const { return m_activeShader; }
 
+    // SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM
+    static const SDLGPUTextureFormat DEFAULT_TEXTURE_FORMAT;
+
    protected:
     bool init() override;
     void onTransformUpdate() override;
 
    private:
-    void createPipeline(SDLGPUTextureFormat targetFormat);
+    void createPipeline();
     void rebuildPipeline();
     void flushDrawCommands();
     void recordDraw(SDL_GPUBuffer *bakedBuffer, u32 vertexOffset, u32 vertexCount);
@@ -216,6 +214,8 @@ class SDLGPUInterface final : public Graphics {
 
     void initSmoothClipShader();
     void onFramecountNumChanged(float maxFramesInFlight);
+
+    static SDLGPUPrimitiveType primitiveToSDLGPUPrimitive(DrawPrimitive prim);
 
     SDL_Window *m_window;
     SDL_GPUDevice *m_device{nullptr};
@@ -251,6 +251,20 @@ class SDLGPUInterface final : public Graphics {
     SDL_GPUBuffer *m_vertexBuffer{nullptr};
     SDL_GPUTransferBuffer *m_transferBuffer{nullptr};
 
+    struct Viewport {
+        vec2 pos;
+        vec2 size;
+
+        [[nodiscard]] bool operator==(const Viewport &) const = default;
+    };
+
+    struct Scissor {
+        ivec2 pos;
+        ivec2 size;
+
+        [[nodiscard]] bool operator==(const Scissor &) const = default;
+    };
+
     // deferred draw batching
     struct DrawCommand {
         u32 vertexOffset;
@@ -273,32 +287,23 @@ class SDLGPUInterface final : public Graphics {
         UniformBlock uniformBlocks[4];
 
         // viewport
-        float viewportX, viewportY, viewportW, viewportH;
+        Viewport viewport;
 
         // scissor
         bool scissorEnabled;
-        i32 scissorX, scissorY, scissorW, scissorH;
+        Scissor scissor;
 
         // stencil
         u8 stencilRef;
     };
     std::vector<DrawCommand> m_pendingDraws;
 
-    // clear flags consumed by the next flushDrawCommands()
-    bool m_bNextFlushClearColor{false};
-    bool m_bNextFlushClearDepth{false};
-    bool m_bNextFlushClearStencil{false};
-    Color m_nextClearColor{0xff000000};
-
     // temporary vertex conversion buffer (reused per drawVAO call)
     std::vector<SDLGPUSimpleVertex> m_vertices;
 
     // pipeline state that requires rebuild
     int m_iStencilState{0};  // 0=off, 1=writing mask, 2=testing
-    DrawBlendMode m_blendMode{DrawBlendMode::ALPHA};
     SDLGPUPrimitiveType m_currentPrimitiveType;
-    SDLGPUTextureFormat m_swapchainFormat;
-    bool m_bBlendingEnabled{true};
     bool m_bDepthTestEnabled{false};
     bool m_bDepthWriteEnabled{false};
     bool m_bScissorEnabled{false};
@@ -308,8 +313,8 @@ class SDLGPUInterface final : public Graphics {
     bool m_bPipelineDirty{true};
 
     // state
-    vec2 m_vResolution{1.f, 1.f};
-    float m_viewportX{0.f}, m_viewportY{0.f};
+    Viewport m_viewport{.pos = {0.f, 0.f}, .size = {1.f, 1.f}};
+
     Color m_color{(Color)-1};
     int m_iMaxFrameLatency{1};
     bool m_bTexturingEnabled{false};
@@ -334,22 +339,30 @@ class SDLGPUInterface final : public Graphics {
 
     // render target stack
     struct RenderTargetState {
-        SDL_GPUTexture *colorTarget;
-        SDL_GPUTexture *depthTarget;
+        SDL_GPUTexture *colorTarget;  // nullptr = swapchain
+        SDL_GPUTexture *depthTarget;  // nullptr = default depth
         SDL_GPUTexture *resolveTarget;
-        SDLGPUTextureFormat colorFormat;
-        SDLGPUSampleCount sampleCount;
+        SDLGPUSampleCount sampleCount;  // SDL_GPU_SAMPLECOUNT_1 == 0
+        // clear flags consumed by the next flushDrawCommands()
         Color clearColor;
         bool pendingClearColor;
         bool pendingClearDepth;
         bool pendingClearStencil;
+
+        [[nodiscard]] bool hasClears() const { return pendingClearColor || pendingClearDepth || pendingClearStencil; }
     };
     std::vector<RenderTargetState> m_renderTargetStack;
-    SDL_GPUTexture *m_activeColorTarget{nullptr};  // nullptr = swapchain
-    SDL_GPUTexture *m_activeDepthTarget{nullptr};  // nullptr = default depth
-    SDL_GPUTexture *m_activeResolveTarget{nullptr};
-    SDLGPUTextureFormat m_activeColorFormat{0};  // format of active RT
-    SDLGPUSampleCount m_activeSampleCount{0};    // SDL_GPU_SAMPLECOUNT_1 == 0
+
+    RenderTargetState m_curRTState{
+        .colorTarget = nullptr,
+        .depthTarget = nullptr,
+        .resolveTarget = nullptr,
+        .sampleCount = 0,
+        .clearColor = 0xff000000,
+        .pendingClearColor = false,
+        .pendingClearDepth = false,
+        .pendingClearStencil = false,
+    };
 
     // stats (TODO? unused)
     int m_iStatsNumDrawCalls{0};

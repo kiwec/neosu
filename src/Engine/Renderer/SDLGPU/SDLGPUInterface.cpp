@@ -34,11 +34,10 @@
 
 #define DEBUG_SDLGPU false
 
+const SDLGPUTextureFormat SDLGPUInterface::DEFAULT_TEXTURE_FORMAT{SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM};
+
 SDLGPUInterface::SDLGPUInterface(SDL_Window *window)
-    : Graphics(),
-      m_window(window),
-      m_currentPrimitiveType(SDL_GPU_PRIMITIVETYPE_TRIANGLELIST),
-      m_swapchainFormat(SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM) {}
+    : Graphics(), m_window(window), m_currentPrimitiveType(SDL_GPU_PRIMITIVETYPE_TRIANGLELIST) {}
 
 SDLGPUInterface::~SDLGPUInterface() {
     if(m_device) {
@@ -127,7 +126,8 @@ bool SDLGPUInterface::init() {
         return false;
     }
 
-    m_swapchainFormat = SDL_GetGPUSwapchainTextureFormat(m_device, m_window);
+    // this can be B8G8R8A or R8G8B8A, we can't specify it
+    SDLGPUTextureFormat swapchainFormat = SDL_GetGPUSwapchainTextureFormat(m_device, m_window);
 
     // cache supported present modes
     m_bSupportsSDRComposition =
@@ -137,6 +137,12 @@ bool SDLGPUInterface::init() {
         m_bSupportsMailbox = SDL_WindowSupportsGPUPresentMode(m_device, m_window, SDL_GPU_PRESENTMODE_MAILBOX);
     } else {
         debugLog("SDLGPUInterface: swapchain composition not supported: {}", SDL_GetError());
+    }
+
+    if constexpr(Env::cfg(BUILD::DEBUG)) {
+        debugLog(
+            "SDLGPUInterface: swapchain format {} supports SDR comp.: {} supports immediate: {} supports mailbox: {}",
+            swapchainFormat, m_bSupportsSDRComposition, m_bSupportsImmediate, m_bSupportsMailbox);
     }
 
     // create default shader
@@ -181,11 +187,11 @@ bool SDLGPUInterface::init() {
         return false;
     }
 
-    // create 1x1 transparent white dummy texture (SDL_gpu requires all sampler bindings to be satisfied even when unused)
+    // create 1x1 transparent black dummy texture (SDL_gpu requires all sampler bindings to be satisfied even when unused)
     {
         SDL_GPUTextureCreateInfo texInfo{
             .type = SDL_GPU_TEXTURETYPE_2D,
-            .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+            .format = (SDL_GPUTextureFormat)DEFAULT_TEXTURE_FORMAT,
             .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER,
             .width = 1,
             .height = 1,
@@ -202,7 +208,7 @@ bool SDLGPUInterface::init() {
         m_dummySampler = SDL_CreateGPUSampler(m_device, &sampInfo);
 
         if(m_dummyTexture && m_dummySampler) {
-            // upload 1x1 transparent white pixel
+            // upload 1x1 transparent black pixel
             SDL_GPUTransferBufferCreateInfo dummyTbInfo{
                 .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
                 .size = 4,
@@ -212,8 +218,8 @@ bool SDLGPUInterface::init() {
             if(tb) {
                 void *mapped = SDL_MapGPUTransferBuffer(m_device, tb, false);
                 if(mapped) {
-                    const u32 nothingRGBA = 0xFFFFFF00;
-                    std::memcpy(mapped, &nothingRGBA, 4);
+                    const u32 noColor = 0x00000000;
+                    std::memcpy(mapped, &noColor, 4);
                     SDL_UnmapGPUTransferBuffer(m_device, tb);
                 }
 
@@ -243,7 +249,7 @@ bool SDLGPUInterface::init() {
     }
 
     // create initial pipeline
-    createPipeline(m_swapchainFormat);
+    createPipeline();
     m_bPipelineDirty = false;
 
     if(!SDL_SetGPUAllowedFramesInFlight(m_device, m_iMaxFrameLatency)) {
@@ -259,16 +265,15 @@ bool SDLGPUInterface::init() {
     return true;
 }
 
-void SDLGPUInterface::createPipeline(SDLGPUTextureFormat targetFormat) {
+void SDLGPUInterface::createPipeline() {
     PipelineKey key{
         .vertexShader = m_activeShader->getVertexShader(),
         .fragmentShader = m_activeShader->getFragmentShader(),
-        .targetFormat = targetFormat,
         .primitiveType = m_currentPrimitiveType,
-        .blendMode = m_blendMode,
-        .sampleCount = m_activeSampleCount,
+        .blendMode = this->currentBlendMode,
+        .sampleCount = m_curRTState.sampleCount,
         .stencilState = (u8)m_iStencilState,
-        .blendingEnabled = m_bBlendingEnabled,
+        .blendingEnabled = this->bBlendingEnabled,
         .depthTestEnabled = m_bDepthTestEnabled,
         .depthWriteEnabled = m_bDepthWriteEnabled,
         .wireframe = m_bWireframe,
@@ -309,13 +314,13 @@ void SDLGPUInterface::createPipeline(SDLGPUTextureFormat targetFormat) {
 
     // blend state
     SDL_GPUColorTargetBlendState blendState{};
-    blendState.enable_blend = m_bBlendingEnabled;
+    blendState.enable_blend = this->bBlendingEnabled;
     blendState.color_write_mask =
         (m_bColorWriteR ? SDL_GPU_COLORCOMPONENT_R : 0) | (m_bColorWriteG ? SDL_GPU_COLORCOMPONENT_G : 0) |
         (m_bColorWriteB ? SDL_GPU_COLORCOMPONENT_B : 0) | (m_bColorWriteA ? SDL_GPU_COLORCOMPONENT_A : 0);
 
-    if(m_bBlendingEnabled) {
-        switch(m_blendMode) {
+    if(this->bBlendingEnabled) {
+        switch(this->currentBlendMode) {
             case DrawBlendMode::ALPHA:
                 blendState.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
                 blendState.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
@@ -352,7 +357,7 @@ void SDLGPUInterface::createPipeline(SDLGPUTextureFormat targetFormat) {
     }
 
     SDL_GPUColorTargetDescription colorTarget{};
-    colorTarget.format = (SDL_GPUTextureFormat)targetFormat;
+    colorTarget.format = (SDL_GPUTextureFormat)DEFAULT_TEXTURE_FORMAT;
     colorTarget.blend_state = blendState;
 
     SDL_GPUGraphicsPipelineTargetInfo targetInfo{};
@@ -432,9 +437,7 @@ void SDLGPUInterface::createPipeline(SDLGPUTextureFormat targetFormat) {
 
 void SDLGPUInterface::rebuildPipeline() {
     if(!m_bPipelineDirty || !m_device) return;
-    // use the active color target format (RT format or swapchain format)
-    SDLGPUTextureFormat fmt = m_activeColorTarget ? m_activeColorFormat : m_swapchainFormat;
-    createPipeline(fmt);
+    createPipeline();
     m_bPipelineDirty = false;
 }
 
@@ -490,10 +493,10 @@ void SDLGPUInterface::beginScene() {
     }
 
     // mark that the first flush should clear color and depth
-    m_bNextFlushClearColor = true;
-    m_bNextFlushClearDepth = true;
-    m_bNextFlushClearStencil = false;
-    m_nextClearColor = 0xff000000;
+    m_curRTState.pendingClearColor = true;
+    m_curRTState.pendingClearDepth = true;
+    m_curRTState.pendingClearStencil = false;
+    m_curRTState.clearColor = 0xff000000;
 
     // clear deferred draw state
     m_pendingDraws.clear();
@@ -502,7 +505,7 @@ void SDLGPUInterface::beginScene() {
 
     // setup default projection (same as DX11: Y-down, depth 0-1)
     Matrix4 defaultProjectionMatrix =
-        Camera::buildMatrixOrtho2DDXLH(0, m_vResolution.x, m_vResolution.y, 0, -1.0f, 1.0f);
+        Camera::buildMatrixOrtho2DDXLH(0, m_viewport.size.x, m_viewport.size.y, 0, -1.0f, 1.0f);
 
     pushTransform();
     setProjectionMatrix(defaultProjectionMatrix);
@@ -526,6 +529,8 @@ void SDLGPUInterface::endScene() {
     this->processPendingScreenshot();
 
     // getScreenshot() might have already submitted the command buffer, so get a new one to present
+    // FIXME: confusing
+    // FIXME: make getScreenshot private
     if(!m_cmdBuf) m_cmdBuf = SDL_AcquireGPUCommandBuffer(m_device);
 
     // acquire swapchain and blit backbuffer to it for presentation
@@ -553,7 +558,7 @@ void SDLGPUInterface::endScene() {
 void SDLGPUInterface::clearDepthBuffer() {
     if(!m_cmdBuf) return;
     flushDrawCommands();
-    m_bNextFlushClearDepth = true;
+    m_curRTState.pendingClearDepth = true;
 }
 
 // color
@@ -783,8 +788,8 @@ void SDLGPUInterface::drawImage(const Image *image, AnchorPoint anchor, float ed
 
     if(smoothedEdges) {
         // SDL_gpu uses top-left origin like DX11
-        float clipMinX = (clipRect.getX() + m_viewportX) - .5f;
-        float clipMinY = (clipRect.getY() + m_viewportY) - .5f;
+        float clipMinX = (clipRect.getX() + m_viewport.pos.x) - .5f;
+        float clipMinY = (clipRect.getY() + m_viewport.pos.y) - .5f;
         float clipMaxX = (clipMinX + clipRect.getWidth()) + .5f;
         float clipMaxY = (clipMinY + clipRect.getHeight()) + .5f;
 
@@ -967,23 +972,10 @@ void SDLGPUInterface::drawVAO(VertexArrayObject *vao) {
     // set primitive type and texturing
     this->setTexturing(hasTexcoords0);
 
-    SDL_GPUPrimitiveType gpuPrimitive = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-    switch(primitive) {
-        case DrawPrimitive::LINES:
-            gpuPrimitive = SDL_GPU_PRIMITIVETYPE_LINELIST;
-            break;
-        case DrawPrimitive::LINE_STRIP:
-            gpuPrimitive = SDL_GPU_PRIMITIVETYPE_LINESTRIP;
-            break;
-        case DrawPrimitive::TRIANGLE_STRIP:
-            gpuPrimitive = SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP;
-            break;
-        default:
-            break;
-    }
+    const SDLGPUPrimitiveType gpuPrimitive = primitiveToSDLGPUPrimitive(primitive);
 
-    if((SDLGPUPrimitiveType)gpuPrimitive != m_currentPrimitiveType) {
-        m_currentPrimitiveType = (SDLGPUPrimitiveType)gpuPrimitive;
+    if(gpuPrimitive != m_currentPrimitiveType) {
+        m_currentPrimitiveType = gpuPrimitive;
         m_bPipelineDirty = true;
     }
     rebuildPipeline();
@@ -1004,23 +996,10 @@ void SDLGPUInterface::recordBakedDraw(SDL_GPUBuffer *buffer, u32 firstVertex, u3
                                       DrawPrimitive primitive) {
     if(!m_cmdBuf || vertexCount == 0) return;
 
-    SDL_GPUPrimitiveType gpuPrimitive = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-    switch(primitive) {
-        case DrawPrimitive::LINES:
-            gpuPrimitive = SDL_GPU_PRIMITIVETYPE_LINELIST;
-            break;
-        case DrawPrimitive::LINE_STRIP:
-            gpuPrimitive = SDL_GPU_PRIMITIVETYPE_LINESTRIP;
-            break;
-        case DrawPrimitive::TRIANGLE_STRIP:
-            gpuPrimitive = SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP;
-            break;
-        default:
-            break;
-    }
+    const SDLGPUPrimitiveType gpuPrimitive = primitiveToSDLGPUPrimitive(primitive);
 
-    if((SDLGPUPrimitiveType)gpuPrimitive != m_currentPrimitiveType) {
-        m_currentPrimitiveType = (SDLGPUPrimitiveType)gpuPrimitive;
+    if(gpuPrimitive != m_currentPrimitiveType) {
+        m_currentPrimitiveType = gpuPrimitive;
         m_bPipelineDirty = true;
     }
     rebuildPipeline();
@@ -1060,30 +1039,28 @@ void SDLGPUInterface::recordDraw(SDL_GPUBuffer *bakedBuffer, u32 vertexOffset, u
     }
 
     // snapshot viewport
-    cmd.viewportX = m_viewportX;
-    cmd.viewportY = m_viewportY;
-    cmd.viewportW = m_vResolution.x;
-    cmd.viewportH = m_vResolution.y;
+    cmd.viewport = m_viewport;
 
     // snapshot scissor
     cmd.scissorEnabled = m_bScissorEnabled;
     if(m_bScissorEnabled && !m_clipRectStack.empty()) {
         const auto &cr = m_clipRectStack.back();
-        cmd.scissorX = (i32)cr.getMinX();
-        cmd.scissorY = (i32)cr.getMinY();
-        cmd.scissorW = (i32)cr.getWidth();
-        cmd.scissorH = (i32)cr.getHeight();
+        Scissor &csc = cmd.scissor;
+        csc.pos.x = (i32)cr.getMinX();
+        csc.pos.y = (i32)cr.getMinY();
+        csc.size.x = (i32)cr.getWidth();
+        csc.size.y = (i32)cr.getHeight();
         // clamp for vulkan
-        if(cmd.scissorX < 0) {
-            cmd.scissorW += cmd.scissorX;
-            cmd.scissorX = 0;
+        if(csc.pos.x < 0) {
+            csc.size.x += csc.pos.x;
+            csc.pos.x = 0;
         }
-        if(cmd.scissorY < 0) {
-            cmd.scissorH += cmd.scissorY;
-            cmd.scissorY = 0;
+        if(csc.pos.y < 0) {
+            csc.size.y += csc.pos.y;
+            csc.pos.y = 0;
         }
-        if(cmd.scissorW < 0) cmd.scissorW = 0;
-        if(cmd.scissorH < 0) cmd.scissorH = 0;
+        if(csc.size.x < 0) csc.size.x = 0;
+        if(csc.size.y < 0) csc.size.y = 0;
     }
 
     // snapshot stencil reference
@@ -1097,7 +1074,7 @@ void SDLGPUInterface::flushDrawCommands() {
     if(!m_cmdBuf) return;
 
     const bool hasDraws = !m_pendingDraws.empty();
-    const bool hasClears = m_bNextFlushClearColor || m_bNextFlushClearDepth || m_bNextFlushClearStencil;
+    const bool hasClears = m_curRTState.hasClears();
     if(!hasDraws && !hasClears) return;
 
     // end active render pass if any (shouldn't normally be active between flushes)
@@ -1140,49 +1117,47 @@ void SDLGPUInterface::flushDrawCommands() {
     }
 
     // begin render pass with appropriate clear/load ops
-    SDL_GPUTexture *colorTex = m_activeColorTarget ? m_activeColorTarget : m_backbuffer;
-    SDL_GPUTexture *depthTex = m_activeDepthTarget ? m_activeDepthTarget : m_depthTexture;
+    // TODO: consolidate swapchain and rendertarget things to avoid needing to special case
+    SDL_GPUTexture *colorTex = m_curRTState.colorTarget ? m_curRTState.colorTarget : m_backbuffer;
+    SDL_GPUTexture *depthTex = m_curRTState.depthTarget ? m_curRTState.depthTarget : m_depthTexture;
 
     SDL_GPUColorTargetInfo colorTarget{};
     colorTarget.texture = colorTex;
-    colorTarget.load_op = m_bNextFlushClearColor ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
-    if(m_activeResolveTarget) {
+    colorTarget.load_op = m_curRTState.pendingClearColor ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
+    if(m_curRTState.resolveTarget) {
         // MSAA: resolve multisampled texture into the resolve target when the render pass ends.
         // use RESOLVE_AND_STORE so the MSAA texture retains its content for subsequent render passes
         // (e.g. after clearDepthBuffer() triggers a flush mid-frame)
         colorTarget.store_op = SDL_GPU_STOREOP_RESOLVE_AND_STORE;
-        colorTarget.resolve_texture = m_activeResolveTarget;
+        colorTarget.resolve_texture = m_curRTState.resolveTarget;
     } else {
         colorTarget.store_op = SDL_GPU_STOREOP_STORE;
     }
-    if(m_bNextFlushClearColor) {
-        colorTarget.clear_color = {m_nextClearColor.Rf(), m_nextClearColor.Gf(), m_nextClearColor.Bf(),
-                                   m_nextClearColor.Af()};
+    if(m_curRTState.pendingClearColor) {
+        auto nextClearColor = m_curRTState.clearColor;
+        colorTarget.clear_color = {nextClearColor.Rf(), nextClearColor.Gf(), nextClearColor.Bf(), nextClearColor.Af()};
     }
 
     SDL_GPUDepthStencilTargetInfo depthTarget{};
     depthTarget.texture = depthTex;
-    depthTarget.load_op = m_bNextFlushClearDepth ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
+    depthTarget.load_op = m_curRTState.pendingClearDepth ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
     depthTarget.store_op = SDL_GPU_STOREOP_STORE;
-    if(m_bNextFlushClearDepth) depthTarget.clear_depth = 1.0f;
-    depthTarget.stencil_load_op = m_bNextFlushClearStencil ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
+    if(m_curRTState.pendingClearDepth) depthTarget.clear_depth = 1.0f;
+    depthTarget.stencil_load_op = m_curRTState.pendingClearStencil ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
     depthTarget.stencil_store_op = SDL_GPU_STOREOP_STORE;
-    if(m_bNextFlushClearStencil) depthTarget.clear_stencil = 0;
+    if(m_curRTState.pendingClearStencil) depthTarget.clear_stencil = 0;
+
+    // consume clear flags
+    m_curRTState.pendingClearColor = false;
+    m_curRTState.pendingClearDepth = false;
+    m_curRTState.pendingClearStencil = false;
 
     m_renderPass = SDL_BeginGPURenderPass(m_cmdBuf, &colorTarget, 1, &depthTarget);
     if(!m_renderPass) {
         m_pendingDraws.clear();
         m_stagingVertices.clear();
-        m_bNextFlushClearColor = false;
-        m_bNextFlushClearDepth = false;
-        m_bNextFlushClearStencil = false;
         return;
     }
-
-    // consume clear flags
-    m_bNextFlushClearColor = false;
-    m_bNextFlushClearDepth = false;
-    m_bNextFlushClearStencil = false;
 
     // replay draw commands, tracking last-bound state to skip redundant binds
     SDL_GPUGraphicsPipeline *lastPipeline = nullptr;
@@ -1190,9 +1165,9 @@ void SDLGPUInterface::flushDrawCommands() {
     SDL_GPUSampler *lastSampler = nullptr;
     SDL_GPUBuffer *lastVertexBuffer = nullptr;
     u32 lastVertexOffset = ~0u;
-    float lastVpX = -1, lastVpY = -1, lastVpW = -1, lastVpH = -1;
+    Viewport lastViewport{.pos = {-1.f, -1.f}, .size = {-1.f, -1.f}};
     bool lastScissorEnabled = false;
-    i32 lastScX = -1, lastScY = -1, lastScW = -1, lastScH = -1;
+    Scissor lastScissor{.pos = {-1, -1}, .size = {-1, -1}};
     u8 lastStencilRef = 0xFF;
 
     for(auto &cmd : m_pendingDraws) {
@@ -1203,39 +1178,31 @@ void SDLGPUInterface::flushDrawCommands() {
         }
 
         // set viewport
-        if(cmd.viewportX != lastVpX || cmd.viewportY != lastVpY || cmd.viewportW != lastVpW ||
-           cmd.viewportH != lastVpH) {
+        if(cmd.viewport != lastViewport) {
             SDL_GPUViewport vp{
-                .x = cmd.viewportX,
-                .y = cmd.viewportY,
-                .w = cmd.viewportW,
-                .h = cmd.viewportH,
+                .x = cmd.viewport.pos.x,
+                .y = cmd.viewport.pos.y,
+                .w = cmd.viewport.size.x,
+                .h = cmd.viewport.size.y,
                 .min_depth = 0.0f,
                 .max_depth = 1.0f,
             };
             SDL_SetGPUViewport(m_renderPass, &vp);
-            lastVpX = cmd.viewportX;
-            lastVpY = cmd.viewportY;
-            lastVpW = cmd.viewportW;
-            lastVpH = cmd.viewportH;
+            lastViewport = cmd.viewport;
         }
 
         // set scissor
-        if(cmd.scissorEnabled != lastScissorEnabled ||
-           (cmd.scissorEnabled && (cmd.scissorX != lastScX || cmd.scissorY != lastScY || cmd.scissorW != lastScW ||
-                                   cmd.scissorH != lastScH))) {
+        if(cmd.scissorEnabled != lastScissorEnabled || (cmd.scissorEnabled && (cmd.scissor != lastScissor))) {
             if(cmd.scissorEnabled) {
-                SDL_Rect sc{.x = cmd.scissorX, .y = cmd.scissorY, .w = cmd.scissorW, .h = cmd.scissorH};
+                SDL_Rect sc{
+                    .x = cmd.scissor.pos.x, .y = cmd.scissor.pos.y, .w = cmd.scissor.size.x, .h = cmd.scissor.size.y};
                 SDL_SetGPUScissor(m_renderPass, &sc);
             } else {
-                SDL_Rect fullRect{.x = 0, .y = 0, .w = (int)cmd.viewportW, .h = (int)cmd.viewportH};
+                SDL_Rect fullRect{.x = 0, .y = 0, .w = (int)cmd.viewport.size.x, .h = (int)cmd.viewport.size.y};
                 SDL_SetGPUScissor(m_renderPass, &fullRect);
             }
             lastScissorEnabled = cmd.scissorEnabled;
-            lastScX = cmd.scissorX;
-            lastScY = cmd.scissorY;
-            lastScW = cmd.scissorW;
-            lastScH = cmd.scissorH;
+            lastScissor = cmd.scissor;
         }
 
         // set stencil reference
@@ -1316,29 +1283,25 @@ void SDLGPUInterface::popClipRect() {
 
 void SDLGPUInterface::pushViewport() {
     // SDL_gpu doesn't have a GetViewport query, so we track it ourselves
-    this->viewportStack.push_back({0, 0, (int)m_vResolution.x, (int)m_vResolution.y});
-    this->resolutionStack.push_back(m_vResolution);
+    this->viewportStack.push_back(
+        {(int)m_viewport.pos.x, (int)m_viewport.pos.y, (int)m_viewport.size.x, (int)m_viewport.size.y});
 }
 
 void SDLGPUInterface::setViewport(int x, int y, int width, int height) {
-    m_vResolution = vec2(width, height);
-    m_viewportX = (float)x;
-    m_viewportY = (float)y;
-    // viewport is captured per-draw in recordDraw();
+    m_viewport.pos = {(float)x, (float)y};
+    m_viewport.size = {(float)width, (float)height};
 }
 
 void SDLGPUInterface::popViewport() {
-    if(this->viewportStack.empty() || this->resolutionStack.empty()) {
+    if(this->viewportStack.empty()) {
         debugLog("WARNING: viewport stack underflow!");
         return;
     }
 
-    m_vResolution = this->resolutionStack.back();
-    this->resolutionStack.pop_back();
-
     const auto &vp = this->viewportStack.back();
-    m_viewportX = (float)vp[0];
-    m_viewportY = (float)vp[1];
+    m_viewport.pos = {(float)vp[0], (float)vp[1]};
+    m_viewport.size = {(float)vp[2], (float)vp[3]};
+
     // viewport is captured per-draw in recordDraw();
     this->viewportStack.pop_back();
 }
@@ -1350,7 +1313,7 @@ void SDLGPUInterface::pushStencil() {
 
     // flush pending draws, then clear stencil for new stencil op
     flushDrawCommands();
-    m_bNextFlushClearStencil = true;
+    m_curRTState.pendingClearStencil = true;
 
     // stencil writing phase: color off, write 1 where geometry is drawn
     m_iStencilState = 1;
@@ -1389,19 +1352,19 @@ void SDLGPUInterface::setAlphaTestFunc(DrawCompareFunc /*alphaFunc*/, float /*re
 }
 
 void SDLGPUInterface::setBlending(bool enabled) {
-    Graphics::setBlending(enabled);
-    if(m_bBlendingEnabled != enabled) {
-        m_bBlendingEnabled = enabled;
+    if(this->bBlendingEnabled != enabled) {
+        this->bBlendingEnabled = enabled;
         m_bPipelineDirty = true;
     }
+    Graphics::setBlending(enabled);
 }
 
 void SDLGPUInterface::setBlendMode(DrawBlendMode blendMode) {
-    Graphics::setBlendMode(blendMode);
-    if(m_blendMode != blendMode) {
-        m_blendMode = blendMode;
+    if(this->currentBlendMode != blendMode) {
+        this->currentBlendMode = blendMode;
         m_bPipelineDirty = true;
     }
+    Graphics::setBlendMode(blendMode);
 }
 
 void SDLGPUInterface::setDepthBuffer(bool enabled) {
@@ -1478,7 +1441,7 @@ std::vector<u8> SDLGPUInterface::getScreenshot(bool withAlpha) {
 
     const u32 w = m_backbufferWidth;
     const u32 h = m_backbufferHeight;
-    const u32 bpp = 4;  // RGBA
+    const u32 bpp = 4;
     const u32 bufSize = w * h * bpp;
 
     // create download transfer buffer
@@ -1522,8 +1485,8 @@ std::vector<u8> SDLGPUInterface::getScreenshot(bool withAlpha) {
     void *mapped = SDL_MapGPUTransferBuffer(m_device, tb, false);
     if(mapped) {
         const u8 *pixels = static_cast<const u8 *>(mapped);
-        const bool isBGRA = (m_swapchainFormat == SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM ||
-                             m_swapchainFormat == SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM_SRGB);
+        const bool isBGRA = (DEFAULT_TEXTURE_FORMAT == SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM ||
+                             DEFAULT_TEXTURE_FORMAT == SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM_SRGB);
         for(u32 i = 0; i < w * h; i++) {
             if(isBGRA) {
                 result.push_back(pixels[i * 4 + 2]);  // R from B position
@@ -1546,8 +1509,7 @@ std::vector<u8> SDLGPUInterface::getScreenshot(bool withAlpha) {
 
 // render target support
 
-void SDLGPUInterface::pushRenderTarget(SDL_GPUTexture *colorTex, SDL_GPUTexture *depthTex,
-                                       SDLGPUTextureFormat colorFormat, bool doClear, Color clearCol,
+void SDLGPUInterface::pushRenderTarget(SDL_GPUTexture *colorTex, SDL_GPUTexture *depthTex, bool doClear, Color clearCol,
                                        SDL_GPUTexture *resolveTex, SDLGPUSampleCount sampleCount) {
     if(!m_cmdBuf) return;
 
@@ -1555,32 +1517,23 @@ void SDLGPUInterface::pushRenderTarget(SDL_GPUTexture *colorTex, SDL_GPUTexture 
     flushDrawCommands();
 
     // save current state including pending clear flags
+    m_renderTargetStack.push_back(m_curRTState);
+    auto &cur = m_curRTState;
 
-    // TODO: clean up this mess, super manual and wordy
-    // should just use current render target state instead of storing them in separate fields
-    m_renderTargetStack.push_back(RenderTargetState{.colorTarget = m_activeColorTarget,
-                                                    .depthTarget = m_activeDepthTarget,
-                                                    .resolveTarget = m_activeResolveTarget,
-                                                    .colorFormat = m_activeColorFormat,
-                                                    .sampleCount = m_activeSampleCount,
-                                                    .clearColor = m_nextClearColor,
-                                                    .pendingClearColor = m_bNextFlushClearColor,
-                                                    .pendingClearDepth = m_bNextFlushClearDepth,
-                                                    .pendingClearStencil = m_bNextFlushClearStencil});
+    // swapchain color format may be different
+    // TODO: should we just always draw into a rendertarget instead of having to switch between swapchain/rendertarget format?
+    if(cur.sampleCount != sampleCount) m_bPipelineDirty = true;
 
-    if(m_activeColorFormat != colorFormat || m_activeSampleCount != sampleCount) m_bPipelineDirty = true;
-
-    m_activeColorTarget = colorTex;
-    m_activeDepthTarget = depthTex;
-    m_activeResolveTarget = resolveTex;
-    m_activeColorFormat = colorFormat;
-    m_activeSampleCount = sampleCount;
+    cur.colorTarget = colorTex;
+    cur.depthTarget = depthTex;
+    cur.resolveTarget = resolveTex;
+    cur.sampleCount = sampleCount;
 
     // set up clear flags for the new RT
-    m_bNextFlushClearColor = doClear;
-    m_bNextFlushClearDepth = doClear;
-    m_bNextFlushClearStencil = false;
-    m_nextClearColor = clearCol;
+    cur.pendingClearColor = doClear;
+    cur.pendingClearDepth = doClear;
+    cur.pendingClearStencil = false;
+    cur.clearColor = clearCol;
 }
 
 void SDLGPUInterface::popRenderTarget() {
@@ -1592,24 +1545,15 @@ void SDLGPUInterface::popRenderTarget() {
     // restore previous state including pending clear flags
     auto prev = m_renderTargetStack.back();
     m_renderTargetStack.pop_back();
-    if(m_activeColorFormat != prev.colorFormat || m_activeSampleCount != prev.sampleCount) m_bPipelineDirty = true;
+    auto &current = m_curRTState;
+    if(current.sampleCount != prev.sampleCount) m_bPipelineDirty = true;
 
-    m_activeColorTarget = prev.colorTarget;
-    m_activeDepthTarget = prev.depthTarget;
-    m_activeResolveTarget = prev.resolveTarget;
-    m_activeColorFormat = prev.colorFormat;
-    m_activeSampleCount = prev.sampleCount;
-    m_bNextFlushClearColor = prev.pendingClearColor;
-    m_bNextFlushClearDepth = prev.pendingClearDepth;
-    m_bNextFlushClearStencil = prev.pendingClearStencil;
-    m_nextClearColor = prev.clearColor;
+    current = prev;
 }
 
 // renderer info (TODO: how?)
 
 const char *SDLGPUInterface::getName() const { return "SDLGPUInterface"; }
-
-vec2 SDLGPUInterface::getResolution() const { return m_vResolution; }
 
 UString SDLGPUInterface::getVendor() {
     if(m_device) return UString(SDL_GetGPUDeviceDriver(m_device));
@@ -1641,7 +1585,7 @@ void SDLGPUInterface::onFramecountNumChanged(float maxFramesInFlight) {
 }
 
 void SDLGPUInterface::onResolutionChange(vec2 newResolution) {
-    m_vResolution = newResolution;
+    m_viewport.size = newResolution;
 
     const u32 w = (u32)newResolution.x;
     const u32 h = (u32)newResolution.y;
@@ -1650,7 +1594,7 @@ void SDLGPUInterface::onResolutionChange(vec2 newResolution) {
     if(m_backbuffer) SDL_ReleaseGPUTexture(m_device, m_backbuffer);
     SDL_GPUTextureCreateInfo tci{};
     tci.type = SDL_GPU_TEXTURETYPE_2D;
-    tci.format = (SDL_GPUTextureFormat)m_swapchainFormat;
+    tci.format = (SDL_GPUTextureFormat)DEFAULT_TEXTURE_FORMAT;
     tci.width = w;
     tci.height = h;
     tci.layer_count_or_depth = 1;
@@ -1668,7 +1612,7 @@ void SDLGPUInterface::onResolutionChange(vec2 newResolution) {
     m_backbufferHeight = h;
 }
 
-void SDLGPUInterface::onRestored() { onResolutionChange(m_vResolution); }
+void SDLGPUInterface::onRestored() { onResolutionChange(m_viewport.size); }
 
 // transforms
 
@@ -1734,6 +1678,28 @@ Shader *SDLGPUInterface::createShaderFromSource(std::string vertexShader, std::s
 VertexArrayObject *SDLGPUInterface::createVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage,
                                                             bool keepInSystemMemory) {
     return new SDLGPUVertexArrayObject(primitive, usage, keepInSystemMemory);
+}
+
+// util
+
+SDLGPUPrimitiveType SDLGPUInterface::primitiveToSDLGPUPrimitive(DrawPrimitive prim) {
+    SDLGPUPrimitiveType gpuPrimitive = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    switch(prim) {
+        case DrawPrimitive::LINES:
+            gpuPrimitive = SDL_GPU_PRIMITIVETYPE_LINELIST;
+            break;
+        case DrawPrimitive::LINE_STRIP:
+            gpuPrimitive = SDL_GPU_PRIMITIVETYPE_LINESTRIP;
+            break;
+        case DrawPrimitive::TRIANGLE_STRIP:
+            gpuPrimitive = SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP;
+            break;
+        // TODO: SDL_GPU_PRIMITIVETYPE_POINTLIST ?
+        default:
+            break;
+    }
+
+    return gpuPrimitive;
 }
 
 #endif
