@@ -1685,13 +1685,6 @@ void SDLGPUInterface::setActiveShader(SDLGPUShader *shader) {
     }
 }
 
-void SDLGPUInterface::restoreDefaultShaders() {
-    if(m_activeShader != m_defaultShader.get()) {
-        m_activeShader = m_defaultShader.get();
-        m_bPipelineDirty = true;
-    }
-}
-
 void SDLGPUInterface::initSmoothClipShader() {
     if(m_smoothClipShader) return;
 

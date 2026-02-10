@@ -51,13 +51,13 @@ class SDLGPUShader final : public Shader {
     // called by SDLGPUInterface during draw to push uniform data
     void pushUniforms(SDL_GPUCommandBuffer *cmdBuf);
 
-    SDL_GPUShader *getVertexShader() const { return m_gpuVertexShader; }
-    SDL_GPUShader *getFragmentShader() const { return m_gpuFragmentShader; }
+    [[nodiscard]] SDL_GPUShader *getVertexShader() const { return m_gpuVertexShader; }
+    [[nodiscard]] SDL_GPUShader *getFragmentShader() const { return m_gpuFragmentShader; }
 
-    u32 getVertexNumSamplers() const { return m_vertexNumSamplers; }
-    u32 getVertexNumUniformBuffers() const { return m_vertexNumUniformBuffers; }
-    u32 getFragmentNumSamplers() const { return m_fragmentNumSamplers; }
-    u32 getFragmentNumUniformBuffers() const { return m_fragmentNumUniformBuffers; }
+    [[nodiscard]] u32 getVertexNumSamplers() const { return m_vertexNumSamplers; }
+    [[nodiscard]] u32 getVertexNumUniformBuffers() const { return m_vertexNumUniformBuffers; }
+    [[nodiscard]] u32 getFragmentNumSamplers() const { return m_fragmentNumSamplers; }
+    [[nodiscard]] u32 getFragmentNumUniformBuffers() const { return m_fragmentNumUniformBuffers; }
 
    protected:
     void init() override;
@@ -113,6 +113,7 @@ class SDLGPUShader final : public Shader {
     SDL_GPUDevice *m_device{nullptr};  // cached at init for dtor order
     SDL_GPUShader *m_gpuVertexShader{nullptr};
     SDL_GPUShader *m_gpuFragmentShader{nullptr};
+    SDLGPUShader *m_lastActiveShader{nullptr};  // for restore, to allow nested shaders to restore last enabled shader
 
     u32 m_vertexNumSamplers{0};
     u32 m_vertexNumUniformBuffers{0};

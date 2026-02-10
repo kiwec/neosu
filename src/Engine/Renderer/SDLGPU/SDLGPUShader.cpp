@@ -153,6 +153,16 @@ void SDLGPUShader::enable() {
     auto *gpu = static_cast<SDLGPUInterface *>(g.get());
     if(!gpu) return;
 
+    // backup
+    SDLGPUShader *currentShader = gpu->getActiveShader();
+
+    if(currentShader == this) {
+        engine->showMessageErrorFatal(US_("Programmer Error"), US_("Tried to enable() the same shader twice!"));
+        engine->shutdown();
+    }
+
+    m_lastActiveShader = currentShader;
+
     gpu->setActiveShader(this);
 }
 
@@ -162,7 +172,9 @@ void SDLGPUShader::disable() {
     auto *gpu = static_cast<SDLGPUInterface *>(g.get());
     if(!gpu) return;
 
-    gpu->restoreDefaultShaders();
+    // restore backup
+    assert(m_lastActiveShader);
+    gpu->setActiveShader(m_lastActiveShader);
 }
 
 void SDLGPUShader::pushUniforms(SDL_GPUCommandBuffer *cmdBuf) {

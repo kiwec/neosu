@@ -68,18 +68,13 @@ struct PipelineKeyHash {
         uint64_t h = 0;
         h ^= Hash::flat::hash<uint64_t>{}(reinterpret_cast<uintptr_t>(k.vertexShader));
         h ^= Hash::flat::hash<uint64_t>{}(reinterpret_cast<uintptr_t>(k.fragmentShader)) * 0x9e3779b97f4a7c15ULL;
-        h ^= Hash::flat::hash<uint64_t>{}(
-            (uint64_t)k.targetFormat | ((uint64_t)k.primitiveType << 32)
-        ) * 0x517cc1b727220a95ULL;
+        h ^= Hash::flat::hash<uint64_t>{}((uint64_t)k.targetFormat | ((uint64_t)k.primitiveType << 32)) *
+             0x517cc1b727220a95ULL;
         h ^= Hash::flat::hash<uint64_t>{}((uint64_t)k.sampleCount) * 0x3c6ef372fe94f82aULL;
-        uint64_t packed = (uint64_t)k.blendMode
-                        | ((uint64_t)k.stencilState << 8)
-                        | ((uint64_t)k.blendingEnabled << 16)
-                        | ((uint64_t)k.depthTestEnabled << 17)
-                        | ((uint64_t)k.depthWriteEnabled << 18)
-                        | ((uint64_t)k.wireframe << 19)
-                        | ((uint64_t)k.cullingEnabled << 20)
-                        | ((uint64_t)k.colorWriteMask << 24);
+        uint64_t packed = (uint64_t)k.blendMode | ((uint64_t)k.stencilState << 8) |
+                          ((uint64_t)k.blendingEnabled << 16) | ((uint64_t)k.depthTestEnabled << 17) |
+                          ((uint64_t)k.depthWriteEnabled << 18) | ((uint64_t)k.wireframe << 19) |
+                          ((uint64_t)k.cullingEnabled << 20) | ((uint64_t)k.colorWriteMask << 24);
         h ^= Hash::flat::hash<uint64_t>{}(packed) * 0x6c62272e07bb0142ULL;
         return h;
     }
@@ -201,7 +196,7 @@ class SDLGPUInterface final : public Graphics {
 
     // shader switching
     void setActiveShader(SDLGPUShader *shader);
-    void restoreDefaultShaders();
+    inline SDLGPUShader *getActiveShader() const { return m_activeShader; }
 
    protected:
     bool init() override;
@@ -344,11 +339,11 @@ class SDLGPUInterface final : public Graphics {
         SDLGPUSampleCount sampleCount;
     };
     std::vector<RenderTargetState> m_renderTargetStack;
-    SDL_GPUTexture *m_activeColorTarget{nullptr};   // nullptr = swapchain
+    SDL_GPUTexture *m_activeColorTarget{nullptr};  // nullptr = swapchain
     SDL_GPUTexture *m_activeDepthTarget{nullptr};  // nullptr = default depth
     SDL_GPUTexture *m_activeResolveTarget{nullptr};
-    SDLGPUTextureFormat m_activeColorFormat{0};    // format of active RT
-    SDLGPUSampleCount m_activeSampleCount{0};       // SDL_GPU_SAMPLECOUNT_1 == 0
+    SDLGPUTextureFormat m_activeColorFormat{0};  // format of active RT
+    SDLGPUSampleCount m_activeSampleCount{0};    // SDL_GPU_SAMPLECOUNT_1 == 0
 
     // stats
     int m_iStatsNumDrawCalls{0};
