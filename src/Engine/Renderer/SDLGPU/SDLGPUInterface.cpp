@@ -1291,7 +1291,7 @@ void SDLGPUInterface::flushDrawCommands() {
 void SDLGPUInterface::setClipRect(McRect /*clipRect*/) {
     if(cv::r_debug_disable_cliprect.getBool()) return;
     m_bScissorEnabled = true;
-    // TODO: is this necessary?
+    // TODO: is this necessary? maybe this shouldn't be a public API at all (not used in app code currently anyways)
 }
 
 void SDLGPUInterface::pushClipRect(McRect clipRect) {
@@ -1555,9 +1555,18 @@ void SDLGPUInterface::pushRenderTarget(SDL_GPUTexture *colorTex, SDL_GPUTexture 
     flushDrawCommands();
 
     // save current state including pending clear flags
-    m_renderTargetStack.push_back({m_activeColorTarget, m_activeDepthTarget, m_activeColorFormat,
-                                   m_bNextFlushClearColor, m_bNextFlushClearDepth, m_bNextFlushClearStencil,
-                                   m_nextClearColor, m_activeResolveTarget, m_activeSampleCount});
+
+    // TODO: clean up this mess, super manual and wordy
+    // should just use current render target state instead of storing them in separate fields
+    m_renderTargetStack.push_back(RenderTargetState{.colorTarget = m_activeColorTarget,
+                                                    .depthTarget = m_activeDepthTarget,
+                                                    .resolveTarget = m_activeResolveTarget,
+                                                    .colorFormat = m_activeColorFormat,
+                                                    .sampleCount = m_activeSampleCount,
+                                                    .clearColor = m_nextClearColor,
+                                                    .pendingClearColor = m_bNextFlushClearColor,
+                                                    .pendingClearDepth = m_bNextFlushClearDepth,
+                                                    .pendingClearStencil = m_bNextFlushClearStencil});
 
     if(m_activeColorFormat != colorFormat || m_activeSampleCount != sampleCount) m_bPipelineDirty = true;
 
@@ -1714,7 +1723,8 @@ RenderTarget *SDLGPUInterface::createRenderTarget(int x, int y, int width, int h
 }
 
 Shader *SDLGPUInterface::createShaderFromFile(std::string vertexShaderFilePath, std::string fragmentShaderFilePath) {
-    return new SDLGPUShader(vertexShaderFilePath, fragmentShaderFilePath, false);
+    return new SDLGPUShader(vertexShaderFilePath, fragmentShaderFilePath,
+                            false);  // NOTE: not currently implemented (all shaders are included as binary data)
 }
 
 Shader *SDLGPUInterface::createShaderFromSource(std::string vertexShader, std::string fragmentShader) {

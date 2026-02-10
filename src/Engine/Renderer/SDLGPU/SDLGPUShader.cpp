@@ -61,9 +61,19 @@ void SDLGPUShader::init() {
         return;
     }
 
-    // parse uniform blocks from both GLSL sources
-    parseUniformBlocks(vshGlsl, true);
-    parseUniformBlocks(fshGlsl, false);
+    {
+        // parse uniform blocks from both GLSL sources
+        auto vshUniforms = parseUniformBlocks(vshGlsl);
+        m_uniformBlocks.insert(m_uniformBlocks.end(), std::make_move_iterator(vshUniforms.begin()),
+                               std::make_move_iterator(vshUniforms.end()));
+        auto fshUniforms = parseUniformBlocks(fshGlsl);
+        m_uniformBlocks.insert(m_uniformBlocks.end(), std::make_move_iterator(fshUniforms.begin()),
+                               std::make_move_iterator(fshUniforms.end()));
+    }
+
+    if(m_uniformBlocks.empty()) {
+        debugLog("SDLGPUShader WARNING: parsed no uniform blocks from shaders!");
+    }
 
     // count samplers and uniform buffers from GLSL decorations
     m_vertexNumSamplers = 0;
@@ -175,20 +185,6 @@ void SDLGPUShader::disable() {
     // restore backup
     assert(m_lastActiveShader);
     gpu->setActiveShader(m_lastActiveShader);
-}
-
-void SDLGPUShader::pushUniforms(SDL_GPUCommandBuffer *cmdBuf) {
-    for(auto &block : m_uniformBlocks) {
-        if(block.buffer.empty()) continue;
-
-        if(block.set == 1) {
-            // vertex uniform: slot = binding
-            SDL_PushGPUVertexUniformData(cmdBuf, block.binding, block.buffer.data(), (u32)block.buffer.size());
-        } else {
-            // fragment uniform: slot = binding
-            SDL_PushGPUFragmentUniformData(cmdBuf, block.binding, block.buffer.data(), (u32)block.buffer.size());
-        }
-    }
 }
 
 // uniform setters
@@ -363,7 +359,9 @@ u32 SDLGPUShader::computeStd140Offset(u32 currentOffset, std::string_view typeNa
     return (currentOffset + align - 1) & ~(align - 1);
 }
 
-bool SDLGPUShader::parseUniformBlocks(const std::string &glsl, [[maybe_unused]] bool isVertex) {
+std::vector<SDLGPUShader::UniformBlock> SDLGPUShader::parseUniformBlocks(const std::string &glsl) {
+    std::vector<UniformBlock> ret;
+
     // find: layout(...set=N, binding=M...) uniform BlockName { ... }
     static constexpr ctll::fixed_string blockPat{
         R"(layout\s*\([^)]*set\s*=\s*(\d+)\s*,\s*binding\s*=\s*(\d+)[^)]*\)\s*uniform\s+(\w+)\s*\{([^}]*)\})"};
@@ -407,10 +405,10 @@ bool SDLGPUShader::parseUniformBlocks(const std::string &glsl, [[maybe_unused]] 
         }
 
         block.dirty = true;
-        m_uniformBlocks.push_back(std::move(block));
+        ret.push_back(std::move(block));
     }
 
-    return true;
+    return ret;
 }
 
 #endif

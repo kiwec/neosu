@@ -604,7 +604,7 @@ bool SDLMain::createWindow() {
         }  // otherwise just leave it as whatever is default
 
         // setup antialiasing from -aa command line argument
-        if(m_mArgMap["-aa"].has_value()) {
+        if(m_mArgMap.contains("-aa") && m_mArgMap["-aa"].has_value()) {
             auto aaSamples = Parsing::strto<u64>(m_mArgMap["-aa"].value());
             if(aaSamples > 1) {
                 aaSamples = std::clamp(std::bit_floor(aaSamples), (u64)2, (u64)16);

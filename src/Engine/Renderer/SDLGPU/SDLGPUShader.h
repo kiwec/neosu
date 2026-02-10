@@ -48,16 +48,8 @@ class SDLGPUShader final : public Shader {
     void setUniformMatrix4fv(std::string_view name, const Matrix4 &matrix) override;
     void setUniformMatrix4fv(std::string_view name, const float *const v) override;
 
-    // called by SDLGPUInterface during draw to push uniform data
-    void pushUniforms(SDL_GPUCommandBuffer *cmdBuf);
-
     [[nodiscard]] SDL_GPUShader *getVertexShader() const { return m_gpuVertexShader; }
     [[nodiscard]] SDL_GPUShader *getFragmentShader() const { return m_gpuFragmentShader; }
-
-    [[nodiscard]] u32 getVertexNumSamplers() const { return m_vertexNumSamplers; }
-    [[nodiscard]] u32 getVertexNumUniformBuffers() const { return m_vertexNumUniformBuffers; }
-    [[nodiscard]] u32 getFragmentNumSamplers() const { return m_fragmentNumSamplers; }
-    [[nodiscard]] u32 getFragmentNumUniformBuffers() const { return m_fragmentNumUniformBuffers; }
 
    protected:
     void init() override;
@@ -95,25 +87,27 @@ class SDLGPUShader final : public Shader {
     // access uniform blocks for snapshotting into deferred draw commands
     [[nodiscard]] const std::vector<UniformBlock> &getUniformBlocks() const { return m_uniformBlocks; }
 
+   private:
     // parse a .shdpk shader pack, extracting GLSL source and the best-matching binary for the device
     static bool parseShaderPack(SDL_GPUDevice *device, const u8 *data, size_t dataSize, std::string *glslOut,
                                 std::vector<u8> &binaryOut, SDL_GPUShaderFormat &formatOut);
 
-   private:
-    bool parseUniformBlocks(const std::string &glsl, bool isVertex);
-    u32 computeStd140Offset(u32 currentOffset, std::string_view typeName);
-    u32 typeSize(std::string_view typeName);
-    u32 typeAlignment(std::string_view typeName);
+    static std::vector<UniformBlock> parseUniformBlocks(const std::string &glsl);
+
+    static u32 computeStd140Offset(u32 currentOffset, std::string_view typeName);
+    static u32 typeSize(std::string_view typeName);
+    static u32 typeAlignment(std::string_view typeName);
 
     void writeUniform(std::string_view name, const void *data, u32 dataSize);
 
     std::string m_sVsh;
     std::string m_sFsh;
 
+    SDLGPUShader *m_lastActiveShader{nullptr};  // for restore, to allow nested shaders to restore last enabled shader
+
     SDL_GPUDevice *m_device{nullptr};  // cached at init for dtor order
     SDL_GPUShader *m_gpuVertexShader{nullptr};
     SDL_GPUShader *m_gpuFragmentShader{nullptr};
-    SDLGPUShader *m_lastActiveShader{nullptr};  // for restore, to allow nested shaders to restore last enabled shader
 
     u32 m_vertexNumSamplers{0};
     u32 m_vertexNumUniformBuffers{0};

@@ -40,7 +40,7 @@ void Graphics::processPendingScreenshot() {
             callback(std::move(pixels));
         } else {
             const auto res = this->getResolution();
-            Image::saveToImage(pixels.data(), (i32)res.x, (i32)res.y, 3, savePath);
+            Image::saveToImage(pixels.data(), (i32)res.x, (i32)res.y, screenshot.withAlpha ? 4 : 3, savePath);
             debugLog("saved to {}", savePath);
         }
     }

@@ -61,6 +61,7 @@ struct PipelineKey {
     bool operator==(const PipelineKey &) const = default;
 };
 
+// clang-format off
 struct PipelineKeyHash {
     using is_avalanching = void;
     [[nodiscard]] auto operator()(const PipelineKey &k) const noexcept -> uint64_t {
@@ -68,17 +69,23 @@ struct PipelineKeyHash {
         uint64_t h = 0;
         h ^= Hash::flat::hash<uint64_t>{}(reinterpret_cast<uintptr_t>(k.vertexShader));
         h ^= Hash::flat::hash<uint64_t>{}(reinterpret_cast<uintptr_t>(k.fragmentShader)) * 0x9e3779b97f4a7c15ULL;
-        h ^= Hash::flat::hash<uint64_t>{}((uint64_t)k.targetFormat | ((uint64_t)k.primitiveType << 32)) *
-             0x517cc1b727220a95ULL;
+        h ^= Hash::flat::hash<uint64_t>{}(
+            (uint64_t)k.targetFormat | ((uint64_t)k.primitiveType << 32)
+        ) * 0x517cc1b727220a95ULL;
         h ^= Hash::flat::hash<uint64_t>{}((uint64_t)k.sampleCount) * 0x3c6ef372fe94f82aULL;
-        uint64_t packed = (uint64_t)k.blendMode | ((uint64_t)k.stencilState << 8) |
-                          ((uint64_t)k.blendingEnabled << 16) | ((uint64_t)k.depthTestEnabled << 17) |
-                          ((uint64_t)k.depthWriteEnabled << 18) | ((uint64_t)k.wireframe << 19) |
-                          ((uint64_t)k.cullingEnabled << 20) | ((uint64_t)k.colorWriteMask << 24);
+        uint64_t packed = (uint64_t)k.blendMode
+                        | ((uint64_t)k.stencilState << 8)
+                        | ((uint64_t)k.blendingEnabled << 16)
+                        | ((uint64_t)k.depthTestEnabled << 17)
+                        | ((uint64_t)k.depthWriteEnabled << 18)
+                        | ((uint64_t)k.wireframe << 19)
+                        | ((uint64_t)k.cullingEnabled << 20)
+                        | ((uint64_t)k.colorWriteMask << 24);
         h ^= Hash::flat::hash<uint64_t>{}(packed) * 0x6c62272e07bb0142ULL;
         return h;
     }
 };
+// clang-format on
 
 class SDLGPUInterface final : public Graphics {
     NOCOPY_NOMOVE(SDLGPUInterface)
@@ -184,8 +191,6 @@ class SDLGPUInterface final : public Graphics {
     inline void setBoundSampler(SDL_GPUSampler *sampler) { m_boundSampler = sampler; }
 
     // render target support
-    inline SDL_GPUCommandBuffer *getCommandBuffer() const { return m_cmdBuf; }
-    inline SDL_GPURenderPass *getRenderPass() const { return m_renderPass; }
     void pushRenderTarget(SDL_GPUTexture *colorTex, SDL_GPUTexture *depthTex, SDLGPUTextureFormat colorFormat,
                           bool clearColor, Color clearCol, SDL_GPUTexture *resolveTex = nullptr,
                           SDLGPUSampleCount sampleCount = 0);
@@ -208,6 +213,7 @@ class SDLGPUInterface final : public Graphics {
     void flushDrawCommands();
     void recordDraw(SDL_GPUBuffer *bakedBuffer, u32 vertexOffset, u32 vertexCount);
     bool createDepthTexture(u32 width, u32 height);
+
     void initSmoothClipShader();
     void onFramecountNumChanged(float maxFramesInFlight);
 
@@ -330,13 +336,13 @@ class SDLGPUInterface final : public Graphics {
     struct RenderTargetState {
         SDL_GPUTexture *colorTarget;
         SDL_GPUTexture *depthTarget;
+        SDL_GPUTexture *resolveTarget;
         SDLGPUTextureFormat colorFormat;
+        SDLGPUSampleCount sampleCount;
+        Color clearColor;
         bool pendingClearColor;
         bool pendingClearDepth;
         bool pendingClearStencil;
-        Color clearColor;
-        SDL_GPUTexture *resolveTarget;
-        SDLGPUSampleCount sampleCount;
     };
     std::vector<RenderTargetState> m_renderTargetStack;
     SDL_GPUTexture *m_activeColorTarget{nullptr};  // nullptr = swapchain
@@ -345,7 +351,7 @@ class SDLGPUInterface final : public Graphics {
     SDLGPUTextureFormat m_activeColorFormat{0};  // format of active RT
     SDLGPUSampleCount m_activeSampleCount{0};    // SDL_GPU_SAMPLECOUNT_1 == 0
 
-    // stats
+    // stats (TODO? unused)
     int m_iStatsNumDrawCalls{0};
 };
 
