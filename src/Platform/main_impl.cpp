@@ -624,7 +624,7 @@ bool SDLMain::createWindow() {
     // set vulkan for linux dxvk-native, opengl otherwise (or none for windows dx11)
     const i64 windowFlags =
         SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_HIGH_PIXEL_DENSITY |
-        (usingGL() ? SDL_WINDOW_OPENGL : (Env::cfg(OS::LINUX, REND::DX11) ? SDL_WINDOW_VULKAN : 0LL));
+        (usingGL() ? SDL_WINDOW_OPENGL : ((Env::cfg(OS::LINUX) && usingDX11()) ? SDL_WINDOW_VULKAN : 0LL));
 
     // limit default window size so it fits the screen
     i32 windowCreateWidth = WINDOW_WIDTH;

@@ -1774,12 +1774,22 @@ stamp-install-wine-shortcuts: | install-dirs
 INSTALL_STAMPS += stamp-install-wine-shortcuts
 endif
 
+# --- invalidate stamps if the install dir was recreated (new device:inode) ---
+.install-state: FORCE
+	@new=$$(stat -c '%d:%i' "$(DESTDIR)$(bindir)" 2>/dev/null || echo none); \
+	old=$$(cat $@ 2>/dev/null || echo ""); \
+	if [ "$$old" != "$$new" ]; then \
+		rm -f $(INSTALL_STAMPS); \
+		printf '%s' "$$new" > $@; \
+	fi
+$(INSTALL_STAMPS): .install-state
+
 # --- wire it all together ---
 install-libs: install-dirs $(INSTALL_STAMPS)
 
 endif # WASM_PLATFORM
 
-CLEANFILES += $(INSTALL_STAMPS)
+CLEANFILES += $(INSTALL_STAMPS) .install-state
 
 # install hooks
 # copy pdb (windows) / make compat symlinks (linux) (always run)
