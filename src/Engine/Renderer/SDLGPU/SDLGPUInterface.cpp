@@ -1623,8 +1623,8 @@ void SDLGPUInterface::onFramecountNumChanged(float maxFramesInFlight) {
     const int maxFrames = std::clamp(static_cast<int>(maxFramesInFlight), 1, 3);
     if(maxFrames == m_iMaxFrameLatency) return;
 
-    if(!SDL_SetGPUAllowedFramesInFlight(m_device, m_iMaxFrameLatency)) {
-        debugLog("SDLGPUInterface: Failed to set max frames in flight to {}: {}", m_iMaxFrameLatency, SDL_GetError());
+    if(!SDL_SetGPUAllowedFramesInFlight(m_device, maxFrames)) {
+        debugLog("SDLGPUInterface: Failed to set max frames in flight to {}: {}", maxFrames, SDL_GetError());
         cv::r_sync_max_frames.setValue(m_iMaxFrameLatency, false);
     } else {
         m_iMaxFrameLatency = maxFrames;
