@@ -210,6 +210,7 @@ class SDLGPUInterface final : public Graphics {
     void createPipeline();
     void rebuildPipeline();
     void flushDrawCommands();
+    void addRenderPassBoundary();
     void recordDraw(SDL_GPUBuffer *bakedBuffer, u32 vertexOffset, u32 vertexCount);
     bool createDepthTexture(u32 width, u32 height);
 
@@ -340,8 +341,8 @@ class SDLGPUInterface final : public Graphics {
 
     // render target stack
     struct RenderTargetState {
-        SDL_GPUTexture *colorTarget;  // nullptr = swapchain
-        SDL_GPUTexture *depthTarget;  // nullptr = default depth
+        SDL_GPUTexture *colorTarget;
+        SDL_GPUTexture *depthTarget;
         SDL_GPUTexture *resolveTarget;
         SDLGPUSampleCount sampleCount;  // SDL_GPU_SAMPLECOUNT_1 == 0
         // clear flags consumed by the next flushDrawCommands()
@@ -353,6 +354,14 @@ class SDLGPUInterface final : public Graphics {
         [[nodiscard]] bool hasClears() const { return pendingClearColor || pendingClearDepth || pendingClearStencil; }
     };
     std::vector<RenderTargetState> m_renderTargetStack;
+
+    // render pass boundaries for deferred RT switching
+    // each boundary marks the start of a new render pass at a given draw index
+    struct RenderPassBoundary {
+        u32 drawIndex;
+        RenderTargetState state;
+    };
+    std::vector<RenderPassBoundary> m_renderPassBoundaries;
 
     RenderTargetState m_curRTState{
         .colorTarget = nullptr,

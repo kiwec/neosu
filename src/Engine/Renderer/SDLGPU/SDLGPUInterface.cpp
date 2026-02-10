@@ -492,6 +492,10 @@ void SDLGPUInterface::beginScene() {
         return;
     }
 
+    // point at the real backbuffer/depth so flushDrawCommands() needs no fallback
+    m_curRTState.colorTarget = m_backbuffer;
+    m_curRTState.depthTarget = m_depthTexture;
+
     // mark that the first flush should clear color and depth
     m_curRTState.pendingClearColor = true;
     m_curRTState.pendingClearDepth = true;
@@ -501,6 +505,8 @@ void SDLGPUInterface::beginScene() {
     // clear deferred draw state
     m_pendingDraws.clear();
     m_stagingVertices.clear();
+    m_renderPassBoundaries.clear();
+    addRenderPassBoundary();
     m_renderPass = nullptr;
 
     // setup default projection (same as DX11: Y-down, depth 0-1)
@@ -557,8 +563,8 @@ void SDLGPUInterface::endScene() {
 
 void SDLGPUInterface::clearDepthBuffer() {
     if(!m_cmdBuf) return;
-    flushDrawCommands();
     m_curRTState.pendingClearDepth = true;
+    addRenderPassBoundary();
 }
 
 // color
@@ -984,6 +990,8 @@ void SDLGPUInterface::drawVAO(VertexArrayObject *vao) {
     // if staging buffer would overflow, flush first
     if(m_stagingVertices.size() + m_vertices.size() > MAX_STAGING_VERTS) {
         flushDrawCommands();
+        // re-add initial boundary for the current RT state after flush
+        addRenderPassBoundary();
     }
 
     // append vertices to staging buffer and record a draw command
@@ -1074,9 +1082,19 @@ void SDLGPUInterface::recordDraw(SDL_GPUBuffer *bakedBuffer, u32 vertexOffset, u
 void SDLGPUInterface::flushDrawCommands() {
     if(!m_cmdBuf) return;
 
+    // check if there's anything to do
     const bool hasDraws = !m_pendingDraws.empty();
-    const bool hasClears = m_curRTState.hasClears();
-    if(!hasDraws && !hasClears) return;
+    bool hasClears = false;
+    for(auto &b : m_renderPassBoundaries) {
+        if(b.state.hasClears()) {
+            hasClears = true;
+            break;
+        }
+    }
+    if(!hasDraws && !hasClears) {
+        m_renderPassBoundaries.clear();
+        return;
+    }
 
     // end active render pass if any (shouldn't normally be active between flushes)
     if(m_renderPass) {
@@ -1093,7 +1111,7 @@ void SDLGPUInterface::flushDrawCommands() {
         }
     }
 
-    // copy pass: upload staging vertices to GPU buffer
+    // single copy pass: upload ALL staging vertices to GPU buffer
     if(hasImmediateDraws && !m_stagingVertices.empty()) {
         void *mapped = SDL_MapGPUTransferBuffer(m_device, m_transferBuffer, true);
         if(mapped) {
@@ -1117,141 +1135,167 @@ void SDLGPUInterface::flushDrawCommands() {
         }
     }
 
-    // begin render pass with appropriate clear/load ops
-    // TODO: consolidate swapchain and rendertarget things to avoid needing to special case
-    SDL_GPUTexture *colorTex = m_curRTState.colorTarget ? m_curRTState.colorTarget : m_backbuffer;
-    SDL_GPUTexture *depthTex = m_curRTState.depthTarget ? m_curRTState.depthTarget : m_depthTexture;
+    // replay render passes from boundaries
+    const u32 totalDraws = (u32)m_pendingDraws.size();
+    const size_t numBoundaries = m_renderPassBoundaries.size();
 
-    SDL_GPUColorTargetInfo colorTarget{};
-    colorTarget.texture = colorTex;
-    colorTarget.load_op = m_curRTState.pendingClearColor ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
-    if(m_curRTState.resolveTarget) {
-        // MSAA: resolve multisampled texture into the resolve target when the render pass ends.
-        // use RESOLVE_AND_STORE so the MSAA texture retains its content for subsequent render passes
-        // (e.g. after clearDepthBuffer() triggers a flush mid-frame)
-        colorTarget.store_op = SDL_GPU_STOREOP_RESOLVE_AND_STORE;
-        colorTarget.resolve_texture = m_curRTState.resolveTarget;
-    } else {
-        colorTarget.store_op = SDL_GPU_STOREOP_STORE;
-    }
-    if(m_curRTState.pendingClearColor) {
-        auto nextClearColor = m_curRTState.clearColor;
-        colorTarget.clear_color = {nextClearColor.Rf(), nextClearColor.Gf(), nextClearColor.Bf(), nextClearColor.Af()};
-    }
+    for(size_t bi = 0; bi < numBoundaries; bi++) {
+        auto &boundary = m_renderPassBoundaries[bi];
+        const u32 drawStart = boundary.drawIndex;
+        const u32 drawEnd = (bi + 1 < numBoundaries) ? m_renderPassBoundaries[bi + 1].drawIndex : totalDraws;
+        const u32 drawCount = drawEnd - drawStart;
 
-    SDL_GPUDepthStencilTargetInfo depthTarget{};
-    depthTarget.texture = depthTex;
-    depthTarget.load_op = m_curRTState.pendingClearDepth ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
-    depthTarget.store_op = SDL_GPU_STOREOP_STORE;
-    if(m_curRTState.pendingClearDepth) depthTarget.clear_depth = 1.0f;
-    depthTarget.stencil_load_op = m_curRTState.pendingClearStencil ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
-    depthTarget.stencil_store_op = SDL_GPU_STOREOP_STORE;
-    if(m_curRTState.pendingClearStencil) depthTarget.clear_stencil = 0;
+        // skip if no draws and no pending clears
+        if(drawCount == 0 && !boundary.state.hasClears()) continue;
 
-    // consume clear flags
-    m_curRTState.pendingClearColor = false;
-    m_curRTState.pendingClearDepth = false;
-    m_curRTState.pendingClearStencil = false;
+        // begin render pass with this boundary's RT state
+        SDL_GPUTexture *colorTex = boundary.state.colorTarget;
+        SDL_GPUTexture *depthTex = boundary.state.depthTarget;
 
-    m_renderPass = SDL_BeginGPURenderPass(m_cmdBuf, &colorTarget, 1, &depthTarget);
-    if(!m_renderPass) {
-        m_pendingDraws.clear();
-        m_stagingVertices.clear();
-        return;
-    }
-
-    // replay draw commands, tracking last-bound state to skip redundant binds
-    SDL_GPUGraphicsPipeline *lastPipeline = nullptr;
-    SDL_GPUTexture *lastTexture = nullptr;
-    SDL_GPUSampler *lastSampler = nullptr;
-    SDL_GPUBuffer *lastVertexBuffer = nullptr;
-    u32 lastVertexOffset = ~0u;
-    Viewport lastViewport{.pos = {-1.f, -1.f}, .size = {-1.f, -1.f}};
-    bool lastScissorEnabled = false;
-    Scissor lastScissor{.pos = {-1, -1}, .size = {-1, -1}};
-    u8 lastStencilRef = 0xFF;
-
-    for(auto &cmd : m_pendingDraws) {
-        // bind pipeline
-        if(cmd.pipeline != lastPipeline) {
-            SDL_BindGPUGraphicsPipeline(m_renderPass, cmd.pipeline);
-            lastPipeline = cmd.pipeline;
+        SDL_GPUColorTargetInfo colorTarget{};
+        colorTarget.texture = colorTex;
+        colorTarget.load_op = boundary.state.pendingClearColor ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
+        if(boundary.state.resolveTarget) {
+            // MSAA: resolve multisampled texture into the resolve target when the render pass ends.
+            // use RESOLVE_AND_STORE so the MSAA texture retains its content for subsequent render passes
+            // (e.g. after clearDepthBuffer() triggers a flush mid-frame)
+            colorTarget.store_op = SDL_GPU_STOREOP_RESOLVE_AND_STORE;
+            colorTarget.resolve_texture = boundary.state.resolveTarget;
+        } else {
+            colorTarget.store_op = SDL_GPU_STOREOP_STORE;
+        }
+        if(boundary.state.pendingClearColor) {
+            auto cc = boundary.state.clearColor;
+            colorTarget.clear_color = {cc.Rf(), cc.Gf(), cc.Bf(), cc.Af()};
         }
 
-        // set viewport
-        if(cmd.viewport != lastViewport) {
-            SDL_GPUViewport vp{
-                .x = cmd.viewport.pos.x,
-                .y = cmd.viewport.pos.y,
-                .w = cmd.viewport.size.x,
-                .h = cmd.viewport.size.y,
-                .min_depth = 0.0f,
-                .max_depth = 1.0f,
-            };
-            SDL_SetGPUViewport(m_renderPass, &vp);
-            lastViewport = cmd.viewport;
+        SDL_GPUDepthStencilTargetInfo depthTarget{};
+        depthTarget.texture = depthTex;
+        depthTarget.load_op = boundary.state.pendingClearDepth ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
+        depthTarget.store_op = SDL_GPU_STOREOP_STORE;
+        if(boundary.state.pendingClearDepth) depthTarget.clear_depth = 1.0f;
+        depthTarget.stencil_load_op =
+            boundary.state.pendingClearStencil ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
+        depthTarget.stencil_store_op = SDL_GPU_STOREOP_STORE;
+        if(boundary.state.pendingClearStencil) depthTarget.clear_stencil = 0;
+
+        m_renderPass = SDL_BeginGPURenderPass(m_cmdBuf, &colorTarget, 1, &depthTarget);
+        if(!m_renderPass) {
+            m_pendingDraws.clear();
+            m_stagingVertices.clear();
+            m_renderPassBoundaries.clear();
+            return;
         }
 
-        // set scissor
-        if(cmd.scissorEnabled != lastScissorEnabled || (cmd.scissorEnabled && (cmd.scissor != lastScissor))) {
-            if(cmd.scissorEnabled) {
-                SDL_Rect sc{
-                    .x = cmd.scissor.pos.x, .y = cmd.scissor.pos.y, .w = cmd.scissor.size.x, .h = cmd.scissor.size.y};
-                SDL_SetGPUScissor(m_renderPass, &sc);
-            } else {
-                SDL_Rect fullRect{.x = 0, .y = 0, .w = (int)cmd.viewport.size.x, .h = (int)cmd.viewport.size.y};
-                SDL_SetGPUScissor(m_renderPass, &fullRect);
+        // replay draw commands for this render pass, tracking last-bound state to skip redundant binds
+        SDL_GPUGraphicsPipeline *lastPipeline = nullptr;
+        SDL_GPUTexture *lastTexture = nullptr;
+        SDL_GPUSampler *lastSampler = nullptr;
+        SDL_GPUBuffer *lastVertexBuffer = nullptr;
+        u32 lastVertexOffset = ~0u;
+        Viewport lastViewport{.pos = {-1.f, -1.f}, .size = {-1.f, -1.f}};
+        bool lastScissorEnabled = false;
+        Scissor lastScissor{.pos = {-1, -1}, .size = {-1, -1}};
+        u8 lastStencilRef = 0xFF;
+
+        for(u32 di = drawStart; di < drawEnd; di++) {
+            auto &cmd = m_pendingDraws[di];
+
+            // bind pipeline
+            if(cmd.pipeline != lastPipeline) {
+                SDL_BindGPUGraphicsPipeline(m_renderPass, cmd.pipeline);
+                lastPipeline = cmd.pipeline;
             }
-            lastScissorEnabled = cmd.scissorEnabled;
-            lastScissor = cmd.scissor;
-        }
 
-        // set stencil reference
-        if(cmd.stencilRef != lastStencilRef) {
-            SDL_SetGPUStencilReference(m_renderPass, cmd.stencilRef);
-            lastStencilRef = cmd.stencilRef;
-        }
-
-        // push uniforms (always, they're snapshots and might be different per-draw)
-        for(u8 i = 0; i < cmd.numUniformBlocks; i++) {
-            auto &ub = cmd.uniformBlocks[i];
-            if(ub.isVertex) {
-                SDL_PushGPUVertexUniformData(m_cmdBuf, ub.slot, ub.data, ub.size);
-            } else {
-                SDL_PushGPUFragmentUniformData(m_cmdBuf, ub.slot, ub.data, ub.size);
+            // set viewport
+            if(cmd.viewport != lastViewport) {
+                SDL_GPUViewport vp{
+                    .x = cmd.viewport.pos.x,
+                    .y = cmd.viewport.pos.y,
+                    .w = cmd.viewport.size.x,
+                    .h = cmd.viewport.size.y,
+                    .min_depth = 0.0f,
+                    .max_depth = 1.0f,
+                };
+                SDL_SetGPUViewport(m_renderPass, &vp);
+                lastViewport = cmd.viewport;
             }
+
+            // set scissor
+            if(cmd.scissorEnabled != lastScissorEnabled || (cmd.scissorEnabled && (cmd.scissor != lastScissor))) {
+                if(cmd.scissorEnabled) {
+                    SDL_Rect sc{.x = cmd.scissor.pos.x,
+                                .y = cmd.scissor.pos.y,
+                                .w = cmd.scissor.size.x,
+                                .h = cmd.scissor.size.y};
+                    SDL_SetGPUScissor(m_renderPass, &sc);
+                } else {
+                    SDL_Rect fullRect{
+                        .x = 0, .y = 0, .w = (int)cmd.viewport.size.x, .h = (int)cmd.viewport.size.y};
+                    SDL_SetGPUScissor(m_renderPass, &fullRect);
+                }
+                lastScissorEnabled = cmd.scissorEnabled;
+                lastScissor = cmd.scissor;
+            }
+
+            // set stencil reference
+            if(cmd.stencilRef != lastStencilRef) {
+                SDL_SetGPUStencilReference(m_renderPass, cmd.stencilRef);
+                lastStencilRef = cmd.stencilRef;
+            }
+
+            // push uniforms (always, they're snapshots and might be different per-draw)
+            for(u8 i = 0; i < cmd.numUniformBlocks; i++) {
+                auto &ub = cmd.uniformBlocks[i];
+                if(ub.isVertex) {
+                    SDL_PushGPUVertexUniformData(m_cmdBuf, ub.slot, ub.data, ub.size);
+                } else {
+                    SDL_PushGPUFragmentUniformData(m_cmdBuf, ub.slot, ub.data, ub.size);
+                }
+            }
+
+            // bind texture/sampler
+            if(cmd.texture != lastTexture || cmd.sampler != lastSampler) {
+                SDL_GPUTextureSamplerBinding texBinding{};
+                texBinding.texture = cmd.texture;
+                texBinding.sampler = cmd.sampler;
+                SDL_BindGPUFragmentSamplers(m_renderPass, 0, &texBinding, 1);
+                lastTexture = cmd.texture;
+                lastSampler = cmd.sampler;
+            }
+
+            // bind vertex buffer and draw
+            SDL_GPUBuffer *vb = cmd.bakedBuffer ? cmd.bakedBuffer : m_vertexBuffer;
+            u32 vbOffset = 0;
+            if(vb != lastVertexBuffer || vbOffset != lastVertexOffset) {
+                SDL_GPUBufferBinding vertexBinding{.buffer = vb, .offset = vbOffset};
+                SDL_BindGPUVertexBuffers(m_renderPass, 0, &vertexBinding, 1);
+                lastVertexBuffer = vb;
+                lastVertexOffset = vbOffset;
+            }
+
+            SDL_DrawGPUPrimitives(m_renderPass, cmd.vertexCount, 1, cmd.vertexOffset, 0);
         }
 
-        // bind texture/sampler
-        if(cmd.texture != lastTexture || cmd.sampler != lastSampler) {
-            SDL_GPUTextureSamplerBinding texBinding{};
-            texBinding.texture = cmd.texture;
-            texBinding.sampler = cmd.sampler;
-            SDL_BindGPUFragmentSamplers(m_renderPass, 0, &texBinding, 1);
-            lastTexture = cmd.texture;
-            lastSampler = cmd.sampler;
-        }
-
-        // bind vertex buffer and draw
-        SDL_GPUBuffer *vb = cmd.bakedBuffer ? cmd.bakedBuffer : m_vertexBuffer;
-        u32 vbOffset = 0;
-        if(vb != lastVertexBuffer || vbOffset != lastVertexOffset) {
-            SDL_GPUBufferBinding vertexBinding{.buffer = vb, .offset = vbOffset};
-            SDL_BindGPUVertexBuffers(m_renderPass, 0, &vertexBinding, 1);
-            lastVertexBuffer = vb;
-            lastVertexOffset = vbOffset;
-        }
-
-        SDL_DrawGPUPrimitives(m_renderPass, cmd.vertexCount, 1, cmd.vertexOffset, 0);
+        // end render pass
+        SDL_EndGPURenderPass(m_renderPass);
+        m_renderPass = nullptr;
     }
-
-    // end render pass
-    SDL_EndGPURenderPass(m_renderPass);
-    m_renderPass = nullptr;
 
     // clear pending state
     m_pendingDraws.clear();
     m_stagingVertices.clear();
+    m_renderPassBoundaries.clear();
+}
+
+void SDLGPUInterface::addRenderPassBoundary() {
+    m_renderPassBoundaries.push_back({
+        .drawIndex = (u32)m_pendingDraws.size(),
+        .state = m_curRTState,
+    });
+    m_curRTState.pendingClearColor = false;
+    m_curRTState.pendingClearDepth = false;
+    m_curRTState.pendingClearStencil = false;
 }
 
 // 2d clipping
@@ -1312,9 +1356,9 @@ void SDLGPUInterface::popViewport() {
 void SDLGPUInterface::pushStencil() {
     if(!m_cmdBuf) return;
 
-    // flush pending draws, then clear stencil for new stencil op
-    flushDrawCommands();
+    // record boundary with stencil clear instead of flushing
     m_curRTState.pendingClearStencil = true;
+    addRenderPassBoundary();
 
     // stencil writing phase: color off, write 1 where geometry is drawn
     m_iStencilState = 1;
@@ -1437,7 +1481,11 @@ void SDLGPUInterface::setWireframe(bool enabled) {
 
 // renderer actions
 
-void SDLGPUInterface::flush() { flushDrawCommands(); }
+void SDLGPUInterface::flush() {
+    flushDrawCommands();
+    // re-add initial boundary so subsequent draws have a render pass
+    if(m_cmdBuf) addRenderPassBoundary();
+}
 
 std::vector<u8> SDLGPUInterface::getScreenshot(bool withAlpha) {
     if(!m_device || !m_backbuffer || !m_cmdBuf) return {};
@@ -1516,15 +1564,10 @@ void SDLGPUInterface::pushRenderTarget(SDL_GPUTexture *colorTex, SDL_GPUTexture 
                                        SDL_GPUTexture *resolveTex, SDLGPUSampleCount sampleCount) {
     if(!m_cmdBuf) return;
 
-    // flush draws for the current render target
-    flushDrawCommands();
-
-    // save current state including pending clear flags
+    // save current state
     m_renderTargetStack.push_back(m_curRTState);
     auto &cur = m_curRTState;
 
-    // swapchain color format may be different
-    // TODO: should we just always draw into a rendertarget instead of having to switch between swapchain/rendertarget format?
     if(cur.sampleCount != sampleCount) m_bPipelineDirty = true;
 
     cur.colorTarget = colorTex;
@@ -1537,21 +1580,23 @@ void SDLGPUInterface::pushRenderTarget(SDL_GPUTexture *colorTex, SDL_GPUTexture 
     cur.pendingClearDepth = doClear;
     cur.pendingClearStencil = false;
     cur.clearColor = clearCol;
+
+    // record boundary
+    addRenderPassBoundary();
 }
 
 void SDLGPUInterface::popRenderTarget() {
     if(!m_cmdBuf || m_renderTargetStack.empty()) return;
 
-    // flush draws for the current RT
-    flushDrawCommands();
-
-    // restore previous state including pending clear flags
+    // restore previous state
     auto prev = m_renderTargetStack.back();
     m_renderTargetStack.pop_back();
-    auto &current = m_curRTState;
-    if(current.sampleCount != prev.sampleCount) m_bPipelineDirty = true;
+    if(m_curRTState.sampleCount != prev.sampleCount) m_bPipelineDirty = true;
 
-    current = prev;
+    m_curRTState = prev;
+
+    // record boundary
+    addRenderPassBoundary();
 }
 
 // renderer info (TODO: how?)
