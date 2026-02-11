@@ -363,8 +363,15 @@ bool download_beatmapset(u32 set_id, DownloadHandle& handle) {
 
     if(!handle) {
         auto url = fmt::format("osu.{}/d/", BanchoState::endpoint);
-        if(cv::beatmap_mirror_override.getString().length() > 0) {
-            url = cv::beatmap_mirror_override.getString();
+        if(auto override_url = cv::beatmap_mirror_override.getString(); override_url.length() > 0) {
+            if(override_url.starts_with("https://")) {
+                override_url = override_url.substr("https://"sv.size());
+            } else if(override_url.starts_with("http://")) {
+                override_url = override_url.substr("http://"sv.size());
+            }
+            if(!override_url.empty()) {
+                url = override_url;
+            }
         }
         url.append(fmt::format("{:d}", set_id));
         handle = download(url);
