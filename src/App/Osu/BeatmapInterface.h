@@ -74,7 +74,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] vec2 getMousePos() const;
     [[nodiscard]] vec2 getCursorPos() const override;
     [[nodiscard]] vec2 getFirstPersonCursorDelta() const;
-    [[nodiscard]] inline vec2 getContinueCursorPoint() const { return this->vContinueCursorPoint; }
 
     // playfield
     [[nodiscard]] inline vec2 getPlayfieldSize() const { return this->vPlayfieldSize; }
@@ -358,6 +357,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     enum class FLType : uint8_t { NORMAL_FL, ACTUAL_FL };
     void drawFlashlight(FLType type);
+
+    void drawContinue();
 
     void updateAutoCursorPos();
     void updatePlayfieldMetrics();

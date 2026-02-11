@@ -230,9 +230,6 @@ void HUD::draw() {
 
     if(pf->shouldFlashWarningArrows()) this->drawWarningArrows(pf->fHitcircleDiameter);
 
-    if(pf->isContinueScheduled() && cv::draw_continue.getBool())
-        this->drawContinue(pf->getContinueCursorPoint(), pf->fHitcircleDiameter);
-
     if(cv::draw_scrubbing_timeline.getBool() && osu->isSeeking()) {
         static std::vector<BREAK> breaks;
         breaks.clear();
@@ -1382,53 +1379,6 @@ void HUD::drawFancyScoreboard() {
     for(const auto &slot : this->slots) {
         slot->draw();
     }
-}
-
-void HUD::drawContinue(vec2 cursor, float hitcircleDiameter) {
-    const auto &unpause = osu->getSkin()->i_unpause;
-    const float unpauseScale = Osu::getImageScale(unpause, 80);
-
-    const auto &cursorImage = osu->getSkin()->i_cursor_default;
-    const float cursorScale =
-        Osu::getImageScaleToFitResolution(cursorImage, vec2(hitcircleDiameter, hitcircleDiameter));
-
-    // bleh
-    if(cursor.x < cursorImage->getWidth() || cursor.y < cursorImage->getHeight() ||
-       cursor.x > osu->getVirtScreenWidth() - cursorImage->getWidth() ||
-       cursor.y > osu->getVirtScreenHeight() - cursorImage->getHeight())
-        cursor = osu->getVirtScreenSize() / 2.f;
-
-    // base
-    g->setColor(argb(255, 255, 153, 51));
-    g->pushTransform();
-    {
-        g->scale(cursorScale, cursorScale);
-        g->translate(cursor.x, cursor.y);
-        g->drawImage(cursorImage);
-    }
-    g->popTransform();
-
-    // pulse animation
-    const float cursorAnimPulsePercent = std::clamp<float>(fmod(engine->getTime(), 1.35f), 0.0f, 1.0f);
-    g->setColor(argb((short)(255.0f * (1.0f - cursorAnimPulsePercent)), 255, 153, 51));
-    g->pushTransform();
-    {
-        g->scale(cursorScale * (1.0f + cursorAnimPulsePercent), cursorScale * (1.0f + cursorAnimPulsePercent));
-        g->translate(cursor.x, cursor.y);
-        g->drawImage(cursorImage);
-    }
-    g->popTransform();
-
-    // unpause click message
-    g->setColor(0xffffffff);
-    g->pushTransform();
-    {
-        g->scale(unpauseScale, unpauseScale);
-        g->translate(cursor.x + 20 + (unpause->getWidth() / 2) * unpauseScale,
-                     cursor.y + 20 + (unpause->getHeight() / 2) * unpauseScale);
-        g->drawImage(unpause);
-    }
-    g->popTransform();
 }
 
 void HUD::drawHitErrorBar(BeatmapInterface *pf) {

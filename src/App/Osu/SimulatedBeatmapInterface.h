@@ -33,7 +33,6 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     // cursor
     [[nodiscard]] vec2 getCursorPos() const override;
     [[nodiscard]] vec2 getFirstPersonCursorDelta() const;
-    [[nodiscard]] inline vec2 getContinueCursorPoint() const { return this->vContinueCursorPoint; }
 
     // playfield
     [[nodiscard]] inline vec2 getPlayfieldSize() const { return this->vPlayfieldSize; }
@@ -150,7 +149,6 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
 
     // beatmap
     bool bIsSpinnerActive;
-    vec2 vContinueCursorPoint{0.f};
 
     // playfield
     float fPlayfieldRotation;

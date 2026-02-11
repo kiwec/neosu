@@ -238,7 +238,6 @@ class HUD final : public UIScreen {
 
     void drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes, bool combo /* false for score */);
     void drawWarningArrows(float hitcircleDiameter = 0.0f);
-    void drawContinue(vec2 cursor, float hitcircleDiameter = 0.0f);
     void drawHitErrorBar(float hitWindow300, float hitWindow100, float hitWindow50, float hitWindowMiss, int ur);
     void drawHitErrorBarInt(float hitWindow300, float hitWindow100, float hitWindow50, float hitWindowMiss);
     void drawHitErrorBarInt2(vec2 center, int ur);

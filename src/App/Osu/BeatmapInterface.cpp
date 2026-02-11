@@ -343,7 +343,11 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
             if(engine->getTime() < this->fPrevUnpauseTime + cv::unpause_continue_delay.getFloat()) {
                 return;
             }
-            this->bClickedContinue = !ui->getModSelector()->isMouseInside();
+
+            this->bClickedContinue =
+                !ui->getModSelector()->isMouseInside() &&
+                vec::length(this->getCursorPos() - this->vContinueCursorPoint) < (this->fHitcircleDiameter / 2.f);
+            if(!this->bClickedContinue) return;
         }
 
         if(cv::mod_singletap.getBool() && !(this->lastPressedKey & key_flag)) {
@@ -1786,6 +1790,9 @@ void BeatmapInterface::draw() {
             this->drawFlashlight(flashlight_enabled ? FLType::NORMAL_FL : FLType::ACTUAL_FL);
     }
 
+    // draw continue overlay (moved from HUD to draw properly in FPoSu)
+    if(this->isContinueScheduled() && cv::draw_continue.getBool()) this->drawContinue();
+
     // draw spectator pause message
     if(this->spectate_pause) {
         auto info = BANCHO::User::get_user_info(BanchoState::spectated_player_id);
@@ -1958,6 +1965,56 @@ void BeatmapInterface::drawSmoke() {
     while(!this->smoke_trail.empty() && std::cmp_greater(current_time, this->smoke_trail[0].time + time_visible)) {
         this->smoke_trail.erase(this->smoke_trail.begin());
     }
+}
+
+void BeatmapInterface::drawContinue() {
+    vec2 cursor = this->vContinueCursorPoint;
+    const float hitcircleDiameter = this->fHitcircleDiameter;
+
+    const auto &unpause = this->getSkin()->i_unpause;
+    const float unpauseScale = Osu::getImageScale(unpause, 80);
+
+    const auto &cursorImage = this->getSkin()->i_cursor_default;
+    const float cursorScale =
+        Osu::getImageScaleToFitResolution(cursorImage, vec2(hitcircleDiameter, hitcircleDiameter));
+
+    // bleh
+    if(cursor.x < cursorImage->getWidth() || cursor.y < cursorImage->getHeight() ||
+       cursor.x > osu->getVirtScreenWidth() - cursorImage->getWidth() ||
+       cursor.y > osu->getVirtScreenHeight() - cursorImage->getHeight())
+        cursor = osu->getVirtScreenSize() / 2.f;
+
+    // base
+    g->setColor(argb(255, 255, 153, 51));
+    g->pushTransform();
+    {
+        g->scale(cursorScale, cursorScale);
+        g->translate(cursor.x, cursor.y);
+        g->drawImage(cursorImage);
+    }
+    g->popTransform();
+
+    // pulse animation
+    const float cursorAnimPulsePercent = std::clamp<float>(fmod(engine->getTime(), 1.35f), 0.0f, 1.0f);
+    g->setColor(argb((short)(255.0f * (1.0f - cursorAnimPulsePercent)), 255, 153, 51));
+    g->pushTransform();
+    {
+        g->scale(cursorScale * (1.0f + cursorAnimPulsePercent), cursorScale * (1.0f + cursorAnimPulsePercent));
+        g->translate(cursor.x, cursor.y);
+        g->drawImage(cursorImage);
+    }
+    g->popTransform();
+
+    // unpause click message
+    g->setColor(0xffffffff);
+    g->pushTransform();
+    {
+        g->scale(unpauseScale, unpauseScale);
+        g->translate(cursor.x + 20 + (unpause->getWidth() / 2) * unpauseScale,
+                     cursor.y + 20 + (unpause->getHeight() / 2) * unpauseScale);
+        g->drawImage(unpause);
+    }
+    g->popTransform();
 }
 
 void BeatmapInterface::drawFollowPoints() {

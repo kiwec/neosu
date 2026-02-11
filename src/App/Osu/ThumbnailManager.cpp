@@ -149,7 +149,7 @@ void ThumbnailManager::discard_image(const ThumbIdentifier& identifier) {
     }
 }
 
-Image* ThumbnailManager::load_image(ThumbEntry& entry) {
+Image* ThumbnailManager::load_image(const ThumbEntry& entry) {
     assert(!entry.image && !entry.file_path.empty());
 
     resourceManager->requestNextLoadAsync();

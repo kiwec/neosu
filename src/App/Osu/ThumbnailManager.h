@@ -68,7 +68,7 @@ class ThumbnailManager final {
         Image* image{nullptr};  // null if not loaded in memory
         Downloader::DownloadHandle dl_handle;
     };
-    static Image* load_image(ThumbEntry& entry);
+    static Image* load_image(const ThumbEntry& entry);
 
     void prune_oldest_entries();
     bool download_image(const ThumbIdentifier& identifier);
