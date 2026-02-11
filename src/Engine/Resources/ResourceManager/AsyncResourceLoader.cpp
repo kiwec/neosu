@@ -168,6 +168,7 @@ void AsyncResourceLoader::shutdown() {
 
     // cleanup async destroy queue
     for(auto &[rs, del] : this->asyncDestroyQueue) {
+        rs->release();
         if(del) {
             SAFE_DELETE(rs);
         }
@@ -255,9 +256,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
             }
 
             if(canBeDestroyed) {
-                if(current.shouldDelete) {
-                    resourcesReadyForDestroy.push_back(current);
-                }  // don't delete it otherwise, just remove it from the destroy queue (our job of blocking on it to finish is done)
+                resourcesReadyForDestroy.push_back(current);
                 this->asyncDestroyQueue.erase(this->asyncDestroyQueue.begin() + i);
 
                 if(resourcesReadyForDestroy.size() >= amountToProcess) {
@@ -271,9 +270,11 @@ void AsyncResourceLoader::update(bool lowLatency) {
     }
 
     for(auto &[rs, deletable] : resourcesReadyForDestroy) {
-        logIf(debug, "Async destroy of resource {:s}", rs->getDebugIdentifier());
-        assert(deletable);
-        SAFE_DELETE(rs);
+        logIf(debug, "Async destroy of resource {:s} (delete: {})", rs->getDebugIdentifier(), deletable);
+        rs->release();
+        if(deletable) {
+            SAFE_DELETE(rs);
+        }
     }
 }
 

@@ -45,7 +45,9 @@ struct Exporter final {
         }
         ~Dispatchee() override {
             this->destroy();
-            while(!this->isReady()) {
+            // 10 second timeout
+            const auto startTime = Timing::getTicksMS();
+            while(!this->isReady() && (Timing::getTicksMS() - startTime) < 10000) {
                 Timing::sleepMS(1);
             }
             parent->worker = nullptr;

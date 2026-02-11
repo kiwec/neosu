@@ -302,6 +302,8 @@ void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destfla
     // standard destroy
     if(isManagedResource) pImpl->removeManagedResource(rs, managedResourceIterator);
 
+    rs->release();
+
     if(shouldDelete) {
         SAFE_DELETE(rs);
     }
