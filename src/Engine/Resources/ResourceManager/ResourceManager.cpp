@@ -442,6 +442,9 @@ bool ResourceManager::addManagedResource(Resource *userPtr, const std::string &r
     auto res = pImpl->checkIfExistsAndHandle<Resource>(resourceName);
     if(res != nullptr) return false;
 
+    // clear next load unmanaged
+    pImpl->resetFlags();
+
     // set it up
     setResourceName(userPtr, resourceName);
     loadResource(userPtr, false);

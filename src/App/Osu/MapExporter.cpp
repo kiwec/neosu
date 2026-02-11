@@ -45,11 +45,6 @@ struct Exporter final {
         }
         ~Dispatchee() override {
             this->destroy();
-            // 10 second timeout
-            const auto startTime = Timing::getTicksMS();
-            while(!this->isReady() && (Timing::getTicksMS() - startTime) < 10000) {
-                Timing::sleepMS(1);
-            }
             parent->worker = nullptr;
         }
 
@@ -93,7 +88,7 @@ struct Exporter final {
         void initAsync() override {
             this->stop_source = {};
             this->setReady(false);
-            this->setReady(false);
+            this->setAsyncReady(false);
             this->progress = -1.f;
 
             const std::string export_folder_top = []() -> std::string {
