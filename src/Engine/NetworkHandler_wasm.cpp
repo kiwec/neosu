@@ -109,7 +109,7 @@ std::string urlEncode(std::string_view input) noexcept {
 void encodeMimeParts(RequestOptions& options) {
     if(options.mime_parts.empty()) return;
 
-    std::string boundary{"-------neosu--"};
+    std::string boundary{"-----neosu--"};
     {
         std::array<u8, 16> rnd;
         crypto::rng::get_rand(rnd);
@@ -118,6 +118,7 @@ void encodeMimeParts(RequestOptions& options) {
 
     options.headers["Content-Type"] = "multipart/form-data; boundary=" + boundary;
     options.post_data = "";
+    boundary = "--" + boundary;
 
     for(auto part : options.mime_parts) {
         options.post_data += boundary + "\r\n";
@@ -128,7 +129,7 @@ void encodeMimeParts(RequestOptions& options) {
         options.post_data += "\r\n";
     }
 
-    options.post_data += boundary + "--";
+    options.post_data += boundary + "--\r\n";
 }
 
 struct NetworkImpl {
