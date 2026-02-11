@@ -1088,6 +1088,12 @@ AX_CHECK_LINK_FLAG([-Wl,--icf=all], [
     ])
 ])
 
+# see: https://clang.llvm.org/docs/UsersManual.html#cmdoption-fstrict-vtable-pointers
+AX_CHECK_COMPILE_FLAG([-fstrict-vtable-pointers], [
+    # only for our code, this will probably break dependencies
+    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -fstrict-vtable-pointers"
+])
+
 # check for --enable-hardened capability (-fhardened)
 AS_IF([test "x$enable_harden" != "xno"], [
     AX_CHECK_COMPILE_FLAG([-fhardened], [

@@ -1,6 +1,7 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "ModSelector.h"
 
+#include <memory>
 #include <utility>
 
 #include "AnimationHandler.h"
@@ -134,15 +135,16 @@ ModSelector::ModSelector() : UIScreen() {
     this->fExperimentalAnimation = 0.0f;
     this->bScheduledHide = false;
     this->bExperimentalVisible = false;
-    this->setSize(osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
-    this->overrideSliderContainer =
-        new CBaseUIContainer(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight(), "");
-    this->experimentalContainer =
-        new CBaseUIScrollView(-1, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight(), "");
-    this->experimentalContainer->setHorizontalScrolling(false);
-    this->experimentalContainer->setVerticalScrolling(true);
-    this->experimentalContainer->setDrawFrame(false);
-    this->experimentalContainer->setDrawBackground(false);
+
+    const vec2 osuScreen = osu->getVirtScreenSize();
+
+    this->setSize(osuScreen.x, osuScreen.y);
+    this->overrideSliderContainer = std::make_unique<CBaseUIContainer>(0.f, 0.f, osuScreen.x, osuScreen.y, "");
+    this->experimentalContainer.reset((new CBaseUIScrollView(-1.f, 0.f, osuScreen.x, osuScreen.y, ""))
+                                          ->setHorizontalScrolling(false)
+                                          ->setVerticalScrolling(true)
+                                          ->setDrawFrame(false)
+                                          ->setDrawBackground(false));
 
     this->bWaitForCSChangeFinished = false;
     this->bWaitForSpeedChangeFinished = false;
@@ -404,10 +406,7 @@ void ModSelector::updateExperimentalButtons() {
     }
 }
 
-ModSelector::~ModSelector() {
-    SAFE_DELETE(this->overrideSliderContainer);
-    SAFE_DELETE(this->experimentalContainer);
-}
+ModSelector::~ModSelector() = default;
 
 void ModSelector::draw() {
     if(!this->bVisible && !this->bScheduledHide) return;
@@ -751,11 +750,14 @@ CBaseUIContainer *ModSelector::setVisible(bool visible) {
     return this;
 }
 
-bool ModSelector::isInCompactMode() { return osu->isInPlayMode(); }
+bool ModSelector::isInCompactMode() const { return osu->isInPlayMode(); }
 
-bool ModSelector::isCSOverrideSliderActive() { return this->CSSlider->isActive(); }
+bool ModSelector::isCSOverrideSliderActive() const { return this->CSSlider->isActive(); }
 
-bool ModSelector::isMouseInScrollView() { return this->experimentalContainer->isMouseInside() && this->isVisible(); }
+bool ModSelector::isMouseInScrollView() const {
+    // isVisible is not const due to bad ui framework design, but it is const (it's not even overridden in this case)
+    return this->experimentalContainer->isMouseInside() && const_cast<ModSelector *>(this)->isVisible();
+}
 
 bool ModSelector::isMouseInside() {
     return this->isVisible()                                                                                      //
@@ -1021,17 +1023,17 @@ UIModSelectorModButton *ModSelector::getModButtonOnGrid(int x, int y) {
 ModSelector::OVERRIDE_SLIDER ModSelector::addOverrideSlider(UString text, const UString &labelText, ConVar *cvar,
                                                             float min, float max, UString tooltipText,
                                                             ConVar *lockCvar) {
-    int height = 25;
+    const float height = 25;
 
     OVERRIDE_SLIDER os;
     if(lockCvar != nullptr) {
-        os.lock = new ModSelectorOverrideSliderLockButton(0, 0, height, height, "", "");
+        os.lock = new ModSelectorOverrideSliderLockButton(0.f, 0.f, height, height, "", "");
         os.lock->setChangeCallback(SA::MakeDelegate<&ModSelector::onOverrideSliderLockChange>(this));
     }
-    os.desc = new ModSelectorOverrideSliderDescButton(0, 0, 100, height, "", std::move(text));
+    os.desc = new ModSelectorOverrideSliderDescButton(0.f, 0.f, 100.f, height, "", std::move(text));
     os.desc->setTooltipText(std::move(tooltipText));
-    os.slider = new UISlider(0, 0, 100, height, "");
-    os.label = new CBaseUILabel(0, 0, 100, height, labelText, labelText);
+    os.slider = new UISlider(0.f, 0.f, 100.f, height, "");
+    os.label = new CBaseUILabel(0.f, 0.f, 100.f, height, labelText, labelText);
     os.cvar = cvar;
     os.lockCvar = lockCvar;
 
@@ -1145,7 +1147,8 @@ void ModSelector::resetMods() {
 
     for(auto &overrideSlider : this->overrideSliders) {
         // HACKHACK: force small delta to force an update (otherwise values could get stuck, e.g. for "Use Mods" context
-        // menu) HACKHACK: only animate while visible to workaround "Use mods" bug (if custom speed multiplier already
+        // menu)
+        // HACKHACK: only animate while visible to workaround "Use mods" bug (if custom speed multiplier already
         // set and then "Use mods" with different custom speed multiplier would reset to 1.0x because of anim)
         overrideSlider.slider->setValue(overrideSlider.slider->getMin() + 0.0001f, this->bVisible);
         overrideSlider.slider->setValue(overrideSlider.slider->getMin(), this->bVisible);
@@ -1167,7 +1170,7 @@ void ModSelector::resetMods() {
     }
 }
 
-LegacyFlags ModSelector::getModFlags() {
+LegacyFlags ModSelector::getModFlags() const {
     // We need the mod flags to always be up to date
     auto mods = Replay::Mods::from_cvars();
     return mods.to_legacy();

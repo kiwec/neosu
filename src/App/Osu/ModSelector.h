@@ -39,12 +39,12 @@ class ModSelector final : public UIScreen {
     void toggleAuto();
     void resetModsUserInitiated();
     void resetMods();
-    LegacyFlags getModFlags();
+    [[nodiscard]] LegacyFlags getModFlags() const;
     void enableModsFromFlags(LegacyFlags flags);
 
-    bool isInCompactMode();
-    bool isCSOverrideSliderActive();
-    bool isMouseInScrollView();
+    [[nodiscard]] bool isInCompactMode() const;
+    [[nodiscard]] bool isCSOverrideSliderActive() const;
+    [[nodiscard]] bool isMouseInScrollView() const;
     bool isMouseInside() override;
 
     void updateButtons(bool initial = false);
@@ -80,8 +80,8 @@ class ModSelector final : public UIScreen {
     };
 
     struct EXPERIMENTAL_MOD {
-        CBaseUIElement *element;
-        ConVar *cvar;
+        CBaseUIElement *element{nullptr};
+        ConVar *cvar{nullptr};
     };
 
     UIModSelectorModButton *setModButtonOnGrid(int x, int y, int state, bool initialState, ConVar *modCvar,
@@ -109,8 +109,8 @@ class ModSelector final : public UIScreen {
     float fExperimentalAnimation;
     bool bScheduledHide;
     bool bExperimentalVisible;
-    CBaseUIContainer *overrideSliderContainer;
-    CBaseUIScrollView *experimentalContainer;
+    std::unique_ptr<CBaseUIContainer> overrideSliderContainer;
+    std::unique_ptr<CBaseUIScrollView> experimentalContainer;
 
     bool bWaitForCSChangeFinished;
     bool bWaitForSpeedChangeFinished;
