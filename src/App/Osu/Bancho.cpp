@@ -1211,7 +1211,7 @@ std::string BanchoState::get_disk_uuid_win32() {
 
 std::string BanchoState::get_disk_uuid_wasm() {
 #ifdef MCENGINE_PLATFORM_WASM
-    FILE *f = File::fopen_c("/persist/client_id", "r");
+    FILE *f = File::fopen_c(NEOSU_DATA_DIR "client_id", "r");
     if(f) {
         std::array<char, 64> buf{};
         fgets(buf.data(), buf.size(), f);
@@ -1220,7 +1220,7 @@ std::string BanchoState::get_disk_uuid_wasm() {
     }
 
     const char *uuid = emscripten_run_script_string("crypto.randomUUID()");
-    f = File::fopen_c("/persist/client_id", "w");
+    f = File::fopen_c(NEOSU_DATA_DIR "client_id", "w");
     if(f) {
         fputs(uuid, f);
         fclose(f);

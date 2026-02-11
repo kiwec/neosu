@@ -138,15 +138,15 @@ namespace std {
 template <>
 struct hash<FinishedScore> {
     using is_avalanching = void;
-    size_t operator()(const FinishedScore &s) const noexcept {
-        size_t h = hash<MD5Hash>{}(s.beatmap_hash);
+    u64 operator()(const FinishedScore &s) const noexcept {
+        u64 h = hash<MD5Hash>{}(s.beatmap_hash);
 
-        auto combine = [&h](size_t v) { h ^= v + 0x9e3779b9 + (h << 6) + (h >> 2); };
+        auto combine = [&h](u64 v) { h ^= v + 0x9e3779b9 + (h << 6) + (h >> 2); };
 
         combine(s.unixTimestamp);
-        combine(static_cast<size_t>(s.mods.flags));
+        combine(static_cast<u64>(s.mods.flags));
         combine(s.score);
-        combine(static_cast<size_t>(s.bancho_score_id));
+        combine(static_cast<u64>(s.bancho_score_id));
         combine(hash<string_view>{}(s.playerName));
 
         return h;

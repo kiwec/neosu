@@ -28,9 +28,9 @@ using unstable_stringmap = flat::map<std::string, T, UnstableStringHash, std::eq
 struct StableStringHash {
     using is_transparent = void;
 
-    std::size_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
-    std::size_t operator()(const std::string &s) const { return std::hash<std::string>{}(s); }
-    std::size_t operator()(const char *s) const { return std::hash<std::string_view>{}(std::string_view(s)); }
+    uint64_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
+    uint64_t operator()(const std::string &s) const { return std::hash<std::string>{}(s); }
+    uint64_t operator()(const char *s) const { return std::hash<std::string_view>{}(std::string_view(s)); }
 };
 
 template <typename T>
@@ -38,8 +38,8 @@ using stable_stringmap = std::unordered_map<std::string, T, StableStringHash, st
 
 struct StringHashNcase {
    private:
-    [[nodiscard]] inline std::size_t hashFunc(std::string_view str) const {
-        std::size_t hash = 0;
+    [[nodiscard]] inline uint64_t hashFunc(std::string_view str) const {
+        uint64_t hash = 0;
         for(auto &c : str) {
             hash = hash * 31 + std::tolower(static_cast<unsigned char>(c));
         }
@@ -49,8 +49,8 @@ struct StringHashNcase {
    public:
     using is_transparent = void;
 
-    std::size_t operator()(const std::string &s) const { return hashFunc(s); }
-    std::size_t operator()(std::string_view sv) const { return hashFunc(sv); }
+    uint64_t operator()(const std::string &s) const { return hashFunc(s); }
+    uint64_t operator()(std::string_view sv) const { return hashFunc(sv); }
 };
 
 struct StringEqualNcase {

@@ -113,12 +113,12 @@ namespace std {
 
 template <>
 struct hash<MD5String> {
-    size_t operator()(const MD5String &md5) const noexcept { return hash<string_view>{}(md5.string()); }
+    uint64_t operator()(const MD5String &md5) const noexcept { return hash<string_view>{}(md5.string()); }
 };
 
 template <>
 struct hash<MD5Hash> {
-    size_t operator()(const MD5Hash &md5) const noexcept {
+    uint64_t operator()(const MD5Hash &md5) const noexcept {
         return hash<string_view>{}(string_view(reinterpret_cast<const char *>(md5.data()), md5.size()));
     }
 };
@@ -148,7 +148,7 @@ template <>
 struct Hash::flat::hash<MD5Hash> : Hash::flat::hash<std::string_view> {
     using is_avalanching = void;
 
-    size_t operator()(const MD5Hash &md5) const noexcept {
+    uint64_t operator()(const MD5Hash &md5) const noexcept {
         return Hash::flat::hash<std::string_view>{}(
             std::string_view(reinterpret_cast<const char *>(md5.data()), md5.size()));
     }

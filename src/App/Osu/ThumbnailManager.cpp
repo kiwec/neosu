@@ -4,6 +4,7 @@
 #include "AsyncIOHandler.h"
 
 #include "Downloader.h"
+#include "Graphics.h"
 #include "ResourceManager.h"
 #include "Engine.h"
 #include "OsuConVars.h"
@@ -34,8 +35,6 @@ Image* ThumbnailManager::try_get_image(const ThumbIdentifier& identifier) {
     if(!entry.image) {
         entry.image = this->load_image(entry);
     }
-
-    assert(entry.image && "ThumbnailManager::try_get_image: malloc failed");
 
     // return only if ready (async loading complete)
     if(entry.image->isReady()) {
@@ -154,7 +153,9 @@ Image* ThumbnailManager::load_image(const ThumbEntry& entry) {
 
     resourceManager->requestNextLoadAsync();
     // the path *is* the resource name
-    return resourceManager->loadImageAbs(entry.file_path, entry.file_path);
+    Image *ret = resourceManager->loadImageAbs(entry.file_path, entry.file_path);
+    assert(ret && "ThumbnailManager::load_image: malloc failed");
+    return ret;
 }
 
 void ThumbnailManager::prune_oldest_entries() {
@@ -202,6 +203,7 @@ bool ThumbnailManager::download_image(const ThumbIdentifier& identifier) {
         return false;
     }
     this->temp_img_download_data = dl.take_data();
+    dl.reset();
     return !this->temp_img_download_data.empty();
 }
 

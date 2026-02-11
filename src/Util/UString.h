@@ -375,7 +375,7 @@ class UString {
 namespace std {
 template <>
 struct hash<UString> {
-    size_t operator()(const UString &str) const noexcept { return hash<std::u16string>()(str.sUnicode); }
+    uint64_t operator()(const UString &str) const noexcept { return hash<std::u16string>()(str.sUnicode); }
 };
 }  // namespace std
 

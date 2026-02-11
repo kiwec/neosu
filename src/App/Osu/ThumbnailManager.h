@@ -21,8 +21,8 @@ template <>
 struct hash<::ThumbIdentifier> {
     using is_avalanching = void;
 
-    size_t operator()(const ::ThumbIdentifier& thumb) const noexcept {
-        size_t h = hash<std::string_view>{}(thumb.save_path);
+    u64 operator()(const ::ThumbIdentifier& thumb) const noexcept {
+        u64 h = hash<std::string_view>{}(thumb.save_path);
         h ^= hash<std::string_view>{}(thumb.download_url) + 0x9e3779b9 + (h << 6) + (h >> 2);
         return h;
     }
