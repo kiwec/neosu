@@ -48,7 +48,7 @@ static f64 TOAST_SCREEN_RIGHT_MARGIN = 10.0;
 
 ToastElement::ToastElement(const UString &text, Color borderColor_arg, ToastElement::TYPE type)
     : CBaseUIButton(0, 0, 0, 0, "", "") {
-    this->grabs_clicks = true;
+    this->setGrabClicks(true);
 
     // TODO: animations
 

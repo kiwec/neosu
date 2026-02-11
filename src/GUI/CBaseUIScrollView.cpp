@@ -124,7 +124,7 @@ bool ScrollContainer::isActive() {
 
 CBaseUIScrollView::CBaseUIScrollView(f32 xPos, f32 yPos, f32 xSize, f32 ySize, const UString &name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, name), container(xPos, yPos, xSize, ySize, name) {
-    this->grabs_clicks = true;
+    this->setGrabClicks(true);
 
     this->iScrollResistance = cv::ui_scrollview_resistance.getInt();  // TODO: dpi handling
 }

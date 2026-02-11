@@ -28,7 +28,7 @@ CBaseUITextbox::CBaseUITextbox(float xPos, float yPos, float xSize, float ySize,
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
     this->setKeepActive(true);
 
-    this->grabs_clicks = true;
+    this->setGrabClicks(true);
 
     this->font = engine->getDefaultFont();
 

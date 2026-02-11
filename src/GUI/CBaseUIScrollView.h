@@ -74,10 +74,22 @@ class CBaseUIScrollView : public CBaseUIElement {
         this->bHorizontalScrolling = horizontalScrolling;
         return this;
     }
+
+    CBaseUIScrollView *setHorizontalClipping(bool horizontalClipping) {
+        this->bHorizontalClipping = horizontalClipping;
+        return this;
+    }
+
     CBaseUIScrollView *setVerticalScrolling(bool verticalScrolling) {
         this->bVerticalScrolling = verticalScrolling;
         return this;
     }
+
+    CBaseUIScrollView *setVerticalClipping(bool verticalClipping) {
+        this->bVerticalClipping = verticalClipping;
+        return this;
+    }
+
     CBaseUIScrollView *setScrollSizeToContent(int border = 5);
     CBaseUIScrollView *setScrollResistance(int scrollResistanceInPixels) {
         this->iScrollResistance = scrollResistanceInPixels;
@@ -88,6 +100,16 @@ class CBaseUIScrollView : public CBaseUIElement {
         this->bBlockScrolling = block;
         return this;
     }  // means: disable scrolling, not scrolling in 'blocks'
+
+    CBaseUIScrollView *setScrollbarOnLeft(bool onLeft) {
+        this->bScrollbarOnLeft = onLeft;
+        return this;
+    }
+
+    CBaseUIScrollView *setAutoscroll(bool autoscroll) {
+        this->sticky = autoscroll;
+        return this;
+    }
 
     void setScrollMouseWheelMultiplier(f32 scrollMouseWheelMultiplier) {
         this->fScrollMouseWheelMultiplier = scrollMouseWheelMultiplier;
@@ -165,6 +187,12 @@ class CBaseUIScrollView : public CBaseUIElement {
    protected:
     void onMoved() override;
 
+    void updateClipping();
+    void updateScrollbars();
+
+    void scrollToYInt(int scrollPosY, bool animated = true, bool slow = true);
+    void scrollToXInt(int scrollPosX, bool animated = true, bool slow = true);
+
     // vars
     Color backgroundColor{0xff000000};
     Color frameColor{0xffffffff};
@@ -211,14 +239,6 @@ class CBaseUIScrollView : public CBaseUIElement {
     bool bDrawBackground{true};
     bool bDrawScrollbars{true};
 
-   private:
-    void updateClipping();
-    void updateScrollbars();
-
-    void scrollToYInt(int scrollPosY, bool animated = true, bool slow = true);
-    void scrollToXInt(int scrollPosX, bool animated = true, bool slow = true);
-
-   public:
     // When you scrolled to the bottom, and new content is added, setting this
     // to true makes it so you'll stay at the bottom.
     // Useful in places where you're waiting on new content, like chat logs.
@@ -227,5 +247,6 @@ class CBaseUIScrollView : public CBaseUIElement {
     bool bHorizontalClipping{true};
     bool bVerticalClipping{true};
     bool bScrollbarOnLeft{false};
+
     bool bClippingDirty{true};  // start true for initial update
 };

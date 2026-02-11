@@ -179,6 +179,13 @@ class CBaseUIElement : public KeyboardListener {
         this->bHandleRightMouse = handle;
         return this;
     }
+
+    // TODO: remove this, changes behavior in more ways than just mouse handling
+    virtual CBaseUIElement *setGrabClicks(bool grabClicks) {
+        this->grabs_clicks = grabClicks;
+        return this;
+    }
+
     // actions
     virtual void stealFocus();
 
@@ -214,9 +221,8 @@ class CBaseUIElement : public KeyboardListener {
     // vec2 &vmSize;  // reference to relRect.vSize
 
     // attributes
-   public:
-    bool grabs_clicks{false};  // TODO: remove this (confusing behavior)
    protected:
+    bool grabs_clicks{false};  // TODO: remove this (confusing behavior)
     bool bVisible{true};
     bool bActive{false};  // we are doing something, e.g. textbox is blinking and ready to receive input
     bool bBusy{false};    // we demand the focus to be kept on us, e.g. click-drag scrolling in a scrollview

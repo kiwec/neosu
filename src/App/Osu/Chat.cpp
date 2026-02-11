@@ -61,11 +61,11 @@ ChatChannel::ChatChannel(Chat *chat, UString name_arg) {
     this->ui->setBackgroundColor(0xdd000000);
     this->ui->setHorizontalScrolling(false);
     this->ui->setDrawScrollbars(true);
-    this->ui->sticky = true;
+    this->ui->setAutoscroll(true);
 
     if(chat != nullptr) {
         this->btn = new UIButton(0, 0, 0, 0, "button", this->name);
-        this->btn->grabs_clicks = true;
+        this->btn->setGrabClicks(true);
         this->btn->setUseDefaultSkin();
         this->btn->setClickCallback(SA::MakeDelegate<&ChatChannel::onChannelButtonClick>(this));
         this->chat->button_container->addBaseUIElement(this->btn);
@@ -91,10 +91,10 @@ void ChatChannel::add_message(ChatMessage msg) {
 
     float x = 10;
 
-    bool is_action = msg.text.startsWith("\001ACTION");
+    const bool is_action = msg.text.startsWith(US_("\001ACTION"));
     if(is_action) {
         msg.text.erase(0, 7);
-        if(msg.text.endsWith("\001")) {
+        if(msg.text.endsWith(US_("\001"))) {
             msg.text.erase(msg.text.length() - 1, 1);
         }
     }
