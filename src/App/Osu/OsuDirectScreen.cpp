@@ -75,6 +75,7 @@ class OnlineMapListing : public CBaseUIContainer {
     bool installed;
     bool downloading{false};
     bool download_failed{false};
+    Downloader::DownloadHandle dl_handle;
 };
 
 // "b.{}/thumb/{:d}.jpg";
@@ -187,25 +188,15 @@ void OnlineMapListing::draw() {
     // TODOs:
     //   - move downloading out of draw()
     //   - continue downloading even if clipped (not visible)
-    //   - allow concurrent downloads
 
     CBaseUIContainer::draw();
 
     f32 download_progress = 0.f;
     if(this->downloading) {
         // TODO: downloads will not finish if player leaves this screen
-        Downloader::download_beatmapset(this->meta.set_id, &download_progress);
-        if(download_progress == -1.f) {
-            // TODO: display error toast
+        bool ready = Downloader::download_beatmapset(this->meta.set_id, this->dl_handle);
+        if(ready) {
             this->downloading = false;
-            this->download_failed = true;
-            download_progress = 0.f;
-        } else if(download_progress < 1.f) {
-            // To show we're downloading, always draw at least 5%
-            download_progress = std::max(0.05f, download_progress);
-        } else {
-            this->downloading = false;
-            download_progress = 0.f;
 
             std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", this->meta.set_id);
             const auto set = db->addBeatmapSet(mapset_path, this->meta.set_id);
@@ -220,6 +211,13 @@ void OnlineMapListing::draw() {
             } else {
                 this->download_failed = true;
             }
+        } else if(this->dl_handle.failed()) {
+            // TODO: display error toast
+            this->downloading = false;
+            this->download_failed = true;
+        } else {
+            // To show we're downloading, always draw at least 5%
+            download_progress = std::max(0.05f, this->dl_handle.progress());
         }
     }
 
@@ -489,8 +487,8 @@ void OsuDirectScreen::search(std::string_view query) {
 
     const i32 offset = this->results->container.getElements().size();
     const i32 filter = cv::direct_ranking_status_filter.getInt();
-    std::string url = fmt::format("osu.{}/web/osu-search.php?m=0&r={}&q={}&p={}", BanchoState::endpoint,
-                                  filter, Mc::Net::urlEncode(query), offset);
+    std::string url = fmt::format("osu.{}/web/osu-search.php?m=0&r={}&q={}&p={}", BanchoState::endpoint, filter,
+                                  Mc::Net::urlEncode(query), offset);
     BANCHO::Api::append_auth_params(url);
 
     Mc::Net::RequestOptions options{

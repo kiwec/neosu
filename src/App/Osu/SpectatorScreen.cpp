@@ -157,16 +157,16 @@ void SpectatorScreen::update(CBaseUIEventCtx &c) {
 
     // Control client state
     // XXX: should use map_md5 instead of map_id
-    f32 download_progress = -1.f;
     const UserInfo *user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
     if(user_info->map_id == -1 || user_info->map_id == 0) {
         if(osu->isInPlayMode()) {
             osu->getMapInterface()->stop(true);
         }
     } else if(user_info->mode == GameMode::STANDARD && user_info->map_id != current_map_id) {
-        auto beatmap = Downloader::download_beatmap(user_info->map_id, user_info->map_md5, &download_progress);
+        auto beatmap = Downloader::download_beatmap(user_info->map_id, user_info->map_md5, this->map_dl);
         if(beatmap != nullptr) {
             current_map_id = user_info->map_id;
+            this->map_dl.reset();
             ui->setScreen(ui->getSpectatorScreen());
             ui->getSongBrowser()->onDifficultySelected(beatmap, false);
             osu->getMapInterface()->spectate();
@@ -197,7 +197,7 @@ void SpectatorScreen::update(CBaseUIEventCtx &c) {
         this->status->setText(fmt::format("{:s} is playing minigames", user_info->name));
     } else if(user_info->map_id != -1 && user_info->map_id != 0) {
         if(user_info->map_id != current_map_id) {
-            if(download_progress == -1.f) {
+            if(this->map_dl.failed()) {
                 auto error_str = fmt::format("Failed to download Beatmap #{:d} :(", user_info->map_id);
                 this->status->setText(error_str);
 
@@ -210,7 +210,7 @@ void SpectatorScreen::update(CBaseUIEventCtx &c) {
                     last_failed_map = user_info->map_id;
                 }
             } else {
-                auto text = fmt::format("Downloading map... {:.2f}%", download_progress * 100.f);
+                auto text = fmt::format("Downloading map... {:.2f}%", this->map_dl.progress() * 100.f);
                 this->status->setText(text);
             }
         }

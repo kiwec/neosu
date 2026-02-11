@@ -248,21 +248,21 @@ void RoomScreen::draw() {
         this->map_title->setSizeToContent(0, 0);
         this->ready_btn->is_loading = true;
     } else if(BanchoState::room.map_id != current_map_id) {
-        float progress = -1.f;
-        auto beatmap = Downloader::download_beatmap(BanchoState::room.map_id, BanchoState::room.map_md5, &progress);
-        if(progress == -1.f) {
+        auto beatmap = Downloader::download_beatmap(BanchoState::room.map_id, BanchoState::room.map_md5, this->map_dl);
+        if(this->map_dl.failed()) {
             std::string error_str = fmt::format("Failed to download Beatmap #{:d} :(", BanchoState::room.map_id);
             this->map_title->setText(error_str);
             this->map_title->setSizeToContent(0, 0);
             this->ready_btn->is_loading = true;
-        } else if(progress < 1.f) {
-            std::string text = fmt::format("Downloading... {:.2f}%", progress * 100.f);
+        } else if(beatmap != nullptr) {
+            current_map_id = BanchoState::room.map_id;
+            this->map_dl.reset();
+            this->on_map_change();
+        } else {
+            std::string text = fmt::format("Downloading... {:.2f}%", this->map_dl.progress() * 100.f);
             this->map_title->setText(text);
             this->map_title->setSizeToContent(0, 0);
             this->ready_btn->is_loading = true;
-        } else if(beatmap != nullptr) {
-            current_map_id = BanchoState::room.map_id;
-            this->on_map_change();
         }
     }
 

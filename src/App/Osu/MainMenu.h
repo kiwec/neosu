@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "CBaseUIButton.h"
+#include "DownloadHandle.h"
 #include "MouseListener.h"
 #include "UIScreen.h"
 #include "Resource.h"
@@ -144,6 +145,7 @@ class MainMenu final : public UIScreen, public MouseListener {
     f32 fStartupAnim2{0.f};
     float fPrevShuffleTime{0.f};
 
+    Downloader::DownloadHandle server_icon_dl;
     Image *logo_img;
 
     void drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha);

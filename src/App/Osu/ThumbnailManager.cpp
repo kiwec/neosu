@@ -189,15 +189,20 @@ void ThumbnailManager::prune_oldest_entries() {
 }
 
 bool ThumbnailManager::download_image(const ThumbIdentifier& identifier) {
-    float progress = -1.f;
-    int response_code;
-    // TODO: constantly requesting the full download is a bad API, should be a way to just check if it's already downloading
     // TODO: only download a single (response_code == 404) result and share it
-    Downloader::download(identifier.download_url, &progress, this->temp_img_download_data, &response_code);
-    if(progress == -1.f) this->id_blacklist.insert(identifier);
-    if(progress == 1.f && response_code != 200) this->id_blacklist.insert(identifier);
-
-    return (progress == 1.f && !this->temp_img_download_data.empty());
+    auto& dl = this->images[identifier].dl_handle;
+    if(!dl) dl = Downloader::download(identifier.download_url);
+    if(dl.failed()) {
+        this->id_blacklist.insert(identifier);
+        return false;
+    }
+    if(!dl.completed()) return false;
+    if(dl.response_code() != 200) {
+        this->id_blacklist.insert(identifier);
+        return false;
+    }
+    this->temp_img_download_data = dl.take_data();
+    return !this->temp_img_download_data.empty();
 }
 
 void ThumbnailManager::clear() {

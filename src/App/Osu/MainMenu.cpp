@@ -1140,21 +1140,25 @@ void MainMenu::update(CBaseUIEventCtx &c) {
     // load server icon
     if(!engine->isShuttingDown() && BanchoState::is_online() && BanchoState::server_icon_url.length() > 0 &&
        BanchoState::server_icon == nullptr) {
-        const std::string icon_path =
-            fmt::format("{}/avatars/{}/server_icon", env->getCacheDir(), BanchoState::endpoint);
+        if(!this->server_icon_dl) this->server_icon_dl = Downloader::download(BanchoState::server_icon_url);
 
-        float progress = -1.f;
-        std::vector<u8> data;
-        int response_code;
-        Downloader::download(BanchoState::server_icon_url, &progress, data, &response_code);
-        if(progress == -1.f || response_code != 200) BanchoState::server_icon_url = "";
-        if(!data.empty()) {
-            io->write(icon_path, data, [icon_path](bool success) {
-                if(success) {
-                    resourceManager->requestNextLoadAsync();
-                    BanchoState::server_icon = resourceManager->loadImageAbs(icon_path, icon_path);
-                }
-            });
+        if(this->server_icon_dl.failed() ||
+           (this->server_icon_dl.completed() && this->server_icon_dl.response_code() != 200)) {
+            BanchoState::server_icon_url = "";
+            this->server_icon_dl.reset();
+        } else if(this->server_icon_dl.completed()) {
+            const std::string icon_path =
+                fmt::format("{}/avatars/{}/server_icon", env->getCacheDir(), BanchoState::endpoint);
+            auto data = this->server_icon_dl.take_data();
+            this->server_icon_dl.reset();
+            if(!data.empty()) {
+                io->write(icon_path, std::move(data), [icon_path](bool success) {
+                    if(success) {
+                        resourceManager->requestNextLoadAsync();
+                        BanchoState::server_icon = resourceManager->loadImageAbs(icon_path, icon_path);
+                    }
+                });
+            }
         }
     }
 }

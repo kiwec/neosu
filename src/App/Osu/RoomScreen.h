@@ -2,6 +2,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 
 #include "CBaseUIScrollView.h"
+#include "DownloadHandle.h"
 #include "UIScreen.h"
 #include "score.h"
 
@@ -39,7 +40,7 @@ class RoomScreen final : public UIScreen {
     ~RoomScreen() override;
 
     void draw() override;
-    void update(CBaseUIEventCtx &c) override;
+    void update(CBaseUIEventCtx& c) override;
     void onKeyDown(KeyboardEvent& e) override;
     void onKeyUp(KeyboardEvent& e) override;
     void onChar(KeyboardEvent& e) override;
@@ -105,4 +106,5 @@ class RoomScreen final : public UIScreen {
     McFont* lfont{nullptr};
 
     time_t last_packet_tms = {0};
+    Downloader::DownloadHandle map_dl;
 };

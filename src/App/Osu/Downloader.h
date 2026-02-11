@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 
+#include <memory>
 #include <vector>
 #include <string>
 
@@ -9,6 +10,12 @@ struct MD5Hash;
 struct Packet;
 
 namespace Downloader {
+
+struct Request;
+
+// RAII handle for download lifetime management.
+// When all handles for a download drop, the queue entry becomes eligible for cleanup.
+class DownloadHandle;
 
 struct BeatmapMetadata {
     std::string diffname;
@@ -38,19 +45,18 @@ BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response);
 
 void abort_downloads();
 
-// Downloads `url` and stores downloaded file data into `out`
-// When file is fully downloaded, `progress` is 1 and `out` is not NULL
-// When download fails, `progress` is -1
-void download(std::string_view url, float *progress, std::vector<u8> &out, int *response_code);
+// Start an HTTP download. Deduplicates by URL.
+DownloadHandle download(std::string_view url);
 
-// Downloads and extracts given beatmapset
-// When download/extraction fails, `progress` is -1
-void download_beatmapset(u32 set_id, float *progress);
+// Downloads and extracts given beatmapset.
+// Returns true when files are on disk. Check handle.failed() on failure.
+bool download_beatmapset(u32 set_id, DownloadHandle &handle);
 
-// Downloads given beatmap (unless it already exists)
-// When download/extraction fails, `progress` is -1
-DatabaseBeatmap *download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float *progress);
-DatabaseBeatmap *download_beatmap(i32 beatmap_id, i32 beatmapset_id, float *progress);
+// Downloads given beatmap (unless it already exists).
+// Returns the beatmap when ready, nullptr while in-progress or on failure.
+// Check handle.failed() to distinguish.
+DatabaseBeatmap *download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, DownloadHandle &handle);
+DatabaseBeatmap *download_beatmap(i32 beatmap_id, i32 beatmapset_id, DownloadHandle &handle);
 void process_beatmapset_info_response(const Packet &packet);
 
 i32 extract_beatmapset_id(const u8 *data, size_t data_s);

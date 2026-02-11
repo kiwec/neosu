@@ -1,4 +1,5 @@
 #include "Downloader.h"
+#include "DownloadHandle.h"
 
 #include "Archival.h"
 #include "Bancho.h"
@@ -22,6 +23,47 @@
 #include <chrono>
 #include <utility>
 
+namespace Downloader {
+
+struct Request {
+    std::string url;
+    std::string host;
+    std::atomic<float> progress{0.0f};
+    std::atomic<int> response_code{0};
+    std::vector<u8> data;
+    Sync::mutex data_mutex;
+    std::atomic<bool> downloading{false};
+    std::atomic<bool> completed{false};
+};
+
+float DownloadHandle::progress() const {
+    if(!*this) return 0.f;
+    return (*this)->progress.load(std::memory_order_acquire);
+}
+
+int DownloadHandle::response_code() const {
+    if(!*this) return 0;
+    return (*this)->response_code.load(std::memory_order_acquire);
+}
+
+bool DownloadHandle::completed() const {
+    if(!*this) return false;
+    return (*this)->completed.load(std::memory_order_acquire);
+}
+
+bool DownloadHandle::failed() const {
+    if(!*this) return false;
+    return (*this)->progress.load(std::memory_order_acquire) < 0.f;
+}
+
+std::vector<u8> DownloadHandle::take_data() {
+    auto& request = *this;
+    if(!request || !request->completed.load(std::memory_order_acquire)) return {};
+    if(request->progress.load(std::memory_order_acquire) < 0.f) return {};
+    Sync::scoped_lock lock(request->data_mutex);
+    return std::move(request->data);
+}
+
 namespace {  // static
 
 class DownloadManager;
@@ -29,24 +71,14 @@ class DownloadManager;
 // shared global instance
 std::shared_ptr<DownloadManager> s_download_manager;
 
+// TODO: this shouldn't need synchronization at all (besides progress_callback)
 class DownloadManager {
     NOCOPY_NOMOVE(DownloadManager)
    private:
-    struct DownloadRequest {
-        std::string url;
-        std::string host;
-        std::atomic<float> progress{0.0f};
-        std::atomic<int> response_code{0};
-        std::vector<u8> data;
-        Sync::mutex data_mutex;
-        std::atomic<bool> downloading{false};
-        std::atomic<bool> completed{false};
-    };
-
     std::atomic<bool> shutting_down{false};
 
     Sync::mutex queue_mutex;
-    Hash::unstable_stringmap<std::shared_ptr<DownloadRequest>> queue;
+    Hash::unstable_stringmap<std::weak_ptr<Request>> queue;
     Hash::unstable_stringmap<std::chrono::steady_clock::time_point> per_host_retry_after;
 
     void checkAndStartNextDownload() {
@@ -56,17 +88,27 @@ class DownloadManager {
 
         auto now = std::chrono::steady_clock::now();
 
-        std::shared_ptr<DownloadRequest> request = nullptr;
-        for(const auto& [_url, dl] : this->queue) {
-            if(dl->downloading.load(std::memory_order_acquire)) continue;
-            if(dl->completed.load(std::memory_order_acquire)) continue;
-            if(this->per_host_retry_after.contains(dl->host) && this->per_host_retry_after[dl->host] > now) continue;
+        // sweep expired entries and find next request to start
+        std::shared_ptr<Request> request = nullptr;
+        for(auto it = this->queue.begin(); it != this->queue.end();) {
+            auto locked = it->second.lock();
+            if(!locked) {
+                it = this->queue.erase(it);
+                continue;
+            }
 
-            // TODO: prevent more than 1 simultaneous download per domain
-            //       (currently can happen if downloads take more than 100ms)
-
-            request = dl;
-            break;
+            if(!request) {
+                if(!locked->downloading.load(std::memory_order_acquire) &&
+                   !locked->completed.load(std::memory_order_acquire)) {
+                    if(!this->per_host_retry_after.contains(locked->host) ||
+                       this->per_host_retry_after[locked->host] <= now) {
+                        // TODO: prevent more than 1 simultaneous download per domain
+                        //       (currently can happen if downloads take more than 100ms)
+                        request = locked;
+                    }
+                }
+            }
+            ++it;
         }
         if(request == nullptr) return;
 
@@ -91,7 +133,7 @@ class DownloadManager {
                                          });
     }
 
-    void onDownloadComplete(const std::shared_ptr<DownloadRequest>& request, Mc::Net::Response response) {
+    void onDownloadComplete(const std::shared_ptr<Request>& request, Mc::Net::Response response) {
         if(this->shutting_down.load(std::memory_order_acquire)) return;
 
         // update request with results
@@ -145,37 +187,36 @@ class DownloadManager {
         }
     }
 
-    std::shared_ptr<DownloadRequest> start_download(std::string_view url) {
+    std::shared_ptr<Request> start_download(std::string_view url) {
         if(this->shutting_down.load(std::memory_order_acquire)) return nullptr;
 
         Sync::scoped_lock lock(this->queue_mutex);
 
         // check if already downloading or cached
         if(auto it = this->queue.find(url); it != this->queue.end()) {
-            std::shared_ptr<DownloadRequest> dl = it->second;
-
-            // remove from queue once we finished the download
-            if(dl->completed.load(std::memory_order_acquire)) {
+            auto dl = it->second.lock();
+            if(!dl) {
+                // weak_ptr expired, erase stale entry
                 this->queue.erase(it);
-            }
+            } else {
+                // if we have been rate limited, we might need to resume downloads manually
+                if(!dl->downloading.load(std::memory_order_acquire)) {
+                    this->checkAndStartNextDownload();
+                }
 
-            // if we have been rate limited, we might need to resume downloads manually
-            if(!dl->downloading.load(std::memory_order_acquire)) {
-                this->checkAndStartNextDownload();
+                return dl;
             }
-
-            return dl;
         }
 
         // create new download request
-        auto request = std::make_shared<DownloadRequest>();
+        auto request = std::make_shared<Request>();
         request->url = url;
 
         auto host_start = url.find("://") + 3;
         auto host_end = url.find('/', host_start);
         request->host = url.substr(host_start, host_end - host_start);
 
-        // queue for download
+        // queue for download (store weak_ptr)
         this->queue[url] = request;
 
         // try to start immediately if possible
@@ -214,8 +255,6 @@ i32 get_beatmapset_id_from_osu_file(const u8* osu_data, size_t s_osu_data) {
 }
 }  // namespace
 
-namespace Downloader {
-
 void abort_downloads() {
     if(s_download_manager) {
         s_download_manager->shutdown();
@@ -223,26 +262,14 @@ void abort_downloads() {
     }
 }
 
-void download(std::string_view url, float* progress, std::vector<u8>& out, int* response_code) {
+DownloadHandle download(std::string_view url) {
     if(!s_download_manager) {
         s_download_manager = std::make_shared<DownloadManager>();
     }
 
-    auto request = s_download_manager->start_download(url);
-    if(!request) {
-        *progress = -1.0f;
-        *response_code = 0;
-        return;
-    }
-
-    *progress = std::min(0.99f, request->progress.load(std::memory_order_acquire));
-
-    if(request->completed.load(std::memory_order_acquire)) {
-        Sync::scoped_lock lock(request->data_mutex);
-        *progress = 1.f;
-        *response_code = request->response_code.load(std::memory_order_acquire);
-        out = request->data;
-    }
+    auto req = s_download_manager->start_download(url);
+    if(!req) return {};
+    return DownloadHandle{std::move(req)};
 }
 
 i32 extract_beatmapset_id(const u8* data, size_t data_s) {
@@ -329,54 +356,46 @@ bool extract_beatmapset(const u8* data, size_t data_s, std::string& map_dir) {
     return true;
 }
 
-void download_beatmapset(u32 set_id, float* progress) {
+bool download_beatmapset(u32 set_id, DownloadHandle& handle) {
     // Check if we already have downloaded it
     std::string map_dir = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
-    if(env->directoryExists(map_dir)) {
-        *progress = 1.f;
-        return;
+    if(env->directoryExists(map_dir)) return true;
+
+    if(!handle) {
+        auto url = fmt::format("osu.{}/d/", BanchoState::endpoint);
+        if(cv::beatmap_mirror_override.getString().length() > 0) {
+            url = cv::beatmap_mirror_override.getString();
+        }
+        url.append(fmt::format("{:d}", set_id));
+        handle = download(url);
     }
-
-    std::vector<u8> data;
-
-    auto download_url = fmt::format("osu.{}/d/", BanchoState::endpoint);
-    if(cv::beatmap_mirror_override.getString().length() > 0) {
-        download_url = cv::beatmap_mirror_override.getString();
-    }
-    download_url.append(fmt::format("{:d}", set_id));
-
-    int response_code = 0;
-    download(download_url.c_str(), progress, data, &response_code);
-    if(response_code == 0 || *progress == -1.f) return;  // still downloading/errored
-
-    // Server returned 404 or other, treat it as an error
-    if(response_code != 200) {
-        *progress = -1.f;
-        return;
+    if(!handle.completed()) return false;
+    if(handle.failed() || handle.response_code() != 200) {
+        handle->progress.store(-1.f, std::memory_order_release);
+        return false;
     }
 
     // Download succeeded: save map to disk
-    if(!extract_beatmapset(data.data(), data.size(), map_dir)) {
-        *progress = -1.f;
-        return;
+    Sync::scoped_lock lock(handle->data_mutex);
+    if(!extract_beatmapset(handle->data.data(), handle->data.size(), map_dir)) {
+        handle->progress.store(-1.f, std::memory_order_release);
+        return false;
     }
+    return true;
 }
 
-DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float* progress) {
+// TODO: deduplicate
+DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, DownloadHandle& handle) {
     static i32 queried_map_id = 0;
 
     auto beatmap = db->getBeatmapDifficulty(beatmap_md5);
-    if(beatmap != nullptr) {
-        *progress = 1.f;
-        return beatmap;
-    }
+    if(beatmap != nullptr) return beatmap;
 
     // XXX: Currently, we do not try to find the difficulty from unloaded database, or from neosu downloaded maps
     auto it = beatmap_to_beatmapset.find(beatmap_id);
     if(it == beatmap_to_beatmapset.end()) {
         if(queried_map_id == beatmap_id) {
             // We already queried for the beatmapset ID, and are waiting for the response
-            *progress = 0.f;
             return nullptr;
         }
 
@@ -391,27 +410,27 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float* pr
         BANCHO::Api::send_request(request);
 
         queried_map_id = beatmap_id;
-
-        *progress = 0.f;
         return nullptr;
     }
 
     i32 set_id = it->second;
     if(set_id == 0) {
-        // Already failed to load the beatmap
-        *progress = -1.f;
+        // Already failed to load the beatmap, make a dummy completed handle
+        if(!handle) {
+            handle = std::make_shared<Request>();
+            handle->completed.store(true, std::memory_order_release);
+        }
+        handle->progress.store(-1.f, std::memory_order_release);
         return nullptr;
     }
 
-    download_beatmapset(set_id, progress);
-    if(*progress == -1.f) {
-        // Download failed, don't retry
-        beatmap_to_beatmapset[beatmap_id] = 0;
+    if(!download_beatmapset(set_id, handle)) {
+        if(handle.failed()) {
+            // Download failed, don't retry
+            beatmap_to_beatmapset[beatmap_id] = 0;
+        }
         return nullptr;
     }
-
-    // Download not finished
-    if(*progress != 1.f) return nullptr;
 
     std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
     db->addBeatmapSet(mapset_path, set_id);
@@ -420,7 +439,8 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float* pr
     beatmap = db->getBeatmapDifficulty(beatmap_md5);
     if(beatmap == nullptr) {
         beatmap_to_beatmapset[beatmap_id] = 0;
-        *progress = -1.f;
+        // handle is valid here (download_beatmapset succeeded)
+        handle->progress.store(-1.f, std::memory_order_release);
         return nullptr;
     }
 
@@ -429,32 +449,26 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float* pr
     // we can still make sure at least the one we wanted is correct.
     beatmap->iID = beatmap_id;
 
-    *progress = 1.f;
     return beatmap;
 }
 
-DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* progress) {
+DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, DownloadHandle& handle) {
     static i32 queried_map_id = 0;
 
     auto beatmap = db->getBeatmapDifficulty(beatmap_id);
-    if(beatmap != nullptr) {
-        *progress = 1.f;
-        return beatmap;
-    }
+    if(beatmap != nullptr) return beatmap;
 
     // XXX: Currently, we do not try to find the difficulty from unloaded database, or from neosu downloaded maps
     auto it = beatmap_to_beatmapset.find(beatmap_id);
     if(it == beatmap_to_beatmapset.end()) {
         if(queried_map_id == beatmap_id) {
             // We already queried for the beatmapset ID, and are waiting for the response
-            *progress = 0.f;
             return nullptr;
         }
 
         // We already have the set ID, skip the API request
         if(beatmapset_id != 0) {
             beatmap_to_beatmapset[beatmap_id] = beatmapset_id;
-            *progress = 0.f;
             return nullptr;
         }
 
@@ -469,27 +483,27 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
         BANCHO::Api::send_request(request);
 
         queried_map_id = beatmap_id;
-
-        *progress = 0.f;
         return nullptr;
     }
 
     i32 set_id = it->second;
     if(set_id == 0) {
-        // Already failed to load the beatmap
-        *progress = -1.f;
+        // Already failed to load the beatmap, make a dummy completed handle
+        if(!handle) {
+            handle = std::make_shared<Request>();
+            handle->completed.store(true, std::memory_order_release);
+        }
+        handle->progress.store(-1.f, std::memory_order_release);
         return nullptr;
     }
 
-    download_beatmapset(set_id, progress);
-    if(*progress == -1.f) {
-        // Download failed, don't retry
-        beatmap_to_beatmapset[beatmap_id] = 0;
+    if(!download_beatmapset(set_id, handle)) {
+        if(handle.failed()) {
+            // Download failed, don't retry
+            beatmap_to_beatmapset[beatmap_id] = 0;
+        }
         return nullptr;
     }
-
-    // Download not finished
-    if(*progress != 1.f) return nullptr;
 
     std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
     db->addBeatmapSet(mapset_path);
@@ -498,11 +512,11 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
     beatmap = db->getBeatmapDifficulty(beatmap_id);
     if(beatmap == nullptr) {
         beatmap_to_beatmapset[beatmap_id] = 0;
-        *progress = -1.f;
+        // handle is valid here (download_beatmapset succeeded)
+        handle->progress.store(-1.f, std::memory_order_release);
         return nullptr;
     }
 
-    *progress = 1.f;
     return beatmap;
 }
 

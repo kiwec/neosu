@@ -1,6 +1,7 @@
 #pragma once
 // Copyright (c) 2024, kiwec, All rights reserved.
 
+#include "DownloadHandle.h"
 #include "UIScreen.h"
 
 class McFont;
@@ -14,7 +15,7 @@ class SpectatorScreen final : public UIScreen {
    public:
     SpectatorScreen();
 
-    void update(CBaseUIEventCtx &c) override;
+    void update(CBaseUIEventCtx& c) override;
     void draw() override;
     void onKeyDown(KeyboardEvent& e) override;
     void onStopSpectatingClicked();
@@ -29,6 +30,7 @@ class SpectatorScreen final : public UIScreen {
     UIButton* stop_btn = nullptr;
     CBaseUILabel* spectating = nullptr;
     CBaseUILabel* status = nullptr;
+    Downloader::DownloadHandle map_dl;
 };
 
 namespace Spectating {

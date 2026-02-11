@@ -923,44 +923,47 @@ void SongBrowser::update(CBaseUIEventCtx &c) {
 
     // auto-download
     if(this->map_autodl) {
-        float progress = -1.f;
-        auto beatmap = Downloader::download_beatmap(this->map_autodl, this->set_autodl, &progress);
-        if(progress == -1.f) {
+        auto beatmap = Downloader::download_beatmap(this->map_autodl, this->set_autodl, this->map_dl);
+        if(this->map_dl.failed()) {
             auto error_str = fmt::format("Failed to download Beatmap #{:d} :(", this->map_autodl);
             ui->getNotificationOverlay()->addToast(error_str, ERROR_TOAST);
             this->map_autodl = 0;
             this->set_autodl = 0;
-        } else if(progress < 1.f) {
-            // TODO @kiwec: this notification format is jank & laggy
-            auto text = fmt::format("Downloading... {:.2f}%", progress * 100.f);
-            ui->getNotificationOverlay()->addNotification(text);
+            this->map_dl.reset();
         } else if(beatmap != nullptr) {
             this->onDifficultySelected(beatmap, false);
             this->selectSelectedBeatmapSongButton();
             this->map_autodl = 0;
             this->set_autodl = 0;
+            this->map_dl.reset();
+        } else {
+            // TODO @kiwec: this notification format is jank & laggy
+            auto text = fmt::format("Downloading... {:.2f}%", this->map_dl.progress() * 100.f);
+            ui->getNotificationOverlay()->addNotification(text);
         }
     } else if(this->set_autodl) {
         if(this->selectBeatmapset(this->set_autodl)) {
             this->map_autodl = 0;
             this->set_autodl = 0;
+            this->set_dl.reset();
         } else {
-            float progress = -1.f;
-            Downloader::download_beatmapset(this->set_autodl, &progress);
-            if(progress == -1.f) {
-                auto error_str = fmt::format("Failed to download Beatmap #{:d} :(", this->map_autodl);
-                ui->getNotificationOverlay()->addToast(error_str, ERROR_TOAST);
-                this->map_autodl = 0;
-                this->set_autodl = 0;
-            } else if(progress < 1.f) {
-                // TODO @kiwec: this notification format is jank & laggy
-                auto text = fmt::format("Downloading... {:.2f}%", progress * 100.f);
-                ui->getNotificationOverlay()->addNotification(text);
-            } else {
+            bool ready = Downloader::download_beatmapset(this->set_autodl, this->set_dl);
+            if(ready) {
                 this->selectBeatmapset(this->set_autodl);
 
                 this->map_autodl = 0;
                 this->set_autodl = 0;
+                this->set_dl.reset();
+            } else if(this->set_dl.failed()) {
+                auto error_str = fmt::format("Failed to download Beatmapset #{:d} :(", this->set_autodl);
+                ui->getNotificationOverlay()->addToast(error_str, ERROR_TOAST);
+                this->map_autodl = 0;
+                this->set_autodl = 0;
+                this->set_dl.reset();
+            } else {
+                // TODO @kiwec: this notification format is jank & laggy
+                auto text = fmt::format("Downloading... {:.2f}%", this->set_dl.progress() * 100.f);
+                ui->getNotificationOverlay()->addNotification(text);
             }
         }
     }

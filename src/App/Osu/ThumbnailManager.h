@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Image.h"
+#include "DownloadHandle.h"
 #include "Hashing.h"
 
 #include <unordered_set>
@@ -61,11 +62,13 @@ class ThumbnailManager final {
     // will be unloaded (by priority of access time) to keep VRAM/RAM usage sustainable
     struct ThumbEntry {
         u32 refcount{0};
-        double last_access_time{0.0};  // timestamp of last try_get_image call; used for queue priority and VRAM eviction
-        std::string file_path;         // empty until downloaded/found on disk
-        Image* image{nullptr};         // null if not loaded in memory
+        double last_access_time{
+            0.0};               // timestamp of last try_get_image call; used for queue priority and VRAM eviction
+        std::string file_path;  // empty until downloaded/found on disk
+        Image* image{nullptr};  // null if not loaded in memory
+        Downloader::DownloadHandle dl_handle;
     };
-    static Image *load_image(ThumbEntry& entry);
+    static Image* load_image(ThumbEntry& entry);
 
     void prune_oldest_entries();
     bool download_image(const ThumbIdentifier& identifier);

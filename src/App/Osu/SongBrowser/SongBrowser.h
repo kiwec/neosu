@@ -1,7 +1,9 @@
 #pragma once
 // Copyright (c) 2016, PG & 2023-2025, kiwec & 2025, WH, All rights reserved.
-#include "ScreenBackable.h"
 #include "types.h"
+
+#include "DownloadHandle.h"
+#include "ScreenBackable.h"
 
 #include <memory>
 #include <optional>
@@ -370,6 +372,8 @@ class SongBrowser final : public ScreenBackable {
    public:
     i32 map_autodl = 0;
     i32 set_autodl = 0;
+    Downloader::DownloadHandle map_dl;
+    Downloader::DownloadHandle set_dl;
 
    private:
     // search
