@@ -221,9 +221,6 @@ class Graphics {
     // renderer actions
     virtual void flush() = 0;
 
-    // must be called in draw()
-    virtual std::vector<u8> getScreenshot(bool withAlpha = false) = 0;
-
     // can be called any time
     void takeScreenshot(ScreenshotParams params);
     inline void takeScreenshot(std::string_view savePath) {
@@ -294,6 +291,9 @@ class Graphics {
    protected:
     virtual bool init() { return true; }   // must be called after the OS implementation constructor
     virtual void onTransformUpdate() = 0;  // called if matrices have changed and need to be (re-)applied/uploaded
+
+    // takeScreenshot will queue this up to be called at the end of draw()
+    virtual std::vector<u8> getScreenshot(bool withAlpha = false) = 0;
 
     void updateTransform(bool force = false);
     void checkStackLeaks();

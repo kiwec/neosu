@@ -94,7 +94,6 @@ class OpenGLES32Interface : public Graphics {
 
     // renderer actions
     void flush() final;
-    std::vector<u8> getScreenshot(bool withAlpha = false) final;
 
     // renderer info
     [[nodiscard]] vec2 getResolution() const final { return m_vResolution; }
@@ -124,6 +123,7 @@ class OpenGLES32Interface : public Graphics {
 
    protected:
     void onTransformUpdate() final;
+    std::vector<u8> getScreenshot(bool withAlpha = false) final;
 
    private:
     void handleGLErrors();

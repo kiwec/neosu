@@ -1840,6 +1840,7 @@ void Database::saveMaps() {
             // don't add duplicate entries
             // kind of a hack, we shouldn't have added duplicates to beatmapsets in the first place
             // this happens because addBeatmapSet doesn't check if we already have it
+            // TODO: may no longer be necessary since addBeatmapSet now does have deduplication logic
             if(auto [_, newly_inserted] = folders_already_added.insert(mapset->getFolder()); newly_inserted) {
                 temp_neosu_sets.push_back(mapset.get());
             }

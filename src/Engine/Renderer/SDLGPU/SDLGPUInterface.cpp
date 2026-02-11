@@ -535,8 +535,7 @@ void SDLGPUInterface::endScene() {
     this->processPendingScreenshot();
 
     // getScreenshot() might have already submitted the command buffer, so get a new one to present
-    // FIXME: confusing
-    // FIXME: make getScreenshot private
+    // TODO: confusing
     if(!m_cmdBuf) m_cmdBuf = SDL_AcquireGPUCommandBuffer(m_device);
 
     // acquire swapchain and blit backbuffer to it for presentation

@@ -152,7 +152,6 @@ class SDLGPUInterface final : public Graphics {
 
     // renderer actions
     void flush() override;
-    std::vector<u8> getScreenshot(bool withAlpha) override;
 
     // renderer info
     const char *getName() const override;
@@ -203,6 +202,7 @@ class SDLGPUInterface final : public Graphics {
     void setTexturing(bool enabled, bool force = false);
 
    protected:
+    std::vector<u8> getScreenshot(bool withAlpha) override;
     bool init() override;
     void onTransformUpdate() override;
 

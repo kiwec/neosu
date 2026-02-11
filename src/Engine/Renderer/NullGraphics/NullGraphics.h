@@ -68,7 +68,6 @@ class NullGraphics : public Graphics {
 
     // renderer actions
     void flush() override;
-    std::vector<u8> getScreenshot(bool withAlpha) override;
 
     // renderer info
     const char *getName() const override;
@@ -93,4 +92,5 @@ class NullGraphics : public Graphics {
 
    protected:
     void onTransformUpdate() override;
+    std::vector<u8> getScreenshot(bool withAlpha) override;
 };

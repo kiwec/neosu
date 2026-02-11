@@ -21,9 +21,9 @@ void Graphics::processPendingScreenshot() {
 
         if(savePath.empty() && !callback) {
             static i32 num = 0;
-            Environment::createDirectory("screenshots");
-            while(Environment::fileExists(fmt::format("screenshots/test_screenshot{}.png", num))) num++;
-            savePath = fmt::format("screenshots/test_screenshot{}.png", num);
+            Environment::createDirectory(MCENGINE_DATA_DIR "screenshots");
+            while(Environment::fileExists(fmt::format(MCENGINE_DATA_DIR "screenshots/test_screenshot{}.png", num))) num++;
+            savePath = fmt::format(MCENGINE_DATA_DIR "screenshots/test_screenshot{}.png", num);
         }
 
         std::vector<u8> pixels = this->getScreenshot(screenshot.withAlpha);

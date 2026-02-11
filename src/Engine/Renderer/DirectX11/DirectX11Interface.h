@@ -131,7 +131,6 @@ class DirectX11Interface final : public Graphics {
 
     // renderer actions
     void flush() override;
-    std::vector<u8> getScreenshot(bool withAlpha) override;
 
     // renderer info
     inline const char *getName() const override { return "DirectX11"; }
@@ -170,6 +169,7 @@ class DirectX11Interface final : public Graphics {
     bool init() final;
 
     void onTransformUpdate() final;
+    std::vector<u8> getScreenshot(bool withAlpha) override;
 
     // frame latency
     void onSyncBehaviorChanged(const float newValue);

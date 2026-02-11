@@ -1299,7 +1299,7 @@ void Osu::saveScreenshot() {
                            screenshotChannels, filename);
     };
 
-    g->takeScreenshot({.savePath = {}, .dataCB = saveFunc, .withAlpha = screenshotChannels > 3});
+    g->takeScreenshot({.savePath = {}, .dataCB = std::move(saveFunc), .withAlpha = screenshotChannels > 3});
 }
 
 void Osu::onPlayEnd(const FinishedScore &score, bool quit) {

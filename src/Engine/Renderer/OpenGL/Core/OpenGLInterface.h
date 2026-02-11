@@ -84,7 +84,6 @@ class OpenGLInterface : public Graphics {
 
     // renderer actions
     void flush() final;
-    std::vector<u8> getScreenshot(bool withAlpha = false) final;
 
     // renderer info
     vec2 getResolution() const final { return this->vResolution; }
@@ -105,6 +104,7 @@ class OpenGLInterface : public Graphics {
 
    protected:
     void onTransformUpdate() final;
+    std::vector<u8> getScreenshot(bool withAlpha = false) final;
 
    private:
     std::unique_ptr<Shader> smoothClipShader{nullptr};
