@@ -46,8 +46,10 @@ struct internal {
 };
 
 void internal::collect_outdated_db_diffs(const Sync::stop_token& stoken, std::vector<BeatmapDifficulty*>& outdiffs) {
-    Sync::shared_lock readlock(db->beatmap_difficulties_mtx);
+    // NOTE: the order of these two locks matters to avoid lock-order-inversion, needs to match the order of other
+    // occurrences where they're both locked at the same time (like Database::loadMaps, at the end)
     Sync::shared_lock sr_lock(db->star_ratings_mtx);
+    Sync::shared_lock readlock(db->beatmap_difficulties_mtx);
     for(const auto& [_, diff] : db->beatmap_difficulties) {
         if(stoken.stop_requested()) break;
         // checking fStarsNomod <= 0.f might cause us to redundantly try re-calculating it, but
