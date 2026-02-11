@@ -18,6 +18,7 @@
 
 #include <utility>
 #include <queue>
+#include <atomic>
 
 #ifdef MCENGINE_PLATFORM_LINUX
 #include <sys/eventfd.h>
@@ -269,13 +270,13 @@ struct NetworkImpl {
     Sync::jthread network_thread;
 
     // IPC socket for instance detection (Linux)
-    int ipc_socket_fd{-1};
+    std::atomic<int> ipc_socket_fd{-1};
     IPCCallback ipc_callback;
     Sync::mutex ipc_mutex;
     std::vector<std::vector<std::string>> pending_ipc_messages;
 
     void setIPCSocket(int fd, IPCCallback callback);
-    void handleIPCConnection();
+    void handleIPCConnection(int ipc_fd);
 
     void processNewRequests();
     void processCompletedRequests();
@@ -295,6 +296,8 @@ void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
     // register callback to wake up poll when stop is requested
     Sync::stop_callback stop_cb(stopToken, [this] { this->waitcond.signal(); });
 
+    int ipc_socket_local = -1;
+
     while(!stopToken.stop_requested()) {
         processNewRequests();
 
@@ -312,14 +315,18 @@ void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
         // wait for activity on curl handles, wakeup fd, and/or IPC socket
         int numfds = 0;
         if(this->waitcond.valid_fd()) {
+            if(ipc_socket_local == -1) {
+                // avoid races
+                ipc_socket_local = this->ipc_socket_fd.load(std::memory_order_acquire);
+            }
             // use eventfd-based waiting (can wait indefinitely, woken by eventfd)
             std::array<curl_waitfd, 2> extra_fds{
                 {{.fd = (curl_socket_t)this->waitcond.get_fd(), .events = CURL_WAIT_POLLIN, .revents = {}},
-                 {.fd = (curl_socket_t)this->ipc_socket_fd, .events = CURL_WAIT_POLLIN, .revents = {}}}};
+                 {.fd = (curl_socket_t)ipc_socket_local, .events = CURL_WAIT_POLLIN, .revents = {}}}};
             const short& wakeup_revent = extra_fds[0].revents;
             const short& ipc_revent = extra_fds[1].revents;
 
-            const int nfds = 1 + (this->ipc_socket_fd >= 0);
+            const int nfds = 1 + (ipc_socket_local >= 0);
 
             // infinite timeout (-1) isn't supported for some reason
             curl_multi_poll(this->multi_handle, &extra_fds[0], nfds, 60000, &numfds);
@@ -331,7 +338,7 @@ void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
 
             // handle IPC if signaled
             if(nfds > 1 && (ipc_revent & CURL_WAIT_POLLIN)) {
-                handleIPCConnection();
+                handleIPCConnection(ipc_socket_local);
             }
         } else {
             if(this->active_requests.empty() && !stopToken.stop_requested()) {
@@ -738,14 +745,14 @@ Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOption
 }
 
 void NetworkImpl::setIPCSocket(int fd, IPCCallback callback) {
-    this->ipc_socket_fd = fd;
+    this->ipc_socket_fd.store(fd, std::memory_order_release);
     this->ipc_callback = std::move(callback);
     this->waitcond.signal();
 }
 
-void NetworkImpl::handleIPCConnection() {
+void NetworkImpl::handleIPCConnection([[maybe_unused]] int ipc_fd) {
 #ifdef MCENGINE_PLATFORM_LINUX
-    int client_fd = accept(this->ipc_socket_fd, nullptr, nullptr);
+    int client_fd = accept(ipc_fd, nullptr, nullptr);
     if(client_fd < 0) return;
 
     // read the data: format is [total_size:4 bytes][null-separated strings]
