@@ -882,10 +882,6 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
     }
 }
 
-namespace DiffCalc {
-extern const u32 PP_ALGORITHM_VERSION;
-}
-
 void SongBrowser::update(CBaseUIEventCtx &c) {
     // flush diffcalc results to database
     // do this even if not visible, but not during gameplay

@@ -85,10 +85,25 @@ void ScrollContainer::update(CBaseUIEventCtx &c) {
 void ScrollContainer::draw() {
     if(!this->bVisible) return;
 
-    for(auto *e : this->vVisibleElementsToDraw) {
-        e->draw();
-        // programmer error (don't do this in draw(), ever)
-        assert(!this->invalidateUpdate);
+    this->invalidateUpdate = false;
+
+    // if we were invalidated in the update() in this frame, clipping (elements to draw) will not have been updated
+    // if there's a manageable amount of elements in the full vElements array, then just temporarily use the unoptimized
+    // path of iterating over all of them to avoid flicker
+    // otherwise draw only pre-clipped elements
+    if(this->vVisibleElementsToDraw.size() < 3 && this->vElements.size() < 1024) {
+        for(auto *e : this->vElements) {
+            if(e->isVisible()) {
+                e->draw();
+            }
+            assert(!this->invalidateUpdate);
+        }
+    } else {
+        for(auto *e : this->vVisibleElementsToDraw) {
+            e->draw();
+            // programmer error (don't do this in draw(), ever)
+            assert(!this->invalidateUpdate);
+        }
     }
 }
 
