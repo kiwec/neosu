@@ -790,7 +790,7 @@ void ModSelector::updateLayout() {
         // mod grid buttons
         vec2 center = osu->getVirtScreenSize() / 2.0f;
         vec2 size = osu->getSkin()->i_modselect_ez->getSizeBase() * uiScale;
-        vec2 offset = vec2(size.x * 1.0f, size.y * 0.25f);
+        vec2 offset = vec2(size.x * 1.0f, size.y * 0.33f);
         vec2 start = vec2(center.x - (size.x * this->iGridWidth) / 2.0f - (offset.x * (this->iGridWidth - 1)) / 2.0f,
                           center.y - (size.y * this->iGridHeight) / 2.0f - (offset.y * (this->iGridHeight - 1)) / 2.0f);
 
@@ -864,16 +864,15 @@ void ModSelector::updateLayout() {
         // score multiplier info label
         const float modGridMaxY = start.y + size.y * this->iGridHeight +
                                   offset.y * (this->iGridHeight - 1);  // exact bottom of the mod buttons
+        this->nonSubmittableWarning->setSizeToContent()
+            ->setSize(vec2(osu->getVirtScreenWidth(), 20 * uiScale))
+            ->setPos(
+                0, modGridMaxY + std::abs(actionStart.y - modGridMaxY) / 2 - this->nonSubmittableWarning->getSize().y);
 
-        this->nonSubmittableWarning->setSizeToContent();
-        this->nonSubmittableWarning->setSize(vec2(osu->getVirtScreenWidth(), 20 * uiScale));
-        this->nonSubmittableWarning->setPos(
-            0, modGridMaxY + std::abs(actionStart.y - modGridMaxY) / 2 - this->nonSubmittableWarning->getSize().y);
-
-        this->scoreMultiplierLabel->setVisible(true);
-        this->scoreMultiplierLabel->setSizeToContent();
-        this->scoreMultiplierLabel->setSize(vec2(osu->getVirtScreenWidth(), 30 * uiScale));
-        this->scoreMultiplierLabel->setPos(0, this->nonSubmittableWarning->getPos().y + 20 * uiScale);
+        static_cast<CBaseUILabel *>(this->scoreMultiplierLabel->setVisible(true))
+            ->setSizeToContent()
+            ->setSize(vec2(osu->getVirtScreenWidth(), 30 * uiScale))
+            ->setPos(0, this->nonSubmittableWarning->getPos().y + 20 * uiScale);
     } else  // compact in-beatmap mode
     {
         // mod grid buttons

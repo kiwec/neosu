@@ -24,7 +24,7 @@ class UIModSelectorModButton final : public CBaseUIButton {
     void setBaseScale(float xScale, float yScale);
     void setAvailable(bool available) { this->bAvailable = available; }
 
-    UString getActiveModName();
+    [[nodiscard]] const UString &getActiveModName() const;
     [[nodiscard]] inline int getState() const { return this->iState; }
     [[nodiscard]] inline bool isOn() const { return this->bOn; }
     void setOn(bool on, bool silent = false);

@@ -280,9 +280,9 @@ void UIModSelectorModButton::setState(unsigned int state, bool initialState, Con
     }
 }
 
-UString UIModSelectorModButton::getActiveModName() {
+const UString &UIModSelectorModButton::getActiveModName() const {
     if(this->states.size() > 0 && this->iState < this->states.size())
         return this->states[this->iState].modName;
     else
-        return "";
+        return CBaseUIElement::emptyUString;
 }
