@@ -103,7 +103,7 @@ class Environment {
 #else
     [[nodiscard]] constexpr forceinline bool usingDX11() const { return false; }
 #endif
-#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_OPENGLES32)
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
     [[nodiscard]] inline bool usingGL() const {
         return m_renderer == RuntimeRenderer::GL || m_renderer == RuntimeRenderer::GLES;
     }

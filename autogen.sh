@@ -52,16 +52,12 @@ cond_sources "if WIN_PLATFORM" "WIN_SOURCES"       src/Platform/Windows
 # shellcheck disable=SC2016
 {
     printf '\nif !WASM_PLATFORM\n'
-    printf 'if USE_OPENGL\nGLAD_GL_SOURCES := \\\n'
-    find_sources libraries/glad -maxdepth 1 -name 'glad_gl*'
+    printf 'if USE_OPENGL\nGLAD_SOURCES := \\\n'
+    find_sources libraries/glad -maxdepth 1 -name 'glad_*gl*'
     printf '\t$(NULL)\nendif\n'
-    printf 'if USE_OPENGLES\nGLAD_EGL_SOURCES := \\\n'
-    find_sources libraries/glad -maxdepth 1 -name 'glad_egl*'
+    printf 'if USE_OPENGLES\nGLAD_SOURCES := \\\n'
+    find_sources libraries/glad -maxdepth 1 -name 'glad_*gl*'
     printf '\t$(NULL)\nendif\n'
-    printf 'if WIN_PLATFORM\n'
-    printf 'if USE_OPENGL\nGLAD_EGL_SOURCES := \\\n'
-    find_sources libraries/glad -maxdepth 1 -name 'glad_egl*'
-    printf '\t$(NULL)\nendif\nendif\n'
     printf 'endif\n'
 } >> "$SOURCES_FILE"
 
@@ -84,8 +80,7 @@ cond_sources "if WIN_PLATFORM" "WIN_SOURCES"       src/Platform/Windows
 	$(GLES_SOURCES) \
 	$(DX11_SOURCES) \
 	$(SDLGPU_SOURCES) \
-	$(GLAD_GL_SOURCES) \
-	$(GLAD_EGL_SOURCES) \
+	$(GLAD_SOURCES) \
 	$(SOLOUD_SOURCES) \
 	$(BASS_SOURCES) \
 	$(WIN_SOURCES) \

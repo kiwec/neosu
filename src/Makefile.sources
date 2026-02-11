@@ -70,21 +70,16 @@ endif
 
 if !WASM_PLATFORM
 if USE_OPENGL
-GLAD_GL_SOURCES := \
+GLAD_SOURCES := \
+	libraries/glad/glad_egl.cpp \
 	libraries/glad/glad_gl.cpp \
 	$(NULL)
 endif
 if USE_OPENGLES
-GLAD_EGL_SOURCES := \
+GLAD_SOURCES := \
 	libraries/glad/glad_egl.cpp \
+	libraries/glad/glad_gl.cpp \
 	$(NULL)
-endif
-if WIN_PLATFORM
-if USE_OPENGL
-GLAD_EGL_SOURCES := \
-	libraries/glad/glad_egl.cpp \
-	$(NULL)
-endif
 endif
 endif
 
@@ -266,8 +261,7 @@ neosu_SOURCES = \
 	$(GLES_SOURCES) \
 	$(DX11_SOURCES) \
 	$(SDLGPU_SOURCES) \
-	$(GLAD_GL_SOURCES) \
-	$(GLAD_EGL_SOURCES) \
+	$(GLAD_SOURCES) \
 	$(SOLOUD_SOURCES) \
 	$(BASS_SOURCES) \
 	$(WIN_SOURCES) \
