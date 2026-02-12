@@ -663,8 +663,14 @@ bool SDLMain::createWindow() {
     //
     // By manually getting the attributes of the canvas element, we get the render size,
     // as opposed to the CSS size which is incorrect on HiDPI.
-    windowCreateWidth = js_get_canvas_width();
-    windowCreateHeight = js_get_canvas_height();
+    const i32 tempWidth = js_get_canvas_width();
+    const i32 tempHeight = js_get_canvas_height();
+
+    // emrun starts with 300x300
+    if(tempWidth > 480 && tempHeight > 320) {
+        windowCreateWidth = tempWidth;
+        windowCreateHeight = tempHeight;
+    }
 #endif
 
     // set this size as the initial fallback window size (for Environment::getWindowSize())
