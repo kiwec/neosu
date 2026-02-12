@@ -43,6 +43,11 @@ SDLGPUInterface::~SDLGPUInterface() {
     if(m_device) {
         SDL_WaitForGPUIdle(m_device);
 
+        if(m_cmdBuf) {
+            SDL_CancelGPUCommandBuffer(m_cmdBuf);
+            m_cmdBuf = nullptr;
+        }
+
         for(auto &[key, pipeline] : m_pipelineCache) SDL_ReleaseGPUGraphicsPipeline(m_device, pipeline);
         m_pipelineCache.clear();
         if(m_vertexBuffer) SDL_ReleaseGPUBuffer(m_device, m_vertexBuffer);
@@ -469,9 +474,8 @@ bool SDLGPUInterface::createDepthTexture(u32 width, u32 height) {
 // scene
 
 void SDLGPUInterface::beginScene() {
-    // acquire command buffer
-    m_cmdBuf = SDL_AcquireGPUCommandBuffer(m_device);
-    if(!m_cmdBuf) {
+    // acquire command buffer if we don't have one
+    if(!m_cmdBuf && !(m_cmdBuf = SDL_AcquireGPUCommandBuffer(m_device))) {
         debugLog("SDLGPUInterface: Failed to acquire command buffer: {}", SDL_GetError());
         return;
     }
@@ -538,14 +542,16 @@ void SDLGPUInterface::endScene() {
     // TODO: confusing
     if(!m_cmdBuf) m_cmdBuf = SDL_AcquireGPUCommandBuffer(m_device);
 
+    SDL_GPUTexture *swapchainTexture = nullptr;
+
     // acquire swapchain and blit backbuffer to it for presentation
     u32 sw = 0, sh = 0;
-    if(SDL_WaitAndAcquireGPUSwapchainTexture(m_cmdBuf, m_window, &m_swapchainTexture, &sw, &sh) && m_swapchainTexture) {
+    if(SDL_WaitAndAcquireGPUSwapchainTexture(m_cmdBuf, m_window, &swapchainTexture, &sw, &sh) && swapchainTexture) {
         SDL_GPUBlitInfo blit{};
         blit.source.texture = m_backbuffer;
         blit.source.w = m_backbufferWidth;
         blit.source.h = m_backbufferHeight;
-        blit.destination.texture = m_swapchainTexture;
+        blit.destination.texture = swapchainTexture;
         blit.destination.w = sw;
         blit.destination.h = sh;
         blit.load_op = SDL_GPU_LOADOP_DONT_CARE;
@@ -554,8 +560,9 @@ void SDLGPUInterface::endScene() {
     }
 
     SDL_SubmitGPUCommandBuffer(m_cmdBuf);
-    m_cmdBuf = nullptr;
-    m_swapchainTexture = nullptr;
+
+    // acquire a new commandbuffer after submit (see SDL_render_gpu.c)
+    m_cmdBuf = SDL_AcquireGPUCommandBuffer(m_device);
 }
 
 // depth buffer
@@ -1688,10 +1695,11 @@ void SDLGPUInterface::setActiveShader(SDLGPUShader *shader) {
 void SDLGPUInterface::initSmoothClipShader() {
     if(m_smoothClipShader) return;
 
-    m_smoothClipShader.reset(createShaderFromSource(std::string(reinterpret_cast<const char *>(SDLGPU_smoothclip_vsh),
-                                                                static_cast<size_t>(SDLGPU_smoothclip_vsh_size())),
-                                                    std::string(reinterpret_cast<const char *>(SDLGPU_smoothclip_fsh),
-                                                                static_cast<size_t>(SDLGPU_smoothclip_fsh_size()))));
+    m_smoothClipShader.reset(static_cast<SDLGPUShader *>(
+        createShaderFromSource(std::string(reinterpret_cast<const char *>(SDLGPU_smoothclip_vsh),
+                                           static_cast<size_t>(SDLGPU_smoothclip_vsh_size())),
+                               std::string(reinterpret_cast<const char *>(SDLGPU_smoothclip_fsh),
+                                           static_cast<size_t>(SDLGPU_smoothclip_fsh_size())))));
 
     if(m_smoothClipShader) {
         m_smoothClipShader->loadAsync();

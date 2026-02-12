@@ -225,7 +225,7 @@ class SDLGPUInterface final : public Graphics {
     // shaders
     std::unique_ptr<SDLGPUShader> m_defaultShader{nullptr};
     SDLGPUShader *m_activeShader{nullptr};  // always points to default or custom
-    std::unique_ptr<Shader> m_smoothClipShader{nullptr};
+    std::unique_ptr<SDLGPUShader> m_smoothClipShader{nullptr};
 
     // pipeline cache (keyed by state)
     Hash::flat::map<PipelineKey, SDL_GPUGraphicsPipeline *, PipelineKeyHash> m_pipelineCache;
@@ -234,7 +234,6 @@ class SDLGPUInterface final : public Graphics {
     // per-frame command buffer + render pass
     SDL_GPUCommandBuffer *m_cmdBuf{nullptr};
     SDL_GPURenderPass *m_renderPass{nullptr};
-    SDL_GPUTexture *m_swapchainTexture{nullptr};
 
     // backbuffer texture (we render here, then blit to swapchain at present time)
     // swapchain textures are write-only in SDL_GPU; this pattern matches SDL_Renderer's GPU backend
