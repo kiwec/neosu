@@ -4,8 +4,6 @@
 
 #include "CBaseUIContainer.h"
 #include <memory>
-#include <unordered_set>
-#include <set>
 
 class CBaseUIScrollView : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUIScrollView)
@@ -173,10 +171,7 @@ class CBaseUIScrollView : public CBaseUIElement {
 
         // these elements must correspond to items in the superclass' vElements container!
         // this is kind of a hack to avoid iterating over a bunch of not-visible elements
-        std::unordered_set<CBaseUIElement *> usVisibleElements;
-
-        // visible elements but ordered by the sort comparator
-        std::vector<CBaseUIElement *> vVisibleElementsToDraw;
+        std::vector<CBaseUIElement *> vVisibleElements;
 
         // we need to break out of certain iteration loops (e.g. update()) if the container we're iterating through has been cleared
         bool invalidateUpdate{false};

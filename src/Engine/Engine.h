@@ -69,8 +69,8 @@ class Engine final : public KeyboardListener {
 
     // primary keyboard messages
     void onKeyDown(KeyboardEvent &e) override;
-    void onKeyUp(KeyboardEvent &/**/) override {}
-    void onChar(KeyboardEvent &/**/) override {}
+    void onKeyUp(KeyboardEvent & /**/) override {}
+    void onChar(KeyboardEvent & /**/) override {}
 
     // convenience functions (passthroughs)
     inline void shutdown() { this->onShutdown(); }
@@ -107,12 +107,13 @@ class Engine final : public KeyboardListener {
     [[nodiscard]] constexpr double getTime() const { return this->dTime; }
     [[nodiscard]] constexpr double getFrameTime() const { return this->dFrameTime; }
     [[nodiscard]] constexpr u64 getFrameCount() const { return this->iFrameCount; }
+    [[nodiscard]] double getSimulatedVsyncFrameDelta() const;  // 0 on non-vsync frames
 
     // clang-format off
     // NOTE: if engine_throttle cvar is off, this will always return true
     [[nodiscard]] inline bool throttledShouldRun(unsigned int howManyVsyncFramesToWaitBetweenExecutions) {
         return howManyVsyncFramesToWaitBetweenExecutions == 0 ||
-               ((this->fVsyncFrameCounterTime == 0.0f) && !(this->iVsyncFrameCount % howManyVsyncFramesToWaitBetweenExecutions));
+               ((this->fVsyncFrameCounterTime == 0.) && !(this->iVsyncFrameCount % howManyVsyncFramesToWaitBetweenExecutions));
     }
     // clang-format on
 
@@ -139,9 +140,12 @@ class Engine final : public KeyboardListener {
     f64 dTime;
     u64 iFrameCount;
     double dFrameTime;
+
     // this will wrap quickly, and that's fine, it should be used as a dividend in a modular expression anyways
+    double fVsyncFrameCounterTime;
     uint8_t iVsyncFrameCount;
-    float fVsyncFrameCounterTime;
+    bool bEngineThrottle;
+
     void onEngineThrottleChanged(float newVal);
 
     // primary screen

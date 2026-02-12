@@ -172,8 +172,9 @@ void CBaseUIContainer::update(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
     // NOTE: do NOT use a range-based for loop here, update() might invalidate iterators by changing the container contents...
-    for(size_t i = 0; i < this->vElements.size(); i++) {
-        auto *e = this->vElements[i];
+    const auto &elements = this->vElements;
+    for(size_t i = 0; i < elements.size(); i++) {
+        auto *e = elements[i];
         if(e->isVisible()) e->update(c);
     }
 }
@@ -182,12 +183,19 @@ void CBaseUIContainer::update_pos() {
     if(!this->bVisible) return;
     const vec2 thisPos = this->getPos();
 
+    vec2 eRelPos{};
+    vec2 ePos{};
     vec2 newPos{};
     for(auto *e : this->vElements) {
         // setPos already has this logic, but inline it manually here
         // to avoid unnecessary indirection
-        newPos = thisPos + e->getRelPos();
-        if(e->getPos() != newPos) {
+        eRelPos = e->getRelPos();
+        ePos = e->getPos();
+        if(std::abs(ePos.y - (newPos.y = (thisPos.y + eRelPos.y))) > 0.1f) {
+            newPos.x = (thisPos.x + eRelPos.x);
+            e->rect.setPos(newPos);
+            e->onMoved();
+        } else if(std::abs(ePos.x - (newPos.x = (thisPos.x + eRelPos.x))) > 0.1f) {
             e->rect.setPos(newPos);
             e->onMoved();
         }

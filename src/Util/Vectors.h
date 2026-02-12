@@ -45,6 +45,7 @@ using glm::length;
 using glm::lessThan;
 using glm::lessThanEqual;
 using glm::max;
+using glm::abs;
 using glm::min;
 using glm::normalize;
 using glm::round;

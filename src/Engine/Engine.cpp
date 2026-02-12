@@ -71,10 +71,11 @@ Engine::Engine() {
     // timing
     this->iFrameCount = 0;
     this->iVsyncFrameCount = 0;
-    this->fVsyncFrameCounterTime = 0.0f;
-    this->dFrameTime = 0.016f;
+    this->fVsyncFrameCounterTime = 0.;
+    this->dFrameTime = 0.016;
 
     cv::engine_throttle.setCallback(SA::MakeDelegate<&Engine::onEngineThrottleChanged>(this));
+    this->bEngineThrottle = cv::engine_throttle.getBool();
 
     // screen
     this->bResolutionChange = false;
@@ -324,15 +325,18 @@ void Engine::onUpdate() {
         // update time
         {
             // frame time
-            double now = Timing::getTimeReal();
-            this->dFrameTime = std::max<double>(now - this->dTime, 0.00005);
+            const f64 now = Timing::getTimeReal();
+            const f64 frameTime = this->dFrameTime = std::max<f64>(now - this->dTime, 0.00005);
             // total engine runtime
             this->dTime = now;
-            if(cv::engine_throttle.getBool()) {
+            if(this->bEngineThrottle) {
+                const f64 refreshTime = env->getDisplayRefreshTime();
                 // it's more like a crude estimate but it gets the job done for use as a throttle
-                if((this->fVsyncFrameCounterTime += static_cast<float>(this->dFrameTime)) >
-                   env->getDisplayRefreshTime()) {
-                    this->fVsyncFrameCounterTime = 0.0f;
+                this->fVsyncFrameCounterTime += frameTime;
+                // update immediately if we are running slower than the refresh rate
+                // or if we have accumulated enough time to fill 1 vsync frame time
+                if((frameTime >= refreshTime) || ((this->fVsyncFrameCounterTime + (frameTime / 2.)) >= refreshTime)) {
+                    this->fVsyncFrameCounterTime = 0.;
                     ++this->iVsyncFrameCount;
                 }
             }
@@ -594,8 +598,23 @@ void Engine::requestResolutionChange(vec2 newResolution) {
 void Engine::onEngineThrottleChanged(float newVal) {
     const bool enable = !!static_cast<int>(newVal);
     if(!enable) {
-        this->fVsyncFrameCounterTime = 0.0f;
+        this->fVsyncFrameCounterTime = 0.;
         this->iVsyncFrameCount = 0;
+        this->bEngineThrottle = false;
+    } else {
+        this->bEngineThrottle = true;
+    }
+}
+
+double Engine::getSimulatedVsyncFrameDelta() const {
+    if(this->bEngineThrottle) {
+        if(this->fVsyncFrameCounterTime == 0.) {
+            return env->getDisplayRefreshTime();
+        } else {
+            return 0;
+        }
+    } else {
+        return this->dFrameTime;
     }
 }
 

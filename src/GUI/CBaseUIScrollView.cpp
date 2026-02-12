@@ -35,31 +35,27 @@ ScrollContainer::~CBaseUIScrollViewContainer() = default;
 
 CBaseUIContainer *ScrollContainer::removeBaseUIElement(CBaseUIElement *element) {
     this->invalidateUpdate = true;
-    this->usVisibleElements.erase(element);
-    std::erase(this->vVisibleElementsToDraw, element);
+    std::erase(this->vVisibleElements, element);
     return CBaseUIContainer::removeBaseUIElement(element);
 }
 
 CBaseUIContainer *ScrollContainer::deleteBaseUIElement(CBaseUIElement *element) {
     this->invalidateUpdate = true;
-    this->usVisibleElements.erase(element);
-    std::erase(this->vVisibleElementsToDraw, element);
+    std::erase(this->vVisibleElements, element);
     return CBaseUIContainer::removeBaseUIElement(element);
 }
 
 void ScrollContainer::freeElements() {
     this->invalidateUpdate = true;
 
-    this->usVisibleElements.clear();
-    this->vVisibleElementsToDraw.clear();
+    this->vVisibleElements.clear();
     CBaseUIContainer::freeElements();
 }
 
 void ScrollContainer::invalidate() {
     this->invalidateUpdate = true;
 
-    this->usVisibleElements.clear();
-    this->vVisibleElementsToDraw.clear();
+    this->vVisibleElements.clear();
     CBaseUIContainer::invalidate();
 }
 
@@ -70,7 +66,7 @@ void ScrollContainer::update(CBaseUIEventCtx &c) {
 
     this->invalidateUpdate = false;
 
-    for(auto *e : this->usVisibleElements) {
+    for(auto *e : this->vVisibleElements) {
         e->update(c);
         if(this->invalidateUpdate) {
             // iterators have been invalidated!
@@ -89,18 +85,22 @@ void ScrollContainer::draw() {
 
     // if we were invalidated in the update() in this frame, clipping (elements to draw) will not have been updated
     // if there's a manageable amount of elements in the full vElements array, then just temporarily use the unoptimized
-    // path of iterating over all of them to avoid flicker
+    // path of iterating over all of them to avoid 1 frame of flicker
     // otherwise draw only pre-clipped elements
-    if(this->vVisibleElementsToDraw.size() < 3 && this->vElements.size() < 1024) {
+    if(this->vVisibleElements.size() < 3 && this->vElements.size() < 1024) {
         for(auto *e : this->vElements) {
-            if(e->isVisible()) {
+            if(e->isVisible() && e->isVisibleOnScreen()) {
                 e->draw();
             }
             assert(!this->invalidateUpdate);
         }
     } else {
-        for(auto *e : this->vVisibleElementsToDraw) {
-            e->draw();
+        for(auto *e : this->vVisibleElements) {
+            // check actual screen visibility since we clipped "lazily"
+            // shouldn't be too expensive since we're no longer iterating over hundreds of thousands of elements here
+            if(e->isVisibleOnScreen()) {
+                e->draw();
+            }
             // programmer error (don't do this in draw(), ever)
             assert(!this->invalidateUpdate);
         }
@@ -110,7 +110,7 @@ void ScrollContainer::draw() {
 bool ScrollContainer::isBusy() {
     if(!this->bVisible) return false;
 
-    for(auto *e : this->usVisibleElements) {
+    for(auto *e : this->vVisibleElements) {
         if(e->isBusy()) {
             return true;
         }
@@ -125,7 +125,7 @@ bool ScrollContainer::isBusy() {
 bool ScrollContainer::isActive() {
     if(!this->bVisible) return false;
 
-    for(auto *e : this->usVisibleElements) {
+    for(auto *e : this->vVisibleElements) {
         if(e->isActive()) {
             return true;
         }
@@ -637,6 +637,7 @@ void CBaseUIScrollView::updateClipping() {
     //u32 numVisElements = 0;
 
     const std::vector<CBaseUIElement *> &elements = this->container.getElements();
+    std::vector<CBaseUIElement *> &visibleElems = this->container.vVisibleElements;
 
     // poor man's PVS
     // this makes us a bit less strict about which elements are "visible", but it shouldn't be too significant
@@ -657,10 +658,10 @@ void CBaseUIScrollView::updateClipping() {
     this->previousClippingTotalElements = elements.size();
 
     const bool useCache = this->bVerticalScrolling &&                                              //
-                          this->container.usVisibleElements.size() > 2 &&                          // sanity checks
+                          visibleElems.size() > 2 &&                                               // sanity checks
                           elements.size() > 0 &&                                                   //
                           prevVisibleSize > 0 &&                                                   //
-                          prevVisibleSize == this->container.usVisibleElements.size() &&           //
+                          prevVisibleSize == visibleElems.size() &&                                //
                           prevTotalSize == elements.size() &&                                      //
                           !(2.f * this->getSize().y >= -this->vScrollPos.y ||                      // overscroll, top
                             2.f * this->getSize().y >= this->vScrollPos.y + this->vScrollSize.y);  // overscroll, bottom
@@ -669,10 +670,9 @@ void CBaseUIScrollView::updateClipping() {
     bool foundDifferent = !useCache;
 
     if(useCache) {
-        for(auto *e : this->container.usVisibleElements) {
-            const McRect &eRect = e->getRect();
+        for(auto *e : visibleElems) {
             const bool eVisible = e->isVisible();
-            if(!eVisible || !expandedMe.intersects(eRect)) {
+            if(!eVisible || !expandedMe.intersects(e->getRect())) {
                 foundDifferent = true;
                 break;
             }
@@ -680,13 +680,12 @@ void CBaseUIScrollView::updateClipping() {
     }
 
     if(foundDifferent) {
+        bool eVisible{false}, nowVisible{false};
+        visibleElems.clear();  // rebuild
         for(auto *e : elements) {
-            const McRect &eRect = e->getRect();
-            const bool eVisible = e->isVisible();
+            eVisible = nowVisible = e->isVisible();
             //numVisElements += eVisible;
-            bool nowVisible = eVisible;
-
-            if(expandedMe.intersects(eRect)) {
+            if(expandedMe.intersects(e->getRect())) {
                 if(!eVisible) {
                     e->setVisible(true);
                     // need to call isVisible instead of just directly setting "true" because
@@ -701,43 +700,20 @@ void CBaseUIScrollView::updateClipping() {
             }
 
             if(nowVisible) {
-                this->container.usVisibleElements.insert(e);
-            } else {
-                this->container.usVisibleElements.erase(e);
+                visibleElems.push_back(e);
             }
         }
     }
 
     if(!numChangedElements) {
-        //debugLog("got final visible elements {} total {}", numVisElements, elements.size());
+        // sort final list of elements to draw (in order)
+        if(this->container.drawOrderCmp) {
+            std::ranges::sort(this->container.vVisibleElements, this->container.drawOrderCmp);
+        }
         this->bClippingDirty = false;
     }
 
-    this->previousClippingVisibleElements = this->container.usVisibleElements.size();
-
-    {
-        // build list of elements to draw (in order)
-        this->container.vVisibleElementsToDraw.resize(this->previousClippingVisibleElements);
-
-        size_t numAdded = 0;
-        bool drawElemsChanged = false;
-        for(auto *e : this->container.usVisibleElements) {
-            // check actual screen visibility since we clipped "lazily"
-            // shouldn't be too expensive since we're no longer iterating over hundreds of thousands of elements here
-            if(e->isVisibleOnScreen()) {
-                CBaseUIElement *old = this->container.vVisibleElementsToDraw[numAdded];
-                if(!drawElemsChanged && (!old || old != e)) drawElemsChanged = true;
-                this->container.vVisibleElementsToDraw[numAdded++] = e;
-            }
-        }
-        // remove null elements from the end if any
-        this->container.vVisibleElementsToDraw.resize(numAdded);
-
-        // sort by draw order
-        if(drawElemsChanged && this->container.drawOrderCmp) {
-            std::ranges::sort(this->container.vVisibleElementsToDraw, this->container.drawOrderCmp);
-        }
-    }
+    this->previousClippingVisibleElements = visibleElems.size();
 }
 
 void CBaseUIScrollView::updateScrollbars() {
