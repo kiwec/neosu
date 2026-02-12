@@ -49,6 +49,7 @@
 #include "BeatmapCarousel.h"
 #include "SongButton.h"
 #include "SongDifficultyButton.h"
+#include "AsyncSongButtonMatcher.h"
 #include "CollectionButton.h"
 #include "UserCard.h"
 #include "InfoLabel.h"
@@ -92,73 +93,6 @@ f32 SongBrowser::getSkinScale(const SkinImage *img) { return SongBrowser::getUIS
 vec2 SongBrowser::getSkinDimensions(const SkinImage *img) {
     return img->getImageSizeForCurrentFrame() * SongBrowser::getSkinScale(img);
 }
-
-class SongBrowserBackgroundSearchMatcher final : public Resource {
-    NOCOPY_NOMOVE(SongBrowserBackgroundSearchMatcher)
-   public:
-    SongBrowserBackgroundSearchMatcher() : Resource(APPDEFINED) {}
-    ~SongBrowserBackgroundSearchMatcher() override { this->destroy(); }
-
-    [[nodiscard]] inline bool isDead() const { return this->bDead.load(std::memory_order_acquire); }
-    inline void kill() { this->bDead = true; }
-    inline void revive() { this->bDead = false; }
-
-    inline void setSongButtonsAndSearchString(const std::vector<SongButton *> &songButtons, const UString &searchString,
-                                              const UString &hardcodedSearchString) {
-        this->songButtons = songButtons;
-
-        this->sSearchString.clear();
-        if(!hardcodedSearchString.isEmpty()) {
-            this->sSearchString.append(hardcodedSearchString);
-            this->sSearchString.append(u' ');
-        }
-        this->sSearchString.append(searchString);
-        // do case-insensitive searches
-        this->sSearchString.lowerCase();
-        this->sHardcodedSearchString = hardcodedSearchString;
-    }
-
-   protected:
-    inline void init() override { this->setReady(true); }
-
-    inline void initAsync() override {
-        if(this->bDead.load(std::memory_order_acquire)) {
-            this->setAsyncReady(true);
-            return;
-        }
-
-        // flag matches across entire database
-        const std::vector<std::string> searchStringTokens =
-            SString::split<std::string>(this->sSearchString.utf8View(), ' ');  // make a copy
-        for(auto &songButton : this->songButtons) {
-            // this is unsafe, children could be getting sorted while we do this
-            std::vector<SongButton *> children = songButton->getChildren();
-            if(children.size() > 0) {
-                for(auto c : children) {
-                    const bool match = SongBrowser::searchMatcher(c->getDatabaseBeatmap(), searchStringTokens);
-                    c->setIsSearchMatch(match);
-                }
-            } else {
-                const bool match = SongBrowser::searchMatcher(songButton->getDatabaseBeatmap(), searchStringTokens);
-                songButton->setIsSearchMatch(match);
-            }
-
-            // cancellation point
-            if(this->bDead.load(std::memory_order_acquire)) break;
-        }
-
-        this->setAsyncReady(true);
-    }
-
-    inline void destroy() override { ; }
-
-   private:
-    std::atomic<bool> bDead{true};  // NOTE: start dead! need to revive() before use
-
-    UString sSearchString{u""};
-    UString sHardcodedSearchString{u""};
-    std::vector<SongButton *> songButtons;
-};
 
 namespace {
 class ScoresStillLoadingElement final : public CBaseUILabel {
@@ -515,7 +449,7 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
     this->search->setOffsetRight(10);
     this->fSearchWaitTime = 0.0f;
     this->bInSearch = (!cv::songbrowser_search_hardcoded_filter.getString().empty());
-    this->backgroundSearchMatcher = new SongBrowserBackgroundSearchMatcher();
+    this->backgroundSearchMatcher = new AsyncSongButtonMatcher();
 
     this->updateLayout();
 }
@@ -780,7 +714,7 @@ void SongBrowser::draw() {
     if(cv::debug_osu.getBool()) this->topbarRight->draw_debug();
 
     // draw search
-    this->search->setSearchString(this->sSearchString, cv::songbrowser_search_hardcoded_filter.getString().c_str());
+    this->search->setSearchString(this->sSearchString, cv::songbrowser_search_hardcoded_filter.getString());
     this->search->setDrawNumResults(this->bInSearch);
     this->search->setNumFoundResults(this->currentVisibleSearchMatches);
     this->search->setSearching(!this->backgroundSearchMatcher->isDead());
@@ -1023,36 +957,40 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
     if(key.isConsumed()) return;
 
     // searching text delete & escape key handling
-    if(!this->sSearchString.isEmpty()) {
+    UString uSearch{this->sSearchString};
+
+    if(!uSearch.isEmpty()) {
         switch(key.getScanCode()) {
             case KEY_DELETE:
             case KEY_BACKSPACE:
                 key.consume();
-                if(!this->sSearchString.isEmpty()) {
+                if(!uSearch.isEmpty()) {
                     if(keyboard->isControlDown()) {
                         // delete everything from the current caret position to the left, until after the first
                         // non-space character (but including it)
                         bool foundNonSpaceChar = false;
-                        while(!this->sSearchString.isEmpty()) {
-                            const auto &curChar = this->sSearchString.back();
+                        while(!uSearch.isEmpty()) {
+                            const auto &curChar = uSearch.back();
 
                             const bool whitespace = std::iswspace(static_cast<wint_t>(curChar)) != 0;
                             if(foundNonSpaceChar && whitespace) break;
 
                             if(!whitespace) foundNonSpaceChar = true;
 
-                            this->sSearchString.pop_back();
+                            uSearch.pop_back();
                         }
                     } else {
-                        this->sSearchString.pop_back();
+                        uSearch.pop_back();
                     }
 
-                    this->scheduleSearchUpdate(this->sSearchString.length() == 0);
+                    this->sSearchString = uSearch.utf8View();
+                    this->scheduleSearchUpdate(uSearch.length() == 0);
                 }
                 break;
 
             case KEY_ESCAPE:
                 key.consume();
+                uSearch.clear();
                 this->sSearchString.clear();
                 this->scheduleSearchUpdate(true);
                 break;
@@ -1067,7 +1005,8 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
         if(keyboard->isControlDown()) {
             const auto &clipstring = env->getClipBoardText();
             if(!clipstring.isEmpty()) {
-                this->sSearchString.append(clipstring);
+                uSearch.append(clipstring);
+                this->sSearchString = uSearch.utf8View();
                 this->scheduleSearchUpdate(false);
             }
         }
@@ -1123,7 +1062,9 @@ void SongBrowser::onChar(KeyboardEvent &e) {
     if(this->bF1Pressed || this->bF2Pressed || this->bF3Pressed) return;
 
     // handle searching
-    this->sSearchString.append(e.getCharCode());
+    UString uChar;
+    uChar.append(e.getCharCode());
+    this->sSearchString.append(uChar.utf8View());
 
     this->scheduleSearchUpdate();
 }
@@ -2030,322 +1971,6 @@ SongBrowser::SetVisibility SongBrowser::getSetVisibility(const SongButton *paren
     return SetVisibility::SHOW_PARENT;
 }
 
-bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
-                                const std::vector<std::string> &searchStringTokens) {
-    if(databaseBeatmap == nullptr) return false;
-
-    const auto diffs = [&bdiffs = databaseBeatmap->getDifficulties(),
-                        databaseBeatmap]() -> std::vector<const DatabaseBeatmap *> {
-        std::vector<const DatabaseBeatmap *> ret;
-        if(bdiffs.empty()) {
-            // standalone set
-            ret.push_back(databaseBeatmap);
-        } else {
-            for(const auto &diff : bdiffs) {
-                ret.push_back(diff.get());
-            }
-        }
-        return ret;
-    }();
-
-    auto speed = osu->getMapInterface()->getSpeedMultiplier();
-
-    // TODO: optimize this dumpster fire. can at least cache the parsed tokens and literal strings array instead of
-    // parsing every single damn time
-
-    // intelligent search parser
-    // all strings which are not expressions get appended with spaces between, then checked with one call to
-    // findSubstringInDiff() the rest is interpreted NOTE: this code is quite shitty. the order of the operators
-    // array does matter, because find() is used to detect their presence (and '=' would then break '<=' etc.)
-    enum operatorId : uint8_t { EQ, LT, GT, LE, GE, NE };
-
-    struct Operator {
-        std::string_view str;
-        operatorId id;
-    };
-
-    static constexpr std::initializer_list<Operator> operators = {
-        {.str = "<=", .id = LE}, {.str = ">=", .id = GE}, {.str = "<", .id = LT}, {.str = ">", .id = GT},
-        {.str = "!=", .id = NE}, {.str = "==", .id = EQ}, {.str = "=", .id = EQ},
-    };
-
-    enum keywordId : uint8_t {
-        AR,
-        CS,
-        OD,
-        HP,
-        BPM,
-        OPM,
-        CPM,
-        SPM,
-        OBJECTS,
-        CIRCLES,
-        SLIDERS,
-        SPINNERS,
-        LENGTH,
-        STARS,
-        CREATOR
-    };
-
-    struct Keyword {
-        std::string_view str;
-        keywordId id;
-    };
-
-    static constexpr std::initializer_list<Keyword> keywords = {{.str = "ar", .id = AR},
-                                                                {.str = "cs", .id = CS},
-                                                                {.str = "od", .id = OD},
-                                                                {.str = "hp", .id = HP},
-                                                                {.str = "bpm", .id = BPM},
-                                                                {.str = "opm", .id = OPM},
-                                                                {.str = "cpm", .id = CPM},
-                                                                {.str = "spm", .id = SPM},
-                                                                {.str = "object", .id = OBJECTS},
-                                                                {.str = "objects", .id = OBJECTS},
-                                                                {.str = "circle", .id = CIRCLES},
-                                                                {.str = "circles", .id = CIRCLES},
-                                                                {.str = "slider", .id = SLIDERS},
-                                                                {.str = "sliders", .id = SLIDERS},
-                                                                {.str = "spinner", .id = SPINNERS},
-                                                                {.str = "spinners", .id = SPINNERS},
-                                                                {.str = "length", .id = LENGTH},
-                                                                {.str = "len", .id = LENGTH},
-                                                                {.str = "stars", .id = STARS},
-                                                                {.str = "star", .id = STARS},
-                                                                {.str = "creator", .id = CREATOR}};
-
-    // split search string into tokens
-    // parse over all difficulties
-    bool expressionMatches = false;  // if any diff matched all expressions
-    std::vector<std::string> literalSearchStrings;
-    for(const auto *diff : diffs) {
-        bool expressionsMatch = true;  // if the current search string (meaning only the expressions in this case)
-                                       // matches the current difficulty
-
-        for(const auto &searchStringToken : searchStringTokens) {
-            // debugLog("token[{:d}] = {:s}", i, tokens[i].toUtf8());
-            //  determine token type, interpret expression
-            bool expression = false;
-            for(const auto &[op_str, op_id] : operators) {
-                if(searchStringToken.find(op_str) != std::string::npos) {
-                    // split expression into left and right parts (only accept singular expressions, things like
-                    // "0<bpm<1" will not work with this)
-                    // debugLog("splitting by string {:s}", operators[o].first.toUtf8());
-                    std::vector<std::string_view> values{SString::split(searchStringToken, op_str)};
-                    if(values.size() == 2 && values[0].length() > 0 && values[1].length() > 0) {
-                        const std::string_view lvalue = values[0];
-                        const std::string_view rstring = values[1];
-
-                        const auto rvaluePercentIndex = rstring.find('%');
-                        const bool rvalueIsPercent = (rvaluePercentIndex != std::string::npos);
-                        const float rvalue = [&rstring, rvaluePercentIndex]() -> float {
-                            float rvalue_tmp{0.f};
-                            const std::string_view rstring_sub = rvaluePercentIndex == std::string::npos
-                                                                     ? rstring
-                                                                     : rstring.substr(0, rvaluePercentIndex);
-
-                            auto [ptr, ec] = std::from_chars(rstring_sub.data(),
-                                                             rstring_sub.data() + rstring_sub.size(), rvalue_tmp);
-                            if(ec != std::errc()) return 0.f;
-                            return rvalue_tmp;
-                        }();  // this must always be a number (at least, assume it is)
-
-                        // find lvalue keyword in array (only continue if keyword exists)
-                        for(const auto &[kw_str, kw_id] : keywords) {
-                            if(kw_str == lvalue) {
-                                expression = true;
-
-                                // we now have a valid expression: the keyword, the operator and the value
-
-                                // solve keyword
-                                float compareValue = 5.0f;
-                                std::string compareString{};
-                                switch(kw_id) {
-                                    case AR:
-                                        compareValue = diff->getAR();
-                                        break;
-                                    case CS:
-                                        compareValue = diff->getCS();
-                                        break;
-                                    case OD:
-                                        compareValue = diff->getOD();
-                                        break;
-                                    case HP:
-                                        compareValue = diff->getHP();
-                                        break;
-                                    case BPM:
-                                        compareValue = diff->getMostCommonBPM();
-                                        break;
-                                    case OPM:
-                                        compareValue =
-                                            (diff->getLengthMS() > 0 ? ((float)diff->getNumObjects() /
-                                                                        (float)(diff->getLengthMS() / 1000.0f / 60.0f))
-                                                                     : 0.0f) *
-                                            speed;
-                                        break;
-                                    case CPM:
-                                        compareValue =
-                                            (diff->getLengthMS() > 0 ? ((float)diff->getNumCircles() /
-                                                                        (float)(diff->getLengthMS() / 1000.0f / 60.0f))
-                                                                     : 0.0f) *
-                                            speed;
-                                        break;
-                                    case SPM:
-                                        compareValue =
-                                            (diff->getLengthMS() > 0 ? ((float)diff->getNumSliders() /
-                                                                        (float)(diff->getLengthMS() / 1000.0f / 60.0f))
-                                                                     : 0.0f) *
-                                            speed;
-                                        break;
-                                    case OBJECTS:
-                                        compareValue = diff->getNumObjects();
-                                        break;
-                                    case CIRCLES:
-                                        compareValue =
-                                            (rvalueIsPercent
-                                                 ? ((float)diff->getNumCircles() / (float)diff->getNumObjects()) *
-                                                       100.0f
-                                                 : diff->getNumCircles());
-                                        break;
-                                    case SLIDERS:
-                                        compareValue =
-                                            (rvalueIsPercent
-                                                 ? ((float)diff->getNumSliders() / (float)diff->getNumObjects()) *
-                                                       100.0f
-                                                 : diff->getNumSliders());
-                                        break;
-                                    case SPINNERS:
-                                        compareValue =
-                                            (rvalueIsPercent
-                                                 ? ((float)diff->getNumSpinners() / (float)diff->getNumObjects()) *
-                                                       100.0f
-                                                 : diff->getNumSpinners());
-                                        break;
-                                    case LENGTH:
-                                        compareValue = diff->getLengthMS() / 1000.0f;
-                                        break;
-                                    case STARS:
-                                        compareValue =
-                                            std::round(diff->getStarRating(StarPrecalc::active_idx) * 100.0f) /
-                                            100.0f;  // round to 2 decimal places
-                                        break;
-                                    case CREATOR:
-                                        compareString = SString::to_lower(diff->getCreator());
-                                        break;
-                                }
-
-                                // solve operator
-                                bool matches = false;
-                                switch(op_id) {
-                                    case LE:
-                                        if(compareValue <= rvalue) matches = true;
-                                        break;
-                                    case GE:
-                                        if(compareValue >= rvalue) matches = true;
-                                        break;
-                                    case LT:
-                                        if(compareValue < rvalue) matches = true;
-                                        break;
-                                    case GT:
-                                        if(compareValue > rvalue) matches = true;
-                                        break;
-                                    case NE:
-                                        if(compareValue != rvalue) matches = true;
-                                        break;
-                                    case EQ:
-                                        if(compareValue == rvalue ||
-                                           (!compareString.empty() && compareString == SString::to_lower(rstring)))
-                                            matches = true;
-                                        break;
-                                }
-
-                                // debugLog("comparing {:f} {:s} {:f} (operatorId = {:d}) = {:d}", compareValue,
-                                // operators[o].first.toUtf8(), rvalue, (int)operators[o].second, (int)matches);
-
-                                if(!matches)  // if a single expression doesn't match, then the whole diff doesn't match
-                                    expressionsMatch = false;
-
-                                break;
-                            }
-                        }
-                    }
-
-                    break;
-                }
-            }
-
-            // if this is not an expression, add the token to the literalSearchStrings array
-            if(!expression) {
-                // only add it if it doesn't exist yet
-                // this check is only necessary due to multiple redundant parser executions (one per diff!)
-                bool exists = false;
-                for(const auto &literalSearchString : literalSearchStrings) {
-                    if(literalSearchString == searchStringToken) {
-                        exists = true;
-                        break;
-                    }
-                }
-
-                if(!exists) {
-                    std::string litAdd{searchStringToken};
-                    SString::trim_inplace(litAdd);
-                    if(!SString::is_wspace_only(litAdd)) literalSearchStrings.push_back(litAdd);
-                }
-            }
-        }
-
-        if(expressionsMatch)  // as soon as one difficulty matches all expressions, we are done here
-        {
-            expressionMatches = true;
-            break;
-        }
-    }
-
-    // if no diff matched any expression, then we can already stop here
-    if(!expressionMatches) return false;
-
-    bool hasAnyValidLiteralSearchString = false;
-    for(const auto &literalSearchString : literalSearchStrings) {
-        if(literalSearchString.length() > 0) {
-            hasAnyValidLiteralSearchString = true;
-            break;
-        }
-    }
-
-    // early return here for literal match/contains
-    if(hasAnyValidLiteralSearchString) {
-        static constexpr auto findSubstringInDiff =
-            +[](const DatabaseBeatmap *diff, std::string_view searchString) -> bool {
-            return (SString::contains_ncase(diff->getTitleLatin(), searchString)) ||
-                   (SString::contains_ncase(diff->getArtistLatin(), searchString)) ||
-                   (!diff->getTitleUnicode().empty() && diff->getTitleUnicode().contains(searchString)) ||
-                   (!diff->getArtistUnicode().empty() && diff->getArtistUnicode().contains(searchString)) ||
-                   (SString::contains_ncase(diff->getCreator(), searchString)) ||
-                   (SString::contains_ncase(diff->getDifficultyName(), searchString)) ||
-                   (SString::contains_ncase(diff->getSource(), searchString)) ||
-                   (SString::contains_ncase(diff->getTags(), searchString)) ||
-                   (diff->getID() > 0 && SString::contains_ncase(std::to_string(diff->getID()), searchString)) ||
-                   (diff->getSetID() > 0 && SString::contains_ncase(std::to_string(diff->getSetID()), searchString));
-        };
-
-        for(const auto *diff : diffs) {
-            bool atLeastOneFullMatch = true;
-
-            for(const auto &literalSearchString : literalSearchStrings) {
-                if(!findSubstringInDiff(diff, literalSearchString)) atLeastOneFullMatch = false;
-            }
-
-            // as soon as one diff matches all strings, we are done
-            if(atLeastOneFullMatch) return true;
-        }
-
-        // expression may have matched, but literal didn't match, so the entire beatmap doesn't match
-        return false;
-    }
-
-    return expressionMatches;
-}
-
 void SongBrowser::updateLayout() {
     ScreenBackable::updateLayout();
 
@@ -2795,16 +2420,16 @@ void SongBrowser::onDatabaseLoadingFinished() {
     this->bInitializedBeatmaps = true;
     this->bSongButtonsNeedSorting = true;
 
-    this->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
+    this->onSortChange(cv::songbrowser_sortingtype.getString());
     this->onGroupChange("", this->curGroup);  // does nothing besides re-highlight the buttons
 
-    this->onSortScoresChange(cv::songbrowser_scores_sortingtype.getString().c_str());
+    this->onSortScoresChange(cv::songbrowser_scores_sortingtype.getString());
 
     // update rich presence (discord total pp)
     RichPresence::onSongBrowser();
 
     // update user name/stats
-    osu->onUserCardChange(BanchoState::get_username().c_str());
+    osu->onUserCardChange(BanchoState::get_username());
 
     if(cv::songbrowser_search_hardcoded_filter.getString().length() > 0) {
         this->onSearchUpdate();
@@ -2854,12 +2479,12 @@ void SongBrowser::onDatabaseLoadingFinished() {
 }
 
 void SongBrowser::onSearchUpdate() {
-    const UString hardcodedFilterString = cv::songbrowser_search_hardcoded_filter.getString().c_str();
+    const std::string hardcodedFilterString{cv::songbrowser_search_hardcoded_filter.getString()};  // NOLINT
     const bool hasHardcodedSearchStringChanged = (this->sPrevHardcodedSearchString != hardcodedFilterString);
     const bool hasSearchStringChanged = (this->sPrevSearchString != this->sSearchString);
 
     const bool prevInSearch = this->bInSearch;
-    this->bInSearch = (!this->sSearchString.isEmpty() || !hardcodedFilterString.isEmpty());
+    this->bInSearch = (!this->sSearchString.empty() || !hardcodedFilterString.empty());
     const bool hasInSearchChanged = (prevInSearch != this->bInSearch);
 
     if(this->bInSearch) {
@@ -2884,7 +2509,8 @@ void SongBrowser::onSearchUpdate() {
             this->backgroundSearchMatcher->revive();
             this->backgroundSearchMatcher->release();
             this->backgroundSearchMatcher->setSongButtonsAndSearchString(this->parentButtons, this->sSearchString,
-                                                                         hardcodedFilterString);
+                                                                         hardcodedFilterString,
+                                                                         osu->getMapInterface()->getSpeedMultiplier());
 
             resourceManager->requestNextLoadAsync();
             resourceManager->loadResource(this->backgroundSearchMatcher);
@@ -2919,7 +2545,7 @@ void SongBrowser::onSearchUpdate() {
     }
 
     this->sPrevSearchString = this->sSearchString;
-    this->sPrevHardcodedSearchString = cv::songbrowser_search_hardcoded_filter.getString().c_str();
+    this->sPrevHardcodedSearchString = cv::songbrowser_search_hardcoded_filter.getString();
 }
 
 void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(bool scrollToTop,
@@ -3516,7 +3142,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                 false, false);  // (last false = skipping rebuildSongButtons() here)
             this->bSongButtonsNeedSorting = true;
             this->onSortChange(
-                cv::songbrowser_sortingtype.getString().c_str());  // (because this does the rebuildSongButtons())
+                cv::songbrowser_sortingtype.getString());  // (because this does the rebuildSongButtons())
         }
         if(previouslySelectedCollectionName.length() > 0) {
             for(auto &collectionButton : this->collectionButtons) {
@@ -3572,7 +3198,7 @@ void SongBrowser::onCollectionButtonContextMenu(CollectionButton *collectionButt
                 }
 
                 // update UI
-                this->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
+                this->onSortChange(cv::songbrowser_sortingtype.getString());
             }
         }
     } else if(id == 5) {  // export collection

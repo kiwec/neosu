@@ -50,7 +50,7 @@ struct VProfGatherer final {
         NOCOPY_NOMOVE(Dispatchee)
        public:
         Dispatchee(VProfGatherer *parent) : Resource(APPDEFINED), parent(parent) {}
-        ~Dispatchee() override = default;
+        ~Dispatchee() override { this->destroy(); }
         void init() override {
             parent->waiting = false;
             parent->lastInfo = this->scratchInfo;

@@ -33,7 +33,7 @@ class CBaseUILabel;
 class McFont;
 class ConVar;
 
-class SongBrowserBackgroundSearchMatcher;
+class AsyncSongButtonMatcher;
 struct FinishedScore;
 
 #ifndef UTIL_MD5HASH_H
@@ -98,7 +98,6 @@ class SongBrowser final : public ScreenBackable {
 
     GlobalSongBrowserCtorDtor global_songbrowser_;
 
-    friend SongBrowserBackgroundSearchMatcher;
     friend BeatmapCarousel;
     friend SongButton;
     friend SongDifficultyButton;
@@ -220,9 +219,6 @@ class SongBrowser final : public ScreenBackable {
     [[nodiscard]] inline bool isInParentsCollapsedMode() const {
         return this->isInAlphanumericCollection() || this->curGroup == GroupType::NO_GROUPING;
     }
-
-    static bool searchMatcher(const DatabaseBeatmap *databaseBeatmap,
-                              const std::vector<std::string> &searchStringTokens);
 
     void updateLayout() override;
     void onBack() override;
@@ -378,13 +374,13 @@ class SongBrowser final : public ScreenBackable {
    private:
     // search
     UISearchOverlay *search;
-    UString sSearchString{u""};
-    UString sPrevSearchString{u""};
-    UString sPrevHardcodedSearchString{u""};
+    std::string sSearchString;
+    std::string sPrevSearchString;
+    std::string sPrevHardcodedSearchString;
     float fSearchWaitTime;
     bool bInSearch;
     bool bShouldRecountMatchesAfterSearch{true};
     i32 currentVisibleSearchMatches{0};
     std::optional<GroupType> searchPrevGroup{std::nullopt};
-    SongBrowserBackgroundSearchMatcher *backgroundSearchMatcher;
+    AsyncSongButtonMatcher *backgroundSearchMatcher;
 };

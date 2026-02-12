@@ -147,6 +147,7 @@ neosu_SOURCES = \
 	src/App/Osu/SkinImage.cpp \
 	src/App/Osu/SliderCurves.cpp \
 	src/App/Osu/SliderRenderer.cpp \
+	src/App/Osu/SongBrowser/AsyncSongButtonMatcher.cpp \
 	src/App/Osu/SongBrowser/BeatmapCarousel.cpp \
 	src/App/Osu/SongBrowser/BottomBar.cpp \
 	src/App/Osu/SongBrowser/CarouselButton.cpp \

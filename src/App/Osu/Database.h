@@ -235,7 +235,7 @@ class Database final {
         NOCOPY_NOMOVE(AsyncDBLoader)
        public:
         AsyncDBLoader() : Resource(APPDEFINED) {}
-        ~AsyncDBLoader() override = default;
+        ~AsyncDBLoader() override { this->destroy(); }
 
        protected:
         void init() override;
@@ -254,7 +254,7 @@ class Database final {
         FinishedScore scorecopy;
 
         AsyncScoreSaver(FinishedScore score) : Resource(APPDEFINED), scorecopy(std::move(score)) {}
-        ~AsyncScoreSaver() override = default;
+        ~AsyncScoreSaver() override { this->destroy(); }
 
        protected:
         inline void init() override { this->setReady(true); }
