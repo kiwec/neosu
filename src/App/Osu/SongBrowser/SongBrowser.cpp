@@ -1373,7 +1373,7 @@ void SongBrowser::refreshBeatmaps(UIScreen *next_screen) {
     this->bInitializedBeatmaps = false;
 
     // remember for initial songbrowser load
-    if(BeatmapDifficulty *map = osu->getMapInterface()->getBeatmap(); !!map && map->getMD5() != MD5Hash{}) {
+    if(BeatmapDifficulty *map = osu->getMapInterface()->getBeatmap(); !!map && map->getMD5() != MD5Hash::sentinel && !map->getMD5().is_suspicious()) {
         BeatmapInterface::loading_reselect_map = map->getMD5();
     }
 
