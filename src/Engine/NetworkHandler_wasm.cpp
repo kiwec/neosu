@@ -257,9 +257,11 @@ void NetworkImpl::fetchProgress(emscripten_fetch_t* fetch) {
 }
 
 void NetworkImpl::httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback) {
-    assert(!url.starts_with("https://") && !url.starts_with("http://"));
+    const bool scheme_prepended = url.starts_with("https://") ||
+                                  url.starts_with("http://");  // should normally not already be prefixed, but allow it
 
-    const std::string url_with_scheme = fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
+    const std::string url_with_scheme =
+        scheme_prepended ? std::string{url} : fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
 
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
@@ -338,8 +340,11 @@ static Hash::unstable_stringmap<std::string> parseRawHeaders(const char* raw) {
 Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOptions options) {
     encodeMimeParts(options);
 
-    assert(!url.starts_with("https://") && !url.starts_with("http://"));
-    const std::string url_with_scheme = fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
+    const bool scheme_prepended = url.starts_with("https://") ||
+                                  url.starts_with("http://");  // should normally not already be prefixed, but allow it
+
+    const std::string url_with_scheme =
+        scheme_prepended ? std::string{url} : fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
 
     std::string method = options.post_data.empty() ? "GET" : "POST";
 

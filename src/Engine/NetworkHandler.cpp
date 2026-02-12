@@ -656,11 +656,13 @@ void NetworkImpl::update() {
 }
 
 void NetworkImpl::httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback) {
-    assert(!url.starts_with("https://") && !url.starts_with("http://"));
+    const bool schemePrepended = url.starts_with("https://") || url.starts_with("http://") ||
+                                 url.starts_with("wss://") ||
+                                 url.starts_with("ws://");  // should normally not already be prefixed, but allow it
 
-    std::string urlWithScheme = (url.starts_with("wss://") || url.starts_with("ws://"))
-                                    ? std::string{url}
-                                    : fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
+    std::string urlWithScheme =
+        schemePrepended ? std::string{url} : fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
+
     auto request = std::make_unique<Request>(std::move(urlWithScheme), std::move(options), std::move(callback));
 
     Sync::scoped_lock lock{this->request_queue_mutex};
@@ -699,8 +701,12 @@ std::shared_ptr<WSInstance> NetworkImpl::initWebsocket(std::string_view url, con
 
 // synchronous API (blocking)
 Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOptions options) {
-    assert(!url.starts_with("https://") && !url.starts_with("http://"));
-    std::string urlWithScheme = fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
+    const bool schemePrepended = url.starts_with("https://") || url.starts_with("http://") ||
+                                 url.starts_with("wss://") ||
+                                 url.starts_with("ws://");  // should normally not already be prefixed, but allow it
+
+    std::string urlWithScheme =
+        schemePrepended ? std::string{url} : fmt::format("{}{}", cv::use_https.getBool() ? "https://" : "http://", url);
 
     Response result;
     Sync::condition_variable cv;

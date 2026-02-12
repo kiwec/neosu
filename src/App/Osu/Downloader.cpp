@@ -187,6 +187,17 @@ class DownloadManager {
         }
     }
 
+    static std::string_view get_hostname(std::string_view url) {
+        // protocol
+        if(auto pos = url.find("://"); pos != std::string_view::npos) url.remove_prefix(pos + 3);
+        // userinfo (user:pass@)
+        if(auto pos = url.find('@'); pos != std::string_view::npos) url.remove_prefix(pos + 1);
+        // port, path, query, fragment
+        if(auto pos = url.find_first_of(":/?#"); pos != std::string_view::npos) url = url.substr(0, pos);
+
+        return url;
+    }
+
     std::shared_ptr<Request> start_download(std::string_view url) {
         if(this->shutting_down.load(std::memory_order_acquire)) return nullptr;
 
@@ -211,10 +222,7 @@ class DownloadManager {
         // create new download request
         auto request = std::make_shared<Request>();
         request->url = url;
-
-        auto host_start = url.find("://") + 3;
-        auto host_end = url.find('/', host_start);
-        request->host = url.substr(host_start, host_end - host_start);
+        request->host = get_hostname(url);
 
         // queue for download (store weak_ptr)
         this->queue[url] = request;
