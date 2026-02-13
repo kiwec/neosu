@@ -245,7 +245,7 @@ struct McFontImpl final {
     bool loadGlyphDynamic(char16_t ch, FT_Face existingFace);
     bool loadGlyphMetrics(char16_t ch);
 
-    std::unique_ptr<Color[]> createExpandedBitmapData(const FT_Bitmap &bitmap);
+    std::unique_ptr<u8[]> createExpandedBitmapData(const FT_Bitmap &bitmap);
 
     // loads glyph from face and converts to bitmap. Returns nullptr on failure.
     // if storeMetrics is true, stores metrics in m_mGlyphMetrics[ch].
@@ -848,20 +848,24 @@ bool McFontImpl::loadGlyphMetrics(char16_t ch) {
     return true;
 }
 
-std::unique_ptr<Color[]> McFontImpl::createExpandedBitmapData(const FT_Bitmap &bitmap) {
-    auto expandedData = std::make_unique_for_overwrite<Color[]>(static_cast<size_t>(bitmap.width) * bitmap.rows);
+std::unique_ptr<u8[]> McFontImpl::createExpandedBitmapData(const FT_Bitmap &bitmap) {
+    auto expandedData = std::make_unique_for_overwrite<u8[]>(static_cast<size_t>(bitmap.width) * bitmap.rows * 4);
 
     std::unique_ptr<Channel[]> monoBitmapUnpacked{nullptr};
     if(!m_bAntialiasing) monoBitmapUnpacked = unpackMonoBitmap(bitmap);
 
     for(u32 j = 0; j < bitmap.rows; j++) {
         for(u32 k = 0; k < bitmap.width; k++) {
-            const sSz expandedIdx = (k + (bitmap.rows - j - 1) * bitmap.width);
+            const size_t srcIdx = k + static_cast<size_t>(bitmap.width) * j;
+            const size_t dstIdx = srcIdx * 4;
 
-            Channel alpha = m_bAntialiasing                                ? bitmap.buffer[k + bitmap.width * j]
-                            : monoBitmapUnpacked[k + bitmap.width * j] > 0 ? 255
-                                                                           : 0;
-            expandedData[expandedIdx] = argb(alpha, 255, 255, 255);
+            Channel alpha = m_bAntialiasing                    ? bitmap.buffer[srcIdx]
+                            : monoBitmapUnpacked[srcIdx] > 0   ? 255
+                                                               : 0;
+            expandedData[dstIdx + 0] = 255;    // R
+            expandedData[dstIdx + 1] = 255;    // G
+            expandedData[dstIdx + 2] = 255;    // B
+            expandedData[dstIdx + 3] = alpha;  // A
         }
     }
 
@@ -887,17 +891,15 @@ void McFontImpl::renderBitmapToAtlas(char16_t ch, int x, int y, const FT_Bitmap 
 
     // if clipping is needed, create clipped data
     if(std::cmp_less(renderWidth, bitmap.width) || std::cmp_less(renderHeight, bitmap.rows)) {
-        auto clippedData = std::make_unique_for_overwrite<Color[]>(static_cast<size_t>(renderWidth) * renderHeight);
+        auto clippedData = std::make_unique_for_overwrite<u8[]>(static_cast<size_t>(renderWidth) * renderHeight * 4);
+        const sSz srcStride = static_cast<sSz>(bitmap.width) * 4;
+        const sSz dstStride = static_cast<sSz>(renderWidth) * 4;
         for(i32 row = 0; row < renderHeight; row++) {
-            for(i32 col = 0; col < renderWidth; col++) {
-                const u32 srcIdx = row * bitmap.width + col;
-                const u32 dstIdx = row * renderWidth + col;
-                clippedData[dstIdx] = expandedData[srcIdx];
-            }
+            std::memcpy(&clippedData[row * dstStride], &expandedData[row * srcStride], dstStride);
         }
-        m_textureAtlas->putAt(x, y, renderWidth, renderHeight, false, true, clippedData.get());
+        m_textureAtlas->putAt(x, y, renderWidth, renderHeight, clippedData.get());
     } else {
-        m_textureAtlas->putAt(x, y, bitmap.width, bitmap.rows, false, true, expandedData.get());
+        m_textureAtlas->putAt(x, y, bitmap.width, bitmap.rows, expandedData.get());
     }
 
     // clear 1-pixel border on right and bottom edges for texture filtering.
@@ -907,10 +909,10 @@ void McFontImpl::renderBitmapToAtlas(char16_t ch, int x, int y, const FT_Bitmap 
         const int bottomEdgeY = y + renderHeight;
 
         if(rightEdgeX < atlasWidth) {
-            m_textureAtlas->clearRegion(rightEdgeX, y, 1, renderHeight, false, false);
+            m_textureAtlas->clearRegion(rightEdgeX, y, 1, renderHeight);
         }
         if(bottomEdgeY < atlasHeight) {
-            m_textureAtlas->clearRegion(x, bottomEdgeY, renderWidth + 1, 1, false, false);
+            m_textureAtlas->clearRegion(x, bottomEdgeY, renderWidth + 1, 1);
         }
     }
 

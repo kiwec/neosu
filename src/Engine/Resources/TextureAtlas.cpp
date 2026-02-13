@@ -49,7 +49,7 @@ void TextureAtlas::reloadAtlasImage() {
     // TODO
 }
 
-void TextureAtlas::putAt(int x, int y, int width, int height, bool flipHorizontal, bool flipVertical, Color *pixels) {
+void TextureAtlas::putAt(int x, int y, int width, int height, const u8 *rgbaPixels) {
     if(width < 1 || height < 1 || this->atlasImage == nullptr) return;
 
     if(x + width > this->iWidth || y + height > this->iHeight || x < 0 || y < 0) {
@@ -58,68 +58,48 @@ void TextureAtlas::putAt(int x, int y, int width, int height, bool flipHorizonta
         return;
     }
 
-// if input pixels was null, we're making that region black
-#define PIXEL_COLOR_(x__, y__, width__) (pixels ? pixels[/*sourceIdx*/ (y__) * (width__) + (x__)] : (Color)0)
-
-    // insert pixels at specified coordinates
-    for(int j = 0; j < height; j++) {
-        for(int i = 0; i < width; i++) {
-            const int atlasX = x + i;
-            const int atlasY = y + j;
-
-            // bounds checking with debug info
-            if(atlasX >= this->iWidth || atlasY >= this->iHeight) {
-                debugLog("WARNING: Pixel placement out of bounds: atlas=({},{}) in {}x{}", atlasX, atlasY, this->iWidth,
-                         this->iHeight);
-                continue;
-            }
-            int actualX = (flipHorizontal ? width - i - 1 : i);
-            int actualY = (flipVertical ? height - j - 1 : j);
-
-            this->atlasImage->setPixel(atlasX, atlasY, PIXEL_COLOR_(actualX, actualY, width));
-        }
-    }
+    this->atlasImage->setRegion(x, y, width, height, rgbaPixels);
 
     // mirror border pixels for padding > 1
     if constexpr(ATLAS_PADDING > 1) {
+        auto pixelColor = [rgbaPixels, width](int px, int py) -> Color {
+            const size_t idx = (static_cast<size_t>(py) * width + px) * 4;
+            return argb(rgbaPixels[idx + 3], rgbaPixels[idx + 0], rgbaPixels[idx + 1], rgbaPixels[idx + 2]);
+        };
+
         // left border
         for(int j = -1; j < height + 1; j++) {
-            const int i = 0;
-            int actualX = (flipHorizontal ? width - i - 1 : i);
-            int actualY = std::clamp<int>((flipVertical ? height - j - 1 : j), 0, height - 1);
-
-            if(x + i - 1 >= 0 && y + j >= 0 && y + j < this->iHeight)
-                this->atlasImage->setPixel(x + i - 1, y + j, PIXEL_COLOR_(actualX, actualY, width));
+            int srcY = std::clamp(j, 0, height - 1);
+            if(x - 1 >= 0 && y + j >= 0 && y + j < this->iHeight)
+                this->atlasImage->setPixel(x - 1, y + j, pixelColor(0, srcY));
         }
         // right border
         for(int j = -1; j < height + 1; j++) {
-            const int i = width - 1;
-            int actualX = (flipHorizontal ? width - i - 1 : i);
-            int actualY = std::clamp<int>((flipVertical ? height - j - 1 : j), 0, height - 1);
-
-            if(x + i + 1 < this->iWidth && y + j >= 0 && y + j < this->iHeight)
-                this->atlasImage->setPixel(x + i + 1, y + j, PIXEL_COLOR_(actualX, actualY, width));
+            int srcY = std::clamp(j, 0, height - 1);
+            if(x + width < this->iWidth && y + j >= 0 && y + j < this->iHeight)
+                this->atlasImage->setPixel(x + width, y + j, pixelColor(width - 1, srcY));
         }
         // top border
         for(int i = -1; i < width + 1; i++) {
-            const int j = 0;
-            int actualX = std::clamp<int>((flipHorizontal ? width - i - 1 : i), 0, width - 1);
-            int actualY = (flipVertical ? height - j - 1 : j);
-
-            if(x + i >= 0 && x + i < this->iWidth && y + j - 1 >= 0)
-                this->atlasImage->setPixel(x + i, y + j - 1, PIXEL_COLOR_(actualX, actualY, width));
+            int srcX = std::clamp(i, 0, width - 1);
+            if(x + i >= 0 && x + i < this->iWidth && y - 1 >= 0)
+                this->atlasImage->setPixel(x + i, y - 1, pixelColor(srcX, 0));
         }
         // bottom border
         for(int i = -1; i < width + 1; i++) {
-            const int j = height - 1;
-            int actualX = std::clamp<int>((flipHorizontal ? width - i - 1 : i), 0, width - 1);
-            int actualY = (flipVertical ? height - j - 1 : j);
-
-            if(x + i >= 0 && x + i < this->iWidth && y + j + 1 < this->iHeight)
-                this->atlasImage->setPixel(x + i, y + j + 1, PIXEL_COLOR_(actualX, actualY, width));
+            int srcX = std::clamp(i, 0, width - 1);
+            if(x + i >= 0 && x + i < this->iWidth && y + height < this->iHeight)
+                this->atlasImage->setPixel(x + i, y + height, pixelColor(srcX, height - 1));
         }
     }
-#undef PIXEL_COLOR_
+}
+
+void TextureAtlas::clearRegion(int x, int y, int width, int height) {
+    if(width < 1 || height < 1 || this->atlasImage == nullptr) return;
+
+    if(x + width > this->iWidth || y + height > this->iHeight || x < 0 || y < 0) return;
+
+    this->atlasImage->clearRegion(x, y, width, height);
 }
 
 bool TextureAtlas::packRects(std::vector<PackRect> &rects) {

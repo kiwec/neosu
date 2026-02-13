@@ -4,10 +4,9 @@
 #define TEXTUREATLAS_H
 
 #include "Resource.h"
+#include "types.h"
 #include <vector>
 #include <memory>
-
-struct Color;
 
 class Image;
 
@@ -27,12 +26,10 @@ class TextureAtlas final : public Resource {
 
     void reloadAtlasImage();
 
-    // place pixels at specific coordinates (for use after packing)
-    void putAt(int x, int y, int width, int height, bool flipHorizontal, bool flipVertical, Color *pixels);
+    // place RGBA pixels at specific coordinates (for use after packing)
+    void putAt(int x, int y, int width, int height, const u8 *rgbaPixels);
     // set image region to black
-    inline void clearRegion(int x, int y, int width, int height, bool flipHorizontal, bool flipVertical) {
-        return putAt(x, y, width, height, flipHorizontal, flipVertical, nullptr);
-    }
+    void clearRegion(int x, int y, int width, int height);
 
     // advanced skyline packing for efficient atlas utilization
     bool packRects(std::vector<PackRect> &rects);

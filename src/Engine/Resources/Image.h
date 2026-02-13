@@ -42,6 +42,8 @@ class Image : public Resource {
 
     void setPixel(i32 x, i32 y, Color color);
     void setPixels(const std::vector<u8> &pixels);
+    void setRegion(i32 x, i32 y, i32 w, i32 h, const u8 *rgbaPixels);
+    void clearRegion(i32 x, i32 y, i32 w, i32 h);
 
     [[nodiscard]] inline bool failedLoad() const { return this->bLoadError.load(std::memory_order_acquire); }
     [[nodiscard]] Color getPixel(i32 x, i32 y) const;

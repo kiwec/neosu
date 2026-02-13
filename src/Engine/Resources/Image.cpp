@@ -610,6 +610,54 @@ void Image::setPixel(i32 x, i32 y, Color color) {
     }
 }
 
+void Image::setRegion(i32 x, i32 y, i32 w, i32 h, const u8 *rgbaPixels) {
+    assert(x >= 0 && y >= 0 && w > 0 && h > 0);
+    assert(x + w <= this->iWidth && y + h <= this->iHeight);
+
+    const sSz stride = static_cast<sSz>(this->iWidth) * NUM_CHANNELS;
+    u8 *dst = this->rawImage.get() + static_cast<sSz>(y) * stride + static_cast<sSz>(x) * NUM_CHANNELS;
+    const sSz srcStride = static_cast<sSz>(w) * NUM_CHANNELS;
+
+    for(i32 row = 0; row < h; row++) {
+        std::memcpy(dst, rgbaPixels + row * srcStride, srcStride);
+        dst += stride;
+    }
+
+    if(this->bKeepInSystemMemory && !this->bDirtyFull && this->isReady()) {
+        const i32 tx0 = x >> DIRTY_TILE_SHIFT;
+        const i32 ty0 = y >> DIRTY_TILE_SHIFT;
+        const i32 tx1 = (x + w - 1) >> DIRTY_TILE_SHIFT;
+        const i32 ty1 = (y + h - 1) >> DIRTY_TILE_SHIFT;
+        for(i32 ty = ty0; ty <= ty1; ty++) {
+            std::memset(&this->dirtyGrid[ty * this->dirtyGridW + tx0], 1, tx1 - tx0 + 1);
+        }
+    }
+}
+
+void Image::clearRegion(i32 x, i32 y, i32 w, i32 h) {
+    assert(x >= 0 && y >= 0 && w > 0 && h > 0);
+    assert(x + w <= this->iWidth && y + h <= this->iHeight);
+
+    const sSz stride = static_cast<sSz>(this->iWidth) * NUM_CHANNELS;
+    u8 *dst = this->rawImage.get() + static_cast<sSz>(y) * stride + static_cast<sSz>(x) * NUM_CHANNELS;
+    const sSz clearBytes = static_cast<sSz>(w) * NUM_CHANNELS;
+
+    for(i32 row = 0; row < h; row++) {
+        std::memset(dst, 0, clearBytes);
+        dst += stride;
+    }
+
+    if(this->bKeepInSystemMemory && !this->bDirtyFull && this->isReady()) {
+        const i32 tx0 = x >> DIRTY_TILE_SHIFT;
+        const i32 ty0 = y >> DIRTY_TILE_SHIFT;
+        const i32 tx1 = (x + w - 1) >> DIRTY_TILE_SHIFT;
+        const i32 ty1 = (y + h - 1) >> DIRTY_TILE_SHIFT;
+        for(i32 ty = ty0; ty <= ty1; ty++) {
+            std::memset(&this->dirtyGrid[ty * this->dirtyGridW + tx0], 1, tx1 - tx0 + 1);
+        }
+    }
+}
+
 void Image::setPixels(const std::vector<u8> &pixels) {
     if(pixels.size() < this->totalBytes()) {
         debugLog("Image Error: setPixels() supplied array is too small!");
