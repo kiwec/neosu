@@ -123,56 +123,81 @@ void SDLGPUImage::uploadPixelData(SDL_GPUDevice *device) {
         }
     }
 
-    // TODO: should be multiple dirty regions instead of a all-encompassing region which may contain mostly non-dirty regions
-    const McIRect dirtyRect = this->getDirtyRect();
-
-    const sSz dirtyBeginX = (sSz)dirtyRect.getMinX();
-    const sSz dirtyBeginY = (sSz)dirtyRect.getMinY();
-    const ivec2 dirtySize = dirtyRect.getSize();
-    const u32 dirtyBytes = (u32)dirtySize.x * dirtySize.y * Image::NUM_CHANNELS;
-    assert(dirtyBytes <= totalBytes);
-
-    const bool cycle = this->bKeepInSystemMemory && m_prevDirtyRegion == dirtyRect;
-    m_prevDirtyRegion = dirtyRect;
+    auto dirtyRects = this->getDirtyRects();
 
     // map and copy pixel data
-    void *mapped = SDL_MapGPUTransferBuffer(device, transferBuf, cycle);
-    if(mapped) {
-        if(dirtyBytes == totalBytes) {
-            std::memcpy(mapped, this->rawImage.get(), dirtyBytes);
-        } else {
-            // copy only the dirty sub-rectangle, row by row
-            const sSz srcStride = (sSz)this->iWidth * Image::NUM_CHANNELS;
-            const sSz dstStride = (sSz)dirtySize.x * Image::NUM_CHANNELS;
+    void *mapped = SDL_MapGPUTransferBuffer(device, transferBuf, false);
+    if(!mapped) return;
 
-            u8 *dst = static_cast<u8 *>(mapped);
-            const u8 *src = this->rawImage.get();
+    const bool fullImage = dirtyRects.size() == 1 && (u32)dirtyRects[0].getWidth() == (u32)this->iWidth &&
+                           (u32)dirtyRects[0].getHeight() == (u32)this->iHeight;
 
-            for(sSz y = 0; y < dirtySize.y; y++) {
-                std::memcpy(dst + (sSz)y * dstStride,
-                            src + (sSz)(dirtyBeginY + y) * srcStride + dirtyBeginX * Image::NUM_CHANNELS, dstStride);
+    // for multi-rect: track packed offset per rect
+    std::vector<u32> rectOffsets;
+
+    if(fullImage) {
+        std::memcpy(mapped, this->rawImage.get(), totalBytes);
+    } else {
+        // pack each rect's rows tightly into the transfer buffer
+        const sSz srcStride = (sSz)this->iWidth * Image::NUM_CHANNELS;
+        u8 *dst = static_cast<u8 *>(mapped);
+        const u8 *src = this->rawImage.get();
+        u32 offset = 0;
+
+        rectOffsets.reserve(dirtyRects.size());
+        for(const auto &rect : dirtyRects) {
+            rectOffsets.push_back(offset);
+            const sSz rx = (sSz)rect.getMinX();
+            const sSz ry = (sSz)rect.getMinY();
+            const sSz rw = (sSz)rect.getWidth();
+            const sSz rh = (sSz)rect.getHeight();
+            const sSz rowBytes = rw * Image::NUM_CHANNELS;
+
+            for(sSz y = 0; y < rh; y++) {
+                std::memcpy(dst + offset, src + (ry + y) * srcStride + rx * Image::NUM_CHANNELS, rowBytes);
+                offset += (u32)rowBytes;
             }
         }
-        SDL_UnmapGPUTransferBuffer(device, transferBuf);
     }
+
+    SDL_UnmapGPUTransferBuffer(device, transferBuf);
 
     // upload via copy pass, then generate mipmaps
     auto *cmdBuf = SDL_AcquireGPUCommandBuffer(device);
     if(cmdBuf) {
         auto *copyPass = SDL_BeginGPUCopyPass(cmdBuf);
         if(copyPass) {
-            SDL_GPUTextureTransferInfo src{};
-            src.transfer_buffer = transferBuf;
+            if(fullImage) {
+                SDL_GPUTextureTransferInfo src{};
+                src.transfer_buffer = transferBuf;
 
-            SDL_GPUTextureRegion dst{};
-            dst.texture = m_texture;
-            dst.x = dirtyBeginX;
-            dst.y = dirtyBeginY;
-            dst.w = (u32)dirtySize.x;
-            dst.h = (u32)dirtySize.y;
-            dst.d = 1;
+                SDL_GPUTextureRegion dst{};
+                dst.texture = m_texture;
+                dst.w = (u32)this->iWidth;
+                dst.h = (u32)this->iHeight;
+                dst.d = 1;
 
-            SDL_UploadToGPUTexture(copyPass, &src, &dst, cycle);
+                SDL_UploadToGPUTexture(copyPass, &src, &dst, false);
+            } else {
+                for(size_t i = 0; i < dirtyRects.size(); i++) {
+                    const auto &rect = dirtyRects[i];
+
+                    SDL_GPUTextureTransferInfo src{};
+                    src.transfer_buffer = transferBuf;
+                    src.offset = rectOffsets[i];
+                    src.pixels_per_row = (u32)rect.getWidth();
+
+                    SDL_GPUTextureRegion dst{};
+                    dst.texture = m_texture;
+                    dst.x = (u32)rect.getMinX();
+                    dst.y = (u32)rect.getMinY();
+                    dst.w = (u32)rect.getWidth();
+                    dst.h = (u32)rect.getHeight();
+                    dst.d = 1;
+
+                    SDL_UploadToGPUTexture(copyPass, &src, &dst, false);
+                }
+            }
             SDL_EndGPUCopyPass(copyPass);
         }
 
@@ -220,7 +245,7 @@ void SDLGPUImage::initAsync() {
     }
 
     if(!m_sampler) {
-        debugLog("SDLGPUImage Error: Couldn't CreateGPUSampler() on file {:s}!", this->sFilePath);
+        debugLog("SDLGPUImage Error: Couldn't CreateGPUSampler() on {}!", this->getDebugIdentifier());
         SDL_ReleaseGPUTexture(device, m_texture);
         m_texture = nullptr;
         this->setAsyncReady(false);

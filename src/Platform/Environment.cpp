@@ -73,11 +73,11 @@ Environment *env{nullptr};
 SDL_Environment *Environment::s_sdlenv{nullptr};
 
 Environment::Environment(const Mc::AppDescriptor &appDesc,
-                         const std::unordered_map<std::string, std::optional<std::string>> &argMap,
-                         const std::vector<std::string> &cmdlineVec)
+                         std::unordered_map<std::string, std::optional<std::string>> argMap,
+                         std::vector<std::string> cmdlineVec)
     : m_interop(appDesc.createInterop ? static_cast<Interop *>(appDesc.createInterop(this)) : new Interop(this)),
-      m_mArgMap(argMap),
-      m_vCmdLine(cmdlineVec),
+      m_mArgMap(std::move(argMap)),
+      m_vCmdLine(std::move(cmdlineVec)),
       m_cursorIcons(/*lazy init*/) {
     env = this;
 

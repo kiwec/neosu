@@ -351,13 +351,13 @@ MAIN_FUNC /* int argc, char *argv[] */
     VPROF_ENTER_SCOPE("Main", VPROF_BUDGETGROUP_ROOT);
     VPROF_ENTER_SCOPE("SDL", VPROF_BUDGETGROUP_BETWEENFRAMES);
 
-    auto *fmain = new SDLMain(*appDesc, arg_map, arg_cmdline);  // need to allocate dynamically
+    auto *fmain = new SDLMain(*appDesc, std::move(arg_map), std::move(arg_cmdline));  // need to allocate dynamically
     *appstate = fmain;
     return !fmain ? SDL_APP_FAILURE : fmain->initialize();
 #else
 
     // otherwise just put it on the stack
-    SDLMain fmain{*appDesc, arg_map, arg_cmdline};
+    SDLMain fmain{*appDesc, std::move(arg_map), std::move(arg_cmdline)};
     if(fmain.initialize() == SDL_APP_FAILURE) {
         SDL_AppQuit(&fmain, SDL_APP_FAILURE);
     }

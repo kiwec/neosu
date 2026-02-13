@@ -17,6 +17,7 @@
 #include "Resource.h"
 #include "Color.h"
 
+#include <cstring>
 #include <vector>
 #include <memory>
 
@@ -134,15 +135,24 @@ class Image : public Resource {
     i32 iWidth;
     i32 iHeight;
 
-    // for reuploads
-    [[nodiscard]] McIRect getDirtyRect() const;
+    // for reuploads (grid-based multi-region dirty tracking)
+    static constexpr i32 DIRTY_TILE_SHIFT = 5;  // 32px tiles
+    static constexpr i32 DIRTY_TILE_SIZE = 1 << DIRTY_TILE_SHIFT;
+
+    // extracts dirty rectangles from the grid (destructive - zeros visited tiles)
+    [[nodiscard]] std::vector<McIRect> getDirtyRects();
 
     // reset after uploading to gpu
-    void resetDirtyRegion() { this->dirtyRect = dummyDirtyRect; }
+    void resetDirtyRegion() {
+        this->bDirtyFull = false;
+        if(!this->dirtyGrid.empty()) std::memset(this->dirtyGrid.data(), 0, this->dirtyGrid.size());
+    }
 
    private:
-    static constexpr McIRect dummyDirtyRect{-1, -1, -1, -1};
-    McIRect dirtyRect{dummyDirtyRect};
+    std::vector<u8> dirtyGrid;
+    i32 dirtyGridW{0};
+    i32 dirtyGridH{0};
+    bool bDirtyFull{true};  // first upload is always full
 
    protected:
     TextureWrapMode wrapMode;

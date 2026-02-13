@@ -90,8 +90,8 @@ class Environment {
 
    public:
     Environment(const Mc::AppDescriptor &appDesc,
-                const std::unordered_map<std::string, std::optional<std::string>> &argMap,
-                const std::vector<std::string> &cmdlineVec);
+                std::unordered_map<std::string, std::optional<std::string>> argMap,
+                std::vector<std::string> cmdlineVec);
     virtual ~Environment();
 
     void update();

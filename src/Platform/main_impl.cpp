@@ -88,9 +88,9 @@ static ConVar sendtext_cmd("sendtext", CLIENT | NOLOAD | NOSAVE, CFUNC(sendtext)
 }  // namespace cv
 
 SDLMain::SDLMain(const Mc::AppDescriptor &appDesc,
-                 const std::unordered_map<std::string, std::optional<std::string>> &argMap,
-                 const std::vector<std::string> &argVec)
-    : Environment(appDesc, argMap, argVec), m_gpuConfigurator(std::make_unique<GPUDriverConfigurator>()) {
+                 std::unordered_map<std::string, std::optional<std::string>> argMap,
+                 std::vector<std::string> argVec)
+    : Environment(appDesc, std::move(argMap), std::move(argVec)), m_gpuConfigurator(std::make_unique<GPUDriverConfigurator>()) {
     // the reason we set up GPUDriverConfigurator here is because some things it does might need to happen before the window itself is created
     // setup callbacks
     cv::fps_max.setCallback(SA::MakeDelegate<&SDLMain::fps_max_callback>(this));

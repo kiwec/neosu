@@ -370,6 +370,13 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
 
     this->bCreatedImage = true;
 
+    // allocate dirty grid for texture atlas reuploads
+    if(keepInSystemMemory) {
+        this->dirtyGridW = (this->iWidth + DIRTY_TILE_SIZE - 1) >> DIRTY_TILE_SHIFT;
+        this->dirtyGridH = (this->iHeight + DIRTY_TILE_SIZE - 1) >> DIRTY_TILE_SHIFT;
+        this->dirtyGrid.resize(static_cast<size_t>(this->dirtyGridW) * this->dirtyGridH, 0);
+    }
+
     // reserve rawImage
     if(cv::debug_image.getBool()) {
         // don't calloc() if we're filling with pink anyways
@@ -390,9 +397,52 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
     this->setAsyncReady(true);
 }
 
-McIRect Image::getDirtyRect() const {
-    if(this->dirtyRect == dummyDirtyRect) return {0, 0, this->iWidth, this->iHeight};
-    return this->dirtyRect;
+std::vector<McIRect> Image::getDirtyRects() {
+    if(this->bDirtyFull || this->dirtyGrid.empty()) return {{0, 0, this->iWidth, this->iHeight}};
+
+    std::vector<McIRect> rects;
+    const i32 gw = this->dirtyGridW;
+    const i32 gh = this->dirtyGridH;
+    u8 *grid = this->dirtyGrid.data();
+
+    for(i32 gy = 0; gy < gh; gy++) {
+        for(i32 gx = 0; gx < gw; gx++) {
+            if(!grid[gy * gw + gx]) continue;
+
+            // extend right
+            i32 gx2 = gx + 1;
+            while(gx2 < gw && grid[gy * gw + gx2]) gx2++;
+
+            // extend down (all columns in [gx, gx2) must be dirty)
+            i32 gy2 = gy + 1;
+            while(gy2 < gh) {
+                bool allDirty = true;
+                for(i32 cx = gx; cx < gx2; cx++) {
+                    if(!grid[gy2 * gw + cx]) {
+                        allDirty = false;
+                        break;
+                    }
+                }
+                if(!allDirty) break;
+                gy2++;
+            }
+
+            // zero the tiles
+            for(i32 ry = gy; ry < gy2; ry++)
+                for(i32 rx = gx; rx < gx2; rx++) grid[ry * gw + rx] = 0;
+
+            // convert tile coords to pixel coords, clamping to image bounds
+            const i32 px = gx << DIRTY_TILE_SHIFT;
+            const i32 py = gy << DIRTY_TILE_SHIFT;
+            const i32 pw = std::min(gx2 << DIRTY_TILE_SHIFT, this->iWidth) - px;
+            const i32 ph = std::min(gy2 << DIRTY_TILE_SHIFT, this->iHeight) - py;
+
+            rects.emplace_back(px, py, pw, ph);
+        }
+    }
+
+    if(rects.empty()) return {{0, 0, this->iWidth, this->iHeight}};
+    return rects;
 }
 
 bool Image::loadRawImage() {
@@ -554,14 +604,9 @@ void Image::setPixel(i32 x, i32 y, Color color) {
             // play it safe, don't recompute the entire alpha channel visibility here
             this->bLoadedImageEntirelyTransparent = false;
         }
-    } else if(this->bKeepInSystemMemory &&
+    } else if(this->bKeepInSystemMemory && !this->bDirtyFull &&
               this->isReady() /* if we have not already been loaded once, the entire rect is dirty */) {
-        if(this->dirtyRect == dummyDirtyRect) {
-            this->dirtyRect = McIRect{x, y, 1, 1};
-        } else {
-            // grow to include pixel (x, y) which occupies [x, x+1) x [y, y+1)
-            this->dirtyRect.grow(McIRect{x, y, 1, 1});
-        }
+        this->dirtyGrid[(y >> DIRTY_TILE_SHIFT) * this->dirtyGridW + (x >> DIRTY_TILE_SHIFT)] = 1;
     }
 }
 
@@ -580,7 +625,8 @@ void Image::setPixels(const std::vector<u8> &pixels) {
         this->bLoadedImageEntirelyTransparent = isRawImageCompletelyTransparent();
     }
 
-    this->dirtyRect = dummyDirtyRect;
+    this->bDirtyFull = true;
+    if(!this->dirtyGrid.empty()) std::memset(this->dirtyGrid.data(), 0, this->dirtyGrid.size());
 }
 
 // internal
