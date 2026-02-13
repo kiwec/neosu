@@ -60,12 +60,37 @@ void OpenGLImage::init() {
 
     // upload to gpu
     {
-        if(!glTextureWasEmpty) {  // just to avoid redundantly binding
+        if(glTextureWasEmpty) {
+            // first upload: must use glTexImage2D to allocate texture storage
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->rawImage.getX(), this->rawImage.getY(), 0, GL_RGBA,
+                         GL_UNSIGNED_BYTE, this->rawImage.get());
+        } else {
+            // rebind
             glBindTexture(GL_TEXTURE_2D, this->GLTexture);
+
+            // reupload: use glTexSubImage2D with dirty rects to avoid full reupload
+            auto dirtyRects = this->getDirtyRects();
+            const bool fullImage = dirtyRects.size() == 1 && dirtyRects[0].getWidth() == this->iWidth &&
+                                   dirtyRects[0].getHeight() == this->iHeight;
+
+            if(fullImage) {
+                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->rawImage.getX(), this->rawImage.getY(), GL_RGBA,
+                                GL_UNSIGNED_BYTE, this->rawImage.get());
+            } else {
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, this->rawImage.getX());
+                for(const auto &rect : dirtyRects) {
+                    const u8 *src =
+                        this->rawImage.get() +
+                        ((i64)rect.getMinY() * this->rawImage.getX() + rect.getMinX()) * Image::NUM_CHANNELS;
+                    glTexSubImage2D(GL_TEXTURE_2D, 0, rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight(),
+                                    GL_RGBA, GL_UNSIGNED_BYTE, src);
+                }
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+            }
         }
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->rawImage.getX(), this->rawImage.getY(), 0, GL_RGBA,
-                     GL_UNSIGNED_BYTE, this->rawImage.get());
+        this->resetDirtyRegion();
+
         if(this->bMipmapped) {
             // cap mipmap levels at 32px minimum dimension to avoid excessive generation cost
             // we're not going to care about huge images looking good when downscaled to webpage icon size
@@ -125,7 +150,7 @@ void OpenGLImage::deleteGL() {
     if(this->GLTexture != 0 && hasGLFuncs) {
         if(!glIsTexture(this->GLTexture)) {
             debugLog("WARNING: tried to glDeleteTexture on {} ({:p}), which is not a valid GL texture!", this->sName,
-                     static_cast<const void*>(&this->GLTexture));
+                     static_cast<const void *>(&this->GLTexture));
         } else {
             glDeleteTextures(1, &this->GLTexture);
         }
@@ -193,7 +218,7 @@ void OpenGLImage::setWrapMode(TextureWrapMode wrapMode) {
     {
         switch(wrapMode) {
             case TextureWrapMode::CLAMP:  // NOTE: there is also GL_CLAMP, which works a bit differently
-                                                    // concerning the border color
+                                          // concerning the border color
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 break;

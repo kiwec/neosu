@@ -46,7 +46,6 @@ void TextureAtlas::reloadAtlasImage() {
 
     // reload synchronously, don't bother going through resourceManager
     this->atlasImage->reload();
-    // TODO
 }
 
 void TextureAtlas::putAt(int x, int y, int width, int height, const u8 *rgbaPixels) {

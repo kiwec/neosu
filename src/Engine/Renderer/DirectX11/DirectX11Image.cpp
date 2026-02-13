@@ -90,9 +90,9 @@ void DirectX11Image::init() {
                            : (Image::NUM_CHANNELS == 1 ? DXGI_FORMAT_R8_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM));
             textureDesc.SampleDesc.Count = 1;
             textureDesc.SampleDesc.Quality = 0;
-            textureDesc.Usage = (this->bKeepInSystemMemory ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT);
+            textureDesc.Usage = D3D11_USAGE_DEFAULT;
             textureDesc.BindFlags = (this->bMipmapped ? D3D11_BIND_RENDER_TARGET : 0) | D3D11_BIND_SHADER_RESOURCE;
-            textureDesc.CPUAccessFlags = (this->bKeepInSystemMemory ? D3D11_CPU_ACCESS_WRITE : 0);
+            textureDesc.CPUAccessFlags = 0;
             textureDesc.MiscFlags = (this->bMipmapped ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0) |
                                     (this->bShared ? D3D11_RESOURCE_MISC_SHARED : 0);
         }
@@ -120,26 +120,33 @@ void DirectX11Image::init() {
                                 MAKE_DXGI_HRESULT(hr), this->sFilePath));
                 return;
             }
+            this->resetDirtyRegion();
         } else {
-            // re-upload data to existing dynamic texture via Map/Unmap
-            D3D11_MAPPED_SUBRESOURCE mapped;
-            hr = context->Map(this->texture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-            if(SUCCEEDED(hr)) {
-                const UINT srcRowPitch = static_cast<UINT>(this->iWidth * Image::NUM_CHANNELS * sizeof(unsigned char));
-                if(mapped.RowPitch == srcRowPitch) {
-                    memcpy(mapped.pData, this->rawImage.get(), this->totalBytes());
-                } else {
-                    // copy row by row if pitch differs
-                    for(int y = 0; y < this->iHeight; y++) {
-                        memcpy(static_cast<u8*>(mapped.pData) + y * mapped.RowPitch,
-                               this->rawImage.get() + y * srcRowPitch, srcRowPitch);
-                    }
-                }
-                context->Unmap(this->texture, 0);
+            // reupload: use UpdateSubresource with dirty rects to avoid full reupload
+            auto dirtyRects = this->getDirtyRects();
+            const UINT srcRowPitch = static_cast<UINT>(this->iWidth * Image::NUM_CHANNELS);
+            const bool fullImage = dirtyRects.size() == 1 && dirtyRects[0].getWidth() == this->iWidth &&
+                                   dirtyRects[0].getHeight() == this->iHeight;
+
+            if(fullImage) {
+                context->UpdateSubresource(this->texture, 0, nullptr, this->rawImage.get(), srcRowPitch, 0);
             } else {
-                debugLog("DirectX Image Error: Couldn't Map() texture for update ({}, {:x}) on file {:s}!", hr, hr,
-                         this->sFilePath);
+                for(const auto& rect : dirtyRects) {
+                    D3D11_BOX box;
+                    box.left = (UINT)rect.getMinX();
+                    box.top = (UINT)rect.getMinY();
+                    box.right = (UINT)(rect.getMinX() + rect.getWidth());
+                    box.bottom = (UINT)(rect.getMinY() + rect.getHeight());
+                    box.front = 0;
+                    box.back = 1;
+
+                    const u8* src = this->rawImage.get() +
+                                    ((i64)rect.getMinY() * this->iWidth + rect.getMinX()) * Image::NUM_CHANNELS;
+                    context->UpdateSubresource(this->texture, 0, &box, src, srcRowPitch, 0);
+                }
             }
+
+            this->resetDirtyRegion();
         }
     }
 
