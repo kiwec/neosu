@@ -1928,6 +1928,9 @@ void OptionsOverlayImpl::update_login_button(bool loggedIn) {
     if(loggedIn || BanchoState::is_online()) {
         this->logInButton->setText("Disconnect");
         this->logInButton->setColor(0xffd90000);
+    } else if(BanchoState::get_online_status() == OnlineStatus::POLLING) {
+        this->logInButton->setText("Waiting for browser...");
+        this->logInButton->setColor(0xffd9d900);
     } else {
         this->logInButton->setText("Log in");
         this->logInButton->setColor(0xff00d900);
@@ -3121,7 +3124,8 @@ void OptionsOverlayImpl::onLogInClicked(bool left, bool right) {
         cv::mp_oauth_token.setValue("");
     }
 
-    if((right && BanchoState::is_logging_in()) || BanchoState::is_online()) {
+    const bool is_polling = BanchoState::get_online_status() == OnlineStatus::POLLING;
+    if((right && BanchoState::is_logging_in()) || BanchoState::is_online() || is_polling) {
         BanchoState::disconnect();
 
         // Manually clicked disconnect button: clear oauth token
@@ -3135,9 +3139,13 @@ void OptionsOverlayImpl::onLogInClicked(bool left, bool right) {
 
             auto challenge_b64 = Mc::Net::urlEncode(crypto::conv::encode64(BanchoState::oauth_challenge));
             auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-            auto url = fmt::format("{}{}/connect/start?challenge={}", scheme, BanchoState::endpoint, challenge_b64);
+            auto url = fmt::format("{}{}/connect/start?challenge={}&client={}", scheme, BanchoState::endpoint,
+                                   challenge_b64, BanchoState::neosu_version);
 
             env->openURLInDefaultBrowser(url);
+
+            BanchoState::update_online_status(OnlineStatus::POLLING);
+            BanchoState::poll_login();
         } else {
             BanchoState::reconnect();
         }

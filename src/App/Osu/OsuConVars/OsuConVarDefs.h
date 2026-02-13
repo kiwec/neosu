@@ -51,8 +51,6 @@ class ConVar;
 namespace cv {
 namespace cmd {
 
-// Generic commands
-CONVAR(complete_oauth, CLIENT, CFUNC(BANCHO::Net::complete_oauth));
 // Server-callable commands
 CONVAR(spectate, CLIENT | SERVER, CFUNC(Spectating::start_by_username));
 

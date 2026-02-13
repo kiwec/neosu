@@ -24,7 +24,4 @@ void update_networking();
 // Clean up networking. Should be called once when exiting neosu.
 void cleanup_networking();
 
-// Callback for complete_oauth command
-void complete_oauth(std::string_view code);
-
 }  // namespace BANCHO::Net

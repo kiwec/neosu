@@ -359,6 +359,16 @@ void Engine::onUpdate() {
 
     // update miscellaneous engine subsystems
     {
+        // Run scheduled tasks before update loop
+        for(auto it = this->scheduledTasks.begin(); it != this->scheduledTasks.end();) {
+            if(it->first <= engine->getTime()) {
+                it->second();
+                it = this->scheduledTasks.erase(it);
+            } else {
+                ++it;
+            }
+        }
+
         {
             VPROF_BUDGET("AsyncIO::update", VPROF_BUDGETGROUP_UPDATE);
             io->update();
@@ -419,6 +429,11 @@ void Engine::onUpdate() {
         VPROF_BUDGET("Environment::update", VPROF_BUDGETGROUP_UPDATE);
         env->update();
     }
+}
+
+void Engine::scheduleTaskSync(std::function<void()> task, double delay) {
+    // XXX: could insert sorted to make checking for tasks to run slightly faster
+    this->scheduledTasks.push_back(std::pair(delay, task));
 }
 
 void Engine::onFocusGained() {

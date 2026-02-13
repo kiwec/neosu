@@ -16,7 +16,7 @@ enum class ServerPolicy : uint8_t {
     NO_PREFERENCE,
 };
 
-enum class OnlineStatus : u8 { LOGGED_OUT, LOGIN_IN_PROGRESS, LOGGED_IN };
+enum class OnlineStatus : u8 { LOGGED_OUT, POLLING, LOGIN_IN_PROGRESS, LOGGED_IN };
 
 struct BanchoState final {
     // entirely static
@@ -79,6 +79,7 @@ struct BanchoState final {
     [[nodiscard]] static inline bool is_playing_a_multi_map() { return match_started; }
     [[nodiscard]] static bool can_submit_scores();
 
+    [[nodiscard]] static inline OnlineStatus get_online_status() { return online_status; }
     [[nodiscard]] static inline bool is_online() {
         const i32 uid = user_id.load(std::memory_order_acquire);
         return (uid > 0) || (uid < -10000);
@@ -90,6 +91,7 @@ struct BanchoState final {
 
     [[nodiscard]] static const std::string &get_username();
 
+    static void poll_login();
     static void disconnect(bool shutdown = false);
     static void reconnect();
 

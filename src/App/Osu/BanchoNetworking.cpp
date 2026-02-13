@@ -201,13 +201,6 @@ void send_bancho_packet_ws(Packet outgoing) {
 
 }  // namespace
 
-// Used as fallback for Linux or other setups where neosu:// protocol handler doesn't work
-void complete_oauth(std::string_view code) {
-    auto url = fmt::format("neosu://login/{}/{}", cv::mp_server.getString(), code);
-    debugLog("Manually logging in: {}", url);
-    handle_neosu_url(url.c_str());
-}
-
 void update_networking() {
     // Rate limit to every 1ms at most
     static double last_update = 0;
@@ -321,6 +314,36 @@ void cleanup_networking() {
 
 }  // namespace BANCHO::Net
 
+void BanchoState::poll_login() {
+    if(BanchoState::get_online_status() != OnlineStatus::POLLING) return;
+
+    auto challenge = Mc::Net::urlEncode(crypto::conv::encode64(BanchoState::oauth_challenge));
+    auto proof = Mc::Net::urlEncode(crypto::conv::encode64(BanchoState::oauth_verifier));
+    auto url = fmt::format("{}/connect/finish?challenge={}&proof={}", BanchoState::endpoint, challenge, proof);
+
+    Mc::Net::RequestOptions options{
+        .user_agent = BanchoState::user_agent,
+        .timeout = 30,
+        .connect_timeout = 5,
+        .follow_redirects = true,
+    };
+
+    networkHandler->httpRequestAsync(url, std::move(options), [](Mc::Net::Response response) {
+        if(response.success) {
+            if(response.response_code == 204) {
+                engine->scheduleTaskSync([]() { BanchoState::poll_login(); }, 0.5);
+            } else {
+                cv::mp_oauth_token.setValue(response.body);
+                BanchoState::reconnect();
+            }
+        } else {
+            BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
+            auto errmsg = fmt::format("Failed to log in: {}", response.error_msg);
+            ui->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
+        }
+    });
+}
+
 void BanchoState::disconnect(bool shutdown) {
     cvars().resetServerCvars();
 
@@ -377,7 +400,7 @@ void BanchoState::disconnect(bool shutdown) {
         resourceManager->destroyResource(BanchoState::server_icon);
         BanchoState::server_icon = nullptr;
     }
-
+    BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
     BanchoState::score_submission_policy = ServerPolicy::NO_PREFERENCE;
 
     BANCHO::User::logout_all_users();
