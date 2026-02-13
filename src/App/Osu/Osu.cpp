@@ -1645,6 +1645,8 @@ void Osu::onFSLetterboxedResChanged(std::string_view args) {
 }
 
 void Osu::onFocusGained() {
+    if(!this->UIReady()) return;
+
     // cursor clipping
     this->updateConfineCursor();
 
@@ -1660,6 +1662,7 @@ void Osu::onFocusGained() {
 }
 
 void Osu::onFocusLost() {
+    if(!this->UIReady()) return;
     if(this->isInPlayMode() && !this->map_iface->isPaused() && cv::pause_on_focus_loss.getBool()) {
         if(!BanchoState::is_playing_a_multi_map() && !this->map_iface->is_watching && !BanchoState::spectating) {
             this->map_iface->pause(false);
@@ -1675,19 +1678,26 @@ void Osu::onFocusLost() {
     this->updateConfineCursor();
 }
 
-void Osu::onMinimized() { ui->getVolumeOverlay()->loseFocus(); }
+void Osu::onMinimized() {
+    if(this->UIReady()) ui->getVolumeOverlay()->loseFocus();
+}
 
 bool Osu::onShutdown() {
     debugLog("Osu::onShutdown()");
 
-    if(!Env::cfg(OS::WASM) && !cv::alt_f4_quits_even_while_playing.getBool() && this->isInPlayMode()) {
+    if(!Env::cfg(OS::WASM) && this->map_iface && !cv::alt_f4_quits_even_while_playing.getBool() &&
+       this->isInPlayMode()) {
         this->map_iface->stop();
         return false;
     }
 
     // save everything
-    ui->getOptionsOverlay()->save();
-    db->save();
+    if(this->UIReady()) {
+        ui->getOptionsOverlay()->save();
+    }
+    if(db) {
+        db->save();
+    }
 
     BanchoState::disconnect(true);
 

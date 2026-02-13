@@ -26,24 +26,29 @@
 #include <cstring>
 
 SDLGPUShader::SDLGPUShader(std::string vertexShaderPack, std::string fragmentShaderPack, [[maybe_unused]] bool source)
-    : Shader(), m_sVsh(std::move(vertexShaderPack)), m_sFsh(std::move(fragmentShaderPack)) {}
-
-void SDLGPUShader::init() {
+    : Shader(), m_sVsh(std::move(vertexShaderPack)), m_sFsh(std::move(fragmentShaderPack)) {
     auto *gpu = static_cast<SDLGPUInterface *>(g.get());
-    if(!gpu || !gpu->getDevice()) {
+    if(!gpu || !(m_device = gpu->getDevice())) {
         debugLog("SDLGPUShader: no GPU device");
-        this->setReady(false);
         return;
     }
+}
 
-    SDL_GPUDevice *device = gpu->getDevice();
-    m_device = device;
+void SDLGPUShader::init() {
+    if(!m_device) {  // should not happen
+        auto *gpu = static_cast<SDLGPUInterface *>(g.get());
+        if(!gpu || !(m_device = gpu->getDevice())) {
+            debugLog("SDLGPUShader: no GPU device");
+            this->setReady(false);
+            return;
+        }
+    }
 
     // parse vertex shader pack
     std::string vshGlsl;
     std::vector<u8> vshBinary;
     SDL_GPUShaderFormat vshFormat;
-    if(!parseShaderPack(device, reinterpret_cast<const u8 *>(m_sVsh.data()), m_sVsh.size(), &vshGlsl, vshBinary,
+    if(!parseShaderPack(m_device, reinterpret_cast<const u8 *>(m_sVsh.data()), m_sVsh.size(), &vshGlsl, vshBinary,
                         vshFormat)) {
         debugLog("SDLGPUShader: failed to parse vertex shader pack");
         this->setReady(false);
@@ -54,7 +59,7 @@ void SDLGPUShader::init() {
     std::string fshGlsl;
     std::vector<u8> fshBinary;
     SDL_GPUShaderFormat fshFormat;
-    if(!parseShaderPack(device, reinterpret_cast<const u8 *>(m_sFsh.data()), m_sFsh.size(), &fshGlsl, fshBinary,
+    if(!parseShaderPack(m_device, reinterpret_cast<const u8 *>(m_sFsh.data()), m_sFsh.size(), &fshGlsl, fshBinary,
                         fshFormat)) {
         debugLog("SDLGPUShader: failed to parse fragment shader pack");
         this->setReady(false);
@@ -124,8 +129,8 @@ void SDLGPUShader::init() {
         .props = 0,
     };
 
-    m_gpuVertexShader = SDL_CreateGPUShader(device, &vertInfo);
-    m_gpuFragmentShader = SDL_CreateGPUShader(device, &fragInfo);
+    m_gpuVertexShader = SDL_CreateGPUShader(m_device, &vertInfo);
+    m_gpuFragmentShader = SDL_CreateGPUShader(m_device, &fragInfo);
 
     if(!m_gpuVertexShader || !m_gpuFragmentShader) {
         debugLog("SDLGPUShader: failed to create GPU shaders: {}", SDL_GetError());
@@ -152,7 +157,6 @@ void SDLGPUShader::destroy() {
 
     m_gpuVertexShader = nullptr;
     m_gpuFragmentShader = nullptr;
-    m_device = nullptr;
     m_uniformBlocks.clear();
     m_uniformCache.clear();
 }

@@ -437,14 +437,14 @@ void Engine::scheduleTaskSync(std::function<void()> task, double delay) {
 }
 
 void Engine::onFocusGained() {
-    logIfCV(debug_engine, "got focus");
+    logIfCV(debug_engine, "(Engine) called");
 
     if(soundEngine) soundEngine->onFocusGained();  // switch shared->exclusive if applicable
     app->onFocusGained();
 }
 
 void Engine::onFocusLost() {
-    logIfCV(debug_engine, "lost focus");
+    logIfCV(debug_engine, "(Engine) called");
 
     for(auto *device : this->inputDevices) {
         device->reset();
@@ -461,23 +461,23 @@ void Engine::onFocusLost() {
 }
 
 void Engine::onMinimized() {
-    logIfCV(debug_engine, "window minimized");
+    logIfCV(debug_engine, "(Engine) called");
 
     app->onMinimized();
 }
 
-void Engine::onMaximized() { logIfCV(debug_engine, "window maximized"); }
+void Engine::onMaximized() { logIfCV(debug_engine, "(Engine) called"); }
 
 void Engine::onRestored() {
-    logIfCV(debug_engine, "window restored");
+    logIfCV(debug_engine, "(Engine) called");
 
     if(g) g->onRestored();
     app->onRestored();
 }
 
 void Engine::onResolutionChange(vec2 newResolution) {
-    debugLog("Engine: onResolutionChange() ({:d}, {:d}) -> ({:d}, {:d})", (int)this->screenRect.getWidth(),
-             (int)this->screenRect.getHeight(), (int)newResolution.x, (int)newResolution.y);
+    debugLog("(Engine) ({:d}, {:d}) -> ({:d}, {:d})", (int)this->screenRect.getWidth(), (int)this->screenRect.getHeight(),
+             (int)newResolution.x, (int)newResolution.y);
 
     // NOTE: Windows [Show Desktop] button in the superbar causes (0,0)
     if(newResolution.x < 2 || newResolution.y < 2) {
@@ -500,12 +500,13 @@ void Engine::onResolutionChange(vec2 newResolution) {
 }
 
 void Engine::onDPIChange() {
-    debugLog("Engine: DPI changed to {:d}", env->getDPI());
+    debugLog("(Engine) DPI: {:d}", env->getDPI());
 
     app->onDPIChanged();
 }
 
 void Engine::onShutdown() {
+    logIfCV(debug_engine, "(Engine) called");
     if(this->bShuttingDown || !app->onShutdown()) return;
 
     this->bShuttingDown = true;
@@ -514,6 +515,8 @@ void Engine::onShutdown() {
 }
 
 void Engine::stealUIFocus() {
+    logIfCV(debug_engine, "(Engine) called");
+
     // HACKHACK for textboxes
     this->guiContainer->stealFocus();
     app->stealFocus();
@@ -522,36 +525,28 @@ void Engine::stealUIFocus() {
 // hardcoded engine hotkeys
 void Engine::onKeyDown(KeyboardEvent &e) {
     auto keyCode = e.getScanCode();
-    // handle ALT+F4 quit
-    if(keyboard->isAltDown() && keyCode == KEY_F4) {
-        this->shutdown();
-        e.consume();
-        return;
-    }
-
-    // handle ALT+ENTER fullscreen toggle
-    if(keyboard->isAltDown() && (keyCode == KEY_ENTER || keyCode == KEY_NUMPAD_ENTER)) {
-        this->toggleFullscreen();
-        e.consume();
-        return;
-    }
-
-    // handle CTRL+F11 profiler toggle
-    if(keyboard->isControlDown() && keyCode == KEY_F11) {
-        cv::vprof.setValue(cv::vprof.getBool() ? 0.0f : 1.0f);
-        e.consume();
-        return;
-    }
-
-    // handle profiler display mode change
-    if(keyboard->isControlDown() && keyCode == KEY_TAB) {
-        if(cv::vprof.getBool()) {
+    if(keyboard->isAltDown()) {
+        if(keyCode == KEY_F4) {
+            // handle ALT+F4 quit
+            this->shutdown();
+            e.consume();
+        } else if((keyCode == KEY_ENTER || keyCode == KEY_NUMPAD_ENTER)) {
+            // handle ALT+ENTER fullscreen toggle
+            this->toggleFullscreen();
+            e.consume();
+        }
+    } else if(keyboard->isControlDown()) {
+        if(keyCode == KEY_F11) {
+            // handle CTRL+F11 profiler toggle
+            cv::vprof.setValue(cv::vprof.getBool() ? false : true);
+            e.consume();
+        } else if(keyCode == KEY_TAB && cv::vprof.getBool()) {
+            // handle profiler display mode change
             if(keyboard->isShiftDown())
                 this->visualProfiler->decrementInfoBladeDisplayMode();
             else
                 this->visualProfiler->incrementInfoBladeDisplayMode();
             e.consume();
-            return;
         }
     }
 }
@@ -603,6 +598,7 @@ void Engine::runtime_assert(bool cond, const char *reason) {
 }
 
 void Engine::requestResolutionChange(vec2 newResolution) {
+    logIfCV(debug_engine, "(Engine) {}", newResolution);
     if(env->winMinimized()) return;
     if(newResolution == this->vNewScreenSize) return;
 

@@ -270,7 +270,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     void playMissSound();
 
-    void updateInterpedMusicPos();
+    [[nodiscard]] i32 getInterpedMusicPos() const;
 
     bool bIsInSkippableSection;
     bool bShouldFlashWarningArrows;
@@ -282,7 +282,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     f64 fPrevUnpauseTime{0.f};
 
     // sound
-    std::unique_ptr<GameplayInterpolator> musicInterp;
+    mutable std::unique_ptr<GameplayInterpolator> musicInterp;
 
     f32 fMusicFrequencyBackup;
     i32 iCurMusicPos;
@@ -321,8 +321,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // hitobjects
     std::vector<std::unique_ptr<HitObject>> hitobjects;
     // these are non-owning views of "hitobjects" in different arrangements
-    std::vector<HitObject *> hitobjectsSortedByEndTime;          // for hitObject->draw/draw2()
-    std::vector<HitObject *> nonSpinnerObjectsToDraw;            // for drawHitObjects, temp buffer
+    std::vector<HitObject *> hitobjectsSortedByEndTime;  // for hitObject->draw/draw2()
+    std::vector<HitObject *> nonSpinnerObjectsToDraw;    // for drawHitObjects, temp buffer
     std::vector<HitObject *> misaimObjects;
 
     // statistics

@@ -2457,7 +2457,7 @@ void BeatmapInterface::update() {
     }
 }
 
-void BeatmapInterface::updateInterpedMusicPos() {
+i32 BeatmapInterface::getInterpedMusicPos() const {
     const auto currentTime = Timing::getTimeReal<f64>();
 
     const int interpCV = cv::interpolate_music_pos.getInt();
@@ -2493,8 +2493,6 @@ void BeatmapInterface::updateInterpedMusicPos() {
             returnPos += (i64)(((1.0f - this->music->getSpeed()) / 0.75f) * 5);  // osu (new)
     }
 
-    this->iCurMusicPos = (i32)returnPos;
-
     if(cv::debug_snd.getInt() > 1) {
         const std::string logString = fmt::format(
             R"(==== MUSIC POSITION DEBUG ====
@@ -2503,10 +2501,12 @@ interpolator type: {}
 music->getPositionMS(): {}
 iCurMusicPos: {}
 ==== END MUSIC POSITION DEBUG ====)",
-            currentTime, cv::interpolate_music_pos.getInt(), realMusicPos, this->iCurMusicPos);
+            currentTime, cv::interpolate_music_pos.getInt(), realMusicPos, returnPos);
 
         logRaw(logString);
     }
+
+    return (i32)returnPos;
 }
 
 void BeatmapInterface::update2() {
@@ -2545,9 +2545,8 @@ void BeatmapInterface::update2() {
     const bool isIdlePaused = this->isActuallyPausedAndNotSpectating();
 
     // update current music position (this variable does not include any offsets!)
-    this->updateInterpedMusicPos();
-
-    this->iContinueMusicPos = this->music->getPositionMS();
+    this->iCurMusicPos = this->getInterpedMusicPos();
+    this->iContinueMusicPos = this->iCurMusicPos < 0 ? 0 : this->iCurMusicPos;
 
     const bool wasSeekFrame = this->bWasSeekFrame;
     this->bWasSeekFrame = false;

@@ -35,8 +35,6 @@ class SDLGPURenderTarget final : public RenderTarget {
     void bind(unsigned int textureUnit = 0) override;
     void unbind() override;
 
-    inline SDL_GPUTexture *getRenderTexture() const { return m_colorTexture; }
-
    protected:
     void init() override;
     void initAsync() override;

@@ -32,9 +32,6 @@ class SDLGPUImage final : public Image {
     void setFilterMode(TextureFilterMode filterMode) override;
     void setWrapMode(TextureWrapMode wrapMode) override;
 
-    inline SDL_GPUTexture *getTexture() const { return m_texture; }
-    inline SDL_GPUSampler *getSampler() const { return m_sampler; }
-
    protected:
     void init() override;
     void initAsync() override;

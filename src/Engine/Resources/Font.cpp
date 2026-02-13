@@ -61,7 +61,7 @@ constexpr const size_t MAX_ATLAS_SIZE{4096};
 
 constexpr const char16_t UNKNOWN_CHAR{u'?'};  // ASCII '?'
 
-constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32 | REND::DX11) ? 6 : 4};
+constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32 | REND::DX11 | REND::SDLGPU) ? 6 : 4};
 
 // this is still a very conservative amount of memory
 constexpr const size_t CACHED_STRINGS_PER_FONT{4096};
@@ -319,7 +319,7 @@ std::vector<UString> McFont::wrap(const UString &text, f64 max_width) const { re
 McFontImpl::McFontImpl(McFont *parent, int fontSize, bool antialiasing, int fontDPI)
     : m_parent(parent),
       m_vao(g->createVertexArrayObject(
-          (Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::TRIANGLES : DrawPrimitive::QUADS),
+          (Env::cfg(REND::GLES32 | REND::DX11 | REND::SDLGPU) ? DrawPrimitive::TRIANGLES : DrawPrimitive::QUADS),
           DrawUsageType::DYNAMIC, false)) {
     std::array<char16_t, 96> characters;
     // initialize with basic ASCII, load the rest as needed
@@ -334,7 +334,7 @@ McFontImpl::McFontImpl(McFont *parent, const std::span<const char16_t> &characte
                        int fontDPI)
     : m_parent(parent),
       m_vao(g->createVertexArrayObject(
-          (Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::TRIANGLES : DrawPrimitive::QUADS),
+          (Env::cfg(REND::GLES32 | REND::DX11 | REND::SDLGPU) ? DrawPrimitive::TRIANGLES : DrawPrimitive::QUADS),
           DrawUsageType::DYNAMIC, false)) {
     // don't try to find fallbacks if we had an explicitly-passed character set on construction
     m_bTryFindFallbacks = false;
