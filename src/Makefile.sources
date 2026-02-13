@@ -251,7 +251,6 @@ neosu_SOURCES = \
 	src/Util/ACFParser.cpp \
 	src/Util/MD5Hash.cpp \
 	src/Util/Quaternion.cpp \
-	src/Util/Rect.cpp \
 	src/Util/SString.cpp \
 	src/Util/SyncPrimitives/SyncJthread.cpp \
 	src/Util/UString.cpp \
