@@ -74,6 +74,10 @@ namespace CBaseUIDebug {
 extern void onDumpElemsChangeCallback(float newvalue);
 }
 
+namespace AnimationHandler {
+extern void onDebugAnimChange(float newVal);
+}
+
 #else
 #define CONVAR(name, ...) extern ConVar _CV(name)
 #endif
@@ -172,7 +176,7 @@ CONVAR(win_snd_wasapi_event_callbacks, false, CLIENT,
 // Debug
 CONVAR(debug_cv, false, CLIENT);
 CONVAR(debug_network, false, CLIENT);
-CONVAR(debug_anim, false, CLIENT);
+CONVAR(debug_anim, false, CLIENT, CFUNC(AnimationHandler::onDebugAnimChange));
 CONVAR(debug_box_shadows, false, CLIENT);
 CONVAR(debug_engine, false, CLIENT);
 CONVAR(debug_ui, false, CLIENT, CFUNC(CBaseUIDebug::onDumpElemsChangeCallback));

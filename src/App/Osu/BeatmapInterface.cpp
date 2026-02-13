@@ -1150,7 +1150,7 @@ int BeatmapInterface::getMostCommonBPM() const {
 }
 
 f32 BeatmapInterface::getSpeedMultiplier() const {
-    if(f32 speed_override = cv::speed_override.getFloat(); speed_override >= 0.0f) {
+    if(f32 speed_override = osu->getScore()->mods.speed; speed_override >= 0.05f) {
         return std::max(speed_override, 0.05f);
     } else {
         return 1.f;
@@ -2565,6 +2565,9 @@ void BeatmapInterface::update2() {
         }
     }
 
+    // hoist this call out (it's constant throughout an update iteration)
+    const f64 current_frametime = engine->getFrameTime();
+
     // HACKHACK: clean this mess up
     // waiting to start (file loading, retry)
     // NOTE: this is dependent on being here AFTER m_iCurMusicPos has been set above, because it modifies it to fake a
@@ -2626,7 +2629,7 @@ void BeatmapInterface::update2() {
             curPos = -1;
 
         for(auto &hitobject : this->hitobjects) {
-            hitobject->update(curPos, engine->getFrameTime());
+            hitobject->update(curPos, current_frametime);
         }
     }
 
@@ -2940,7 +2943,7 @@ void BeatmapInterface::update2() {
             // ************ live pp block end ************** //
 
             // main hitobject update
-            curHobj->update(this->iCurMusicPosWithOffsets, engine->getFrameTime());
+            curHobj->update(this->iCurMusicPosWithOffsets, current_frametime);
 
             // spinner visibility detection
             // XXX: there might be a "better" way to do it?
@@ -3306,7 +3309,7 @@ void BeatmapInterface::update2() {
                     // special case: spinner nerf
                     f64 spinnerDrainNerf = this->isSpinnerActive() ? 0.25 : 1.0;
                     this->addHealth(
-                        -this->fDrainRate * engine->getFrameTime() * (f64)this->getSpeedMultiplier() * spinnerDrainNerf,
+                        -this->fDrainRate * current_frametime * (f64)this->getSpeedMultiplier() * spinnerDrainNerf,
                         false);
                 }
             }
@@ -3779,7 +3782,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     const f32 HP = this->getHP();
     const f32 CS = this->getCS();
     const f32 OD = this->getOD();
-    const f32 speedMultiplier = this->getSpeedMultiplier();  // NOTE: not this->getSpeedMultiplier()!
+    const f32 speedMultiplier = this->getSpeedMultiplier();  // NOTE: not this->getSpeedMultiplier()! (outdated comment ?)
     const bool relax = osu->getModRelax();
     const bool hidden = osu->getModHD();
     const bool touchDevice = osu->getModTD();

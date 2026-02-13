@@ -273,7 +273,7 @@ Osu::Osu()
     // Init neosu_version after loading config for correct bleedingedge detection
     if(Env::cfg(BUILD::DEBUG)) {
         BanchoState::neosu_version = fmt::format("dev-{}", cv::build_timestamp.getVal<u64>());
-    } else if(this->isBleedingEdge()) {
+    } else if(Osu::isBleedingEdge()) {
         BanchoState::neosu_version = fmt::format("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
     } else {
         BanchoState::neosu_version = fmt::format("release-{:.2f}", cv::version.getFloat());
@@ -1979,28 +1979,32 @@ float Osu::getUIScale() {
     return scale;
 }
 
-bool Osu::getModAuto() const { return cv::mod_autoplay.getBool(); }
-bool Osu::getModAutopilot() const { return cv::mod_autopilot.getBool(); }
-bool Osu::getModRelax() const { return cv::mod_relax.getBool(); }
-bool Osu::getModSpunout() const { return cv::mod_spunout.getBool(); }
-bool Osu::getModTarget() const { return cv::mod_target.getBool(); }
-bool Osu::getModScorev2() const { return cv::mod_scorev2.getBool(); }
-bool Osu::getModFlashlight() const { return cv::mod_flashlight.getBool(); }
-bool Osu::getModNF() const { return cv::mod_nofail.getBool(); }
-bool Osu::getModHD() const { return cv::mod_hidden.getBool(); }
-bool Osu::getModHR() const { return cv::mod_hardrock.getBool(); }
-bool Osu::getModEZ() const { return cv::mod_easy.getBool(); }
-bool Osu::getModSD() const { return cv::mod_suddendeath.getBool(); }
-bool Osu::getModSS() const { return cv::mod_perfect.getBool(); }
-bool Osu::getModNightmare() const { return cv::mod_nightmare.getBool(); }
-bool Osu::getModTD() const { return cv::mod_touchdevice.getBool() || cv::mod_touchdevice_always.getBool(); }
-bool Osu::getModDT() const { return cv::mod_doubletime_dummy.getBool(); }
-bool Osu::getModNC() const { return cv::mod_doubletime_dummy.getBool() && cv::nightcore_enjoyer.getBool(); }
-bool Osu::getModHT() const { return cv::mod_halftime_dummy.getBool(); }
+bool Osu::getModAuto() const { return flags::has<ModFlags::Autoplay>(this->score->mods.flags); }
+bool Osu::getModAutopilot() const { return flags::has<ModFlags::Autopilot>(this->score->mods.flags); }
+bool Osu::getModRelax() const { return flags::has<ModFlags::Relax>(this->score->mods.flags); }
+bool Osu::getModSpunout() const { return flags::has<ModFlags::SpunOut>(this->score->mods.flags); }
+bool Osu::getModTarget() const { return flags::has<ModFlags::Target>(this->score->mods.flags); }
+bool Osu::getModScorev2() const { return flags::has<ModFlags::ScoreV2>(this->score->mods.flags); }
+bool Osu::getModFlashlight() const { return flags::has<ModFlags::Flashlight>(this->score->mods.flags); }
+bool Osu::getModNF() const { return flags::has<ModFlags::NoFail>(this->score->mods.flags); }
+bool Osu::getModHD() const { return flags::has<ModFlags::Hidden>(this->score->mods.flags); }
+bool Osu::getModHR() const { return flags::has<ModFlags::HardRock>(this->score->mods.flags); }
+bool Osu::getModEZ() const { return flags::has<ModFlags::Easy>(this->score->mods.flags); }
+bool Osu::getModSD() const { return flags::has<ModFlags::SuddenDeath>(this->score->mods.flags); }
+bool Osu::getModSS() const { return flags::has<ModFlags::Perfect>(this->score->mods.flags); }
+bool Osu::getModNightmare() const { return flags::has<ModFlags::Nightmare>(this->score->mods.flags); }
+bool Osu::getModTD() const {
+    return flags::has<ModFlags::TouchDevice>(this->score->mods.flags) || cv::mod_touchdevice_always.getBool();
+}
+bool Osu::getModDT() const { return this->score->mods.speed == 1.5f; }
+bool Osu::getModNC() const {
+    return this->score->mods.speed == 1.5f && flags::has<ModFlags::NoPitchCorrection>(this->score->mods.flags);
+}
+bool Osu::getModHT() const { return this->score->mods.speed == 0.75f; }
 
-bool Osu::isBleedingEdge() const {
+bool Osu::isBleedingEdge() {
     if constexpr(Env::cfg(OS::WASM)) {
-        return env->getEnvVariable("IS_BLEEDINGEDGE") == "1";
+        return Environment::getEnvVariable("IS_BLEEDINGEDGE") == "1";
     } else {
         return cv::is_bleedingedge.getBool();
     }

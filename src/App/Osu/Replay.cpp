@@ -253,7 +253,11 @@ Mods Mods::from_cvars() {
 
 #undef ADDIFCV
 
-    mods.speed = osu->getMapInterface()->getSpeedMultiplier();
+    if(f32 speed_override = cv::speed_override.getFloat(); speed_override >= 0.05f) {
+        mods.speed = std::max(speed_override, 0.05f);
+    } else {
+        mods.speed = 1.f;
+    }
 
     mods.notelock_type = cv::notelock_type.getInt();
     mods.autopilot_lenience = cv::autopilot_lenience.getFloat();

@@ -97,7 +97,7 @@ struct LivePPCalc::LivePPCalcImpl {
     ~LivePPCalcImpl() = default;
 
     // designed in a way that most of the heavy lifting is done off-thread (inside the calc_inst invocation)
-    void update(LiveScore &score) {
+    void update(const LiveScore &score) {
         const i32 cur_hobj = m_bmi->iCurrentHitObjectIndex;
 
         if(!needs_update(cur_hobj)) {
@@ -250,7 +250,7 @@ struct LivePPCalc::LivePPCalcImpl {
 LivePPCalc::LivePPCalc(BeatmapInterface *parent) : pImpl(parent) {}
 LivePPCalc::~LivePPCalc() = default;
 
-void LivePPCalc::update(LiveScore &score) { return pImpl->update(score); }
+void LivePPCalc::update(const LiveScore &score) { return pImpl->update(score); }
 void LivePPCalc::invalidate() { return pImpl->invalidate(); }
 
 float LivePPCalc::get_stars() const { return pImpl->m_live_stars; }

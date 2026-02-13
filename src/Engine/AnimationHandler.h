@@ -7,6 +7,9 @@
 
 namespace AnimationHandler {
 
+// cv::debug_anim change callback
+void onDebugAnimChange(float newVal);
+
 template <typename T>
 concept AnimFloat = std::same_as<T, f32> || std::same_as<T, f64>;
 

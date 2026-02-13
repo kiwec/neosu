@@ -196,7 +196,7 @@ class Osu final : public App, public MouseListener {
     [[nodiscard]] bool getModNC() const;
     [[nodiscard]] bool getModHT() const;
 
-    [[nodiscard]] bool isBleedingEdge() const;
+    [[nodiscard]] static bool isBleedingEdge();
     [[nodiscard]] constexpr bool isInPlayMode() const { return this->bIsPlayingASelectedBeatmap; }
     [[nodiscard]] inline bool isSkinLoading() const {
         return this->bSkinLoadScheduled ||

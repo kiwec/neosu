@@ -21,7 +21,7 @@ struct LivePPCalc {
     ~LivePPCalc();
 
     // call during BeatmapInterface::update
-    void update(LiveScore &score);
+    void update(const LiveScore &score);
 
     // force refresh
     void invalidate();
