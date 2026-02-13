@@ -27,8 +27,8 @@ using MD5Byte = unsigned char;
 
 struct ALIGNED_TO(16) MD5String final : public std::array<char, 32> {
     using array::array;
+    constexpr MD5String() : array() {}
     MD5String(const char *str);
-    MD5String() : array() {}
 
     static constexpr MD5String digest_to_md5chars(const std::array<MD5Byte, 16> &digest) {
         MD5String out;
@@ -73,7 +73,7 @@ struct ALIGNED_TO(16) MD5String final : public std::array<char, 32> {
 struct ALIGNED_TO(16) MD5Hash final : public std::array<MD5Byte, 16> {
     using array::array;
 
-    MD5Hash() : array() {}
+    constexpr MD5Hash() : array() {}
     MD5Hash(const char *str) : array(MD5String{str}.bytes()) {}
     constexpr MD5Hash(const MD5String &charray) : array(charray.bytes()) {}
     constexpr MD5Hash(const std::array<char, 32> &charray) : array(MD5String::md5chars_to_digest(charray)) {}
