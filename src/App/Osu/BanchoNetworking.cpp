@@ -42,6 +42,7 @@ double seconds_between_pings{1.0};
 std::string auth_token = "";
 bool use_websockets = false;
 std::shared_ptr<Mc::Net::WSInstance> websocket{nullptr};
+double login_poll_timeout{-1.};
 
 void parse_packets(u8 *data, size_t s_data) {
     Packet batch = {
@@ -215,6 +216,12 @@ void update_networking() {
         initialized = true;
     }
 
+    // Poll login if we need to
+    if(login_poll_timeout > 0 && current_time > login_poll_timeout) {
+        login_poll_timeout = -1.;
+        BanchoState::poll_login();
+    }
+
     // Set ping timeout
     if(osu && ui->getLobby()->isVisible()) seconds_between_pings = 1;
     if(BanchoState::spectating) seconds_between_pings = 1;
@@ -331,8 +338,10 @@ void BanchoState::poll_login() {
     networkHandler->httpRequestAsync(url, std::move(options), [](Mc::Net::Response response) {
         if(response.success) {
             if(response.response_code == 204) {
-                engine->scheduleTaskSync([]() { BanchoState::poll_login(); }, 0.5);
+                // callbacks already run on the main thread
+                BANCHO::Net::login_poll_timeout = engine->getTime() + 0.5;
             } else {
+                BANCHO::Net::login_poll_timeout = -1.;  // sanity reset
                 cv::mp_oauth_token.setValue(response.body);
                 BanchoState::reconnect();
             }

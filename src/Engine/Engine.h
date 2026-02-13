@@ -96,9 +96,6 @@ class Engine final : public KeyboardListener {
     [[nodiscard]] inline const std::vector<Mouse *> &getMice() const { return this->mice; }
     [[nodiscard]] inline const std::vector<Keyboard *> &getKeyboards() const { return this->keyboards; }
 
-    // Schedule to run a function at the start of the update loop, in "delay" seconds
-    void scheduleTaskSync(std::function<void()> task, double delay);
-
     // screen
     void requestResolutionChange(vec2 newResolution);
     [[nodiscard]] constexpr McRect getScreenRect() const { return this->screenRect; }
@@ -165,7 +162,6 @@ class Engine final : public KeyboardListener {
     McFont *defaultFont{nullptr};
 
     // custom
-    std::vector<std::pair<double, std::function<void()>>> scheduledTasks;
     bool bShuttingDown;
     bool bDrawing;
 
