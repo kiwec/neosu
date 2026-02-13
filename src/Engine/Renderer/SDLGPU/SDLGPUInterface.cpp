@@ -1198,7 +1198,6 @@ void SDLGPUInterface::flushDrawCommands() {
         SDL_GPUTexture *lastTexture = nullptr;
         SDL_GPUSampler *lastSampler = nullptr;
         SDL_GPUBuffer *lastVertexBuffer = nullptr;
-        u32 lastVertexOffset = ~0u;
         Viewport lastViewport{.pos = {-1.f, -1.f}, .size = {-1.f, -1.f}};
         bool lastScissorEnabled = false;
         Scissor lastScissor{.pos = {-1, -1}, .size = {-1, -1}};
@@ -1271,12 +1270,10 @@ void SDLGPUInterface::flushDrawCommands() {
 
             // bind vertex buffer and draw
             SDL_GPUBuffer *vb = cmd.bakedBuffer ? cmd.bakedBuffer : m_vertexBuffer;
-            u32 vbOffset = 0;
-            if(vb != lastVertexBuffer || vbOffset != lastVertexOffset) {
-                SDL_GPUBufferBinding vertexBinding{.buffer = vb, .offset = vbOffset};
+            if(vb != lastVertexBuffer) {
+                SDL_GPUBufferBinding vertexBinding{.buffer = vb, .offset = 0};
                 SDL_BindGPUVertexBuffers(m_renderPass, 0, &vertexBinding, 1);
                 lastVertexBuffer = vb;
-                lastVertexOffset = vbOffset;
             }
 
             SDL_DrawGPUPrimitives(m_renderPass, cmd.vertexCount, 1, cmd.vertexOffset, 0);
