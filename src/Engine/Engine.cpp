@@ -231,6 +231,7 @@ void Engine::loadApp() {
                 MISSING_TEXTURE->setPixel(x, y, color);
             }
         }
+        MISSING_TEXTURE->loadAsync();
         MISSING_TEXTURE->load();
 
         // create engine gui

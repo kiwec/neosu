@@ -41,6 +41,11 @@ void TextureAtlas::initAsync() { this->setAsyncReady(true); }
 
 void TextureAtlas::destroy() { this->atlasImage.reset(); }
 
+void TextureAtlas::reloadAtlasImage() {
+    if(this->atlasImage == nullptr) return;
+    // TODO
+}
+
 void TextureAtlas::putAt(int x, int y, int width, int height, bool flipHorizontal, bool flipVertical, Color *pixels) {
     if(width < 1 || height < 1 || this->atlasImage == nullptr) return;
 

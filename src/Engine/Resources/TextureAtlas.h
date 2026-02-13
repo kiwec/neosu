@@ -25,6 +25,8 @@ class TextureAtlas final : public Resource {
     TextureAtlas(int width = 512, int height = 512, bool filtering = false);
     ~TextureAtlas() override;
 
+    void reloadAtlasImage();
+
     // place pixels at specific coordinates (for use after packing)
     void putAt(int x, int y, int width, int height, bool flipHorizontal, bool flipVertical, Color *pixels);
     // set image region to black

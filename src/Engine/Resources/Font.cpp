@@ -467,14 +467,7 @@ void McFontImpl::drawString(const UString &text, std::optional<TextShadow> shado
                     markSlotUsed(ch);
                 }
             } else if(ch >= 32) {
-                if constexpr(Env::cfg(OS::WASM)) {
-                    if(!gm->inAtlas) {
-                        fprintf(stderr, "%s %hd was not in the texture atlas, aborting\n", text.toUtf8(), ch);
-                        fubar_abort();
-                    }
-                } else {
-                    assert(gm->inAtlas);
-                }
+                assert(gm->inAtlas);
             }
         }
 

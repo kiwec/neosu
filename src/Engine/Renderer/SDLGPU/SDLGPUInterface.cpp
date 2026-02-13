@@ -253,6 +253,9 @@ bool SDLGPUInterface::init() {
         }
     }
 
+    // create initial backbuffer and viewport
+    onResolutionChange(env->getWindowSize());
+
     // create initial pipeline
     createPipeline();
     m_bPipelineDirty = false;
