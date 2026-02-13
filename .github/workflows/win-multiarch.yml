@@ -24,7 +24,7 @@ on:
 
 env:
   CCACHE_DIR: /tmp/.ccache
-  LLVM_MINGW_VERSION: 20260116
+  LLVM_MINGW_VERSION: 20260210
 
 jobs:
   build:
