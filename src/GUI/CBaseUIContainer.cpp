@@ -28,7 +28,7 @@ CBaseUIContainer *CBaseUIContainer::addBaseUIElement(CBaseUIElement *element, fl
     if(element == nullptr) return this;
 
     element->setRelPos(xPos, yPos);
-    element->setPos(this->getPos() + element->getRelPos());
+    element->setPos(this->rect.getPos() + element->relRect.getPos());
     this->vElements.push_back(element);
 
     return this;
@@ -37,8 +37,8 @@ CBaseUIContainer *CBaseUIContainer::addBaseUIElement(CBaseUIElement *element, fl
 CBaseUIContainer *CBaseUIContainer::addBaseUIElement(CBaseUIElement *element) {
     if(element == nullptr) return this;
 
-    element->relRect.setPos(element->getPos());
-    element->setPos(this->getPos() + element->getRelPos());
+    element->relRect.setPos(element->rect.getPos());
+    element->setPos(this->rect.getPos() + element->relRect.getPos());
     this->vElements.push_back(element);
 
     return this;
@@ -48,7 +48,7 @@ CBaseUIContainer *CBaseUIContainer::addBaseUIElementBack(CBaseUIElement *element
     if(element == nullptr) return this;
 
     element->setRelPos(xPos, yPos);
-    element->setPos(this->getPos() + element->getRelPos());
+    element->setPos(this->rect.getPos() + element->relRect.getPos());
     this->vElements.insert(this->vElements.begin(), element);
 
     return this;
@@ -57,8 +57,8 @@ CBaseUIContainer *CBaseUIContainer::addBaseUIElementBack(CBaseUIElement *element
 CBaseUIContainer *CBaseUIContainer::addBaseUIElementBack(CBaseUIElement *element) {
     if(element == nullptr) return this;
 
-    element->relRect.setPos(element->getPos());
-    element->setPos(this->getPos() + element->getRelPos());
+    element->relRect.setPos(element->rect.getPos());
+    element->setPos(this->rect.getPos() + element->relRect.getPos());
     this->vElements.insert(this->vElements.begin(), element);
 
     return this;
@@ -67,8 +67,8 @@ CBaseUIContainer *CBaseUIContainer::addBaseUIElementBack(CBaseUIElement *element
 CBaseUIContainer *CBaseUIContainer::insertBaseUIElement(CBaseUIElement *element, CBaseUIElement *index) {
     if(element == nullptr || index == nullptr) return this;
 
-    element->relRect.setPos(element->getPos());
-    element->setPos(this->getPos() + element->getRelPos());
+    element->relRect.setPos(element->rect.getPos());
+    element->setPos(this->rect.getPos() + element->relRect.getPos());
     for(ssize_t i = 0; i < this->vElements.size(); i++) {
         if(this->vElements[i] == index) {
             this->vElements.insert(
@@ -86,8 +86,8 @@ CBaseUIContainer *CBaseUIContainer::insertBaseUIElement(CBaseUIElement *element,
 CBaseUIContainer *CBaseUIContainer::insertBaseUIElementBack(CBaseUIElement *element, CBaseUIElement *index) {
     if(element == nullptr || index == nullptr) return this;
 
-    element->relRect.setPos(element->getPos());
-    element->setPos(this->getPos() + element->getRelPos());
+    element->relRect.setPos(element->rect.getPos());
+    element->setPos(this->rect.getPos() + element->relRect.getPos());
     for(ssize_t i = 0; i < this->vElements.size(); i++) {
         if(this->vElements[i] == index) {
             this->vElements.insert(
@@ -149,16 +149,18 @@ void CBaseUIContainer::draw() {
 
 void CBaseUIContainer::draw_debug() {
     g->setColor(0xffffffff);
-    g->drawLine(this->getPos().x, this->getPos().y, this->getPos().x + this->getSize().x, this->getPos().y);
-    g->drawLine(this->getPos().x, this->getPos().y, this->getPos().x, this->getPos().y + this->getSize().y);
-    g->drawLine(this->getPos().x, this->getPos().y + this->getSize().y, this->getPos().x + this->getSize().x,
-                this->getPos().y + this->getSize().y);
-    g->drawLine(this->getPos().x + this->getSize().x, this->getPos().y, this->getPos().x + this->getSize().x,
-                this->getPos().y + this->getSize().y);
+    g->drawLine(this->rect.getPos().x, this->rect.getPos().y, this->rect.getPos().x + this->getSize().x,
+                this->rect.getPos().y);
+    g->drawLine(this->rect.getPos().x, this->rect.getPos().y, this->rect.getPos().x,
+                this->rect.getPos().y + this->getSize().y);
+    g->drawLine(this->rect.getPos().x, this->rect.getPos().y + this->getSize().y,
+                this->rect.getPos().x + this->getSize().x, this->rect.getPos().y + this->getSize().y);
+    g->drawLine(this->rect.getPos().x + this->getSize().x, this->rect.getPos().y,
+                this->rect.getPos().x + this->getSize().x, this->rect.getPos().y + this->getSize().y);
 
     g->setColor(0xff0000ff);
     for(const auto *e : this->vElements) {
-        const auto ePos = e->getPos();
+        const auto ePos = e->rect.getPos();
         const auto eSize = e->getSize();
         g->drawLine(ePos.x, ePos.y, ePos.x + eSize.x, ePos.y);
         g->drawLine(ePos.x, ePos.y, ePos.x, ePos.y + eSize.y);
@@ -181,7 +183,7 @@ void CBaseUIContainer::update(CBaseUIEventCtx &c) {
 
 void CBaseUIContainer::update_pos() {
     if(!this->bVisible) return;
-    const vec2 thisPos = this->getPos();
+    const vec2 thisPos = this->rect.getPos();
 
     vec2 eRelPos{};
     vec2 ePos{};
@@ -189,8 +191,8 @@ void CBaseUIContainer::update_pos() {
     for(auto *e : this->vElements) {
         // setPos already has this logic, but inline it manually here
         // to avoid unnecessary indirection
-        eRelPos = e->getRelPos();
-        ePos = e->getPos();
+        eRelPos = e->relRect.getPos();
+        ePos = e->rect.getPos();
         if(std::abs(ePos.y - (newPos.y = (thisPos.y + eRelPos.y))) > 0.1f) {
             newPos.x = (thisPos.x + eRelPos.x);
             e->rect.setPos(newPos);

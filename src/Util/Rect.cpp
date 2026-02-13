@@ -20,25 +20,7 @@ McRect McRect::intersect(const McRect &rect) const {
     return intersection;
 }
 
-McRect McRect::Union(const McRect &rect) const {
-    McRect result;
-
-    vec2 thisMax = this->vMin + this->vSize;
-    vec2 rectMax = rect.vMin + rect.vSize;
-
-    result.vMin = vec::min(this->vMin, rect.vMin);
-    vec2 resultMax = vec::max(thisMax, rectMax);
-    result.vSize = resultMax - result.vMin;
-
-    return result;
-}
-
-bool McRect::intersects(const McRect &rect) const {
-    vec2 thisMax = this->vMin + this->vSize;
-    vec2 rectMax = rect.vMin + rect.vSize;
-
-    vec2 intersectMin = vec::max(this->vMin, rect.vMin);
-    vec2 intersectMax = vec::min(thisMax, rectMax);
-
-    return vec::all(vec::lessThan(intersectMin, intersectMax));
+McRect McRect::Union(const McRect &other) const {
+    const vec2 vMin = vec::min(this->vMin, other.vMin);
+    return {vMin, {vec::max(this->getMax(), other.getMax()) - vMin}};
 }

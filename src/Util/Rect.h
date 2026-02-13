@@ -1,5 +1,6 @@
 #pragma once
 // Copyright (c) 2012, PG, All rights reserved.
+#include "noinclude.h"
 #include "Vectors.h"
 
 class McRect {
@@ -22,8 +23,13 @@ class McRect {
                vec::all(vec::lessThan(point, this->vMin + this->vSize));
     }
 
+    [[nodiscard]] forceinline bool intersects(const McRect &rect) const {
+        const vec2 maxMin = vec::max(this->vMin, rect.vMin);
+        const vec2 minMax = vec::min(this->vMin + this->vSize, rect.vMin + rect.vSize);
+        return maxMin.x < minMax.x && maxMin.y < minMax.y;
+    }
     [[nodiscard]] McRect intersect(const McRect &rect) const;
-    [[nodiscard]] bool intersects(const McRect &rect) const;
+
     [[nodiscard]] McRect Union(const McRect &rect) const;
 
     [[nodiscard]] inline vec2 getCenter() const { return this->vMin + this->vSize * 0.5f; }
