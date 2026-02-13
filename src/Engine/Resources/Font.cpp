@@ -481,7 +481,7 @@ void McFontImpl::drawString(const UString &text, std::optional<TextShadow> shado
                 advanceX += gm->advance_x;
             }
 
-            m_textureAtlas->getAtlasImage()->reload();
+            m_textureAtlas->reloadAtlasImage();
             m_bAtlasNeedsReload = false;
         }
     } else {
@@ -1173,7 +1173,7 @@ void McFontImpl::buildStringGeometry(const UString &text, std::vector<vec3> &ver
 
     // reload atlas if new glyphs were added to dynamic slots
     if(m_bAtlasNeedsReload) {
-        m_textureAtlas->getAtlasImage()->reload();
+        m_textureAtlas->reloadAtlasImage();
         m_bAtlasNeedsReload = false;
     }
 

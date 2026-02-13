@@ -18,6 +18,23 @@ class McRectBase {
         requires(!std::is_same_v<OtherVec, Vec>)
     constexpr McRectBase(const McRectBase<OtherVec> &other) : vMin(other.vMin), vSize(other.vSize) {}
 
+    // grow to a union of another rect
+    inline void grow(const McRectBase &other) {
+        const Vec oldMax = this->vMin + this->vSize;
+        const Vec otherMax = other.vMin + other.vSize;
+
+        this->vMin = vec::min(this->vMin, other.vMin);
+        Vec resultMax = vec::max(oldMax, otherMax);
+        this->vSize = resultMax - this->vMin;
+    }
+
+    // grow to include a point
+    inline void grow(Vec point) {
+        const Vec oldMax = this->vMin + this->vSize;
+        this->vMin = vec::min(this->vMin, point);
+        this->vSize = vec::max(oldMax, point) - this->vMin;
+    }
+
     // loosely within (inside or equals (+ lenience amount))
     [[nodiscard]] inline bool contains(Vec point, scalar lenience = 0) const {
         return vec::all(vec::greaterThanEqual(point + lenience, this->vMin)) &&
@@ -56,8 +73,16 @@ class McRectBase {
     }
 
     [[nodiscard]] McRectBase Union(const McRectBase &other) const {
-        const Vec vMin = vec::min(this->vMin, other.vMin);
-        return {vMin, {vec::max(this->getMax(), other.getMax()) - vMin}};
+        McRectBase result;
+
+        Vec thisMax = this->vMin + this->vSize;
+        Vec rectMax = other.vMin + other.vSize;
+
+        result.vMin = vec::min(this->vMin, other.vMin);
+        Vec resultMax = vec::max(thisMax, rectMax);
+        result.vSize = resultMax - result.vMin;
+
+        return result;
     }
 
     [[nodiscard]] inline Vec getCenter() const { return this->vMin + this->vSize / scalar(2); }

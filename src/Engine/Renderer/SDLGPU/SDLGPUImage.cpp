@@ -80,6 +80,7 @@ SDLGPUImage::~SDLGPUImage() {
 
 void SDLGPUImage::init() {
     if(!this->isAsyncReady()) return;
+    this->resetDirtyRegion();
 
     auto *device = static_cast<SDLGPUInterface *>(g.get())->getDevice();
 
@@ -97,16 +98,21 @@ void SDLGPUImage::init() {
 }
 
 void SDLGPUImage::uploadPixelData(SDL_GPUDevice *device) {
-    const u32 dataSize = (u32)this->totalBytes();
+    const u32 totalBytes = (u32)this->totalBytes();
 
     // reuse persistent transfer buffer for images kept in system memory
     auto *transferBuf = m_transferBuf;
-
     {
         SDL_GPUTransferBufferCreateInfo tbInfo{};
         tbInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-        tbInfo.size = dataSize;
-        if(!transferBuf || *m_lastTransferBufferCreateInfo != tbInfo) {
+        tbInfo.size = (u32)totalBytes;
+        bool infoMismatch = false;
+        if(!transferBuf || (infoMismatch = (*m_lastTransferBufferCreateInfo != tbInfo))) {
+            if(infoMismatch) {
+                SDL_ReleaseGPUTransferBuffer(device, transferBuf);
+                transferBuf = nullptr;
+            }
+
             transferBuf = SDL_CreateGPUTransferBuffer(device, &tbInfo);
             if(!transferBuf) return;
 
@@ -117,14 +123,36 @@ void SDLGPUImage::uploadPixelData(SDL_GPUDevice *device) {
         }
     }
 
-    const bool cycle = this->bKeepInSystemMemory;
+    // TODO: should be multiple dirty regions instead of a all-encompassing region which may contain mostly non-dirty regions
+    const McIRect dirtyRect = this->getDirtyRect();
+
+    const sSz dirtyBeginX = (sSz)dirtyRect.getMinX();
+    const sSz dirtyBeginY = (sSz)dirtyRect.getMinY();
+    const ivec2 dirtySize = dirtyRect.getSize();
+    const u32 dirtyBytes = (u32)dirtySize.x * dirtySize.y * Image::NUM_CHANNELS;
+    assert(dirtyBytes <= totalBytes);
+
+    const bool cycle = this->bKeepInSystemMemory && m_prevDirtyRegion == dirtyRect;
+    m_prevDirtyRegion = dirtyRect;
 
     // map and copy pixel data
     void *mapped = SDL_MapGPUTransferBuffer(device, transferBuf, cycle);
     if(mapped) {
-        // TODO: slow! should only re-upload/copy what actually changed
-        // needs API changes, for font atlas reloads to not be abysmally slow
-        std::memcpy(mapped, this->rawImage.get(), dataSize);
+        if(dirtyBytes == totalBytes) {
+            std::memcpy(mapped, this->rawImage.get(), dirtyBytes);
+        } else {
+            // copy only the dirty sub-rectangle, row by row
+            const sSz srcStride = (sSz)this->iWidth * Image::NUM_CHANNELS;
+            const sSz dstStride = (sSz)dirtySize.x * Image::NUM_CHANNELS;
+
+            u8 *dst = static_cast<u8 *>(mapped);
+            const u8 *src = this->rawImage.get();
+
+            for(sSz y = 0; y < dirtySize.y; y++) {
+                std::memcpy(dst + (sSz)y * dstStride,
+                            src + (sSz)(dirtyBeginY + y) * srcStride + dirtyBeginX * Image::NUM_CHANNELS, dstStride);
+            }
+        }
         SDL_UnmapGPUTransferBuffer(device, transferBuf);
     }
 
@@ -138,8 +166,10 @@ void SDLGPUImage::uploadPixelData(SDL_GPUDevice *device) {
 
             SDL_GPUTextureRegion dst{};
             dst.texture = m_texture;
-            dst.w = (u32)this->iWidth;
-            dst.h = (u32)this->iHeight;
+            dst.x = dirtyBeginX;
+            dst.y = dirtyBeginY;
+            dst.w = (u32)dirtySize.x;
+            dst.h = (u32)dirtySize.y;
             dst.d = 1;
 
             SDL_UploadToGPUTexture(copyPass, &src, &dst, cycle);

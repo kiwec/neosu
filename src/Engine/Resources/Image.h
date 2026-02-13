@@ -12,6 +12,7 @@
 #include "noinclude.h"
 #include "types.h"
 
+#include "Rect.h"
 #include "Vectors.h"
 #include "Resource.h"
 #include "Color.h"
@@ -133,6 +134,17 @@ class Image : public Resource {
     i32 iWidth;
     i32 iHeight;
 
+    // for reuploads
+    [[nodiscard]] McIRect getDirtyRect() const;
+
+    // reset after uploading to gpu
+    void resetDirtyRegion() { this->dirtyRect = dummyDirtyRect; }
+
+   private:
+    static constexpr McIRect dummyDirtyRect{-1, -1, -1, -1};
+    McIRect dirtyRect{dummyDirtyRect};
+
+   protected:
     TextureWrapMode wrapMode;
     Image::TYPE type;
     TextureFilterMode filterMode;

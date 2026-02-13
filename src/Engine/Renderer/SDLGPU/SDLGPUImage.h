@@ -58,6 +58,9 @@ class SDLGPUImage final : public Image {
 
     std::unique_ptr<SDL_GPUSamplerCreateInfo> m_lastSamplerCreateInfo{nullptr};
     std::unique_ptr<SDL_GPUTransferBufferCreateInfo> m_lastTransferBufferCreateInfo{nullptr};
+
+    // to allow "cycling" if we are updating the exact same region as the previous upload
+    McIRect m_prevDirtyRegion;
 };
 
 #endif

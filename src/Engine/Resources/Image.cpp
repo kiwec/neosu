@@ -390,6 +390,11 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
     this->setAsyncReady(true);
 }
 
+McIRect Image::getDirtyRect() const {
+    if(this->dirtyRect == dummyDirtyRect) return {0, 0, this->iWidth, this->iHeight};
+    return this->dirtyRect;
+}
+
 bool Image::loadRawImage() {
     bool alreadyLoaded = !!this->rawImage.get() && this->totalBytes() >= 4;
 
@@ -544,9 +549,19 @@ void Image::setPixel(i32 x, i32 y, Color color) {
     this->rawImage[indexBegin + 1] = color.G();
     this->rawImage[indexBegin + 2] = color.B();
     this->rawImage[indexBegin + 3] = color.A();
-    if(!this->bCreatedImage && color.A() != 0) {
-        // play it safe, don't recompute the entire alpha channel visibility here
-        this->bLoadedImageEntirelyTransparent = false;
+    if(!this->bCreatedImage) {
+        if(color.A() != 0) {
+            // play it safe, don't recompute the entire alpha channel visibility here
+            this->bLoadedImageEntirelyTransparent = false;
+        }
+    } else if(this->bKeepInSystemMemory &&
+              this->isReady() /* if we have not already been loaded once, the entire rect is dirty */) {
+        if(this->dirtyRect == dummyDirtyRect) {
+            this->dirtyRect = McIRect{x, y, 1, 1};
+        } else {
+            // grow to include pixel (x, y) which occupies [x, x+1) x [y, y+1)
+            this->dirtyRect.grow(McIRect{x, y, 1, 1});
+        }
     }
 }
 
@@ -564,6 +579,8 @@ void Image::setPixels(const std::vector<u8> &pixels) {
         // recompute alpha channel visibility here (TODO: remove if slow)
         this->bLoadedImageEntirelyTransparent = isRawImageCompletelyTransparent();
     }
+
+    this->dirtyRect = dummyDirtyRect;
 }
 
 // internal

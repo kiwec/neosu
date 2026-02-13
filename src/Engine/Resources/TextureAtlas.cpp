@@ -43,6 +43,9 @@ void TextureAtlas::destroy() { this->atlasImage.reset(); }
 
 void TextureAtlas::reloadAtlasImage() {
     if(this->atlasImage == nullptr) return;
+
+    // reload synchronously, don't bother going through resourceManager
+    this->atlasImage->reload();
     // TODO
 }
 
