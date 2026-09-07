@@ -575,6 +575,7 @@ bool BassSoundEngine::hasExclusiveOutput() {
 }
 
 ASIOBufferLimits BassSoundEngine::getASIOBufferLimits() {
+#if defined(MCENGINE_PLATFORM_WINDOWS) && defined(MCENGINE_FEATURE_BASS)
     BASS_ASIO_INFO info{};
     BASS_ASIO_GetInfo(&info);
     return ASIOBufferLimits{
@@ -583,6 +584,9 @@ ASIOBufferLimits BassSoundEngine::getASIOBufferLimits() {
         .preferredSize = static_cast<long>(info.bufpref),
         .granularity = static_cast<long>(info.bufgran),
     };
+#else
+    return {};
+#endif
 }
 
 void BassSoundEngine::openControlPanel() {
