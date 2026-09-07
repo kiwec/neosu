@@ -446,4 +446,11 @@ class Spinner final : public HitObject {
 
     f32 m_lastMouseAngle{0.f};
     f32 m_ratio{0.f};
+
+    // music positions driving the skin element animations (-1 == not happened yet)
+    i32 m_completedTimeMS{-1};  // spinner cleared ("CLEAR!")
+    i32 m_firstSpinTimeMS{-1};  // first half rotation (fades out "SPIN!")
+    i32 m_bonusTimeMS{-1};      // latest bonus spin (bonus counter, glow flash)
+    i32 m_bonusSpins{0};
+    bool m_hitSuccess{false};  // non-miss result ("spinner-osu")
 };

@@ -1,6 +1,7 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
 #include "AnimationHandler.h"
+#include "Graphics_fwd.h"
 #include "UIScreen.h"
 #include "MD5Hash.h"
 #include "StrainGraph.h"
@@ -68,8 +69,9 @@ class HUD final : public UIScreen {
     struct SkinDigitDrawOpts {  // NOLINT
         u64 number;
         f32 scale{1.f};
-        bool combo;        // true == skin combo digits, false == skin score digits
-        u32 minDigits{0};  // left pad with N zeroes
+        bool combo;                             // true == skin combo digits, false == skin score digits
+        u32 minDigits{0};                       // left pad with N zeroes
+        AnchorPoint anchor{AnchorPoint::LEFT};  // horizontal alignment to the current origin (LEFT/CENTER/RIGHT)
     };
     static void drawNumberWithSkinDigits(const SkinDigitDrawOpts &opts);
     static void drawComboSimple(i32 combo, f32 scale = 1.0f);        // used by RankingScreen

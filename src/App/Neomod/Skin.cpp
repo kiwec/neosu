@@ -454,9 +454,9 @@ void Skin::load() {
     this->loadUnsizedImage(this->i_spinner_spin, "spinner-spin", "SK_I_SPINNERSPIN");
     this->loadUnsizedImage(this->i_spinner_clear, "spinner-clear", "SK_I_SPINNERCLEAR");
     this->loadUnsizedImage(this->i_spinner_metre, "spinner-metre", "SK_I_SPINNERMETRE");
-    this->loadUnsizedImage(this->i_spinner_glow, "spinner-glow", "SK_I_SPINNERGLOW");  // TODO: use
-    this->loadUnsizedImage(this->i_spinner_osu, "spinner-osu", "SK_I_SPINNEROSU");     // TODO: use
-    this->loadUnsizedImage(this->i_spinner_rpm, "spinner-rpm", "SK_I_SPINNERRPM");     // TODO: use
+    this->loadUnsizedImage(this->i_spinner_glow, "spinner-glow", "SK_I_SPINNERGLOW");
+    this->loadUnsizedImage(this->i_spinner_osu, "spinner-osu", "SK_I_SPINNEROSU");
+    this->loadUnsizedImage(this->i_spinner_rpm, "spinner-rpm", "SK_I_SPINNERRPM");
 
     this->randomizeFilePath();
     this->createSkinImage(this->i_modselect_ez, "selection-mod-easy", vec2(68, 66), 38);

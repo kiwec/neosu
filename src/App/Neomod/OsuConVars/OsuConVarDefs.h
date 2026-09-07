@@ -889,8 +889,8 @@ CONVAR(skin_reload);
 CONVAR(skin_use_skin_hitsounds, true, CLIENT | SERVER,
        "If enabled: Use skin's sound samples. If disabled: Use default skin's sound samples. For hitsounds only.");
 CONVAR(
-    skin_use_spinner_metre, false, CLIENT | SKINS | SERVER,
-    "enable the spinner-metre graphic, which fills up as the spinner completes.");  // temporary until spinner-metre isn't ugly as hell
+    skin_always_draw_spinner_rpm, true, CLIENT | SKINS | SERVER,
+    "if there are no RPM digit images font in the skin, draw it as RPM: 477 at the bottom anyways.");  // NOTE: default skin doesn't have rpm images
 CONVAR(skip_breaks_enabled, true, CLIENT | SKINS | SERVER,
        "enables/disables skip button for breaks in the middle of beatmaps");
 CONVAR(skip_intro_enabled, true, CLIENT | SKINS | SERVER,

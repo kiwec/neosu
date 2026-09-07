@@ -918,6 +918,13 @@ void HUD::drawNumberWithSkinDigits(const SkinDigitDrawOpts &opts) {
     const f32 multiplier = images[0].scale();
     const auto width = static_cast<f32>(images[0]->getWidth());
 
+    if(opts.anchor != AnchorPoint::LEFT) {
+        u32 numDigits = 1;
+        for(u64 d = divisor; d >= 10; d /= 10) numDigits++;
+        const f32 totalWidth = (numDigits * width - (numDigits - 1) * overlap * multiplier) * opts.scale;
+        g->translate(opts.anchor == AnchorPoint::CENTER ? -totalWidth / 2.f : -totalWidth, 0);
+    }
+
     while(divisor >= 1) {
         i32 digit = static_cast<i32>(number / divisor);
         number %= divisor;
