@@ -121,7 +121,6 @@ class CarouselButton : public CBaseUIButton {
     static inline vec2 scaledBaseSize{vec2(1.f, 1.f)};
     static inline float lastHoverSoundTime{0.f};
     static inline float bgImageScale{1.f};
-    static inline float currentUIScale{1.f};
 
     std::vector<SongButton *> children;
 

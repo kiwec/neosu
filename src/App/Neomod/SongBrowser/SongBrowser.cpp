@@ -1125,7 +1125,10 @@ void SongBrowser::onChar(KeyboardEvent &e) {
     this->scheduleSearchUpdate();
 }
 
-void SongBrowser::onResolutionChange(vec2 newResolution) { ScreenBackable::onResolutionChange(newResolution); }
+void SongBrowser::onResolutionChange(vec2 newResolution) {
+    ScreenBackable::onResolutionChange(newResolution);
+    CarouselButton::updateResolution();
+}
 
 [[nodiscard]] std::span<CBaseUIElement *const> SongBrowser::getAllChildren() const {
     this->allChildren.assign(this->vElements.begin(), this->vElements.end());

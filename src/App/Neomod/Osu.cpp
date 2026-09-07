@@ -7,7 +7,6 @@
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BeatmapInterface.h"
-#include "CarouselButton.h"
 #include "CBaseUIScrollView.h"
 #include "CBaseUISlider.h"
 #include "CBaseUITextbox.h"
@@ -1625,9 +1624,6 @@ void Osu::doResolutionChange(vec2 newResolution, ResolutionRequestFlags src) {
     // update dpi specific engine globals
     const f32 newUIScale = Osu::getUIScale();
     cv::ui_scrollview_scrollbarwidth.setValue(15.0f * newUIScale);  // not happy with this as a convar
-
-    // TODO: move this somewhere saner
-    CarouselButton::updateResolution();
 
     // skip rebuilding rendertargets if we didn't change resolution
     if(resolution_changed) {

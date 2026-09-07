@@ -49,13 +49,15 @@ CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize,
 CarouselButton::~CarouselButton() { this->deleteAnimations(); }
 
 void CarouselButton::updateResolution() {
-    currentUIScale = Osu::getUIScale(baseOsuPixelsScale);
+    const f32 currentUIScale = Osu::getUIScale(baseOsuPixelsScale);
     actualScaledOffsetWithMargin = vec::ceil(vec2{(int)marginPixelsX, (int)(marginPixelsY)} * currentUIScale);
     scaledBaseSize = vec::ceil(baseSize * currentUIScale);
 
     // complete BS sizing/rounding/etc.
     // it seems that osu stable also doesn't scale these images in any way, though
-    bgImageScale = (CarouselButton::currentUIScale + 0.005f /* ??? */) / (osu->getSkin()->i_menu_button_bg.scale());
+    // NOTE: the only reason we can use the current skin's menu-button-background scale here is because this
+    // function is also called after (re)loading a skin
+    bgImageScale = (currentUIScale + 0.005f /* ??? */) / (osu->getSkin()->i_menu_button_bg.scale());
 }
 
 void CarouselButton::deleteAnimations() {
