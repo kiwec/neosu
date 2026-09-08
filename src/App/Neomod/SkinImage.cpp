@@ -128,6 +128,9 @@ bool SkinImage::load(Skin* skin, const std::string& skinElementName, const std::
 bool SkinImage::loadImage(Skin* skin, const std::string& skinElementName, bool ignoreDefaultSkin, bool animated,
                           bool addToImages, std::vector<std::string>& exportVec) {
     const size_t n_dirs = ignoreDefaultSkin ? 1 : skin->search_dirs.size();
+    const bool mipmapped = cv::skin_mipmaps.getBool();
+    const bool tryHD = cv::skin_hd.getBool();
+    const bool async = cv::skin_async.getBool();
 
     for(size_t i = 0; i < n_dirs; i++) {
         const auto& dir = skin->search_dirs[i];
@@ -151,12 +154,12 @@ bool SkinImage::loadImage(Skin* skin, const std::string& skinElementName, bool i
         if(!skin->is_default && i == skin->search_dirs.size() - 1) m_impl->bIsFromDefaultSkin = true;
 
         // try @2x if HD enabled
-        if(cv::skin_hd.getBool() && exists_2x) {
+        if(tryHD && exists_2x) {
             IMAGE image;
 
-            if(cv::skin_async.getBool()) resourceManager->requestNextLoadAsync();
+            if(async) resourceManager->requestNextLoadAsync();
 
-            image.img = resourceManager->loadImageAbsUnnamed(path_2x, cv::skin_mipmaps.getBool());
+            image.img = resourceManager->loadImageAbsUnnamed(path_2x, mipmapped);
             image.scale = 2.0f;
 
             if(!animated) m_impl->nonAnimatedImage = image;
@@ -173,9 +176,9 @@ bool SkinImage::loadImage(Skin* skin, const std::string& skinElementName, bool i
         if(exists_1x) {
             IMAGE image;
 
-            if(cv::skin_async.getBool()) resourceManager->requestNextLoadAsync();
+            if(async) resourceManager->requestNextLoadAsync();
 
-            image.img = resourceManager->loadImageAbsUnnamed(path_1x, cv::skin_mipmaps.getBool());
+            image.img = resourceManager->loadImageAbsUnnamed(path_1x, mipmapped);
             image.scale = 1.0f;
 
             if(!animated) m_impl->nonAnimatedImage = image;

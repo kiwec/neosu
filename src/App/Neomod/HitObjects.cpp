@@ -2487,7 +2487,7 @@ void Spinner::draw() {
 
     // the approach circle is only shown when the disc is actually skinned (peppy removed it from the default skin:
     // https://osu.ppy.sh/community/forums/topics/100765)
-    const auto drawApproachCircle = [&](const BasicSkinImage &disc) {
+    const auto drawSpinnerApproachCircle = [&](const BasicSkinImage &disc) {
         if(flags::has<ModFlags::Hidden>(m_pi->getMods().flags) || disc.isFromDefault() ||
            skin->i_spinner_approach_circle == MISSING_TEXTURE)
             return;
@@ -2551,7 +2551,7 @@ void Spinner::draw() {
             }
         }
 
-        drawApproachCircle(skin->i_spinner_circle);
+        drawSpinnerApproachCircle(skin->i_spinner_circle);
     } else {  // new style
         const f32 topRotation = m_drawRot * (skin->i_spinner_middle2 != MISSING_TEXTURE ? 0.5f : 1.f);
 
@@ -2584,7 +2584,7 @@ void Spinner::draw() {
                        m_drawRot);
         }
 
-        drawApproachCircle(skin->i_spinner_top);
+        drawSpinnerApproachCircle(skin->i_spinner_top);
 
         if(skin->i_spinner_middle != MISSING_TEXTURE) {
             // does not rotate, tints red as the time runs out
