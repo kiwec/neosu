@@ -31,8 +31,8 @@ class BassSoundEngine final : public SoundEngine {
     bool hasExclusiveOutput() override;
 
     bool isASIO() override { return this->currentOutputDevice.driver == OutputDriver::BASS_ASIO; }
-    ASIOBufferLimits getASIOBufferLimits() override;
-    void openControlPanel() override;
+    std::optional<OutputBufferLimits> getOutputBufferLimits() override;
+    void openDeviceControlPanel() override;
 
     void setOutputDevice(const OUTPUT_DEVICE &device) override;
     void setMasterVolume(float volume) override;

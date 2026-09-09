@@ -29,6 +29,7 @@ class SoLoudSoundEngine final : public SoundEngine {
     Sound *createSound(std::string filepath, bool stream, bool overlayable, bool loop) override;
 
     void restart() override;
+    void update() override;
     void onFocusGained() override;
     void onFocusLost() override;
 
@@ -38,9 +39,9 @@ class SoLoudSoundEngine final : public SoundEngine {
 
     inline bool isReady() override { return this->bReady; }
 
-    bool isASIO() override;
-    ASIOBufferLimits getASIOBufferLimits() override;
-    void openControlPanel() override;
+    inline bool isASIO() override { return this->currentOutputDevice.driver == OutputDriver::SOLOUD_ASIO; }
+    std::optional<OutputBufferLimits> getOutputBufferLimits() override;
+    void openDeviceControlPanel() override;
 
     void setOutputDevice(const OUTPUT_DEVICE &device) override;
     void setMasterVolume(f32 volume) override;
@@ -65,6 +66,8 @@ class SoLoudSoundEngine final : public SoundEngine {
     void onMaxActiveChange(f32 newMax);
     void updateLastDevice();
 
+    // keyed by the index into the MA/SDL enumeration (-1 for the default device), asio drivers start at ASIO_ID_BASE
+    static constexpr int ASIO_ID_BASE = 1000;
     std::map<int, SoLoud::DeviceInfo> mSoloudDevices;
 
     std::optional<OUTPUT_DEVICE> lastMADevice;  // for switching between them (remember existing)
@@ -74,6 +77,10 @@ class SoLoudSoundEngine final : public SoundEngine {
 
     bool bReady{false};
     bool bWasBackendEverReady{false};
+
+    // device loss recovery, see update()
+    double fLastDeviceLostRestart{0.0};
+    int iDeviceLostRestarts{0};
 
     // for backend
     static OutputDriver getMAorSDLCV();

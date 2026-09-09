@@ -428,7 +428,7 @@ void Engine::onUpdate() {
 
         {
             // VPROF_BUDGET("SoundEngine::update", VPROF_BUDGETGROUP_UPDATE);
-            soundEngine->update();  // currently does nothing anyways
+            soundEngine->update();  // output device loss polling
         }
 
         {

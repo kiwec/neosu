@@ -59,10 +59,6 @@
 #include "Graphics.h"
 #include "Sound.h"
 #include "SoundEngine.h"
-#if defined(MCENGINE_PLATFORM_WINDOWS) && defined(MCENGINE_FEATURE_BASS)
-#include "BassManager.h"
-#include "BassSoundEngine.h"  // for ASIO-specific stuff
-#endif
 
 #include "fmt/chrono.h"
 
@@ -180,7 +176,6 @@ struct OptionsOverlayImpl final {
     void onSliderChangeLetterboxingOffset(CBaseUISlider *slider);
     void onSliderChangeUIScale(CBaseUISlider *slider);
 
-    void setupASIOClampedChangeCallback();
     void onASIOBufferChange(CBaseUISlider *slider);
     void onWASAPIBufferChange(CBaseUISlider *slider);
     void onWASAPIPeriodChange(CBaseUISlider *slider);
@@ -1219,8 +1214,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
             this->elemContainers.back()->render_condition = {[]() -> bool {
                 if constexpr(!Env::cfg(OS::WINDOWS)) return false;
-                return soundEngine && (soundEngine->getOutputDriverType() == SoundEngine::OutputDriver::SOLOUD_MA &&
-                                       !soundEngine->isASIO());
+                return soundEngine ? soundEngine->getOutputDriverType() == SoundEngine::OutputDriver::SOLOUD_MA : false;
             }};
 
             // initialize wrapper cvar if num_periods is already at the "decreased" amount
@@ -1243,8 +1237,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
             this->elemContainers.back()->render_condition = {[]() -> bool {
                 // miniaudio-only at the moment
-                return soundEngine && (soundEngine->getOutputDriverType() == SoundEngine::OutputDriver::SOLOUD_MA &&
-                                       !soundEngine->isASIO());
+                return soundEngine ? soundEngine->getOutputDriverType() == SoundEngine::OutputDriver::SOLOUD_MA : false;
             }};
         }
 
@@ -1305,12 +1298,11 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
                 SA::MakeDelegate<&OptionsOverlayImpl::onASIOBufferChange>(this));
             this->addLabel("");
             UIButton *asio_settings_btn = this->addButton(_("Open ASIO settings"));
-            asio_settings_btn->setClickCallback(SA::MakeDelegate<&SoundEngine::openControlPanel>(soundEngine));
+            asio_settings_btn->setClickCallback(SA::MakeDelegate<&SoundEngine::openDeviceControlPanel>(soundEngine));
             asio_settings_btn->setColor(0xff003947);
             UIButton *restartSoundEngine = this->addButton(_("Restart SoundEngine"));
             restartSoundEngine->setClickCallback(onOutputDeviceRestartCB);
             restartSoundEngine->setColor(0xff003947);
-            this->setupASIOClampedChangeCallback();  // FIXME: hacky
         }
         auto asio_end_idx = this->elemContainers.size();
         for(auto i = asio_idx; i < asio_end_idx; i++) {
@@ -2489,6 +2481,22 @@ void OptionsOverlayImpl::updateLayout() {
 
     const bool oauth = this->should_use_oauth_login();
     this->update_login_button();
+
+    // the asio buffer size slider follows the driver's limits (which its control panel can change), and "default" is
+    // whatever it prefers
+    if(this->asioBufferSizeSlider != nullptr && soundEngine->isASIO()) {
+        if(const auto limits = soundEngine->getOutputBufferLimits(); limits.has_value()) {
+            this->asioBufferSizeSlider->setBounds(limits->minSize, limits->maxSize);
+            float keyDelta =
+                static_cast<float>(std::max(limits->minSize, 1u));  // no fixed step (min == max in practice)
+            if(limits->granularity > 0)
+                keyDelta = static_cast<float>(limits->granularity);
+            else if(limits->granularity == -1)
+                keyDelta = static_cast<float>(limits->minSize);  // powers of two
+            this->asioBufferSizeSlider->setKeyDelta(keyDelta);
+            cv::asio_buffer_size.setDefaultDouble(limits->preferredSize);
+        }
+    }
 
     // set all elements to the current convar values, and update the reset button states
     for(const auto &element : this->elemContainers) {
@@ -3725,29 +3733,13 @@ void OptionsOverlayImpl::onSliderChangeUIScale(CBaseUISlider *slider) {
     }
 }
 
-// FIXME: hacky
-void OptionsOverlayImpl::setupASIOClampedChangeCallback() {
-    soundEngine->setOnASIOBufferChangeCB(
-        [asioBufSizeSlider = &this->asioBufferSizeSlider](const ASIOBufferLimits &info) -> void {
-            if(!asioBufSizeSlider || !*asioBufSizeSlider) return;
-
-            (*asioBufSizeSlider)->setBounds(info.minSize, info.maxSize);
-            (*asioBufSizeSlider)->setKeyDelta(info.granularity == -1 ? info.minSize : info.granularity);
-        });
-}
-
 void OptionsOverlayImpl::onASIOBufferChange(CBaseUISlider *slider) {
     if(!soundEngine->isASIO()) return;
     if(!this->updating_layout) this->bASIOBufferChangeScheduled = true;
 
-    auto info = soundEngine->getASIOBufferLimits();
-    cv::asio_buffer_size.setDefaultDouble(info.preferredSize);
-    slider->setBounds(info.minSize, info.maxSize);
-    slider->setKeyDelta(info.granularity == -1 ? info.minSize : info.granularity);
-
-    long bufsize = slider->getInt();
-    bufsize = soundEngine->ASIO_Clamp(info.minSize, info.maxSize, info.preferredSize, info.granularity, bufsize);
-    double latency = 1000.0 * (double)bufsize / std::max(cv::snd_freq.getDouble(), 44100.0);
+    // (an estimate, the driver may round the size it's given; the rate is what the device is running at)
+    const double rate = cv::snd_freq.getDouble() > 0.0 ? cv::snd_freq.getDouble() : 44100.0;
+    const double latency = 1000.0 * slider->getInt() / rate;
 
     OptionsElement *element = nullptr;
     if(const auto &it = this->uiToOptElemMap.find(slider); it != this->uiToOptElemMap.end() && (element = it->second)) {

@@ -10,6 +10,7 @@
 #include "SoLoudSound.h"
 #include "LaunchArgs.h"
 
+#include "App.h"
 #include "ConVar.h"
 #include "Engine.h"
 #include "Logging.h"
@@ -21,6 +22,7 @@
 #include <utility>
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 
 #include "soloud.h"
 #include <SDL3/SDL_hints.h>
@@ -114,17 +116,47 @@ SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
 }
 
 void SoLoudSoundEngine::restart() {
+    OUTPUT_DEVICE wanted;
     if(this->bWasBackendEverReady) {
-        this->setOutputDeviceInt(this->getWantedDevice(), true);
+        wanted = this->getWantedDevice();
     } else {
-        // if switching backends, we need to reinit from scratch (device enumeration needs refresh)
-        std::string initName = cv::snd_output_device.getString();
-        int initID = -1;
-        // if the output device isn't default, use some non-default id, we don't know what id it will end up at
-        if(initName != cv::snd_output_device.getDefaultString()) {
-            initID = -2;
+        // fresh init or a backend switch: the device list for the backend the cvar picks has to exist before the wanted
+        // device can be looked up in it (enumeration doesn't need an initialized soloud)
+        this->updateOutputDevices(false);
+        wanted = this->getWantedDevice();
+
+        // after a switch the cvar still names a device of the other MA/SDL backend, so the device last used on this one
+        // beats a fuzzy name match
+        const auto &lastDevice = (getMAorSDLCV() == OutputDriver::SOLOUD_MA) ? this->lastMADevice : this->lastSDLDevice;
+        if(lastDevice.has_value() && wanted.name != cv::snd_output_device.getString()) {
+            if(const auto &it = std::ranges::find(this->outputDevices, lastDevice->name, &OUTPUT_DEVICE::name);
+               it != this->outputDevices.end()) {
+                wanted = *it;
+            }
         }
-        this->setOutputDeviceInt(OUTPUT_DEVICE{.id = initID, .name = initName, .driver = getMAorSDLCV()}, true);
+    }
+
+    this->setOutputDeviceInt(wanted, true);
+}
+
+void SoLoudSoundEngine::update() {
+    if(!this->bReady || !soloud->isDeviceLost()) return;
+
+    // the driver asked to be reopened (buffer size/sample rate changed in its control panel) or the device went away
+    // reopen it at most once a second, and give up on it if that keeps happening
+    const double now = engine->getTime();
+    if(now - this->fLastDeviceLostRestart < 1.0) return;
+    if(now - this->fLastDeviceLostRestart > 10.0) this->iDeviceLostRestarts = 0;
+    this->fLastDeviceLostRestart = now;
+
+    if(++this->iDeviceLostRestarts > 3) {
+        debugLog("SoundEngine: output device \"{}\" keeps getting lost, falling back to the default device",
+                 this->currentOutputDevice.name);
+        this->iDeviceLostRestarts = 0;
+        this->setOutputDeviceInt(this->getDefaultDevice(), true);
+    } else {
+        debugLog("SoundEngine: output device \"{}\" was lost, reopening it", this->currentOutputDevice.name);
+        this->restart();
     }
 }
 
@@ -315,18 +347,21 @@ void SoLoudSoundEngine::stop(Sound *snd) {
     soloudSound->handle = 0;
 }
 
-bool SoLoudSoundEngine::isASIO() {
-    return this->currentOutputDevice.driver == OutputDriver::SOLOUD_MA &&
-           this->currentOutputDevice.name.ends_with(" (ASIO)");
-}
-
-ASIOBufferLimits SoLoudSoundEngine::getASIOBufferLimits() {
-    ASIOBufferLimits limits;
-    soloud->getBufferSizes(&limits.minSize, &limits.maxSize, &limits.preferredSize, &limits.granularity);
+std::optional<SoundEngine::OutputBufferLimits> SoLoudSoundEngine::getOutputBufferLimits() {
+    OutputBufferLimits limits{};
+    if(!this->bReady || soloud->getBufferSizeLimits(&limits.minSize, &limits.maxSize, &limits.preferredSize,
+                                                    &limits.granularity) != SoLoud::SO_NO_ERROR)
+        return std::nullopt;
     return limits;
 }
 
-void SoLoudSoundEngine::openControlPanel() { soloud->openControlPanel(); }
+void SoLoudSoundEngine::openDeviceControlPanel() {
+    if(!this->bReady) return;
+
+    // (most drivers block in here until their panel is closed; changes that need the device reopened show up in update())
+    if(const auto res = soloud->openDeviceControlPanel(); res != SoLoud::SO_NO_ERROR)
+        debugLog("SoundEngine: couldn't open the output device's control panel ({})", res);
+}
 
 void SoLoudSoundEngine::setOutputDeviceByName(std::string_view desiredDeviceName) {
     for(const auto &device : this->outputDevices) {
@@ -389,6 +424,7 @@ bool SoLoudSoundEngine::switchShareModes(const std::optional<OUTPUT_DEVICE> &toK
         for(const auto &dev : this->outputDevices) {
             if(dev.id == this->currentOutputDevice.id) continue;  // skip same device
             if(dev.id == -1) continue;                            // skip default device
+            if(dev.driver != OutputDriver::SOLOUD_MA) continue;   // skip asio drivers
 
             const auto &slDevIt = this->mSoloudDevices.find(dev.id);
             if(slDevIt == this->mSoloudDevices.end()) continue;  // not in soloud devices map, somehow
@@ -519,7 +555,9 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
     // convar callbacks
     cv::snd_freq.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::restart>(this));
     cv::cmd::snd_restart.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::restart>(this));
-    cv::asio_buffer_size.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::restart>(this));
+    cv::asio_buffer_size.setCallback([]() -> void {
+        if(soundEngine && soundEngine->isASIO()) soundEngine->restart();
+    });
 
     static auto backendSwitchCB = [](std::string_view arg) -> void {
         if(!soundEngine || soundEngine->getTypeId() != SndEngineType::SOLOUD) return;
@@ -591,6 +629,7 @@ SoLoudSoundEngine::~SoLoudSoundEngine() {
     cv::snd_output_device.reset();
     cv::snd_soloud_resampler.reset();
     cv::snd_soloud_num_periods.reset();
+    cv::asio_buffer_size.reset();
 }
 
 void SoLoudSoundEngine::setMasterVolume(f32 volume) {
@@ -604,9 +643,6 @@ void SoLoudSoundEngine::setMasterVolume(f32 volume) {
 }
 
 void SoLoudSoundEngine::updateOutputDevices(bool printInfo) {
-    if(!this->isReady())  // soloud needs to be initialized first
-        return;
-
     using namespace SoLoud;
 
     const auto currentDriver = getMAorSDLCV();
@@ -618,89 +654,107 @@ void SoLoudSoundEngine::updateOutputDevices(bool printInfo) {
         OUTPUT_DEVICE{.isDefault = true, .driver = currentDriver});  // re-add dummy default device
 
     debugLog("SoundEngine: Using SoLoud backend: {:s}", cv::snd_soloud_backend.getString());
-    DeviceInfo currentDevice{}, fallbackDevice{};
 
-    result res = soloud->getCurrentDevice(&currentDevice);
-    if(res == SO_NO_ERROR) {
-        // in case we can't go through devices to find the real default, use the current one as the default
-        fallbackDevice = currentDevice;
+    // in case we can't go through devices to find the real default, use the current one as the default (or a
+    // placeholder while nothing is open yet)
+    DeviceInfo currentDevice{};
+    if(this->isReady() && soloud->getCurrentDevice(&currentDevice) == SO_NO_ERROR) {
         debugLog("SoundEngine: Current device: {} (Default: {:s})", &currentDevice.name[0],
                  currentDevice.isDefault ? "Yes" : "No");
+        this->mSoloudDevices[-1] = currentDevice;
     } else {
-        fallbackDevice = {.name = {"Unavailable"},
-                          .identifier = {""},
-                          .isDefault = true,
-                          .isExclusive = false,
-                          .nativeDeviceInfo = nullptr};
-        this->mSoloudDevices[-1] = fallbackDevice;
+        this->mSoloudDevices[-1] = {.name = {"Unavailable"},
+                                    .identifier = {""},
+                                    .isDefault = true,
+                                    .isExclusive = false,
+                                    .nativeDeviceInfo = nullptr};
     }
 
+    // the MA/SDL devices are always those of the backend the cvar picks (enumerated through a temporary context while
+    // another backend, i.e. asio, is active), with the asio drivers listed after them
+    // (each enumerateDevices() call frees the previous array, hence the copies)
+    std::vector<std::pair<DeviceInfo, OutputDriver>> devices;
     DeviceInfo *devicearray{};
     unsigned int deviceCount = 0;
-    res = soloud->enumerateDevices(&devicearray, &deviceCount);
-
-    if(res == SO_NO_ERROR) {
-        // sort to keep them in the same order for each query
-        std::vector<DeviceInfo> devices{devicearray, devicearray + deviceCount};
-        std::ranges::stable_sort(devices, SString::strcase_comp,
-                                 [](const DeviceInfo &di) -> std::string_view { return {&di.name[0]}; });
-
-        for(int d = 0; d < devices.size(); d++) {
-            if(printInfo) {
-                debugLog("SoundEngine: Device {}: {} (Default: {:s})", d, &devices[d].name[0],
-                         devices[d].isDefault ? "Yes" : "No");
-            }
-
-            std::string originalDeviceName{&devices[d].name[0]};
-            OUTPUT_DEVICE soundDevice;
-            soundDevice.id = d;
-            soundDevice.name = originalDeviceName;
-            soundDevice.enabled = true;
-            soundDevice.isDefault = devices[d].isDefault;
-            soundDevice.driver = currentDriver;
-
-            // avoid duplicate names
-            int duplicateNameCounter = 2;
-            while(true) {
-                bool foundDuplicateName = false;
-                for(const auto &existingDevice : this->outputDevices) {
-                    if(existingDevice.name == soundDevice.name) {
-                        foundDuplicateName = true;
-                        soundDevice.name = originalDeviceName;
-                        soundDevice.name.append(fmt::format(" ({})", duplicateNameCounter));
-                        duplicateNameCounter++;
-                        break;
-                    }
-                }
-
-                if(!foundDuplicateName) break;
-            }
-            logIfCV(debug_snd, "added device id {} name {} iteration (d) {}", soundDevice.id, soundDevice.name, d);
-
-            // SDL3 backend has a special "default device", replace the engine default with that one and don't add it
-            if(soundDevice.isDefault && soundDevice.name.find("Default Playback Device") != std::string::npos) {
-                soundDevice.id = -1;
-                this->outputDevices[0] = soundDevice;
-                this->mSoloudDevices[-1] = {devices[d]};
-            } else {
-                // otherwise add it as a new device with a real id
-                this->outputDevices.push_back(soundDevice);
-                if(soundDevice.isDefault) {
-                    this->mSoloudDevices[-1] = {devices[d]};
-                }
-                this->mSoloudDevices[d] = {devices[d]};
-            }
+    if(soloud->enumerateDevices(&devicearray, &deviceCount,
+                                currentDriver == OutputDriver::SOLOUD_MA ? Soloud::MINIAUDIO : Soloud::SDL3) ==
+       SO_NO_ERROR) {
+        for(unsigned int d = 0; d < deviceCount; d++) devices.emplace_back(devicearray[d], currentDriver);
+    }
+    const int numMAorSDL = static_cast<int>(devices.size());
+    if constexpr(Env::cfg(OS::WINDOWS)) {
+        if(soloud->enumerateDevices(&devicearray, &deviceCount, Soloud::ASIO) == SO_NO_ERROR) {
+            for(unsigned int d = 0; d < deviceCount; d++)
+                devices.emplace_back(devicearray[d], OutputDriver::SOLOUD_ASIO);
         }
-    } else {
-        // failed enumeration, use fallback
-        this->mSoloudDevices[-1] = fallbackDevice;
+    }
+
+    // sort to keep them in the same order for each query (MA/SDL devices first, their id is their position in the list)
+    std::ranges::stable_sort(devices, [](const auto &a, const auto &b) -> bool {
+        if(a.second != b.second) return a.second < b.second;
+        return SString::strcase_comp(a.first.name.data(), b.first.name.data());
+    });
+
+    for(int d = 0; d < static_cast<int>(devices.size()); d++) {
+        const auto &[slDevice, driver] = devices[d];
+        const bool asio = (driver == OutputDriver::SOLOUD_ASIO);
+
+        if(printInfo) {
+            debugLog("SoundEngine: Device {}: {}{} (Default: {:s})", d, &slDevice.name[0], asio ? " [ASIO]" : "",
+                     slDevice.isDefault ? "Yes" : "No");
+        }
+
+        std::string originalDeviceName{&slDevice.name[0]};
+        if(asio) originalDeviceName.append(" [ASIO]");  // (also keeps it apart from the same device's WASAPI entries)
+
+        OUTPUT_DEVICE soundDevice;
+        soundDevice.id = asio ? ASIO_ID_BASE + (d - numMAorSDL) : d;
+        soundDevice.name = originalDeviceName;
+        soundDevice.enabled = true;
+        soundDevice.isDefault = !asio && slDevice.isDefault;  // asio's "default" only marks the first driver
+        soundDevice.driver = driver;
+
+        // avoid duplicate names
+        int duplicateNameCounter = 2;
+        while(true) {
+            bool foundDuplicateName = false;
+            for(const auto &existingDevice : this->outputDevices) {
+                if(existingDevice.name == soundDevice.name) {
+                    foundDuplicateName = true;
+                    soundDevice.name = originalDeviceName;
+                    soundDevice.name.append(fmt::format(" ({})", duplicateNameCounter));
+                    duplicateNameCounter++;
+                    break;
+                }
+            }
+
+            if(!foundDuplicateName) break;
+        }
+        logIfCV(debug_snd, "added device id {} name {} iteration (d) {}", soundDevice.id, soundDevice.name, d);
+
+        // SDL3 backend has a special "default device", replace the engine default with that one and don't add it
+        if(soundDevice.isDefault && soundDevice.name.find("Default Playback Device") != std::string::npos) {
+            soundDevice.id = -1;
+            this->outputDevices[0] = soundDevice;
+            this->mSoloudDevices[-1] = slDevice;
+        } else {
+            // otherwise add it as a new device with a real id
+            this->outputDevices.push_back(soundDevice);
+            if(soundDevice.isDefault) {
+                this->mSoloudDevices[-1] = slDevice;
+            }
+            this->mSoloudDevices[soundDevice.id] = slDevice;
+        }
     }
 }
 
 bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
+    // (copy, the reference may point into outputDevices which gets rebuilt below)
+    OUTPUT_DEVICE desiredDev = device;
+
     // run callbacks pt. 1
     if(this->restartCBs[0] != nullptr) this->restartCBs[0]();
-    debugLog("id {} name {}", device.id, device.name);
+    debugLog("id {} name {}", desiredDev.id, desiredDev.name);
 
     // cleanup potential previous device
     if(this->isReady()) {
@@ -714,14 +768,15 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
         Environment::setEnvVariable("SOLOUD_MINIAUDIO_PERIODS", cv::snd_soloud_num_periods.getString());
     }
 
-    auto backend = (getMAorSDLCV() == OutputDriver::SOLOUD_MA) ? SoLoud::Soloud::MINIAUDIO : SoLoud::Soloud::SDL3;
+    const unsigned int MAorSDL =
+        (getMAorSDLCV() == OutputDriver::SOLOUD_MA) ? SoLoud::Soloud::MINIAUDIO : SoLoud::Soloud::SDL3;
+    const bool asio = (desiredDev.driver == OutputDriver::SOLOUD_ASIO);
 
     // roundoff clipping alters/"damages" the waveform, but it sounds weird without it
     unsigned int flags = SoLoud::Soloud::CLIP_ROUNDOFF; /* | SoLoud::Soloud::NO_FPU_REGISTER_CHANGE; */
-    if((backend == SoLoud::Soloud::MINIAUDIO) &&
-       ((device.name.find("(Exclusive)") != std::string::npos) || cv::snd_soloud_prefer_exclusive.getBool())) {
-        flags |= SoLoud::Soloud::INIT_EXCLUSIVE;
-    }
+    // (miniaudio only; asio output is always exclusive, the flag means nothing to it)
+    const bool wantExclusive =
+        (desiredDev.name.find("(Exclusive)") != std::string::npos) || cv::snd_soloud_prefer_exclusive.getBool();
 
     unsigned int sampleRate =
         (cv::snd_freq.getVal<unsigned int>() == static_cast<unsigned int>(cv::snd_freq.getDefaultFloat())
@@ -740,9 +795,12 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
                                          : cv::snd_soloud_buffer.getVal<unsigned int>());
     if(bufferSize > 2048) bufferSize = SoLoud::Soloud::AUTO;
 
-    if(device.name.ends_with(" (ASIO)") && cv::asio_buffer_size.getInt() > 0) {
-        bufferSize = cv::asio_buffer_size.getInt();
-    }
+    // asio: the driver's current rate and preferred buffer size unless the asio cvars ask for something specific
+    // (soloud clamps the size to what the driver allows)
+    const unsigned int asioSampleRate =
+        cv::asio_freq.getInt() > 0 ? cv::asio_freq.getVal<unsigned int>() : (unsigned int)SoLoud::Soloud::AUTO;
+    const unsigned int asioBufferSize = cv::asio_buffer_size.getInt() > 0 ? cv::asio_buffer_size.getVal<unsigned int>()
+                                                                          : (unsigned int)SoLoud::Soloud::AUTO;
 
     // use stereo output
     constexpr unsigned int channels = 2;
@@ -751,19 +809,47 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     SDL_SetHintWithPriority(SDL_HINT_AUDIO_DEVICE_STREAM_NAME, PACKAGE_NAME, SDL_HINT_OVERRIDE);
     SDL_SetHintWithPriority(SDL_HINT_AUDIO_DEVICE_STREAM_ROLE, "game", SDL_HINT_OVERRIDE);
 
+    // the device to open, NULL is the backend's default (which is what the dummy default entry, or anything that isn't
+    // in the current list, maps to)
+    const char *identifier = nullptr;
+    if(const auto &it = this->mSoloudDevices.find(desiredDev.id);
+       desiredDev.id >= 0 && desiredDev.driver != OutputDriver::NONE && it != this->mSoloudDevices.end()) {
+        identifier = it->second.identifier.data();
+    }
+
     // initialize a new soloud instance
+    // try the requested device first, then the default device of the MA/SDL backend, then the other one of those two if
+    // that failed as well (this is also where an asio driver that can't be opened, e.g. because another host owns it,
+    // falls back to the default device instead of leaving the game silent)
+    std::vector<std::pair<unsigned int, const char *>> attempts;  // backend, device identifier
+    if(identifier) attempts.emplace_back(asio ? static_cast<unsigned int>(SoLoud::Soloud::ASIO) : MAorSDL, identifier);
+    attempts.emplace_back(MAorSDL, nullptr);
+    attempts.emplace_back(MAorSDL == SoLoud::Soloud::SDL3 ? SoLoud::Soloud::MINIAUDIO : SoLoud::Soloud::SDL3, nullptr);
+
     SoLoud::result result = SoLoud::UNKNOWN_ERROR;
-    // try both backends, first with the one we chose, then the other one if that timed out/failed
-    for(const auto tryBackend :
-        std::array{backend, backend == SoLoud::Soloud::SDL3 ? SoLoud::Soloud::MINIAUDIO : SoLoud::Soloud::SDL3}) {
-        result = soloud->init(flags, tryBackend, sampleRate, bufferSize, channels);
-        backend = tryBackend;
+    SoLoud::result requestedResult = SoLoud::SO_NO_ERROR;  // of the first attempt
+    unsigned int backend = MAorSDL;
+    size_t attempt = 0;
+    for(; attempt < attempts.size(); attempt++) {
+        const auto &[tryBackend, tryIdentifier] = attempts[attempt];
+        const bool tryAsio = (tryBackend == SoLoud::Soloud::ASIO);
+        unsigned int tryFlags = flags;
+        if(tryBackend == SoLoud::Soloud::MINIAUDIO && wantExclusive) tryFlags |= SoLoud::Soloud::INIT_EXCLUSIVE;
+
+        result = soloud->init(tryFlags, tryBackend, tryAsio ? asioSampleRate : sampleRate,
+                              tryAsio ? asioBufferSize : bufferSize, channels, tryIdentifier);
         if(result == SoLoud::SO_NO_ERROR) {
+            backend = tryBackend;
+            flags = tryFlags;
             break;
-        } else {
-            debugLog("SoundEngine: The {} output backend failed to initialize, trying another one...",
-                     cv::snd_soloud_backend.getString());
         }
+
+        if(attempt == 0) requestedResult = result;
+        debugLog("SoundEngine: {} failed to initialize{} ({}), trying the next option...",
+                 tryAsio                                   ? "ASIO"
+                 : tryBackend == SoLoud::Soloud::MINIAUDIO ? "MiniAudio"
+                                                           : "SDL3",
+                 tryIdentifier ? fmt::format(" on \"{}\"", desiredDev.name) : "", result);
     }
 
     if(result != SoLoud::SO_NO_ERROR) {
@@ -774,71 +860,54 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
 
     this->bReady = true;
 
+    if(backend != SoLoud::Soloud::ASIO) {
+        // set the cvar to match the backend that's actually up (without running callbacks), the device list below is
+        // built for whatever it says
+        cv::snd_soloud_backend.setValue(soloud->getBackendString(), false);
+    }
+
+    if(attempt > 0 && identifier) {
+        app->showNotification({fmt::format("Couldn't open output device \"{}\" ({}), using the default device instead.",
+                                           desiredDev.name, requestedResult),
+                               NotificationPreset::ERROR});
+    }
+
     {
-        // populate devices array and set the desired output
+        // populate devices array (from the backend that's up now) and figure out which entry we ended up on
         this->updateOutputDevices(true);
 
-        OUTPUT_DEVICE desiredDev = device;
-        if(desiredDev.id == -2 || !this->bWasBackendEverReady) {
-            // try looking up the desired device in the output device list for fresh init backends
-            desiredDev.id = -1;  // set it to default -1 first, in case we don't find it
+        if(attempt > 0) desiredDev = this->getDefaultDevice();
 
-            if(backend == SoLoud::Soloud::MINIAUDIO && this->lastMADevice.has_value()) {
-                desiredDev = this->lastMADevice.value();
-            } else if(backend == SoLoud::Soloud::SDL3 && this->lastSDLDevice.has_value()) {
-                desiredDev = this->lastSDLDevice.value();
+        SoLoud::DeviceInfo currentDevice{};
+        if(soloud->getCurrentDevice(&currentDevice) == SoLoud::SO_NO_ERROR) {
+            if(Env::cfg(OS::WINDOWS) && backend == SoLoud::Soloud::MINIAUDIO) {
+                // remember this setting, for switching between SDL/non-WASAPI output backends (which don't support exclusive mode)
+                cv::snd_soloud_prefer_exclusive.setValue(currentDevice.isExclusive);
             }
 
-            for(const auto &[id, enumeratedDev] : this->mSoloudDevices) {
-                if(strncasecmp(desiredDev.name.c_str(), enumeratedDev.name.data(),
-                               std::min<size_t>(desiredDev.name.length(), enumeratedDev.name.size())) == 0) {
-                    desiredDev.id = id;
-                    break;
-                }
-            }
-        }
-
-        if(desiredDev.id >= 0 && this->mSoloudDevices.contains(desiredDev.id)) {
-            const auto &soloudDev = this->mSoloudDevices.at(desiredDev.id);
-            if(soloudDev.identifier != this->mSoloudDevices[-1].identifier) {
-                // set the actual desired device, after we enumerated things
-                if(soloud->setDevice(&soloudDev.identifier[0]) != SoLoud::SO_NO_ERROR) {
-                    debugLog("resetting to default, setting to {} failed", desiredDev.name);
-                    desiredDev = this->getDefaultDevice();
-                    soloud->setDevice(&this->mSoloudDevices[desiredDev.id].identifier[0]);
-                }
-            }
-        }
-
-        if(Env::cfg(OS::WINDOWS) && backend == SoLoud::Soloud::MINIAUDIO) {
-            // remember this setting, for switching between SDL/non-WASAPI output backends (which don't support exclusive mode)
-            SoLoud::DeviceInfo currentDevice{};
-            SoLoud::result res = soloud->getCurrentDevice(&currentDevice);
-
-            if(res == SoLoud::SO_NO_ERROR) {
-                const bool nowExclusive = currentDevice.isExclusive;
-                cv::snd_soloud_prefer_exclusive.setValue(nowExclusive);
-
-                if(nowExclusive && desiredDev.name.find("(Exclusive)") == std::string::npos) {
-                    // don't use "Default" device if we switched from SDL to MiniAudio and got an exclusive device, find the full device name mapped to default
-                    // (sigh...)
-
-                    // get actual name/device in our devices vector
-                    const std::string_view devstring{currentDevice.name.data(), strlen(currentDevice.name.data())};
-                    const auto &devVectorIt = std::ranges::find(this->outputDevices, devstring, &OUTPUT_DEVICE::name);
-                    if(devVectorIt != this->outputDevices.end()) {
-                        desiredDev = *devVectorIt;
+            // the list was just rebuilt, so look the open device up by its identifier
+            // the dummy default entry is kept for the plain default device (so the cvar stays "Default"), but not when
+            // that opened in exclusive mode, since share mode switching needs the full name (sigh...)
+            if(desiredDev.id != -1 || currentDevice.isExclusive) {
+                for(const auto &[id, slDevice] : this->mSoloudDevices) {
+                    if(id < 0 || strcmp(slDevice.identifier.data(), currentDevice.identifier.data()) != 0) continue;
+                    if(const auto &it = std::ranges::find(this->outputDevices, id, &OUTPUT_DEVICE::id);
+                       it != this->outputDevices.end()) {
+                        desiredDev = *it;
                     }
+                    break;
                 }
             }
         }
 
         // update actual current device now, after all that BS
         this->currentOutputDevice = desiredDev;
-        if(std::string_view curSoloudName{&this->mSoloudDevices[desiredDev.id].name[0]};
-           curSoloudName.find("Default Playback Device") != std::string::npos) {
-            // replace engine default device name (e.g. Default Playback Device, for SDL)
-            this->currentOutputDevice.name = curSoloudName;
+        if(const auto &it = this->mSoloudDevices.find(desiredDev.id); it != this->mSoloudDevices.end()) {
+            if(std::string_view curSoloudName{it->second.name.data()};
+               curSoloudName.find("Default Playback Device") != std::string_view::npos) {
+                // replace engine default device name (e.g. Default Playback Device, for SDL)
+                this->currentOutputDevice.name = curSoloudName;
+            }
         }
 
         if(this->currentOutputDevice.isDefault && this->currentOutputDevice.id == -1) {
@@ -850,12 +919,6 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     }
 
     this->updateLastDevice();
-
-    // TODO: this is weird and ugly and barely necessary, but lazy to figure out a proper solution for now
-    if(this->isASIO() && this->asio_buffer_change_cb) {
-        this->asio_buffer_change_cb(this->getASIOBufferLimits());
-    }
-
     this->bWasBackendEverReady = true;
 
     // it's 0.95 by default, for some reason
@@ -866,10 +929,13 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
 
     cv::snd_freq.setValue(soloud->getBackendSamplerate(),
                           false);  // set the cvar to match the actual output sample rate (without running callbacks)
-    cv::snd_soloud_backend.setValue(soloud->getBackendString(), false);  // ditto
-    if(cv::snd_soloud_buffer.getFloat() != cv::snd_soloud_buffer.getDefaultFloat())
+    if(this->isASIO()) {
+        // ditto, the size the driver actually negotiated (asio_buffer_size <= 0 asks for its preferred one)
+        cv::asio_buffer_size.setValue(soloud->getBackendBufferSize(), false);
+    } else if(cv::snd_soloud_buffer.getFloat() != cv::snd_soloud_buffer.getDefaultFloat()) {
         cv::snd_soloud_buffer.setValue(soloud->getBackendBufferSize(),
                                        false);  // ditto (but only if explicitly non-default was requested already)
+    }
 
     this->onMaxActiveChange(cv::snd_sanity_simultaneous_limit.getFloat());
 

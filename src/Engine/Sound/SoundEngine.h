@@ -6,7 +6,7 @@
 #include "Delegate.h"
 
 #include <memory>
-#include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -22,13 +22,6 @@
 class Sound;
 using SOUNDHANDLE = uint32_t;
 
-struct ASIOBufferLimits {
-    long minSize{-1};
-    long maxSize{-1};
-    long preferredSize{-1};
-    long granularity{-1};
-};
-
 class SoundEngine {
     NOCOPY_NOMOVE(SoundEngine)
 
@@ -41,7 +34,8 @@ class SoundEngine {
         BASS_WASAPI,  // exclusive mode
         BASS_ASIO,    // exclusive move
         SOLOUD_MA,    // miniaudio (which has an assortment of output backends internally)
-        SOLOUD_SDL    // SDL3 (ditto, multiple output backends internally)
+        SOLOUD_SDL,   // SDL3 (ditto, multiple output backends internally)
+        SOLOUD_ASIO   // exclusive mode (windows only)
     };
 
    protected:
@@ -90,12 +84,19 @@ class SoundEngine {
     virtual bool isReady() = 0;
     virtual bool hasExclusiveOutput() { return false; }
 
-    virtual bool isASIO() { return false; }
-    virtual ASIOBufferLimits getASIOBufferLimits() = 0;
-    virtual void openControlPanel() = 0;
+    // buffer sizes (in sample frames) the current output device accepts, for drivers that expose them (ASIO)
+    // granularity > 0 means steps of that many frames counted from the minimum, -1 means powers of two counted from the
+    // minimum, 0 means no fixed step
+    struct OutputBufferLimits {
+        unsigned int minSize{0};
+        unsigned int maxSize{0};
+        unsigned int preferredSize{0};
+        int granularity{0};
+    };
 
-    using ASIOBufferChangeCallback = std::function<void(const ASIOBufferLimits &info)>;
-    inline void setOnASIOBufferChangeCB(ASIOBufferChangeCallback cb) { this->asio_buffer_change_cb = std::move(cb); }
+    virtual bool isASIO() { return false; }
+    virtual std::optional<OutputBufferLimits> getOutputBufferLimits() { return std::nullopt; }
+    virtual void openDeviceControlPanel() { ; }
 
     virtual void setOutputDevice(const OUTPUT_DEVICE &device) = 0;
     virtual void setMasterVolume(float volume) = 0;
@@ -141,9 +142,6 @@ class SoundEngine {
         return isType<T>() ? static_cast<const T *>(this) : nullptr;
     }
 
-    // clamp a wanted buffer size according to device limits
-    float ASIO_Clamp(long minSize, long maxSize, long defaultSize, long granularity, long wantedSize);
-
    protected:
     std::vector<OUTPUT_DEVICE> outputDevices;
     OUTPUT_DEVICE currentOutputDevice;
@@ -152,8 +150,6 @@ class SoundEngine {
 
     std::array<AudioOutputChangedCallback, 2> restartCBs;  // first to exec before restart, second to exec after restart
     bool bInitSuccess{false};
-
-    ASIOBufferChangeCallback asio_buffer_change_cb{nullptr};
 };
 
 // define/managed in Engine.cpp, declared here for convenience
