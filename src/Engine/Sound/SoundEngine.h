@@ -96,6 +96,8 @@ class SoundEngine {
 
     virtual bool isASIO() { return false; }
     virtual std::optional<OutputBufferLimits> getOutputBufferLimits() { return std::nullopt; }
+    // output latency of the current device in sample frames, for drivers that report it (ASIO)
+    virtual std::optional<unsigned int> getOutputLatency() { return std::nullopt; }
     virtual void openDeviceControlPanel() { ; }
 
     virtual void setOutputDevice(const OUTPUT_DEVICE &device) = 0;

@@ -3737,9 +3737,13 @@ void OptionsOverlayImpl::onASIOBufferChange(CBaseUISlider *slider) {
     if(!soundEngine->isASIO()) return;
     if(!this->updating_layout) this->bASIOBufferChangeScheduled = true;
 
-    // (an estimate, the driver may round the size it's given; the rate is what the device is running at)
+    // the device's reported output latency once the slider is at the size in use, otherwise an estimate for the size
+    // it's being moved to (the driver may round that; the rate is what the device is running at)
     const double rate = cv::snd_freq.getDouble() > 0.0 ? cv::snd_freq.getDouble() : 44100.0;
-    const double latency = 1000.0 * slider->getInt() / rate;
+    double latency = 1000.0 * slider->getInt() / rate;
+    if(const auto frames = soundEngine->getOutputLatency();
+       frames.has_value() && slider->getInt() == cv::asio_buffer_size.getInt())
+        latency = 1000.0 * frames.value() / rate;
 
     OptionsElement *element = nullptr;
     if(const auto &it = this->uiToOptElemMap.find(slider); it != this->uiToOptElemMap.end() && (element = it->second)) {

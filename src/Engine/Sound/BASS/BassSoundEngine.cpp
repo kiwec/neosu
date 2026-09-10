@@ -610,6 +610,16 @@ std::optional<SoundEngine::OutputBufferLimits> BassSoundEngine::getOutputBufferL
     return std::nullopt;
 }
 
+std::optional<unsigned int> BassSoundEngine::getOutputLatency() {
+#ifdef _WIN32
+    if(this->isASIO()) {
+        const DWORD latency = BASS_ASIO_GetLatency(false);
+        if(latency != static_cast<DWORD>(-1)) return latency;
+    }
+#endif
+    return std::nullopt;
+}
+
 void BassSoundEngine::openDeviceControlPanel() {
 #ifdef _WIN32
     if(this->isASIO()) BASS_ASIO_ControlPanel();

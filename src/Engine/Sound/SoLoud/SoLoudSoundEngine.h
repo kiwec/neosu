@@ -40,7 +40,9 @@ class SoLoudSoundEngine final : public SoundEngine {
     inline bool isReady() override { return this->bReady; }
 
     inline bool isASIO() override { return this->currentOutputDevice.driver == OutputDriver::SOLOUD_ASIO; }
+    // (main thread only: asio drivers refuse calls from any thread but the one that loaded them)
     std::optional<OutputBufferLimits> getOutputBufferLimits() override;
+    std::optional<unsigned int> getOutputLatency() override;
     void openDeviceControlPanel() override;
 
     void setOutputDevice(const OUTPUT_DEVICE &device) override;
@@ -66,7 +68,8 @@ class SoLoudSoundEngine final : public SoundEngine {
     void onMaxActiveChange(f32 newMax);
     void updateLastDevice();
 
-    // keyed by the index into the MA/SDL enumeration (-1 for the default device), asio drivers start at ASIO_ID_BASE
+    // keyed by the position in the sorted MA/SDL device list (-1 for the default device), asio drivers start at
+    // ASIO_ID_BASE
     static constexpr int ASIO_ID_BASE = 1000;
     std::map<int, SoLoud::DeviceInfo> mSoloudDevices;
 
@@ -81,6 +84,7 @@ class SoLoudSoundEngine final : public SoundEngine {
     // device loss recovery, see update()
     double fLastDeviceLostRestart{0.0};
     int iDeviceLostRestarts{0};
+    bool bReopenWithDriverSettings{false};  // the asio driver changed its rate/buffer size itself, keep those
 
     // for backend
     static OutputDriver getMAorSDLCV();
