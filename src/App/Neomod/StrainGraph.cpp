@@ -77,9 +77,7 @@ void StrainGraph::rebuild(std::span<const f32> aimStrains, std::span<const f32> 
                           bool drawSpeed) {
     this->bValid = false;
 
-    // get highest strain values for normalization
-    f32 highestAimStrain = 0.0f;
-    f32 highestSpeedStrain = 0.0f;
+    // get highest total strain value for normalization
     f32 highestStrain = 0.0f;
     uSz highestStrainIndex = 0;
     for(uSz i = 0; i < aimStrains.size(); i++) {
@@ -88,10 +86,8 @@ void StrainGraph::rebuild(std::span<const f32> aimStrains, std::span<const f32> 
             highestStrain = strain;
             highestStrainIndex = i;
         }
-        if(aimStrains[i] > highestAimStrain) highestAimStrain = aimStrains[i];
-        if(speedStrains[i] > highestSpeedStrain) highestSpeedStrain = speedStrains[i];
     }
-    if(!(highestAimStrain > 0.0 && highestSpeedStrain > 0.0 && highestStrain > 0.0)) return;
+    if(!(highestStrain > 0.0f)) return;
 
     const uSz count = aimStrains.size();
     const uSz numBuckets = std::min(count, (uSz)widthPx);
